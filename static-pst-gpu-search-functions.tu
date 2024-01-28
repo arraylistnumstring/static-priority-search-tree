@@ -83,86 +83,41 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 		{
 			if (search_code == StaticPSTGPU<T>::SearchCodes::THREE_SEARCH)	// Currently a three-sided query
 			{
-				// Splitting of query is only possible if the current node has two children and min_dim1_val <= curr_node_med_dim1_val <= max_dim1_val; the equality on max_dim1_val is for the edge case where a median point may be duplicated, with one copy going to the left subtree and the other to the right subtree
-				if (min_dim1_val <= curr_node_med_dim1_val
-						&& curr_node_med_dim1_val <= max_dim1_val)
-				{
-					// Query splits over median and node has two children; split into 2 two-sided queries
-					if (StaticPSTGPU<T>::TreeNode::hasLeftChild(curr_node_bitcode)
-							&& StaticPSTGPU<T>::TreeNode::hasRightChild(curr_node_bitcode))
-					{
-						// Delegate work of searching right subtree to another thread and/or block
-						StaticPSTGPU<T>::splitLeftSearchWork(root_d, num_elem_slots,
-																StaticPSTGPU<T>::TreeNode::getRightChild(search_ind),
-																res_pt_arr_d,
-																max_dim1_val, min_dim2_val,
-																search_inds_arr, search_codes_arr);
-
-						// Prepare to search left subtree with a two-sided right search in the next iteration
-						search_inds_arr[threadIdx.x] = search_ind
-							= StaticPSTGPU<T>::TreeNode::getLeftChild(search_ind);
-						search_codes_arr[threadIdx.x] = search_code
-							= StaticPSTGPU<T>::SearchCodes::RIGHT_SEARCH;
-					}
-					// No right child, so perform a two-sided right query on the left child
-					else if (StaticPSTGPU<T>::TreeNode::hasLeftChild(curr_node_bitcode))
-					{
-						search_inds_arr[threadIdx.x] = search_ind
-							= StaticPSTGPU<T>::TreeNode::getLeftChild(search_ind);
-						search_codes_arr[threadIdx.x] = search_code
-							= StaticPSTGPU<T>::SearchCodes::RIGHT_SEARCH;
-					}
-					// No left child, so perform a two-sided left query on the right child
-					else
-					{
-						search_inds_arr[threadIdx.x] = search_ind
-							= StaticPSTGPU<T>::TreeNode::getRightChild(search_ind);
-						search_codes_arr[threadIdx.x] = search_code
-							= StaticPSTGPU<T>::SearchCodes::LEFT_SEARCH;
-					}
-				}
-				// Perform three-sided search on left child
-				else if (max_dim1_val < curr_node_med_dim1_val
-							&& StaticPSTGPU<T>::TreeNode::hasLeftChild(curr_node_bitcode))
-				{
-					// Search code is already a THREE_SEARCH
-					search_inds_arr[threadIdx.x] = search_ind
-						= StaticPSTGPU<T>::TreeNode::getLeftChild(search_ind);
-				}
-				// Perform three-sided search on right child
-				// Only remaining possibility, as all others mean the thread is inactive:
-				//		curr_node_med_dim1_val < min_dim1_val && StaticPSTGPU<T>::TreeNode::hasRightChild(curr_node_bitcode)
-				else
-				{
-					// Search code is already a THREE_SEARCH
-					search_inds_arr[threadIdx.x] = search_ind
-						= StaticPSTGPU<T>::TreeNode::getRightChild(search_ind);
-				}
+				// Do 3-sided search delegation
+				StaticPSTGPU<T>::do3SidedSearchDelegation(curr_node_bitcode,
+															root_d, num_elem_slots,
+															res_pt_arr_d,
+															min_dim1_val, max_dim1_val,
+															curr_node_med_dim1_val, min_dim2_val,
+															search_ind, search_inds_arr,
+															search_code, search_codes_arr);
 			}
 			else if (search_code == StaticPSTGPU<T>::SearchCodes::LEFT_SEARCH)
 			{
 				// Do left search delegation
 				StaticPSTGPU<T>::doLeftSearchDelegation(curr_node_med_dim1_val <= max_dim1_val,
-										curr_node_bitcode,
-										root_d, num_elem_slots,
-										res_pt_arr_d, min_dim2_val,
-										search_ind, search_inds_arr,
-										search_code, search_codes_arr);
+															curr_node_bitcode,
+															root_d, num_elem_slots,
+															res_pt_arr_d, min_dim2_val,
+															search_ind, search_inds_arr,
+															search_code, search_codes_arr);
 			}
 			else if (search_code == StaticPSTGPU<T>::SearchCodes::RIGHT_SEARCH)
 			{
 				StaticPSTGPU<T>::doRightSearchDelegation(curr_node_med_dim1_val >= min_dim1_val,
-											curr_node_bitcode, root_d, num_elem_slots,
-											res_pt_arr_d, min_dim2_val,
-											search_ind, search_inds_arr,
-											search_code, search_codes_arr);
+															curr_node_bitcode,
+															root_d, num_elem_slots,
+															res_pt_arr_d, min_dim2_val,
+															search_ind, search_inds_arr,
+															search_code, search_codes_arr);
 			}
 			else	// search_code == REPORT_ALL
 			{
-				StaticPSTGPU<T>::doReportAllNodesDelegation(curr_node_bitcode, root_d, num_elem_slots,
-											res_pt_arr_d, min_dim2_val,
-											search_ind, search_inds_arr,
-											search_codes_arr);
+				StaticPSTGPU<T>::doReportAllNodesDelegation(curr_node_bitcode,
+																root_d, num_elem_slots,
+																res_pt_arr_d, min_dim2_val,
+																search_ind, search_inds_arr,
+																search_codes_arr);
 			}
 		}
 
@@ -256,18 +211,19 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 			if (search_code == StaticPSTGPU<T>::SearchCodes::LEFT_SEARCH)	// Currently a search-type query
 			{
 				StaticPSTGPU<T>::doLeftSearchDelegation(curr_node_med_dim1_val <= max_dim1_val,
-										curr_node_bitcode,
-										root_d, num_elem_slots,
-										res_pt_arr_d, min_dim2_val,
-										search_ind, search_inds_arr,
-										search_code, search_codes_arr);
+															curr_node_bitcode,
+															root_d, num_elem_slots,
+															res_pt_arr_d, min_dim2_val,
+															search_ind, search_inds_arr,
+															search_code, search_codes_arr);
 			}
 			else	// Already a report all-type query
 			{
-				StaticPSTGPU<T>::doReportAllNodesDelegation(curr_node_bitcode, root_d, num_elem_slots,
-											res_pt_arr_d, min_dim2_val,
-											search_ind, search_inds_arr,
-											search_codes_arr);
+				StaticPSTGPU<T>::doReportAllNodesDelegation(curr_node_bitcode,
+																root_d, num_elem_slots,
+																res_pt_arr_d, min_dim2_val,
+																search_ind, search_inds_arr,
+																search_codes_arr);
 			}
 		}
 
@@ -360,17 +316,19 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 			if (search_code == StaticPSTGPU<T>::SearchCodes::RIGHT_SEARCH)	// Currently a search-type query
 			{
 				StaticPSTGPU<T>::doRightSearchDelegation(curr_node_med_dim1_val >= min_dim1_val,
-											curr_node_bitcode, root_d, num_elem_slots,
-											res_pt_arr_d, min_dim2_val,
-											search_ind, search_inds_arr,
-											search_code, search_codes_arr);
+															curr_node_bitcode,
+															root_d, num_elem_slots,
+															res_pt_arr_d, min_dim2_val,
+															search_ind, search_inds_arr,
+															search_code, search_codes_arr);
 			}
 			else	// Already a report all-type query
 			{
-				StaticPSTGPU<T>::doReportAllNodesDelegation(curr_node_bitcode, root_d, num_elem_slots,
-											res_pt_arr_d, min_dim2_val,
-											search_ind, search_inds_arr,
-											search_codes_arr);
+				StaticPSTGPU<T>::doReportAllNodesDelegation(curr_node_bitcode,
+																root_d, num_elem_slots,
+																res_pt_arr_d, min_dim2_val,
+																search_ind, search_inds_arr,
+																search_codes_arr);
 			}
 		}
 
