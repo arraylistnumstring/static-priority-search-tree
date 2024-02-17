@@ -24,7 +24,7 @@ struct PointStruct
 	{};
 	// For built-in types, implicit assignment operator and implicit copy constructor default to copying bits from source to destination
 
-	// Printing function for << printing operator to use, as private data members must be accessed in the process
+	// Printing function for << printing operator to use, as private data members may be accessed in the process
 	// const keyword after method name indicates that the method does not modify any data members of the associated class
 	inline void print(std::ostream &os) const
 	{
