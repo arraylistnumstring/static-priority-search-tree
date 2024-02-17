@@ -130,9 +130,6 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T>
 
 		const static size_t num_val_subarrs = 3;
 
-		// Declare helper nested class for accessing specific nodes and define in implementation file; as nested class are not attached to any particular instance of the outer class by default (i.e. are like Java's static nested classes by default), only functions contained within need to be declared as static
-		class TreeNode;
-
 	/*
 		For friend functions of template classes, for the compiler to recognise the function as a template function, it is necessary to either pre-declare each template friend function before the template class and modify the class-internal function declaration with an additional <> between the operator and the parameter list; or to simply define the friend function when it is declared
 		https://isocpp.org/wiki/faq/templates#template-friends

@@ -81,7 +81,7 @@ class StaticPSTCPURecur : public StaticPrioritySearchTree<T>
 		StaticPSTCPURecur& operator=(StaticPSTCPURecur &tree);	// assignment operator
 		StaticPSTCPURecur(StaticPSTCPURecur &tree);	// copy constructor
 
-		// Declare nested class and define in implementation file
+		// Declare helper nested class for accessing specific nodes and define in implementation file; as nested class are not attached to any particular instance of the outer class by default (i.e. are like Java's static nested classes by default), only functions contained within need to be declared as static
 		class TreeNode;
 
 		TreeNode *root;

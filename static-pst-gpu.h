@@ -239,9 +239,6 @@ class StaticPSTGPU : public StaticPrioritySearchTree<T>
 
 		const static size_t num_val_subarrs = 3;
 
-		// Declare helper nested class for accessing specific nodes and define in implementation file; as nested class are not attached to any particular instance of the outer class by default (i.e. are like Java's static nested classes by default), only functions contained within need to be declared as static
-		class TreeNode;
-
 		// Without an explicit instantiation, enums don't take up any space
 		enum IndexCodes
 		{
