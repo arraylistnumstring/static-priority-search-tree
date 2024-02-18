@@ -224,7 +224,7 @@ void StaticPSTCPURecur<T>::print(std::ostream &os) const
 {
 	if (root == nullptr)
 	{
-		std::cout << "Tree is empty\n";
+		os << "Tree is empty\n";
 		return;
 	}
 	std::string prefix = "";

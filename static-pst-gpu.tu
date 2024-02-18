@@ -624,7 +624,7 @@ void StaticPSTGPU<T>::print(std::ostream &os) const
 {
 	if (num_elem_slots == 0)
 	{
-		std::cout << "Tree is empty\n";
+		os << "Tree is empty\n";
 		return;
 	}
 	T *temp_root = new T[calcTotArrSizeNumTs(num_elem_slots)];
