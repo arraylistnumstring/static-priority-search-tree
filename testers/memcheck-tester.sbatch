@@ -34,6 +34,7 @@ export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 
 module load cuda/11.6.2
 echo Running:
+# -e option enables interpretation of backslash escapes
 echo -e "\t"compute-sanitizer $@
 echo
 compute-sanitizer $@
