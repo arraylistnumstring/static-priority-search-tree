@@ -1,6 +1,7 @@
 #ifndef STATIC_PST_CPU_RECUR_H
 #define STATIC_PST_CPU_RECUR_H
 
+#include "resize-container-array.h"
 #include "static-priority-search-tree.h"
 
 template <typename T>
@@ -17,7 +18,7 @@ class StaticPSTCPURecur : public StaticPrioritySearchTree<T>
 		virtual ~StaticPSTCPURecur()
 		{
 			if (root != nullptr)
-				delete[] root
+				delete[] root;
 		};
 
 		// Printing function for printing operator << to use, as private data members must be accessed in the process
@@ -39,7 +40,7 @@ class StaticPSTCPURecur : public StaticPrioritySearchTree<T>
 
 			// Ensure that no more memory is taken up than needed
 			if (pt_arr_size > num_res_elems)
-				PointStruct<T>::resizePointStructArray(pt_arr, pt_arr_size, num_res_elems);
+				resizeContainerArray(pt_arr, pt_arr_size, num_res_elems);
 
 			return pt_arr;
 		};
@@ -57,7 +58,7 @@ class StaticPSTCPURecur : public StaticPrioritySearchTree<T>
 
 			// Ensure that no more memory is taken up than needed
 			if (pt_arr_size > num_res_elems)
-				PointStruct<T>::resizePointStructArray(pt_arr, pt_arr_size, num_res_elems);
+				resizeContainerArray(pt_arr, pt_arr_size, num_res_elems);
 
 			return pt_arr;
 		};
@@ -75,7 +76,7 @@ class StaticPSTCPURecur : public StaticPrioritySearchTree<T>
 
 			// Ensure that no more memory is taken up than needed
 			if (pt_arr_size > num_res_elems)
-				PointStruct<T>::resizePointStructArray(pt_arr, pt_arr_size, num_res_elems);
+				resizeContainerArray(pt_arr, pt_arr_size, num_res_elems);
 
 			return pt_arr;
 		};

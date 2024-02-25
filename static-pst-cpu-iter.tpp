@@ -3,6 +3,7 @@
 #include <string>		// To use string-building functions
 
 #include "err-chk.h"
+#include "resize-container-array.h"
 
 template <typename T>
 StaticPSTCPUIter<T>::StaticPSTCPUIter(PointStructCPUIter<T> *const &pt_arr, size_t num_elems)
@@ -184,7 +185,7 @@ PointStructCPUIter<T>* StaticPSTCPUIter<T>::threeSidedSearch(size_t &num_res_ele
 
 	// Ensure that no more memory is taken up than needed
 	if (res_pt_arr_size > num_res_elems)
-		PointStruct<T>::resizePointStructArray(res_pt_arr, res_pt_arr_size, num_res_elems);
+		resizeContainerArray(res_pt_arr, res_pt_arr_size, num_res_elems);
 
 	return res_pt_arr;
 }
@@ -264,7 +265,7 @@ PointStructCPUIter<T>* StaticPSTCPUIter<T>::twoSidedLeftSearch(size_t &num_res_e
 
 	// Ensure that no more memory is taken up than needed
 	if (res_pt_arr_size > num_res_elems)
-		PointStruct<T>::resizePointStructArray(res_pt_arr, res_pt_arr_size, num_res_elems);
+		resizeContainerArray(res_pt_arr, res_pt_arr_size, num_res_elems);
 
 	return res_pt_arr;
 }
@@ -344,7 +345,7 @@ PointStructCPUIter<T>* StaticPSTCPUIter<T>::twoSidedRightSearch(size_t &num_res_
 
 	// Ensure that no more memory is taken up than needed
 	if (res_pt_arr_size > num_res_elems)
-		PointStruct<T>::resizePointStructArray(res_pt_arr, res_pt_arr_size, num_res_elems);
+		resizeContainerArray(res_pt_arr, res_pt_arr_size, num_res_elems);
 
 	return res_pt_arr;
 }

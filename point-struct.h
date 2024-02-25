@@ -1,6 +1,8 @@
 #ifndef POINT_STRUCT_H
 #define POINT_STRUCT_H
 
+#include <cstring>		// To use memcpy()
+
 template <typename T>
 // C++ structs differ from classes only in that structs default to public access of all members, while classes default to private access of all members
 struct PointStruct
@@ -58,20 +60,6 @@ struct PointStruct
 	inline bool operator==(const PointStruct<T> &other) const
 	{
 		return dim1_val == other.dim1_val && dim2_val == other.dim2_val;
-	};
-
-	static void resizePointStructArray(PointStruct<T> *&pt_arr, size_t &pt_arr_size, const size_t new_pt_arr_size)
-	{
-		PointStruct<T> *new_pt_arr = new PointStruct<T>[new_pt_arr_size];
-		if (new_pt_arr_size < pt_arr_size)	// Shrinking array
-			std::memcpy(new_pt_arr, pt_arr, new_pt_arr_size*sizeof(PointStruct<T>));
-		else	// Growing array
-			std::memcpy(new_pt_arr, pt_arr, pt_arr_size*sizeof(PointStruct<T>));
-
-		delete[] pt_arr;
-
-		pt_arr = new_pt_arr;
-		pt_arr_size = new_pt_arr_size;
 	};
 };
 
