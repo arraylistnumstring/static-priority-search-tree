@@ -27,7 +27,7 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T>
 		// const keyword after method name indicates that the method does not modify any data members of the associated class
 		virtual void print(std::ostream &os) const;
 
-		// Uses stacks instead of dynamic parallelism
+		// Uses stacks instead of recursion or dynamic parallelism
 		virtual PointStructCPUIter<T>* threeSidedSearch(size_t &num_res_elems, T min_dim1_val, T max_dim1_val, T min_dim2_val);
 		virtual PointStructCPUIter<T>* twoSidedLeftSearch(size_t &num_res_elems, T max_dim1_val, T min_dim2_val);
 		virtual PointStructCPUIter<T>* twoSidedRightSearch(size_t &num_res_elems, T min_dim1_val, T min_dim2_val);
@@ -61,7 +61,7 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T>
 									size_t &right_subarr_num_elems);
 
 		// Helper functions for tracking work to be completed
-		void do3SidedSearchDelegation();
+		void do3SidedSearchDelegation(const unsigned char &curr_node_bitcode, T min_dim1_val, T max_dim1_val, T curr_node_med_dim1_val, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack);
 		void doLeftSearchDelegation(const bool range_split_poss, const unsigned char &curr_node_bitcode, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack);
 		void doRightSearchDelegation(const bool range_split_poss, const unsigned char &curr_node_bitcode, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack);
 		void doReportAllNodesDelegation(const unsigned char &curr_node_bitcode, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack);

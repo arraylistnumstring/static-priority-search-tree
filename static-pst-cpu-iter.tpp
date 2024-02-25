@@ -147,9 +147,38 @@ PointStructCPUIter<T>* StaticPSTCPUIter<T>::threeSidedSearch(size_t &num_res_ele
 				num_res_elems++;
 			}
 
-			// Delegation/further activity down this branch necessary only if this node has children satisfying the search range and can therefore be searched
-			if (TreeNode::hasCildren(curr_node_bitcode)
-					&& )
+			// Delegation/further activity down this branch necessary only if this node has children and can therefore be searched
+			if (TreeNode::hasChildren(curr_node_bitcode))
+			{
+				if (search_code == THREE_SEARCH)	// Currently a three-sided query
+				{
+					do3SidedSearchDelegation(curr_node_bitcode,
+												min_dim1_val, max_dim1_val,
+												curr_node_med_dim1_val,
+												search_ind, search_inds_stack,
+												search_codes_stack);
+				}
+				else if (search_code == LEFT_SEARCH)
+				{
+					doLeftSearchDelegation(curr_node_med_dim1_val <= max_dim1_val,
+											curr_node_bitcode,
+											search_ind, search_inds_stack,
+											search_codes_stack);
+				}
+				else if (search_code == RIGHT_SEARCH)
+				{
+					doRightSearchDelegation(curr_node_med_dim1_val >= min_dim1_val,
+											curr_node_bitcode,
+											search_ind, search_inds_stack,
+											search_codes_stack);
+				}
+				else	// Already a report all-type query
+				{
+					doReportAllNodesDelegation(curr_node_bitcode,
+												search_ind, search_inds_stack,
+												search_codes_stack);
+				}
+			}
 		}
 	}
 
@@ -429,10 +458,40 @@ void StaticPSTCPUIter<T>::constructNode(T *const &root,
 	}
 }
 
-
-void do3SidedSearchDelegation()
+void do3SidedSearchDelegation(const unsigned char &curr_node_bitcode, T min_dim1_val, T max_dim1_val, T curr_node_med_dim1_val, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack)
 {
-
+	// Splitting of query is only possible if the current node has two children and min_dim1_val <= curr_node_med_dim1_val <= max_dim1_val; the equality on max_dim1_val is for the edge case where a median point may be duplicated, with one copy going to the left subtree and the other to the right subtree
+	if (min_dim1_val <= curr_node_med_dim1_val
+			&& curr_node_med_dim1_val <= max_dim1_val)
+	{
+		// Query splits over median; split into 2 two-sided queries
+		// Search left subtree with a two-sided right search
+		if (TreeNode::hasLeftChild(curr_node_bitcode))
+		{
+			search_inds_stack.push(TreeNode::getLeftChild(search_ind));
+			search_codes_stack.push(RIGHT_SEARCH);
+		}
+		// Search right subtree with a two-sided left search
+		if (TreeNode::hasRightChild(curr_node_bitcode))
+		{
+			search_inds_stack.push(TreeNode::getRightChild(search_ind));
+			search_codes_stack.push(LEFT_SEARCH);
+		}
+	}
+	// Perform three-sided search on left child
+	else if (max_dim1_val < curr_node_med_dim1_val
+				&& TreeNode::hasLeftChild(curr_node_bitcode))
+	{
+		search_inds_stack.push(TreeNode::getLeftChild(search_ind));
+		search_codes_stack.push(THREE_SEARCH);
+	}
+	// Perform three-sided search on right child
+	else if (curr_node_med_dim1_val < min_dim1_val
+				&& TreeNode::hasRightChild(curr_node_bitcode))
+	{
+		search_inds_stack.push(TreeNode::getRightChild(search_ind));
+		search_codes_stack.push(THREE_SEARCH);
+	}
 }
 
 void doLeftSearchDelegation(const bool range_split_poss, const unsigned char &curr_node_bitcode, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack)
