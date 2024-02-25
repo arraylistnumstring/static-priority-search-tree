@@ -207,6 +207,29 @@ StaticPSTGPU<T>::StaticPSTGPU(PointStructGPU<T> *const &pt_arr, size_t num_elems
 					+ ": ");
 }
 
+// const keyword after method name indicates that the method does not modify any data members of the associated class
+template <typename T>
+void StaticPSTGPU<T>::print(std::ostream &os) const
+{
+	if (num_elem_slots == 0)
+	{
+		os << "Tree is empty\n";
+		return;
+	}
+	T *temp_root = new T[calcTotArrSizeNumTs(num_elem_slots)];
+	if (temp_root == nullptr)
+		throwErr("Error: could not allocate " + std::to_string(num_elem_slots)
+					+ " elements of type " + typeid(T).name() + "to temp_root");
+	gpuErrorCheck(cudaMemcpy(temp_root, root_d, calcTotArrSizeNumTs(num_elem_slots) * sizeof(T), cudaMemcpyDefault),
+					"Error in copying array underlying StaticPSTGPU instance from device to host: ");
+
+	std::string prefix = "";
+	std::string child_prefix = "";
+	printRecur(os, temp_root, 0, num_elem_slots, prefix, child_prefix);
+
+	delete[] temp_root;
+}
+
 // static keyword should only be used when declaring a function in the header file
 template <typename T>
 __forceinline__ __device__ void StaticPSTGPU<T>::constructNode(T *const &root_d,
@@ -616,29 +639,6 @@ __forceinline__ __host__ __device__ long long StaticPSTGPU<T>::binarySearch(Poin
 			low_ind = mid_ind + 1;
 	}
 	return -1;	// Element not found
-}
-
-// const keyword after method name indicates that the method does not modify any data members of the associated class
-template <typename T>
-void StaticPSTGPU<T>::print(std::ostream &os) const
-{
-	if (num_elem_slots == 0)
-	{
-		os << "Tree is empty\n";
-		return;
-	}
-	T *temp_root = new T[calcTotArrSizeNumTs(num_elem_slots)];
-	if (temp_root == nullptr)
-		throwErr("Error: could not allocate " + std::to_string(num_elem_slots)
-					+ " elements of type " + typeid(T).name() + "to temp_root");
-	gpuErrorCheck(cudaMemcpy(temp_root, root_d, calcTotArrSizeNumTs(num_elem_slots) * sizeof(T), cudaMemcpyDefault),
-					"Error in copying array underlying StaticPSTGPU instance from device to host: ");
-
-	std::string prefix = "";
-	std::string child_prefix = "";
-	printRecur(os, temp_root, 0, num_elem_slots, prefix, child_prefix);
-
-	delete[] temp_root;
 }
 
 template <typename T>
