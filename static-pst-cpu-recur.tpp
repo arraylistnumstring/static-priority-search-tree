@@ -3,7 +3,7 @@
 #include <string>		// To use string-building functions
 
 #include "print-array.h"
-#include "resize-container-array.h"
+#include "resize-array.h"
 
 template <typename T>
 StaticPSTCPURecur<T>::StaticPSTCPURecur(PointStruct<T> *pt_arr, size_t num_elems)
@@ -258,7 +258,7 @@ void StaticPSTCPURecur<T>::threeSidedSearchRecur(PointStruct<T> *&pt_arr, size_t
 		pt_arr[num_res_elems++] = subtree_root.pt;
 		// Dynamically resize array
 		if (num_res_elems == pt_arr_size)
-			resizeContainerArray(pt_arr, pt_arr_size, pt_arr_size << 1);
+			resizeArray(pt_arr, pt_arr_size, pt_arr_size << 1);
 	}
 
 	// Continue search
@@ -292,7 +292,7 @@ void StaticPSTCPURecur<T>::twoSidedLeftSearchRecur(PointStruct<T> *&pt_arr, size
 		pt_arr[num_res_elems++] = subtree_root.pt;
 		// Dynamically resize array
 		if (num_res_elems == pt_arr_size)
-			resizeContainerArray(pt_arr, pt_arr_size, pt_arr_size << 1);
+			resizeArray(pt_arr, pt_arr_size, pt_arr_size << 1);
 	}
 
 	// Continue search
@@ -323,7 +323,7 @@ void StaticPSTCPURecur<T>::twoSidedRightSearchRecur(PointStruct<T> *&pt_arr, siz
 		pt_arr[num_res_elems++] = subtree_root.pt;
 		// Dynamically resize array
 		if (num_res_elems == pt_arr_size)
-			resizeContainerArray(pt_arr, pt_arr_size, pt_arr_size << 1);
+			resizeArray(pt_arr, pt_arr_size, pt_arr_size << 1);
 	}
 
 	// Continue search
@@ -351,7 +351,7 @@ void StaticPSTCPURecur<T>::reportAllNodes(PointStruct<T> *&pt_arr, size_t &num_r
 	pt_arr[num_res_elems++] = subtree_root.pt;
 	// Dynamically resize array
 	if (num_res_elems == pt_arr_size)
-		resizeContainerArray(pt_arr, pt_arr_size, pt_arr_size << 1);
+		resizeArray(pt_arr, pt_arr_size, pt_arr_size << 1);
 
 	if (subtree_root.hasLeftChild())
 		reportAllNodes(pt_arr, num_res_elems, pt_arr_size, subtree_root.getLeftChild(root), min_dim2_val);

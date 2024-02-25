@@ -1,7 +1,7 @@
 #ifndef STATIC_PST_CPU_RECUR_H
 #define STATIC_PST_CPU_RECUR_H
 
-#include "resize-container-array.h"
+#include "resize-array.h"
 #include "static-priority-search-tree.h"
 
 template <typename T>
@@ -40,7 +40,7 @@ class StaticPSTCPURecur : public StaticPrioritySearchTree<T>
 
 			// Ensure that no more memory is taken up than needed
 			if (pt_arr_size > num_res_elems)
-				resizeContainerArray(pt_arr, pt_arr_size, num_res_elems);
+				resizeArray(pt_arr, pt_arr_size, num_res_elems);
 
 			return pt_arr;
 		};
@@ -58,7 +58,7 @@ class StaticPSTCPURecur : public StaticPrioritySearchTree<T>
 
 			// Ensure that no more memory is taken up than needed
 			if (pt_arr_size > num_res_elems)
-				resizeContainerArray(pt_arr, pt_arr_size, num_res_elems);
+				resizeArray(pt_arr, pt_arr_size, num_res_elems);
 
 			return pt_arr;
 		};
@@ -76,7 +76,7 @@ class StaticPSTCPURecur : public StaticPrioritySearchTree<T>
 
 			// Ensure that no more memory is taken up than needed
 			if (pt_arr_size > num_res_elems)
-				resizeContainerArray(pt_arr, pt_arr_size, num_res_elems);
+				resizeArray(pt_arr, pt_arr_size, num_res_elems);
 
 			return pt_arr;
 		};
