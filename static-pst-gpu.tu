@@ -1,5 +1,6 @@
-#include <algorithm>	// To use sort()
-#include <string>		// To use string-building functions
+#include <string>				// To use string-building functions
+#include <thrust/execution_policy.h>	// To use thrust::device execution policy for sorting
+#include <thrust/sort.h>		// To use parallel sorting algorithm
 
 #include "err-chk.h"
 
@@ -113,27 +114,6 @@ StaticPSTGPU<T>::StaticPSTGPU(PointStructGPU<T> *const &pt_arr, size_t num_elems
 	for (size_t i = 0; i < num_elems; i++)
 		dim1_val_ind_arr[i] = dim2_val_ind_arr[i] = i;
 
-	// Sort dimension-1 values index array in ascending order; in-place sort using a curried comparison function
-	std::sort(dim1_val_ind_arr, dim1_val_ind_arr + num_elems,
-				[](PointStructGPU<T> *const &pt_arr)
-					{
-						// [&] captures all variables in enclosing scope by reference so that they can be used within the body of the lambda function
-						return [&](const size_t &i, const size_t &j)
-							{
-								return pt_arr[i].compareDim1(pt_arr[j]) < 0;
-							};
-					}(pt_arr));	// Parentheses immediately after a lambda definition serves to call it with the given parameter
-
-	// Sort dimension-2 values index array in descending order; in-place sort using a curried comparison function
-	std::sort(dim2_val_ind_arr, dim2_val_ind_arr + num_elems,
-				[](PointStructGPU<T> *const &pt_arr)
-					{
-						return [&](const size_t &i, const size_t &j)
-							{
-								return pt_arr[i].compareDim2(pt_arr[j]) > 0;
-							};
-					}(pt_arr));
-
 
 	// Create GPU-side array of PointStructGPU indices to store sorted results; as this array is not meant to be permanent, avoid storing the two arrays as one contiguous array in order to avoid allocation failure due to global memory fragmentation
 	size_t *dim1_val_ind_arr_d;
@@ -178,6 +158,27 @@ StaticPSTGPU<T>::StaticPSTGPU(PointStructGPU<T> *const &pt_arr, size_t num_elems
 
 	delete[] dim1_val_ind_arr;
 	delete[] dim2_val_ind_arr;
+
+	// Sort dimension-1 values index array in ascending order; in-place sort using a curried comparison function; guaranteed O(n) running time or better
+	thrust::sort(thrust::device, dim1_val_ind_arr_d, dim1_val_ind_arr_d + num_elems,
+					[](PointStructGPU<T> *const &pt_arr_d)
+						{
+							// [&] captures all variables in enclosing scope by reference so that they can be used within the body of the lambda function
+							return [&](const size_t &i, const size_t &j)
+								{
+									return pt_arr_d[i].compareDim1(pt_arr_d[j]) < 0;
+								};
+						}(pt_arr_d));	// Parentheses immediately after a lambda definition serves to call it with the given parameter
+
+	// Sort dimension-2 values index array in descending order; in-place sort using a curried comparison function; guaranteed O(n) running time or better
+	thrust::sort(thrust::device, dim2_val_ind_arr, dim2_val_ind_arr + num_elems,
+				[](PointStructGPU<T> *const &pt_arr_d)
+					{
+						return [&](const size_t &i, const size_t &j)
+							{
+								return pt_arr_d[i].compareDim2(pt_arr_d[j]) > 0;
+							};
+					}(pt_arr_d));
 
 	// Populate tree with a number of threads that is a multiple of the warp size
 	populateTree<<<1, dev_warp_size, dev_warp_size * sizeof(size_t) * 3>>>
