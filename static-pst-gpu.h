@@ -49,7 +49,6 @@ class StaticPSTGPU : public StaticPrioritySearchTree<T>
 		int getDevWarpSize() const {return dev_warp_size;};
 		int getNumDevs() const {return num_devs;};
 
-		// Initial input value for num_res_elems is the array initialisation size
 		virtual PointStructGPU<T>* threeSidedSearch(size_t &num_res_elems, T min_dim1_val, T max_dim1_val, T min_dim2_val)
 		{
 			PointStructGPU<T>* pt_arr_d;

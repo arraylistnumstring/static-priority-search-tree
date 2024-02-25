@@ -27,7 +27,7 @@ StaticPSTCPUIter<T>::StaticPSTCPUIter(PointStructCPUIter<T> *const &pt_arr, size
 	if (root == nullptr)
 		throwErr("Error: could not allocate " + std::to_string(num_elems) + " elements of type " + typeid(T).name() + " to root");
 
-	// Create two arrays of PointStructCPUIter indices for processing PointStructCPUIter objects on CPU or GPU
+	// Create two arrays of PointStructCPUIter indices for processing PointStructCPUIter objects
 	size_t *dim1_val_ind_arr = new size_t[num_elems];
 	if (dim1_val_ind_arr == nullptr)
 		throwErr("Error: could not allocate " + std::to_string(num_elems) + " elements of type size_t to dim1_val_ind_arr");
@@ -185,6 +185,109 @@ void StaticPSTCPUIter<T>::constructNode(T *const &root,
 				dim2_val_ind_arr_secondary[right_dim2_subarr_iter_ind++] = dim2_val_ind_arr[i];
 		}
 	}
+}
+
+template <typename T>
+PointStructCPUIter<T>* StaticPSTCPUIter<T>::threeSidedSearch(size_t &num_res_elems, T min_dim1_val, T max_dim1_val, T min_dim2_val)
+{
+	size_t res_pt_arr_size = num_elems;
+	PointStructCPUIter<T>* res_pt_arr = new PointStructCPUIter<T>[res_pt_arr_size];
+	num_res_elems = 0;
+	// TODO: search
+
+	// Ensure that no more memory is taken up than needed
+	if (res_pt_arr_size > num_res_elems)
+		PointStruct<T>::resizePointStructArray(res_pt_arr, res_pt_arr_size, num_res_elems);
+
+	return res_pt_arr;
+}
+
+template <typename T>
+PointStructCPUIter<T>* StaticPSTCPUIter<T>::twoSidedLeftSearch(size_t &num_res_elems, T max_dim1_val, T min_dim2_val)
+{
+	size_t res_pt_arr_size = num_elems;
+	PointStructCPUIter<T>* res_pt_arr = new PointStructCPUIter<T>[res_pt_arr_size];
+	num_res_elems = 0;
+
+	std::stack<long long> search_inds_stack;
+	std::stack<unsigned char> search_codes_stack;
+
+	search_inds_stack.push(0);
+	search_codes_stack.push(LEFT_SEARCH);
+
+	long long search_ind;
+	unsigned char search_code;
+
+	T curr_node_dim1_val;
+	T curr_node_dim2_val;
+	T curr_node_med_dim1_val;
+	unsigned char curr_node_bitcode;
+
+	// Stacks are synchronised, so 1 stack is empty exactly when both are
+	while (!search_inds_stack.empty())
+	{
+		search_ind = search_inds_stack.top();
+		search_inds_stack.pop();
+		search_code = search_codes_stack.top();
+		search_codes_stack.pop();
+
+		// Note that because this program is single-threaded, there is never a chance of inactivity, as the lone thread only terminates when there is no more work to be done; hence, there is no INACTIVE_IND check (when comparing to the analogous GPU version)
+		curr_node_dim1_val = getDim1ValsRoot(root, num_elem_slots)[search_ind];
+		curr_node_dim2_val = getDim2ValsRoot(root, num_elem_slots)[search_ind];
+		curr_node_med_dim1_val = getMedDim1ValsRoot(root, num_elem_slots)[search_ind];
+		curr_node_bitcode = getBitcodesRoot(root, num_elem_slots)[search_ind];
+
+		// Only process node if its dimension-2 value satisfies the dimension-2 search bound
+		if (min_dim2_val <= curr_node_dim2_val)
+		{
+			// Check if current node staisfies query and should be reported
+			if (curr_node_dim1_val <= max_dim1_val)
+			{
+				res_pt_arr[num_res_elems].dim1_val = curr_node_dim1_val;
+				res_pt_arr[num_res_elems].dim2_val = curr_node_dim2_val;
+				num_res_elems++;
+			}
+
+			// Delegation/further activity down this branch necessary only if this node has children that can be searched
+			if ()
+			{
+				if (search_code == LEFT_SEARCH)
+				{
+					doLeftSearchDelegation(curr_node_med_dim1_val <= max_dim1_val,
+											curr_node_bitcode,
+											search_ind, search_inds_stack,
+											search_codes_stack);
+				}
+				else	// Already a report all-type query
+				{
+					doReportAllNodesDelegation(curr_node_bitcode,
+												search_ind, search_inds_stack,
+												search_codes_stack);
+				}
+			}
+		}
+	}
+
+	// Ensure that no more memory is taken up than needed
+	if (res_pt_arr_size > num_res_elems)
+		PointStruct<T>::resizePointStructArray(res_pt_arr, res_pt_arr_size, num_res_elems);
+
+	return res_pt_arr;
+}
+
+template <typename T>
+PointStructCPUIter<T>* StaticPSTCPUIter<T>::twoSidedRightSearch(size_t &num_res_elems, T min_dim1_val, T min_dim2_val)
+{
+	size_t res_pt_arr_size = num_elems;
+	PointStructCPUIter<T>* res_pt_arr = new PointStructCPUIter<T>[res_pt_arr_size];
+	num_res_elems = 0;
+	// TODO: search
+
+	// Ensure that no more memory is taken up than needed
+	if (res_pt_arr_size > num_res_elems)
+		PointStruct<T>::resizePointStructArray(res_pt_arr, res_pt_arr_size, num_res_elems);
+
+	return res_pt_arr;
 }
 
 template <typename T>

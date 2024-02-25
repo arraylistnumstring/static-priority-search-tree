@@ -27,34 +27,10 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T>
 		// const keyword after method name indicates that the method does not modify any data members of the associated class
 		virtual void print(std::ostream &os) const;
 
-		// Initial input value for num_res_elems is the array initialisation size
-		virtual PointStructCPUIter<T>* threeSidedSearch(size_t &num_res_elems, T min_dim1_val, T max_dim1_val, T min_dim2_val)
-		{
-			size_t pt_arr_size = num_res_elems == 0 ? 10 : num_res_elems;
-			PointStructCPUIter<T>* pt_arr = new PointStructCPUIter<T>[pt_arr_size];
-			num_res_elems = 0;
-			// TODO: search
-
-			return pt_arr;
-		};
-		virtual PointStructCPUIter<T>* twoSidedLeftSearch(size_t &num_res_elems, T max_dim1_val, T min_dim2_val)
-		{
-			size_t pt_arr_size = num_res_elems == 0 ? 10 : num_res_elems;
-			PointStructCPUIter<T>* pt_arr = new PointStructCPUIter<T>[pt_arr_size];
-			num_res_elems = 0;
-			// TODO: search
-
-			return pt_arr;
-		};
-		virtual PointStructCPUIter<T>* twoSidedRightSearch(size_t &num_res_elems, T min_dim1_val, T min_dim2_val)
-		{
-			size_t pt_arr_size = num_res_elems == 0 ? 10 : num_res_elems;
-			PointStructCPUIter<T>* pt_arr = new PointStructCPUIter<T>[pt_arr_size];
-			num_res_elems = 0;
-			// TODO: search
-
-			return pt_arr;
-		};
+		// Uses stacks instead of dynamic parallelism
+		virtual PointStructCPUIter<T>* threeSidedSearch(size_t &num_res_elems, T min_dim1_val, T max_dim1_val, T min_dim2_val);
+		virtual PointStructCPUIter<T>* twoSidedLeftSearch(size_t &num_res_elems, T max_dim1_val, T min_dim2_val);
+		virtual PointStructCPUIter<T>* twoSidedRightSearch(size_t &num_res_elems, T min_dim1_val, T min_dim2_val);
 
 	private:
 		// Want unique copies of each tree, so no assignment or copying allowed
@@ -83,6 +59,12 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T>
 									size_t &left_subarr_num_elems,
 									size_t &right_subarr_start_ind,
 									size_t &right_subarr_num_elems);
+
+		// Helper functions for tracking work to be completed
+		void do3SidedSearchDelegation();
+		void doLeftSearchDelegation(const bool range_split_poss, const unsigned char &curr_node_bitcode, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack);
+		void doRightSearchDelegation();
+		void doReportAllNodesDelegation(const unsigned char &curr_node_bitcode, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack);
 
 		// Helper functions for getting start indices for various arrays
 		static T* getDim1ValsRoot(T *const root, const size_t num_elem_slots)
@@ -132,6 +114,16 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T>
 
 		// Declare helper nested class for accessing specific nodes and define in implementation file; as nested class are not attached to any particular instance of the outer class by default (i.e. are like Java's static nested classes by default), only functions contained within need to be declared as static
 		class TreeNode;
+
+		// Without an explicit instantiation, enums don't take up any space
+		// enum name : type gives the enum an explicit underlying type; type chosen to correspond to that given to the enum SearchCodes of StaticPSTGPU
+		enum SearchCodes : unsigned char
+		{
+			REPORT_ALL,
+			LEFT_SEARCH,
+			RIGHT_SEARCH,
+			THREE_SEARCH
+		};
 
 	/*
 		For friend functions of template classes, for the compiler to recognise the function as a template function, it is necessary to either pre-declare each template friend function before the template class and modify the class-internal function declaration with an additional <> between the operator and the parameter list; or to simply define the friend function when it is declared

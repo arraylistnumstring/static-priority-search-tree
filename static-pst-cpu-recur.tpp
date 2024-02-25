@@ -260,7 +260,7 @@ void StaticPSTCPURecur<T>::reportAllNodes(PointStruct<T> *&pt_arr, size_t &num_r
 	pt_arr[num_res_elems++] = subtree_root.pt;
 	// Dynamically resize array
 	if (num_res_elems == pt_arr_size)
-		resizePointStructArray(pt_arr, pt_arr_size, pt_arr_size << 1);
+		PointStruct<T>::resizePointStructArray(pt_arr, pt_arr_size, pt_arr_size << 1);
 
 	if (subtree_root.hasLeftChild())
 		reportAllNodes(pt_arr, num_res_elems, pt_arr_size, subtree_root.getLeftChild(root), min_dim2_val);
@@ -280,7 +280,7 @@ void StaticPSTCPURecur<T>::threeSidedSearchRecur(PointStruct<T> *&pt_arr, size_t
 		pt_arr[num_res_elems++] = subtree_root.pt;
 		// Dynamically resize array
 		if (num_res_elems == pt_arr_size)
-			resizePointStructArray(pt_arr, pt_arr_size, pt_arr_size << 1);
+			PointStruct<T>::resizePointStructArray(pt_arr, pt_arr_size, pt_arr_size << 1);
 	}
 
 	// Continue search
@@ -314,7 +314,7 @@ void StaticPSTCPURecur<T>::twoSidedLeftSearchRecur(PointStruct<T> *&pt_arr, size
 		pt_arr[num_res_elems++] = subtree_root.pt;
 		// Dynamically resize array
 		if (num_res_elems == pt_arr_size)
-			resizePointStructArray(pt_arr, pt_arr_size, pt_arr_size << 1);
+			PointStruct<T>::resizePointStructArray(pt_arr, pt_arr_size, pt_arr_size << 1);
 	}
 
 	// Continue search
@@ -345,7 +345,7 @@ void StaticPSTCPURecur<T>::twoSidedRightSearchRecur(PointStruct<T> *&pt_arr, siz
 		pt_arr[num_res_elems++] = subtree_root.pt;
 		// Dynamically resize array
 		if (num_res_elems == pt_arr_size)
-			resizePointStructArray(pt_arr, pt_arr_size, pt_arr_size << 1);
+			PointStruct<T>::resizePointStructArray(pt_arr, pt_arr_size, pt_arr_size << 1);
 	}
 
 	// Continue search
@@ -362,19 +362,4 @@ void StaticPSTCPURecur<T>::twoSidedRightSearchRecur(PointStruct<T> *&pt_arr, siz
 	// Only right subtree dimension-1 values can be valid
 	else if (subtree_root.hasRightChild())
 		twoSidedRightSearchRecur(pt_arr, num_res_elems, pt_arr_size, subtree_root.getRightChild(root), min_dim1_val, min_dim2_val);
-}
-
-template <typename T>
-void StaticPSTCPURecur<T>::resizePointStructArray(PointStruct<T> *&pt_arr, size_t &pt_arr_size, const size_t new_pt_arr_size)
-{
-	PointStruct<T> *new_pt_arr = new PointStruct<T>[new_pt_arr_size];
-	if (new_pt_arr_size < pt_arr_size)	// Shrinking array
-		std::memcpy(new_pt_arr, pt_arr, new_pt_arr_size*sizeof(PointStruct<T>));
-	else	// Growing array
-		std::memcpy(new_pt_arr, pt_arr, pt_arr_size*sizeof(PointStruct<T>));
-
-	delete[] pt_arr;
-
-	pt_arr = new_pt_arr;
-	pt_arr_size = new_pt_arr_size;
 }

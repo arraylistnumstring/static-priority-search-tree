@@ -35,7 +35,7 @@ class StaticPSTCPURecur : public StaticPrioritySearchTree<T>
 
 			// Ensure that no more memory is taken up than needed
 			if (pt_arr_size > num_res_elems)
-				resizePointStructArray(pt_arr, pt_arr_size, num_res_elems);
+				PointStruct<T>::resizePointStructArray(pt_arr, pt_arr_size, num_res_elems);
 
 			return pt_arr;
 		};
@@ -53,7 +53,7 @@ class StaticPSTCPURecur : public StaticPrioritySearchTree<T>
 
 			// Ensure that no more memory is taken up than needed
 			if (pt_arr_size > num_res_elems)
-				resizePointStructArray(pt_arr, pt_arr_size, num_res_elems);
+				PointStruct<T>::resizePointStructArray(pt_arr, pt_arr_size, num_res_elems);
 
 			return pt_arr;
 		};
@@ -71,7 +71,7 @@ class StaticPSTCPURecur : public StaticPrioritySearchTree<T>
 
 			// Ensure that no more memory is taken up than needed
 			if (pt_arr_size > num_res_elems)
-				resizePointStructArray(pt_arr, pt_arr_size, num_res_elems);
+				PointStruct<T>::resizePointStructArray(pt_arr, pt_arr_size, num_res_elems);
 
 			return pt_arr;
 		};
@@ -101,8 +101,6 @@ class StaticPSTCPURecur : public StaticPrioritySearchTree<T>
 		void twoSidedLeftSearchRecur(PointStruct<T> *&pt_arr, size_t &num_res_elems, size_t &pt_arr_size, TreeNode &subtree_root, T max_dim1_val, T min_dim2_val);
 		void twoSidedRightSearchRecur(PointStruct<T> *&pt_arr, size_t &num_res_elems, size_t &pt_arr_size, TreeNode &subtree_root, T min_dim1_val, T min_dim2_val);
 
-		void resizePointStructArray(PointStruct<T> *&pt_arr, size_t &pt_arr_size, const size_t new_pt_arr_size);
-	
 	// Allow printing operator << to be declared for TreeNode
 	// For friend functions of template classes, for the compiler to recognise the function as a template function, it is necessary to either pre-declare each template friend function before the template class and modify the class-internal function declaration with an additional <> between the operator and the parameter list; or to simply define the friend function when it is declared
 	//	https://isocpp.org/wiki/faq/templates#template-friends
