@@ -190,6 +190,13 @@ void StaticPSTCPUIter<T>::constructNode(T *const &root,
 template <typename T>
 PointStructCPUIter<T>* StaticPSTCPUIter<T>::threeSidedSearch(size_t &num_res_elems, T min_dim1_val, T max_dim1_val, T min_dim2_val)
 {
+	if (num_elems == 0)
+	{
+		std::cout << "Tree is empty; nothing to search\n";
+		num_res_elems = 0;
+		return nullptr;
+	}
+
 	size_t res_pt_arr_size = num_elems;
 	PointStructCPUIter<T>* res_pt_arr = new PointStructCPUIter<T>[res_pt_arr_size];
 	num_res_elems = 0;
@@ -205,6 +212,13 @@ PointStructCPUIter<T>* StaticPSTCPUIter<T>::threeSidedSearch(size_t &num_res_ele
 template <typename T>
 PointStructCPUIter<T>* StaticPSTCPUIter<T>::twoSidedLeftSearch(size_t &num_res_elems, T max_dim1_val, T min_dim2_val)
 {
+	if (num_elems == 0)
+	{
+		std::cout << "Tree is empty; nothing to search\n";
+		num_res_elems = 0;
+		return nullptr;
+	}
+
 	size_t res_pt_arr_size = num_elems;
 	PointStructCPUIter<T>* res_pt_arr = new PointStructCPUIter<T>[res_pt_arr_size];
 	num_res_elems = 0;
@@ -248,8 +262,8 @@ PointStructCPUIter<T>* StaticPSTCPUIter<T>::twoSidedLeftSearch(size_t &num_res_e
 				num_res_elems++;
 			}
 
-			// Delegation/further activity down this branch necessary only if this node has children that can be searched
-			if ()
+			// Delegation/further activity down this branch necessary only if this node has children and can therefore be searched
+			if (TreeNode::hasChildren(curr_node_bitcode))
 			{
 				if (search_code == LEFT_SEARCH)
 				{
@@ -278,6 +292,13 @@ PointStructCPUIter<T>* StaticPSTCPUIter<T>::twoSidedLeftSearch(size_t &num_res_e
 template <typename T>
 PointStructCPUIter<T>* StaticPSTCPUIter<T>::twoSidedRightSearch(size_t &num_res_elems, T min_dim1_val, T min_dim2_val)
 {
+	if (num_elems == 0)
+	{
+		std::cout << "Tree is empty; nothing to search\n";
+		num_res_elems = 0;
+		return nullptr;
+	}
+
 	size_t res_pt_arr_size = num_elems;
 	PointStructCPUIter<T>* res_pt_arr = new PointStructCPUIter<T>[res_pt_arr_size];
 	num_res_elems = 0;

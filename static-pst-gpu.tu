@@ -317,35 +317,6 @@ __forceinline__ __device__ void StaticPSTGPU<T>::constructNode(T *const &root_d,
 }
 
 template <typename T>
-__forceinline__ __device__ void StaticPSTGPU<T>::splitLeftSearchWork(T *const &root_d, const size_t &num_elem_slots, const size_t &target_node_ind, PointStructGPU<T> *const res_pt_arr_d, const T &max_dim1_val, const T &min_dim2_val, long long *const &search_inds_arr, unsigned char *const &search_codes_arr)
-{
-	// Find next inactive thread by iterating through search_inds_arr atomically
-	// i < blockDim.x check comes before atomicCAS() operation because short-circuit evaluation will ensure atomicCAS() does not write to a point beyond the end of search_inds_arr
-	// atomicCAS(addr, cmp, val) takes the value old := *addr, sets *addr = (old == cmp ? val : old) and returns old; the swap took place iff the return value old == cmp; all calculations are done as one atomic operation
-	// Casting necessary to satisfy atomicCAS()'s signature of unsigned long long
-	size_t i;
-	for (i = 0; i < blockDim.x
-			&& static_cast<long long>(atomicCAS(reinterpret_cast<unsigned long long *>(search_inds_arr + i),
-												static_cast<unsigned long long>(INACTIVE_IND),
-												target_node_ind))
-										!= INACTIVE_IND;
-			i++)
-		{}
-	// Upon exit, i either contains the index of the thread that will report all nodes in the corresponding subtree; or i >= blockDim.x
-	if (i >= blockDim.x)	// No inactive threads; use dynamic parallelism
-	{
-		// report-all searches never become normal searches again, so do not need shared memory for a search_codes_arr, just a search_inds_arr
-		twoSidedLeftSearchGlobal<<<1, blockDim.x, blockDim.x * (sizeof(long long) + sizeof(unsigned char))>>>
-			(root_d, num_elem_slots, target_node_ind, res_pt_arr_d, max_dim1_val, min_dim2_val);
-	}
-	else	// Inactive thread has ID i
-	{
-		search_inds_arr[i] = target_node_ind;
-		search_codes_arr[i] = LEFT_SEARCH;
-	}
-}
-
-template <typename T>
 __forceinline__ __device__ void StaticPSTGPU<T>::do3SidedSearchDelegation(const unsigned char &curr_node_bitcode, T *const &root_d, const size_t &num_elem_slots, PointStructGPU<T> *const res_pt_arr_d, const T &min_dim1_val, const T &max_dim1_val, const T &curr_node_med_dim1_val, const T &min_dim2_val, long long &search_ind, long long *const &search_inds_arr, unsigned char &search_code, unsigned char *const &search_codes_arr)
 {
 	// Splitting of query is only possible if the current node has two children and min_dim1_val <= curr_node_med_dim1_val <= max_dim1_val; the equality on max_dim1_val is for the edge case where a median point may be duplicated, with one copy going to the left subtree and the other to the right subtree
@@ -499,6 +470,35 @@ __forceinline__ __device__ void StaticPSTGPU<T>::doReportAllNodesDelegation(cons
 	else if (TreeNode::hasRightChild(curr_node_bitcode))
 	{
 		search_inds_arr[threadIdx.x] = search_ind = TreeNode::getRightChild(search_ind);
+	}
+}
+
+template <typename T>
+__forceinline__ __device__ void StaticPSTGPU<T>::splitLeftSearchWork(T *const &root_d, const size_t &num_elem_slots, const size_t &target_node_ind, PointStructGPU<T> *const res_pt_arr_d, const T &max_dim1_val, const T &min_dim2_val, long long *const &search_inds_arr, unsigned char *const &search_codes_arr)
+{
+	// Find next inactive thread by iterating through search_inds_arr atomically
+	// i < blockDim.x check comes before atomicCAS() operation because short-circuit evaluation will ensure atomicCAS() does not write to a point beyond the end of search_inds_arr
+	// atomicCAS(addr, cmp, val) takes the value old := *addr, sets *addr = (old == cmp ? val : old) and returns old; the swap took place iff the return value old == cmp; all calculations are done as one atomic operation
+	// Casting necessary to satisfy atomicCAS()'s signature of unsigned long long
+	size_t i;
+	for (i = 0; i < blockDim.x
+			&& static_cast<long long>(atomicCAS(reinterpret_cast<unsigned long long *>(search_inds_arr + i),
+												static_cast<unsigned long long>(INACTIVE_IND),
+												target_node_ind))
+										!= INACTIVE_IND;
+			i++)
+		{}
+	// Upon exit, i either contains the index of the thread that will report all nodes in the corresponding subtree; or i >= blockDim.x
+	if (i >= blockDim.x)	// No inactive threads; use dynamic parallelism
+	{
+		// report-all searches never become normal searches again, so do not need shared memory for a search_codes_arr, just a search_inds_arr
+		twoSidedLeftSearchGlobal<<<1, blockDim.x, blockDim.x * (sizeof(long long) + sizeof(unsigned char))>>>
+			(root_d, num_elem_slots, target_node_ind, res_pt_arr_d, max_dim1_val, min_dim2_val);
+	}
+	else	// Inactive thread has ID i
+	{
+		search_inds_arr[i] = target_node_ind;
+		search_codes_arr[i] = LEFT_SEARCH;
 	}
 }
 

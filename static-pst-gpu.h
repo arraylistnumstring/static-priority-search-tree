@@ -51,6 +51,13 @@ class StaticPSTGPU : public StaticPrioritySearchTree<T>
 
 		virtual PointStructGPU<T>* threeSidedSearch(size_t &num_res_elems, T min_dim1_val, T max_dim1_val, T min_dim2_val)
 		{
+			if (num_elems == 0)
+			{
+				std::cout << "Tree is empty; nothing to search\n";
+				num_res_elems = 0;
+				return nullptr;
+			}
+
 			PointStructGPU<T>* pt_arr_d;
 			gpuErrorCheck(cudaMalloc(&pt_arr_d, num_elems * sizeof(PointStructGPU<T>)),
 							"Error in allocating array to store PointStruct search result on device "
@@ -83,6 +90,13 @@ class StaticPSTGPU : public StaticPrioritySearchTree<T>
 		};
 		virtual PointStructGPU<T>* twoSidedLeftSearch(size_t &num_res_elems, T max_dim1_val, T min_dim2_val)
 		{
+			if (num_elems == 0)
+			{
+				std::cout << "Tree is empty; nothing to search\n";
+				num_res_elems = 0;
+				return nullptr;
+			}
+
 			PointStructGPU<T>* pt_arr_d;
 			gpuErrorCheck(cudaMalloc(&pt_arr_d, num_elems * sizeof(PointStructGPU<T>)),
 							"Error in allocating array to store PointStruct search result on device "
@@ -115,6 +129,13 @@ class StaticPSTGPU : public StaticPrioritySearchTree<T>
 		};
 		virtual PointStructGPU<T>* twoSidedRightSearch(size_t &num_res_elems, T min_dim1_val, T min_dim2_val)
 		{
+			if (num_elems == 0)
+			{
+				std::cout << "Tree is empty; nothing to search\n";
+				num_res_elems = 0;
+				return nullptr;
+			}
+
 			PointStructGPU<T>* pt_arr_d;
 			gpuErrorCheck(cudaMalloc(&pt_arr_d, num_elems * sizeof(PointStructGPU<T>)),
 							"Error in allocating array to store PointStruct search result on device "
