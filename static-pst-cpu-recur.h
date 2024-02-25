@@ -14,7 +14,11 @@ class StaticPSTCPURecur : public StaticPrioritySearchTree<T>
 
 	public:
 		StaticPSTCPURecur(PointStruct<T> *pt_arr, size_t num_elems);
-		virtual ~StaticPSTCPURecur();
+		virtual ~StaticPSTCPURecur()
+		{
+			if (root != nullptr)
+				delete[] root
+		};
 
 		// Printing function for printing operator << to use, as private data members must be accessed in the process
 		// const keyword after method name indicates that the method does not modify any data members of the associated class
@@ -96,10 +100,10 @@ class StaticPSTCPURecur : public StaticPrioritySearchTree<T>
 		void printRecur(std::ostream &os, const TreeNode &subtree_root, std::string prefix, std::string child_prefix) const;
 
 		// Search-related helper functions
-		void reportAllNodes(PointStruct<T> *&pt_arr, size_t &num_res_elems, size_t &pt_arr_size, TreeNode &subtree_root, T min_dim2_val);
 		void threeSidedSearchRecur(PointStruct<T> *&pt_arr, size_t &num_res_elems, size_t &pt_arr_size, TreeNode &subtree_root, T min_dim1_val, T max_dim1_val, T min_dim2_val);
 		void twoSidedLeftSearchRecur(PointStruct<T> *&pt_arr, size_t &num_res_elems, size_t &pt_arr_size, TreeNode &subtree_root, T max_dim1_val, T min_dim2_val);
 		void twoSidedRightSearchRecur(PointStruct<T> *&pt_arr, size_t &num_res_elems, size_t &pt_arr_size, TreeNode &subtree_root, T min_dim1_val, T min_dim2_val);
+		void reportAllNodes(PointStruct<T> *&pt_arr, size_t &num_res_elems, size_t &pt_arr_size, TreeNode &subtree_root, T min_dim2_val);
 
 	// Allow printing operator << to be declared for TreeNode
 	// For friend functions of template classes, for the compiler to recognise the function as a template function, it is necessary to either pre-declare each template friend function before the template class and modify the class-internal function declaration with an additional <> between the operator and the parameter list; or to simply define the friend function when it is declared

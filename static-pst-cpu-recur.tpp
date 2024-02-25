@@ -63,10 +63,18 @@ StaticPSTCPURecur<T>::StaticPSTCPURecur(PointStruct<T> *pt_arr, size_t num_elems
 	populateTreeRecur(*(root), dim1_val_ptr_arr, dim2_val_ptr_arr, num_elems);
 }
 
+// const keyword after method name indicates that the method does not modify any data members of the associated class
 template <typename T>
-StaticPSTCPURecur<T>::~StaticPSTCPURecur()
+void StaticPSTCPURecur<T>::print(std::ostream &os) const
 {
-	delete[] root;
+	if (root == nullptr)
+	{
+		os << "Tree is empty\n";
+		return;
+	}
+	std::string prefix = "";
+	std::string child_prefix = "";
+	printRecur(os, *root, prefix, child_prefix);
 }
 
 template <typename T>
@@ -218,20 +226,6 @@ size_t StaticPSTCPURecur<T>::binarySearch(PointStruct<T> *const *const dim1_val_
 	return -1;	// Element not found
 }
 
-// const keyword after method name indicates that the method does not modify any data members of the associated class
-template <typename T>
-void StaticPSTCPURecur<T>::print(std::ostream &os) const
-{
-	if (root == nullptr)
-	{
-		os << "Tree is empty\n";
-		return;
-	}
-	std::string prefix = "";
-	std::string child_prefix = "";
-	printRecur(os, *root, prefix, child_prefix);
-}
-
 template <typename T>
 void StaticPSTCPURecur<T>::printRecur(std::ostream &os, const TreeNode &subtree_root, std::string prefix, std::string child_prefix) const
 {
@@ -249,23 +243,6 @@ void StaticPSTCPURecur<T>::printRecur(std::ostream &os, const TreeNode &subtree_
 	{
 		printRecur(os, subtree_root.getLeftChild(root), '\n' + child_prefix + "└─(L)─ ", child_prefix + "       ");
 	}
-}
-
-template <typename T>
-void StaticPSTCPURecur<T>::reportAllNodes(PointStruct<T> *&pt_arr, size_t &num_res_elems, size_t &pt_arr_size, TreeNode &subtree_root, T min_dim2_val)
-{
-	if (min_dim2_val > subtree_root.pt.dim2_val) return;	// No more nodes to report
-
-	// Allow polymorphism to determine which type of PointStruct needs to be instantiated to capture all relevant information
-	pt_arr[num_res_elems++] = subtree_root.pt;
-	// Dynamically resize array
-	if (num_res_elems == pt_arr_size)
-		PointStruct<T>::resizePointStructArray(pt_arr, pt_arr_size, pt_arr_size << 1);
-
-	if (subtree_root.hasLeftChild())
-		reportAllNodes(pt_arr, num_res_elems, pt_arr_size, subtree_root.getLeftChild(root), min_dim2_val);
-	if (subtree_root.hasRightChild())
-		reportAllNodes(pt_arr, num_res_elems, pt_arr_size, subtree_root.getRightChild(root), min_dim2_val);
 }
 
 template <typename T>
@@ -362,4 +339,21 @@ void StaticPSTCPURecur<T>::twoSidedRightSearchRecur(PointStruct<T> *&pt_arr, siz
 	// Only right subtree dimension-1 values can be valid
 	else if (subtree_root.hasRightChild())
 		twoSidedRightSearchRecur(pt_arr, num_res_elems, pt_arr_size, subtree_root.getRightChild(root), min_dim1_val, min_dim2_val);
+}
+
+template <typename T>
+void StaticPSTCPURecur<T>::reportAllNodes(PointStruct<T> *&pt_arr, size_t &num_res_elems, size_t &pt_arr_size, TreeNode &subtree_root, T min_dim2_val)
+{
+	if (min_dim2_val > subtree_root.pt.dim2_val) return;	// No more nodes to report
+
+	// Allow polymorphism to determine which type of PointStruct needs to be instantiated to capture all relevant information
+	pt_arr[num_res_elems++] = subtree_root.pt;
+	// Dynamically resize array
+	if (num_res_elems == pt_arr_size)
+		PointStruct<T>::resizePointStructArray(pt_arr, pt_arr_size, pt_arr_size << 1);
+
+	if (subtree_root.hasLeftChild())
+		reportAllNodes(pt_arr, num_res_elems, pt_arr_size, subtree_root.getLeftChild(root), min_dim2_val);
+	if (subtree_root.hasRightChild())
+		reportAllNodes(pt_arr, num_res_elems, pt_arr_size, subtree_root.getRightChild(root), min_dim2_val);
 }
