@@ -78,113 +78,19 @@ StaticPSTCPUIter<T>::StaticPSTCPUIter(PointStructCPUIter<T> *const &pt_arr, size
 	delete[] dim2_val_ind_arr;
 }
 
-// static keyword should only be used when declaring a function in the header file
+// const keyword after method name indicates that the method does not modify any data members of the associated class
 template <typename T>
-void StaticPSTCPUIter<T>::constructNode(T *const &root,
-										const size_t &num_elem_slots,
-										PointStructCPUIter<T> *const &pt_arr,
-										size_t &target_node_ind,
-										const size_t &num_elems,
-										size_t *const &dim1_val_ind_arr,
-										size_t *&dim2_val_ind_arr,
-										size_t *&dim2_val_ind_arr_secondary,
-										const size_t &max_dim2_val_dim1_array_ind,
-										std::stack<size_t> &subelems_start_inds,
-										std::stack<size_t> &num_subelems_stack,
-										size_t &left_subarr_num_elems,
-										size_t &right_subarr_start_ind,
-										size_t &right_subarr_num_elems)
+void StaticPSTCPUIter<T>::print(std::ostream &os) const
 {
-	size_t median_dim1_val_ind;
-
-	// Treat dim1_val_ind_arr_ind[max_dim2_val_dim1_array_ind] as a removed element (but don't actually remove the element for performance reasons
-
-	if (num_subelems_stack.top() == 1)		// Base case
+	if (num_elem_slots == 0)
 	{
-		median_dim1_val_ind = subelems_start_inds.top();
-		left_subarr_num_elems = 0;
-		right_subarr_num_elems = 0;
-	}
-	// max_dim2_val originally comes from the part of the array to the left of median_dim1_val
-	else if (max_dim2_val_dim1_array_ind < subelems_start_inds.top() + num_subelems_stack.top()/2)
-	{
-		// As median values are always put in the left subtree, when the subroot value comes from the left subarray, the median index is given by num_elems/2, which evenly splits the array if there are an even number of elements remaining or makes the left subtree larger by one element if there are an odd number of elements remaining
-		median_dim1_val_ind = subelems_start_inds.top()
-								+ num_subelems_stack.top()/2;
-		// max_dim2_val has been removed from the left subarray, so there are median_dim1_val_ind elements remaining on the left side
-		left_subarr_num_elems = median_dim1_val_ind - subelems_start_inds.top();
-		right_subarr_num_elems = subelems_start_inds.top() + num_subelems_stack.top()
-									- median_dim1_val_ind - 1;
-	}
-	/*
-		max_dim2_val originally comes from the part of the array to the right of median_dim1_val, i.e.
-			max_dim2_val_dim1_array_ind >= subelems_start_inds.top() + num_subelems_stack.top()/2
-	*/
-	else
-	{
-		median_dim1_val_ind = subelems_start_inds.top()
-								+ num_subelems_stack.top()/2 - 1;
-
-		left_subarr_num_elems = median_dim1_val_ind - subelems_start_inds.top() + 1;
-		right_subarr_num_elems = subelems_start_inds.top() + num_subelems_stack.top()
-									- median_dim1_val_ind - 2;
+		os << "Tree is empty\n";
+		return;
 	}
 
-	setNode(root, target_node_ind, num_elem_slots,
-			pt_arr[dim2_val_ind_arr[subelems_start_inds.top()]],
-			pt_arr[dim1_val_ind_arr[median_dim1_val_ind]].dim1_val);
-
-	if (left_subarr_num_elems > 0)
-	{
-		TreeNode::setLeftChild(getBitcodesRoot(root, num_elem_slots), target_node_ind);
-
-		// Always place median value in left subtree
-		// max_dim2_val is to the left of median_dim1_val in dim1_val_ind_arr; shift all entries up to median_dim1_val_ind leftward, overwriting max_dim2_val_dim1_array_ind
-		if (max_dim2_val_dim1_array_ind < median_dim1_val_ind)
-			// memcpy() is undefined if the source and destination regions overlap, and the safe memmove() (that behaves as if the source values were first copied to an intermediate array) does not exist on CUDA within kernel code
-			for (size_t i = max_dim2_val_dim1_array_ind; i < median_dim1_val_ind; i++)
-				dim1_val_ind_arr[i] = dim1_val_ind_arr[i+1];
-		// Otherwise, max_dim2_val is to the right of median_dim1_val_ind in dim1_val_ind_arr; leave left subarray as is
-	}
-	if (right_subarr_num_elems > 0)
-	{
-		TreeNode::setRightChild(getBitcodesRoot(root, num_elem_slots), target_node_ind);
-
-		// max_dim2_val is to the right of median_dim1_val_ind in dim1_val_ind_arr; shift all entries after max_dim2_val_dim1_array_ind leftward, overwriting max_dim2_val_array_ind
-		if (max_dim2_val_dim1_array_ind > median_dim1_val_ind)
-			for (size_t i = max_dim2_val_dim1_array_ind;
-					i < subelems_start_inds.top() + num_subelems_stack.top() - 1;
-					i++)
-				dim1_val_ind_arr[i] = dim1_val_ind_arr[i+1];
-		// Otherwise, max_dim2_val is to the left of median_dim1_val in dim1_val_ind_arr; leave right subarray as is
-	}
-
-
-	// Choose median_dim1_val_ind + 1 as the starting index for all right subarrays, as this is the only index that is valid no matter whether max_dim2_val is to the left or right of med_dim1_val
-	right_subarr_start_ind = median_dim1_val_ind + 1;
-
-
-	// Iterate through dim2_val_ind_arr, placing data with lower dimension-1 value in the subarray for the left subtree and data with higher dimension-1 value in the subarray for the right subtree
-	// Note that because subarrays' sizes were allocated based on this same data, there should not be a need to check that left_dim2_subarr_iter_ind < left_subarr_num_elems (and similarly for the right side)
-	if (TreeNode::hasChildren(getBitcodesRoot(root, num_elem_slots)[target_node_ind]))
-	{
-		size_t left_dim2_subarr_iter_ind = subelems_start_inds.top();
-		size_t right_dim2_subarr_iter_ind = right_subarr_start_ind;
-
-		// Skip over first (largest) element in dim2_val_ind_arr, as it has already been placed in the current node
-		for (size_t i = subelems_start_inds.top() + 1;
-				i < subelems_start_inds.top() + num_subelems_stack.top();
-				i++)
-		{
-			// dim2_val_ind_arr[i] is the index of a PointStructCPUIter that comes before or is the PointStructCPUIter of median dim1 value in dim1_val_ind_arr
-			if (pt_arr[dim2_val_ind_arr[i]].compareDim1(pt_arr[dim1_val_ind_arr[median_dim1_val_ind]]) <= 0)
-				// Postfix ++ returns the current value before incrementing
-				dim2_val_ind_arr_secondary[left_dim2_subarr_iter_ind++] = dim2_val_ind_arr[i];
-			// dim2_val_ind_arr[i] is the index of a PointStructCPUIter that comes after the PointStructCPUIter of median dim1 value in dim1_val_ind_arr
-			else
-				dim2_val_ind_arr_secondary[right_dim2_subarr_iter_ind++] = dim2_val_ind_arr[i];
-		}
-	}
+	std::string prefix = "";
+	std::string child_prefix = "";
+	printRecur(os, root, 0, num_elem_slots, prefix, child_prefix);
 }
 
 template <typename T>
@@ -311,6 +217,115 @@ PointStructCPUIter<T>* StaticPSTCPUIter<T>::twoSidedRightSearch(size_t &num_res_
 	return res_pt_arr;
 }
 
+// static keyword should only be used when declaring a function in the header file
+template <typename T>
+void StaticPSTCPUIter<T>::constructNode(T *const &root,
+										const size_t &num_elem_slots,
+										PointStructCPUIter<T> *const &pt_arr,
+										size_t &target_node_ind,
+										const size_t &num_elems,
+										size_t *const &dim1_val_ind_arr,
+										size_t *&dim2_val_ind_arr,
+										size_t *&dim2_val_ind_arr_secondary,
+										const size_t &max_dim2_val_dim1_array_ind,
+										std::stack<size_t> &subelems_start_inds,
+										std::stack<size_t> &num_subelems_stack,
+										size_t &left_subarr_num_elems,
+										size_t &right_subarr_start_ind,
+										size_t &right_subarr_num_elems)
+{
+	size_t median_dim1_val_ind;
+
+	// Treat dim1_val_ind_arr_ind[max_dim2_val_dim1_array_ind] as a removed element (but don't actually remove the element for performance reasons
+
+	if (num_subelems_stack.top() == 1)		// Base case
+	{
+		median_dim1_val_ind = subelems_start_inds.top();
+		left_subarr_num_elems = 0;
+		right_subarr_num_elems = 0;
+	}
+	// max_dim2_val originally comes from the part of the array to the left of median_dim1_val
+	else if (max_dim2_val_dim1_array_ind < subelems_start_inds.top() + num_subelems_stack.top()/2)
+	{
+		// As median values are always put in the left subtree, when the subroot value comes from the left subarray, the median index is given by num_elems/2, which evenly splits the array if there are an even number of elements remaining or makes the left subtree larger by one element if there are an odd number of elements remaining
+		median_dim1_val_ind = subelems_start_inds.top()
+								+ num_subelems_stack.top()/2;
+		// max_dim2_val has been removed from the left subarray, so there are median_dim1_val_ind elements remaining on the left side
+		left_subarr_num_elems = median_dim1_val_ind - subelems_start_inds.top();
+		right_subarr_num_elems = subelems_start_inds.top() + num_subelems_stack.top()
+									- median_dim1_val_ind - 1;
+	}
+	/*
+		max_dim2_val originally comes from the part of the array to the right of median_dim1_val, i.e.
+			max_dim2_val_dim1_array_ind >= subelems_start_inds.top() + num_subelems_stack.top()/2
+	*/
+	else
+	{
+		median_dim1_val_ind = subelems_start_inds.top()
+								+ num_subelems_stack.top()/2 - 1;
+
+		left_subarr_num_elems = median_dim1_val_ind - subelems_start_inds.top() + 1;
+		right_subarr_num_elems = subelems_start_inds.top() + num_subelems_stack.top()
+									- median_dim1_val_ind - 2;
+	}
+
+	setNode(root, target_node_ind, num_elem_slots,
+			pt_arr[dim2_val_ind_arr[subelems_start_inds.top()]],
+			pt_arr[dim1_val_ind_arr[median_dim1_val_ind]].dim1_val);
+
+	if (left_subarr_num_elems > 0)
+	{
+		TreeNode::setLeftChild(getBitcodesRoot(root, num_elem_slots), target_node_ind);
+
+		// Always place median value in left subtree
+		// max_dim2_val is to the left of median_dim1_val in dim1_val_ind_arr; shift all entries up to median_dim1_val_ind leftward, overwriting max_dim2_val_dim1_array_ind
+		if (max_dim2_val_dim1_array_ind < median_dim1_val_ind)
+			// memcpy() is undefined if the source and destination regions overlap, and the safe memmove() (that behaves as if the source values were first copied to an intermediate array) does not exist on CUDA within kernel code
+			for (size_t i = max_dim2_val_dim1_array_ind; i < median_dim1_val_ind; i++)
+				dim1_val_ind_arr[i] = dim1_val_ind_arr[i+1];
+		// Otherwise, max_dim2_val is to the right of median_dim1_val_ind in dim1_val_ind_arr; leave left subarray as is
+	}
+	if (right_subarr_num_elems > 0)
+	{
+		TreeNode::setRightChild(getBitcodesRoot(root, num_elem_slots), target_node_ind);
+
+		// max_dim2_val is to the right of median_dim1_val_ind in dim1_val_ind_arr; shift all entries after max_dim2_val_dim1_array_ind leftward, overwriting max_dim2_val_array_ind
+		if (max_dim2_val_dim1_array_ind > median_dim1_val_ind)
+			for (size_t i = max_dim2_val_dim1_array_ind;
+					i < subelems_start_inds.top() + num_subelems_stack.top() - 1;
+					i++)
+				dim1_val_ind_arr[i] = dim1_val_ind_arr[i+1];
+		// Otherwise, max_dim2_val is to the left of median_dim1_val in dim1_val_ind_arr; leave right subarray as is
+	}
+
+
+	// Choose median_dim1_val_ind + 1 as the starting index for all right subarrays, as this is the only index that is valid no matter whether max_dim2_val is to the left or right of med_dim1_val
+	right_subarr_start_ind = median_dim1_val_ind + 1;
+
+
+	// Iterate through dim2_val_ind_arr, placing data with lower dimension-1 value in the subarray for the left subtree and data with higher dimension-1 value in the subarray for the right subtree
+	// Note that because subarrays' sizes were allocated based on this same data, there should not be a need to check that left_dim2_subarr_iter_ind < left_subarr_num_elems (and similarly for the right side)
+	if (TreeNode::hasChildren(getBitcodesRoot(root, num_elem_slots)[target_node_ind]))
+	{
+		size_t left_dim2_subarr_iter_ind = subelems_start_inds.top();
+		size_t right_dim2_subarr_iter_ind = right_subarr_start_ind;
+
+		// Skip over first (largest) element in dim2_val_ind_arr, as it has already been placed in the current node
+		for (size_t i = subelems_start_inds.top() + 1;
+				i < subelems_start_inds.top() + num_subelems_stack.top();
+				i++)
+		{
+			// dim2_val_ind_arr[i] is the index of a PointStructCPUIter that comes before or is the PointStructCPUIter of median dim1 value in dim1_val_ind_arr
+			if (pt_arr[dim2_val_ind_arr[i]].compareDim1(pt_arr[dim1_val_ind_arr[median_dim1_val_ind]]) <= 0)
+				// Postfix ++ returns the current value before incrementing
+				dim2_val_ind_arr_secondary[left_dim2_subarr_iter_ind++] = dim2_val_ind_arr[i];
+			// dim2_val_ind_arr[i] is the index of a PointStructCPUIter that comes after the PointStructCPUIter of median dim1 value in dim1_val_ind_arr
+			else
+				dim2_val_ind_arr_secondary[right_dim2_subarr_iter_ind++] = dim2_val_ind_arr[i];
+		}
+	}
+}
+
 template <typename T>
 size_t StaticPSTCPUIter<T>::calcTotArrSizeNumTs(const size_t num_elem_slots)
 {
@@ -366,21 +381,6 @@ long long StaticPSTCPUIter<T>::binarySearch(PointStructCPUIter<T> *const &pt_arr
 			low_ind = mid_ind + 1;
 	}
 	return -1;	// Element not found
-}
-
-// const keyword after method name indicates that the method does not modify any data members of the associated class
-template <typename T>
-void StaticPSTCPUIter<T>::print(std::ostream &os) const
-{
-	if (num_elem_slots == 0)
-	{
-		os << "Tree is empty\n";
-		return;
-	}
-
-	std::string prefix = "";
-	std::string child_prefix = "";
-	printRecur(os, root, 0, num_elem_slots, prefix, child_prefix);
 }
 
 template <typename T>

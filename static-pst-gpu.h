@@ -234,10 +234,6 @@ class StaticPSTGPU : public StaticPrioritySearchTree<T>
 
 		void printRecur(std::ostream &os, T *const &tree_root, const size_t curr_ind, const size_t num_elem_slots, std::string prefix, std::string child_prefix) const;
 
-	
-
-
-
 
 		/*
 			Implicit tree structure, with field-major orientation of nodes; all values are stored in one contiguous array on device
