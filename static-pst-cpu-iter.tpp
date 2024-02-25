@@ -458,7 +458,8 @@ void StaticPSTCPUIter<T>::constructNode(T *const &root,
 	}
 }
 
-void do3SidedSearchDelegation(const unsigned char &curr_node_bitcode, T min_dim1_val, T max_dim1_val, T curr_node_med_dim1_val, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack)
+template <typename T>
+void StaticPSTCPUIter<T>::do3SidedSearchDelegation(const unsigned char &curr_node_bitcode, T min_dim1_val, T max_dim1_val, T curr_node_med_dim1_val, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack)
 {
 	// Splitting of query is only possible if the current node has two children and min_dim1_val <= curr_node_med_dim1_val <= max_dim1_val; the equality on max_dim1_val is for the edge case where a median point may be duplicated, with one copy going to the left subtree and the other to the right subtree
 	if (min_dim1_val <= curr_node_med_dim1_val
@@ -494,7 +495,8 @@ void do3SidedSearchDelegation(const unsigned char &curr_node_bitcode, T min_dim1
 	}
 }
 
-void doLeftSearchDelegation(const bool range_split_poss, const unsigned char &curr_node_bitcode, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack)
+template <typename T>
+void StaticPSTCPUIter<T>::doLeftSearchDelegation(const bool range_split_poss, const unsigned char &curr_node_bitcode, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack)
 {
 	// Report all nodes in left subtree, "recurse" search on right
 	// Though the upper bound of the dimension-1 search range is typically open, if there are duplicates of the median point and one happens to be allocated to each subtree, both trees must be traversed for correctness
@@ -522,7 +524,8 @@ void doLeftSearchDelegation(const bool range_split_poss, const unsigned char &cu
 	}
 }
 
-void doRightSearchDelegation(const bool range_split_poss, const unsigned char &curr_node_bitcode, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack)
+template <typename T>
+void StaticPSTCPUIter<T>::doRightSearchDelegation(const bool range_split_poss, const unsigned char &curr_node_bitcode, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack)
 {
 	// Report all nodes in right subtree, "recurse" search on left
 	if (range_split_poss)
@@ -549,7 +552,8 @@ void doRightSearchDelegation(const bool range_split_poss, const unsigned char &c
 	}
 }
 
-void doReportAllNodesDelegation(const unsigned char &curr_node_bitcode, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack)
+template <typename T>
+void StaticPSTCPUIter<T>::doReportAllNodesDelegation(const unsigned char &curr_node_bitcode, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack)
 {
 	if (TreeNode::hasLeftChild(curr_node_bitcode))
 	{

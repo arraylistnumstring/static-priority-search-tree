@@ -60,7 +60,7 @@ struct PointStruct
 		return dim1_val == other.dim1_val && dim2_val == other.dim2_val;
 	};
 
-	virtual static void resizePointStructArray(PointStruct<T> *&pt_arr, size_t &pt_arr_size, const size_t new_pt_arr_size)
+	static void resizePointStructArray(PointStruct<T> *&pt_arr, size_t &pt_arr_size, const size_t new_pt_arr_size)
 	{
 		PointStruct<T> *new_pt_arr = new PointStruct<T>[new_pt_arr_size];
 		if (new_pt_arr_size < pt_arr_size)	// Shrinking array
