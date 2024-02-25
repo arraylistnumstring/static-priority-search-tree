@@ -9,3 +9,6 @@
 *.out
 *.swo
 *.swp
+
+archival/*
+compilation-testing/*
