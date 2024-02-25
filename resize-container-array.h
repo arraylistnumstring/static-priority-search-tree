@@ -1,5 +1,5 @@
-#ifndef RESIZE_ARRAY_H
-#define RESIZE_ARRAY_H
+#ifndef RESIZE_CONTAINER_ARRAY_H
+#define RESIZE_CONTAINER_ARRAY_H
 
 #include <cstring>		// To use memcpy()
 
