@@ -106,7 +106,52 @@ PointStructCPUIter<T>* StaticPSTCPUIter<T>::threeSidedSearch(size_t &num_res_ele
 	size_t res_pt_arr_size = num_elems;
 	PointStructCPUIter<T>* res_pt_arr = new PointStructCPUIter<T>[res_pt_arr_size];
 	num_res_elems = 0;
-	// TODO: search
+
+	std::stack<long long> search_inds_stack;
+	std::stack<unsigned char> search_codes_stack;
+
+	search_inds_stack.push(0);
+	search_codes_stack.push(THREE_SEARCH);
+
+	long long search_ind;
+	unsigned char search_code;
+
+	T curr_node_dim1_val;
+	T curr_node_dim2_val;
+	T curr_node_med_dim1_val;
+	unsigned char curr_node_bitcode;
+
+	// Stacks are synchronised, so 1 stack is empty exactly when both are
+	while (!search_inds_stack.empty())
+	{
+		search_ind = search_inds_stack.top();
+		search_inds_stack.pop();
+		search_code = search_codes_stack.top();
+		search_codes_stack.pop();
+
+		// Note that because this program is single-threaded, there is never a chance of inactivity, as the lone thread only terminates when there is no more work to be done; hence, there is no INACTIVE_IND check (when comparing to the analogous GPU version)
+		curr_node_dim1_val = getDim1ValsRoot(root, num_elem_slots)[search_ind];
+		curr_node_dim2_val = getDim2ValsRoot(root, num_elem_slots)[search_ind];
+		curr_node_med_dim1_val = getMedDim1ValsRoot(root, num_elem_slots)[search_ind];
+		curr_node_bitcode = getBitcodesRoot(root, num_elem_slots)[search_ind];
+
+		// Only process node if its dimension-2 value satisfies the dimension-2 search bound
+		if (min_dim2_val <= curr_node_dim2_val)
+		{
+			// Check if current node satisfies query and should be reported
+			if (min_dim1_val <= curr_node_dim1_val
+					&& curr_node_dim1_val <= max_dim1_val)
+			{
+				res_pt_arr[num_res_elems].dim1_val = curr_node_dim1_val;
+				res_pt_arr[num_res_elems].dim2_val = curr_node_dim2_val;
+				num_res_elems++;
+			}
+
+			// Delegation/further activity down this branch necessary only if this node has children satisfying the search range and can therefore be searched
+			if (TreeNode::hasCildren(curr_node_bitcode)
+					&& )
+		}
+	}
 
 	// Ensure that no more memory is taken up than needed
 	if (res_pt_arr_size > num_res_elems)
@@ -208,7 +253,65 @@ PointStructCPUIter<T>* StaticPSTCPUIter<T>::twoSidedRightSearch(size_t &num_res_
 	size_t res_pt_arr_size = num_elems;
 	PointStructCPUIter<T>* res_pt_arr = new PointStructCPUIter<T>[res_pt_arr_size];
 	num_res_elems = 0;
-	// TODO: search
+
+	std::stack<long long> search_inds_stack;
+	std::stack<unsigned char> search_codes_stack;
+
+	search_inds_stack.push(0);
+	search_codes_stack.push(LEFT_SEARCH);
+
+	long long search_ind;
+	unsigned char search_code;
+
+	T curr_node_dim1_val;
+	T curr_node_dim2_val;
+	T curr_node_med_dim1_val;
+	unsigned char curr_node_bitcode;
+
+	// Stacks are synchronised, so 1 stack is empty exactly when both are
+	while (!search_inds_stack.empty())
+	{
+		search_ind = search_inds_stack.top();
+		search_inds_stack.pop();
+		search_code = search_codes_stack.top();
+		search_codes_stack.pop();
+
+		// Note that because this program is single-threaded, there is never a chance of inactivity, as the lone thread only terminates when there is no more work to be done; hence, there is no INACTIVE_IND check (when comparing to the analogous GPU version)
+		curr_node_dim1_val = getDim1ValsRoot(root, num_elem_slots)[search_ind];
+		curr_node_dim2_val = getDim2ValsRoot(root, num_elem_slots)[search_ind];
+		curr_node_med_dim1_val = getMedDim1ValsRoot(root, num_elem_slots)[search_ind];
+		curr_node_bitcode = getBitcodesRoot(root, num_elem_slots)[search_ind];
+
+		// Only process node if its dimension-2 value satisfies the dimension-2 search bound
+		if (min_dim2_val <= curr_node_dim2_val)
+		{
+			// Check if current node satisfies query and should be reported
+			if (curr_node_dim1_val >= min_dim1_val)
+			{
+				res_pt_arr[num_res_elems].dim1_val = curr_node_dim1_val;
+				res_pt_arr[num_res_elems].dim2_val = curr_node_dim2_val;
+				num_res_elems++;
+			}
+
+			// Delegation/further activity down this branch necessary only if this node has children and can therefore be searched
+			if (TreeNode::hasChildren(curr_node_bitcode))
+			{
+				if (search_code == RIGHT_SEARCH)
+				{
+					doRightSearchDelegation(curr_node_med_dim1_val >= min_dim1_val,
+											curr_node_bitcode,
+											search_ind, search_inds_stack,
+											search_codes_stack);
+				}
+				else	// Already a report all-type query
+				{
+					doReportAllNodesDelegation(curr_node_bitcode,
+												search_ind, search_inds_stack,
+												search_codes_stack);
+				}
+			}
+		}
+	}
 
 	// Ensure that no more memory is taken up than needed
 	if (res_pt_arr_size > num_res_elems)
@@ -323,6 +426,81 @@ void StaticPSTCPUIter<T>::constructNode(T *const &root,
 			else
 				dim2_val_ind_arr_secondary[right_dim2_subarr_iter_ind++] = dim2_val_ind_arr[i];
 		}
+	}
+}
+
+
+void do3SidedSearchDelegation()
+{
+
+}
+
+void doLeftSearchDelegation(const bool range_split_poss, const unsigned char &curr_node_bitcode, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack)
+{
+	// Report all nodes in left subtree, "recurse" search on right
+	// Though the upper bound of the dimension-1 search range is typically open, if there are duplicates of the median point and one happens to be allocated to each subtree, both trees must be traversed for correctness
+	if (range_split_poss)
+	{
+		// If current node has left child, report all on left child
+		if (TreeNode::hasLeftChild(curr_node_bitcode))
+		{
+			search_inds_stack.push(TreeNode::getLeftChild(search_ind));
+			search_codes_stack.push(REPORT_ALL);
+		}
+		// If current node has right child, search right child
+		if (TreeNode::hasRightChild(curr_node_bitcode))
+		{
+			search_inds_stack.push(TreeNode::getRightChild(search_ind));
+			search_codes_stack.push(LEFT_SEARCH);
+		}
+	}
+	// !range_split_poss
+	// Only left subtree can possibly contain valid entries; search left subtree
+	else if (TreeNode::hasLeftChild(curr_node_bitcode))
+	{
+		search_inds_stack.push(TreeNode::getLeftChild(search_ind));
+		search_codes_stack.push(LEFT_SEARCH);
+	}
+}
+
+void doRightSearchDelegation(const bool range_split_poss, const unsigned char &curr_node_bitcode, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack)
+{
+	// Report all nodes in right subtree, "recurse" search on left
+	if (range_split_poss)
+	{
+		// If current node has left child, search left child
+		if (TreeNode::hasLeftChild(curr_node_bitcode))
+		{
+			search_inds_stack.push(TreeNode::getLeftChild(search_ind));
+			search_codes_stack.push(RIGHT_SEARCH);
+		}
+		// If current node has right child, report all on right child
+		if (TreeNode::hasRightChild(curr_node_bitcode))
+		{
+			search_inds_stack.push(TreeNode::getRightChild(search_ind));
+			search_codes_stack.push(REPORT_ALL);
+		}
+	}
+	// !range_split_poss
+	// Only right subtree can possibly contain valid entries; search right subtree
+	else if (TreeNode::hasRightChild(curr_node_bitcode))
+	{
+		search_inds_stack.push(TreeNode::getRightChild(search_ind));
+		search_codes_stack.push(RIGHT_SEARCH);
+	}
+}
+
+void doReportAllNodesDelegation(const unsigned char &curr_node_bitcode, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack)
+{
+	if (TreeNode::hasLeftChild(curr_node_bitcode))
+	{
+		search_inds_stack.push(TreeNode::getLeftChild(search_ind));
+		search_codes_stack.push(REPORT_ALL);
+	}
+	if (TreeNode::hasRightChild(curr_node_bitcode))
+	{
+		search_inds_stack.push(TreeNode::getRightChild(search_ind));
+		search_codes_stack.push(REPORT_ALL);
 	}
 }
 

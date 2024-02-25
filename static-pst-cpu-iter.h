@@ -63,7 +63,7 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T>
 		// Helper functions for tracking work to be completed
 		void do3SidedSearchDelegation();
 		void doLeftSearchDelegation(const bool range_split_poss, const unsigned char &curr_node_bitcode, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack);
-		void doRightSearchDelegation();
+		void doRightSearchDelegation(const bool range_split_poss, const unsigned char &curr_node_bitcode, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack);
 		void doReportAllNodesDelegation(const unsigned char &curr_node_bitcode, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack);
 
 		// Helper functions for getting start indices for various arrays
