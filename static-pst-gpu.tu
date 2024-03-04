@@ -163,8 +163,8 @@ StaticPSTGPU<T>::StaticPSTGPU(PointStructGPU<T> *const &pt_arr, size_t num_elems
 	thrust::sort(thrust::device, dim1_val_ind_arr_d, dim1_val_ind_arr_d + num_elems,
 					[] __host__ __device__ (PointStructGPU<T> *const &pt_arr_d)
 						{
-							// [&] captures all variables in enclosing scope by reference so that they can be used within the body of the lambda function
-							return [&](const size_t &i, const size_t &j)
+							// [=] captures all variables in enclosing scope by value so that they can be used within the body of the lambda function; capturing by reference ([&]) is not allowed in an extended __host__ __device__ lambda
+							return [=] __host__ __device__ (const size_t &i, const size_t &j)
 								{
 									return pt_arr_d[i].compareDim1(pt_arr_d[j]) < 0;
 								};
@@ -174,7 +174,7 @@ StaticPSTGPU<T>::StaticPSTGPU(PointStructGPU<T> *const &pt_arr, size_t num_elems
 	thrust::sort(thrust::device, dim2_val_ind_arr_d, dim2_val_ind_arr_d + num_elems,
 				[] __host__ __device__ (PointStructGPU<T> *const &pt_arr_d)
 					{
-						return [&](const size_t &i, const size_t &j)
+						return [=] __host__ __device__ (const size_t &i, const size_t &j)
 							{
 								return pt_arr_d[i].compareDim2(pt_arr_d[j]) > 0;
 							};
