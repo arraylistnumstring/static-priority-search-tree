@@ -161,24 +161,11 @@ StaticPSTGPU<T>::StaticPSTGPU(PointStructGPU<T> *const &pt_arr, size_t num_elems
 
 	// Sort dimension-1 values index array in ascending order; in-place sort using a curried comparison function; guaranteed O(n) running time or better
 	thrust::sort(thrust::device, dim1_val_ind_arr_d, dim1_val_ind_arr_d + num_elems,
-					[] __host__ __device__ (PointStructGPU<T> *const &pt_arr_d)
-						{
-							// [=] captures all variables in enclosing scope by value so that they can be used within the body of the lambda function; capturing by reference ([&]) is not allowed in an extended __host__ __device__ lambda
-							return [=] __host__ __device__ (const size_t &i, const size_t &j)
-								{
-									return pt_arr_d[i].compareDim1(pt_arr_d[j]) < 0;
-								};
-						}(pt_arr_d));	// Parentheses immediately after a lambda definition serves to call it with the given parameter
+					Dim1ValIndCompIncOrd(pt_arr_d));
 
 	// Sort dimension-2 values index array in descending order; in-place sort using a curried comparison function; guaranteed O(n) running time or better
 	thrust::sort(thrust::device, dim2_val_ind_arr_d, dim2_val_ind_arr_d + num_elems,
-				[] __host__ __device__ (PointStructGPU<T> *const &pt_arr_d)
-					{
-						return [=] __host__ __device__ (const size_t &i, const size_t &j)
-							{
-								return pt_arr_d[i].compareDim2(pt_arr_d[j]) > 0;
-							};
-					}(pt_arr_d));
+					Dim2ValIndCompDecOrd(pt_arr_d));
 
 	// Populate tree with a number of threads that is a multiple of the warp size
 	populateTree<<<1, dev_warp_size, dev_warp_size * sizeof(size_t) * 3>>>
