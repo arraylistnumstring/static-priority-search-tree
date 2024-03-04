@@ -7,13 +7,15 @@ Tested on NYU's Greene HPC
 To compile testers, run:
 
 	module load cuda-11.6
-	source tester-compiler.sh -rdc=true -std=c++11
+	source tester-compiler.sh -rdc=true -std=c++14
 
 For debugging options, use:
 - `-DDEBUG` to toggle DEBUG preprocessor flag and corresponding print output to aid with debugging variables that are inaccessible via gdb
 - `-G` to get debugging info about device code (turns off all optimisations; is incompatible with and overrides `-lineinfo`)
 - `-g` to get debugging info about host code
 - `-lineinfo` to get info on which lines are causing errors
+
+Standard is set to C++14 because Thrust has deprecated older versions of C++ and because this allows use of simpler auto return types.
 
 
 To run these testers individually, please go to `testers/`, choose one of the subfolders, and execute the `*tester.out` files.
