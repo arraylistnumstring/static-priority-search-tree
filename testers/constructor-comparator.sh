@@ -21,7 +21,7 @@ do
 		# For command-line arguments of index higher than 9, use curly braces to set them off
 		"${10}" ${@:1:3} $i $j > "$8" &
 		"${11}" ${@:1:3} $i $j > "$9" &
-		if [ $# -lt 9 ]; then
+		if [ $# -lt 12 ]; then
 			diff "$8" "$9"
 		else
 			diff "$8" "$9" > "${12}"
