@@ -1,12 +1,16 @@
 # Static Priority Search Tree on GPU
 
-Runs on CUDA 11.6.2
+Runs on CUDA 12.2.2
 
-Tested on NYU's Greene HPC
+Tested on NYU's Greene HPC, where accessing nvcc version 12.2.2 requires running
+
+	singularity shell --nv /scratch/work/public/singularity/cuda12.2.2-cudnn8.9.4-devel-ubuntu22.04.3.sif
+
+and running commmands within the Singularity interface.
+
 
 To compile testers, run:
 
-	module load cuda-11.6
 	source tester-compiler.sh -rdc=true -std=c++14
 
 For debugging options, use:
