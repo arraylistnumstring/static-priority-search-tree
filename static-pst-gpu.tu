@@ -498,12 +498,12 @@ __forceinline__ __device__ void StaticPSTGPU<T>::splitLeftSearchWork(T *const &r
 												target_node_ind))
 										!= INACTIVE_IND;
 			i++)
-		{}
+	{}
 	// Upon exit, i either contains the index of the thread that will report all nodes in the corresponding subtree; or i >= blockDim.x
 	if (i >= blockDim.x)	// No inactive threads; use dynamic parallelism
 	{
 		// report-all searches never become normal searches again, so do not need shared memory for a search_codes_arr, just a search_inds_arr
-		twoSidedLeftSearchGlobal<<<1, blockDim.x, blockDim.x * (sizeof(long long) + sizeof(unsigned char))>>>
+		twoSidedLeftSearchGlobal<<<1, blockDim.x, blockDim.x * (sizeof(long long) + sizeof(unsigned char)), cudaStreamFireAndForget>>>
 			(root_d, num_elem_slots, target_node_ind, res_pt_arr_d, max_dim1_val, min_dim2_val);
 	}
 	else	// Inactive thread has ID i
@@ -532,7 +532,7 @@ __forceinline__ __device__ void StaticPSTGPU<T>::splitReportAllNodesWork(T *cons
 	if (i >= blockDim.x)	// No inactive threads; use dynamic parallelism
 	{
 		// report-all searches never become normal searches again, so do not need shared memory for a search_codes_arr, just a search_inds_arr
-		reportAllNodesGlobal<<<1, blockDim.x, blockDim.x * sizeof(long long)>>>
+		reportAllNodesGlobal<<<1, blockDim.x, blockDim.x * sizeof(long long), cudaStreamFireAndForget>>>
 			(root_d, num_elem_slots, target_node_ind, res_pt_arr_d, min_dim2_val);
 	}
 	else	// Inactive thread has ID i
