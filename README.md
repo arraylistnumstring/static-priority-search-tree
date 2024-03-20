@@ -1,6 +1,6 @@
 # Static Priority Search Tree on GPU
 
-Runs on CUDA 12.2.2
+Runs on CUDA 12.2.2; requires GCC version 7.4 or higher
 
 Tested on NYU's Greene HPC, where accessing nvcc version 12.2.2 requires running
 
