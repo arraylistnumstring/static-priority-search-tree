@@ -273,6 +273,8 @@ class StaticPSTGPU : public StaticPrioritySearchTree<T>
 		// Save GPU info for later usage
 		int dev_ind;
 		int dev_warp_size;
+		// Number by which to multiply the number of warps in a thread block
+		int warp_multiplier = 1;
 		int num_devs;
 
 		const static size_t num_val_subarrs = 3;
