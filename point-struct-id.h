@@ -38,7 +38,8 @@ struct PointStructID : public PointStruct<T>
 		// this->dim1_val is necessary in a template-derived subclass, as dim1_val on its own is a non-dependent name (i.e. not dependent on the template T), while PointStruct<T> is a dependent name (because it is dependent on the template T). Hence, compilers do not look in dependent base classes (e.g. PointStruct<T>) when looking up non-dependent names (e.g. dim1_val); this->dim1_val turns dim1_val into a dependent name, and therefore resolves names in the desired fashion; the dereference operator then goes to the memory address specified by this->dim1_val
 		// Source:
 		// https://isocpp.org/wiki/faq/templates#nondependent-name-lookup-members
-		os << '(' << this->dim1_val << ", " << this->dim2_val << "; " << printArray(os, ids, 0, num_ID_fields) << ')';
+		// const_cast<>() necessary to allow conversion of const array to non-const pointer parameter type as required by printArray()
+		os << '(' << this->dim1_val << ", " << this->dim2_val << "; " << printArray(os, const_cast<IDType *>(ids), 0, num_ID_fields) << ')';
 	};
 
 	// Comparison functions return < 0 if the dim1 value of this is ordered before the dim1 value of other, > 0 if the dim1 value of this is ordered after the dim1 value of other, and the result of calling comparisonTiebreaker() if this->dim1_val == other.dim1_val (similar statements hold true for comparison by dim2 values)

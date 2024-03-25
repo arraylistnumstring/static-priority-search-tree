@@ -59,4 +59,12 @@ std::ostream &printArrayOffsetFromStart(std::ostream &os, T *const &T_arr, T **c
 	return os;
 }
 
+// Allows printArray*() to be the second operand to general first-operand ostreams
+template <typename... Types>	// typename... Types is a parameter pack of types
+// Types... expands the parameter pack defined above into its constituent types
+inline std::ostream &operator<<(std::basic_ostream<Types...> &os, std::ostream &os2)
+{
+	return os << os2;
+}
+
 #endif
