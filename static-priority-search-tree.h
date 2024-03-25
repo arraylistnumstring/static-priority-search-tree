@@ -1,18 +1,30 @@
 #ifndef STATIC_PRIORITY_SEARCH_TREE_H
 #define STATIC_PRIORITY_SEARCH_TREE_H
 
+#include <concepts>
 #include <iostream>
 #include <type_traits>	// To filter out non-numeric types of T
 
 #include "point-struct.h"
 
-template <typename T>
+// Use concepts, a C++20 feature, to determine that the provided PtStruct type is valid
+template <typename T, typename PtStruct<typename>>
+concept ValidPtStruct = requires(T t, PtStruct<T> ptstr)
+{
+	ptstr.dim1_val;
+	ptstr.dim2_val;
+	ptstr.compareDim1(ptstr);
+	ptstr.compareDim2(ptstr);
+};
+
+template <typename T, size_t num_ID_fields=0, typename IDType=void, typename PtStruct<typename, size_t, typename>>
 class StaticPrioritySearchTree	// abstract class
 {
 	// Throws a compile-time error if T is not of arithmetic (numeric) type
 	// static_assert() and std::is_arithmetic are C++11 features
 	// static_assert() must have two arguments to compile on CIMS
 	static_assert(std::is_arithmetic<T>::value, "Input type T not of arithmetic type");
+	static_assert((num_ID_fields == 0) || (num_ID_fields > 0 && !std::is_void(IDType), "num_ID_fields must have value 0 or be of non-zero value with IDType being of non-void type")
 
 	public:
 		// = 0 indicates that this is a pure virtual function, i.e. defines an interface strictly for subclasses to implement

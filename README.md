@@ -11,7 +11,7 @@ and running commmands within the Singularity interface.
 
 To compile testers, run:
 
-	source tester-compiler.sh -rdc=true -std=c++14
+	source tester-compiler.sh -rdc=true -std=c++20
 
 For debugging options, use:
 - `-DDEBUG` to toggle DEBUG preprocessor flag and corresponding print output to aid with debugging variables that are inaccessible via gdb
@@ -19,7 +19,7 @@ For debugging options, use:
 - `-g` to get debugging info about host code
 - `-lineinfo` to get info on which lines are causing errors
 
-Standard is set to C++14 because Thrust has deprecated older versions of C++ and because this allows use of simpler auto return types.
+Standard is set to C++20 because Thrust has deprecated versions of C++ older than C++14 (which also allows use of simpler auto return types), while concepts are a C++20 language feature.
 
 
 To run these testers individually, please go to `testers/`, choose one of the subfolders, and execute the `*tester.out` files.
