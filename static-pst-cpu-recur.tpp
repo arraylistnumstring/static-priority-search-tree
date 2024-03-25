@@ -5,8 +5,9 @@
 #include "print-array.h"
 #include "resize-array.h"
 
-template <typename T>
-StaticPSTCPURecur<T>::StaticPSTCPURecur(PointStruct<T> *pt_arr, size_t num_elems)
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::StaticPSTCPURecur(PointStructTemplate<T, IDType, num_IDs> *pt_arr, size_t num_elems)
 {
 	if (num_elems == 0)
 	{
@@ -14,22 +15,22 @@ StaticPSTCPURecur<T>::StaticPSTCPURecur(PointStruct<T> *pt_arr, size_t num_elems
 		return;
 	}
 
-	PointStruct<T> **dim1_val_ptr_arr = new PointStruct<T>*[num_elems]();
-	PointStruct<T> **dim2_val_ptr_arr = new PointStruct<T>*[num_elems]();
+	PointStructTemplate<T, IDType, num_IDs> **dim1_val_ptr_arr = new PointStructTemplate<T, IDType, num_IDs>*[num_elems]();
+	PointStructTemplate<T, IDType, num_IDs> **dim2_val_ptr_arr = new PointStructTemplate<T, IDType, num_IDs>*[num_elems]();
 
 	for (size_t i = 0; i < num_elems; i++)
 		dim1_val_ptr_arr[i] = dim2_val_ptr_arr[i] = pt_arr + i;
 
 	// Sort dimension-1 values pointer array in ascending order; in-place sort
 	std::sort(dim1_val_ptr_arr, dim1_val_ptr_arr + num_elems,
-				[](PointStruct<T> *const &node_ptr_1, PointStruct<T> *const &node_ptr_2)
+				[](PointStructTemplate<T, IDType, num_IDs> *const &node_ptr_1, PointStructTemplate<T, IDType, num_IDs> *const &node_ptr_2)
 				{
 					return node_ptr_1->compareDim1(*node_ptr_2) < 0;
 				});
 
 	// Sort dim2_val pointer array in descending order; in-place sort
 	std::sort(dim2_val_ptr_arr, dim2_val_ptr_arr + num_elems,
-				[](PointStruct<T> *const &node_ptr_1, PointStruct<T> *const &node_ptr_2)
+				[](PointStructTemplate<T, IDType, num_IDs> *const &node_ptr_1, PointStructTemplate<T, IDType, num_IDs> *const &node_ptr_2)
 				{
 					return node_ptr_1->compareDim2(*node_ptr_2) > 0;
 				});
@@ -69,8 +70,9 @@ StaticPSTCPURecur<T>::StaticPSTCPURecur(PointStruct<T> *pt_arr, size_t num_elems
 }
 
 // const keyword after method name indicates that the method does not modify any data members of the associated class
-template <typename T>
-void StaticPSTCPURecur<T>::print(std::ostream &os) const
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::print(std::ostream &os) const
 {
 	if (root == nullptr)
 	{
@@ -82,8 +84,9 @@ void StaticPSTCPURecur<T>::print(std::ostream &os) const
 	printRecur(os, *root, prefix, child_prefix);
 }
 
-template <typename T>
-void StaticPSTCPURecur<T>::populateTreeRecur(TreeNode &subtree_root, PointStruct<T> *const *const dim1_val_ptr_subarr, PointStruct<T> *const *const dim2_val_ptr_subarr, const size_t num_elems)
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::populateTreeRecur(TreeNode &subtree_root, PointStructTemplate<T, IDType, num_IDs> *const *const dim1_val_ptr_subarr, PointStructTemplate<T, IDType, num_IDs> *const *const dim2_val_ptr_subarr, const size_t num_elems)
 {
 	// Find index in dim1_val_ptr_subarr of PointStruct with maximal dim2_val 
 	size_t max_dim2_val_dim1_array_ind = binarySearch(dim1_val_ptr_subarr, *dim2_val_ptr_subarr[0], num_elems);
@@ -92,11 +95,11 @@ void StaticPSTCPURecur<T>::populateTreeRecur(TreeNode &subtree_root, PointStruct
 	size_t left_subarr_num_elems;
 	size_t right_subarr_num_elems;
 
-	PointStruct<T> **left_dim1_val_ptr_subarr;
-	PointStruct<T> **right_dim1_val_ptr_subarr;
+	PointStructTemplate<T, IDType, num_IDs> **left_dim1_val_ptr_subarr;
+	PointStructTemplate<T, IDType, num_IDs> **right_dim1_val_ptr_subarr;
 
-	PointStruct<T> **left_dim2_val_ptr_subarr;
-	PointStruct<T> **right_dim2_val_ptr_subarr;
+	PointStructTemplate<T, IDType, num_IDs> **left_dim2_val_ptr_subarr;
+	PointStructTemplate<T, IDType, num_IDs> **right_dim2_val_ptr_subarr;
 
 
 	// Treat *dim1_val_ptr_subarr[max_dim2_val_dim1_array_ind] as a removed element (but don't actually remove the element for performance reasons
@@ -134,8 +137,8 @@ void StaticPSTCPURecur<T>::populateTreeRecur(TreeNode &subtree_root, PointStruct
 	{
 		subtree_root.setLeftChild();
 
-		left_dim1_val_ptr_subarr = new PointStruct<T>*[left_subarr_num_elems];
-		left_dim2_val_ptr_subarr = new PointStruct<T>*[left_subarr_num_elems];
+		left_dim1_val_ptr_subarr = new PointStructTemplate<T, IDType, num_IDs>*[left_subarr_num_elems];
+		left_dim2_val_ptr_subarr = new PointStructTemplate<T, IDType, num_IDs>*[left_subarr_num_elems];
 
 		// Always place median value in left subtree
 		// max_dim2_val is to the left of median_dim1_val in dim1_val_ptr_subarr; do two-piece left copy, skipping max_dim2_val
@@ -143,38 +146,38 @@ void StaticPSTCPURecur<T>::populateTreeRecur(TreeNode &subtree_root, PointStruct
 		{
 			std::memcpy(left_dim1_val_ptr_subarr,
 						dim1_val_ptr_subarr,
-						max_dim2_val_dim1_array_ind * sizeof(PointStruct<T>*));
+						max_dim2_val_dim1_array_ind * sizeof(PointStructTemplate<T, IDType, num_IDs>*));
 			std::memcpy(left_dim1_val_ptr_subarr + max_dim2_val_dim1_array_ind,
 						dim1_val_ptr_subarr + max_dim2_val_dim1_array_ind + 1,
-						(median_dim1_val_ind - max_dim2_val_dim1_array_ind) * sizeof(PointStruct<T>*));
+						(median_dim1_val_ind - max_dim2_val_dim1_array_ind) * sizeof(PointStructTemplate<T, IDType, num_IDs>*));
 		}
 		// max_dim2_val is to the right of median_dim1_val_ind in dim1_val_ptr_subarr; do one-piece left copy
 		else	// max_dim2_val_dim1_array_ind > median_dim1_val_ind; the two values are never equal
 			std::memcpy(left_dim1_val_ptr_subarr,
 						dim1_val_ptr_subarr,
-						(median_dim1_val_ind + 1) * sizeof(PointStruct<T>*));
+						(median_dim1_val_ind + 1) * sizeof(PointStructTemplate<T, IDType, num_IDs>*));
 	}
 	if (right_subarr_num_elems > 0)
 	{
 		subtree_root.setRightChild();
 
-		right_dim1_val_ptr_subarr = new PointStruct<T>*[right_subarr_num_elems];
-		right_dim2_val_ptr_subarr = new PointStruct<T>*[right_subarr_num_elems];
+		right_dim1_val_ptr_subarr = new PointStructTemplate<T, IDType, num_IDs>*[right_subarr_num_elems];
+		right_dim2_val_ptr_subarr = new PointStructTemplate<T, IDType, num_IDs>*[right_subarr_num_elems];
 
 		// max_dim2_val is to the left of median_dim1_val in dim1_val_ptr_subarr; do one-piece right copy
 		if (max_dim2_val_dim1_array_ind < median_dim1_val_ind)
 			std::memcpy(right_dim1_val_ptr_subarr,
 						dim1_val_ptr_subarr + median_dim1_val_ind + 1,
-						right_subarr_num_elems * sizeof(PointStruct<T>*));
+						right_subarr_num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>*));
 		// max_dim2_val is to the right of median_dim1_val_ind in dim1_val_ptr_subarr; do two-piece right copy, skipping max_dim2_val
 		else	// max_dim2_val_dim1_array_ind > median_dim1_val_ind; the two values are never equal
 		{
 			std::memcpy(right_dim1_val_ptr_subarr,
 						dim1_val_ptr_subarr + median_dim1_val_ind + 1,
-						(max_dim2_val_dim1_array_ind - median_dim1_val_ind - 1) * sizeof(PointStruct<T>*));
+						(max_dim2_val_dim1_array_ind - median_dim1_val_ind - 1) * sizeof(PointStructTemplate<T, IDType, num_IDs>*));
 			std::memcpy(right_dim1_val_ptr_subarr + max_dim2_val_dim1_array_ind - median_dim1_val_ind - 1,
 						dim1_val_ptr_subarr + max_dim2_val_dim1_array_ind + 1,
-						(num_elems - max_dim2_val_dim1_array_ind - 1) * sizeof(PointStruct<T>*));
+						(num_elems - max_dim2_val_dim1_array_ind - 1) * sizeof(PointStructTemplate<T, IDType, num_IDs>*));
 		}
 	}
 
@@ -209,8 +212,9 @@ void StaticPSTCPURecur<T>::populateTreeRecur(TreeNode &subtree_root, PointStruct
 		populateTreeRecur(subtree_root.getRightChild(root), right_dim1_val_ptr_subarr, right_dim2_val_ptr_subarr, right_subarr_num_elems);
 }
 
-template <typename T>
-size_t StaticPSTCPURecur<T>::binarySearch(PointStruct<T> *const *const dim1_val_ptr_arr, PointStruct<T> &elem_to_find, const size_t num_elems)
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+size_t StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::binarySearch(PointStructTemplate<T, IDType, num_IDs> *const *const dim1_val_ptr_arr, PointStructTemplate<T, IDType, num_IDs> &elem_to_find, const size_t num_elems)
 {
 	size_t low_ind = 0;
 	size_t high_ind = num_elems;
@@ -231,8 +235,9 @@ size_t StaticPSTCPURecur<T>::binarySearch(PointStruct<T> *const *const dim1_val_
 	return -1;	// Element not found
 }
 
-template <typename T>
-void StaticPSTCPURecur<T>::printRecur(std::ostream &os, const TreeNode &subtree_root, std::string prefix, std::string child_prefix) const
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::printRecur(std::ostream &os, const TreeNode &subtree_root, std::string prefix, std::string child_prefix) const
 {
 	os << prefix << subtree_root;
 	if (subtree_root.hasLeftChild() && subtree_root.hasRightChild())
@@ -250,8 +255,9 @@ void StaticPSTCPURecur<T>::printRecur(std::ostream &os, const TreeNode &subtree_
 	}
 }
 
-template <typename T>
-void StaticPSTCPURecur<T>::threeSidedSearchRecur(PointStruct<T> *&pt_arr, size_t &num_res_elems, size_t &pt_arr_size, TreeNode &subtree_root, T min_dim1_val, T max_dim1_val, T min_dim2_val)
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::threeSidedSearchRecur(PointStructTemplate<T, IDType, num_IDs> *&pt_arr, size_t &num_res_elems, size_t &pt_arr_size, TreeNode &subtree_root, T min_dim1_val, T max_dim1_val, T min_dim2_val)
 {
 	if (min_dim2_val > subtree_root.pt.dim2_val) return;	// No more nodes to report
 
@@ -284,8 +290,9 @@ void StaticPSTCPURecur<T>::threeSidedSearchRecur(PointStruct<T> *&pt_arr, size_t
 	}
 }
 
-template <typename T>
-void StaticPSTCPURecur<T>::twoSidedLeftSearchRecur(PointStruct<T> *&pt_arr, size_t &num_res_elems, size_t &pt_arr_size, TreeNode &subtree_root, T max_dim1_val, T min_dim2_val)
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSearchRecur(PointStructTemplate<T, IDType, num_IDs> *&pt_arr, size_t &num_res_elems, size_t &pt_arr_size, TreeNode &subtree_root, T max_dim1_val, T min_dim2_val)
 {
 	if (min_dim2_val > subtree_root.pt.dim2_val) return;	// No more nodes to report
 
@@ -315,8 +322,9 @@ void StaticPSTCPURecur<T>::twoSidedLeftSearchRecur(PointStruct<T> *&pt_arr, size
 		twoSidedLeftSearchRecur(pt_arr, num_res_elems, pt_arr_size, subtree_root.getLeftChild(root), max_dim1_val, min_dim2_val);
 }
 
-template <typename T>
-void StaticPSTCPURecur<T>::twoSidedRightSearchRecur(PointStruct<T> *&pt_arr, size_t &num_res_elems, size_t &pt_arr_size, TreeNode &subtree_root, T min_dim1_val, T min_dim2_val)
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::twoSidedRightSearchRecur(PointStructTemplate<T, IDType, num_IDs> *&pt_arr, size_t &num_res_elems, size_t &pt_arr_size, TreeNode &subtree_root, T min_dim1_val, T min_dim2_val)
 {
 	if (min_dim2_val > subtree_root.pt.dim2_val) return;	// No more nodes to report
 
@@ -346,8 +354,9 @@ void StaticPSTCPURecur<T>::twoSidedRightSearchRecur(PointStruct<T> *&pt_arr, siz
 		twoSidedRightSearchRecur(pt_arr, num_res_elems, pt_arr_size, subtree_root.getRightChild(root), min_dim1_val, min_dim2_val);
 }
 
-template <typename T>
-void StaticPSTCPURecur<T>::reportAllNodes(PointStruct<T> *&pt_arr, size_t &num_res_elems, size_t &pt_arr_size, TreeNode &subtree_root, T min_dim2_val)
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::reportAllNodes(PointStructTemplate<T, IDType, num_IDs> *&pt_arr, size_t &num_res_elems, size_t &pt_arr_size, TreeNode &subtree_root, T min_dim2_val)
 {
 	if (min_dim2_val > subtree_root.pt.dim2_val) return;	// No more nodes to report
 

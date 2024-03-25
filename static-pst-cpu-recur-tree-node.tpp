@@ -1,9 +1,10 @@
-template <typename T>
-class StaticPSTCPURecur<T>::TreeNode
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+class StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::TreeNode
 {
 	public:
 		TreeNode();
-		TreeNode(PointStruct<T> &source_data, T median_dim1_val);
+		TreeNode(PointStructTemplate<T, IDType, num_IDs> &source_data, T median_dim1_val);
 		virtual ~TreeNode() {};
 		TreeNode& operator=(TreeNode &source);	// assignment operator
 		TreeNode(TreeNode &node);	// copy constructor
@@ -15,7 +16,7 @@ class StaticPSTCPURecur<T>::TreeNode
 			os << '(' << pt.dim1_val << ", " << pt.dim2_val  << "; " << median_dim1_val << ')';
 		};
 
-		void setTreeNode(PointStruct<T> &source_data, T median_dim1_val);
+		void setTreeNode(PointStructTemplate<T, IDType, num_IDs> &source_data, T median_dim1_val);
 
 		// Current index is this-root
 		// Addition and subtraction (+, -) have higher precedence than bitshift operators (<<, >>)
@@ -31,7 +32,7 @@ class StaticPSTCPURecur<T>::TreeNode
 		inline void unsetLeftChild() {code &= ~HAS_LEFT_CHILD;};
 		inline void unsetRightChild() {code &= ~HAS_RIGHT_CHILD;};
 
-		PointStruct<T> pt;
+		PointStructTemplate<T, IDType, num_IDs> pt;
 		T median_dim1_val;
 		// bool (1 byte) auto-converts any values other than 0 or 1 to 1, so another type is necessary; as the struct takes the alignment requirement of the largest enclosed data type, and typical use cases mean that T will be at least as big as an int or a float (4B), it is fine to use an unsigned int (4B) to store the bitcode
 		unsigned code;
@@ -45,24 +46,27 @@ class StaticPSTCPURecur<T>::TreeNode
 		};
 };
 
-template <typename T>
-StaticPSTCPURecur<T>::TreeNode::TreeNode()
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::TreeNode::TreeNode()
 	// Value initialisation is more efficient with member initialiser lists, as they are not default-initialised before being overriden
 	// When no members are explicitly initialised, default-initialisation of non-class variables with automatic or dynamic storage duration produces objects with indeterminate values
 	: median_dim1_val(0),
 	code(0)
 {}
 
-template <typename T>
-StaticPSTCPURecur<T>::TreeNode::TreeNode(PointStruct<T> &source_data, T median_dim1_val)
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::TreeNode::TreeNode(PointStructTemplate<T, IDType, num_IDs> &source_data, T median_dim1_val)
 	// When other subobjects are explicitly initialised, those that are not are implicit initialised in the same way as objects with static storage duration, i.e. with 0 or nullptr (stated in 6.7.8 (19) of the C++ standard)
 	: pt(source_data),
 	median_dim1_val(median_dim1_val)
 {}
 
-template <typename T>
-// typename necessary before StaticPSTCPURecur<T> in order for two-phase compiler to establish that StaticPSTCPURecur<T>::TreeNode is a type and therefore a valid return type, rather than a member variable of StaticPSTCPURecur<T>
-typename StaticPSTCPURecur<T>::TreeNode& StaticPSTCPURecur<T>::TreeNode::operator=(TreeNode &source)
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+// typename necessary before StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs> in order for two-phase compiler to establish that StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::TreeNode is a type and therefore a valid return type, rather than a member variable of StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>
+typename StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::TreeNode& StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::TreeNode::operator=(TreeNode &source)
 {
 	if (this == &source)
 		return *this;	// If the two addresses match, it's the same object
@@ -74,8 +78,9 @@ typename StaticPSTCPURecur<T>::TreeNode& StaticPSTCPURecur<T>::TreeNode::operato
 	return *this;
 }
 
-template <typename T>
-void StaticPSTCPURecur<T>::TreeNode::setTreeNode(PointStruct<T> &source_data, T median_dim1_val)
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::TreeNode::setTreeNode(PointStructTemplate<T, IDType, num_IDs> &source_data, T median_dim1_val)
 {
 	pt = source_data;	// assignment operator invoked
 	this->median_dim1_val = median_dim1_val;
