@@ -44,6 +44,8 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T, PointStructTemplate,
 			getDim1ValsRoot(root, num_elem_slots)[node_ind] = source_data.dim1_val;
 			getDim2ValsRoot(root, num_elem_slots)[node_ind] = source_data.dim2_val;
 			getMedDim1ValsRoot(root, num_elem_slots)[node_ind] = median_dim1_val;
+			if constexpr (num_IDs == 1)
+				getIDsRoot(root, num_elem_slots)[node_ind] = source_data.id;
 		};
 
 		static void constructNode(T *const &root,
@@ -138,7 +140,11 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T, PointStructTemplate,
 		For friend functions of template classes, for the compiler to recognise the function as a template function, it is necessary to either pre-declare each template friend function before the template class and modify the class-internal function declaration with an additional <> between the operator and the parameter list; or to simply define the friend function when it is declared
 		https://isocpp.org/wiki/faq/templates#template-friends
 	*/
-	friend void populateTree <> (T *const root, const size_t num_elem_slots, PointStructTemplate<T, IDType, num_IDs> *const pt_arr, size_t *const dim1_val_ind_arr, size_t *dim2_val_ind_arr, size_t *dim2_val_ind_arr_secondary, const size_t start_ind, const size_t num_elems);
+	friend void populateTree <> (T *const root, const size_t num_elem_slots,
+									PointStructTemplate<T, IDType, num_IDs> *const pt_arr,
+									size_t *const dim1_val_ind_arr,
+									size_t *dim2_val_ind_arr, size_t *dim2_val_ind_arr_secondary,
+									const size_t start_ind, const size_t num_elems);
 };
 
 // Implementation file; for class templates, implementations must be in the same file as the declaration so that the compiler can access them

@@ -16,7 +16,7 @@ StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::StaticPSTCPUIter(Poin
 		return;
 	}
 
-	this->num_elems - num_elems;
+	this->num_elems = num_elems;
 	// Number of element slots in each container subarray is nextGreaterPowerOf2(num_elems) - 1
 	num_elem_slots = nextGreaterPowerOf2(num_elems) - 1;
 

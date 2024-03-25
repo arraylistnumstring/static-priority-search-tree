@@ -13,24 +13,44 @@ __device__ unsigned long long res_arr_ind_d;
 // As references passed to a global function live on host code, references to variables are not valid if the value does not reside in pinned memory
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-__global__ void populateTree(T *const root_d, const size_t num_elem_slots, PointStructTemplate<T, IDType, num_IDs> *const pt_arr_d, size_t *const dim1_val_ind_arr_d, size_t *dim2_val_ind_arr_d, size_t *dim2_val_ind_arr_secondary_d, const size_t val_ind_arr_start_ind, const size_t num_elems, const size_t target_node_start_ind);
+__global__ void populateTree(T *const root_d, const size_t num_elem_slots,
+								PointStructTemplate<T, IDType, num_IDs> *const pt_arr_d,
+								size_t *const dim1_val_ind_arr_d,
+								size_t *dim2_val_ind_arr_d,
+								size_t *dim2_val_ind_arr_secondary_d,
+								const size_t val_ind_arr_start_ind,
+								const size_t num_elems,
+								const size_t target_node_start_ind);
 
 // Cannot overload a global function over a host function, even if the number of arguments differs
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-__global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_slots, const size_t start_node_ind, PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d, const T min_dim1_val, const T max_dim1_val, const T min_dim2_val);
+__global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_slots,
+										const size_t start_node_ind,
+										PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d,
+										const T min_dim1_val, const T max_dim1_val,
+										const T min_dim2_val);
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-__global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_slots, const size_t start_node_ind, PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d, const T max_dim1_val, const T min_dim2_val);
+__global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_slots,
+											const size_t start_node_ind,
+											PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d,
+											const T max_dim1_val, const T min_dim2_val);
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-__global__ void twoSidedRightSearchGlobal (T *const root_d, const size_t num_elem_slots, const size_t start_node_ind, PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d, const T min_dim1_val, const T min_dim2_val);
+__global__ void twoSidedRightSearchGlobal (T *const root_d, const size_t num_elem_slots,
+											const size_t start_node_ind,
+											PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d,
+											const T min_dim1_val, const T min_dim2_val);
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-__global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slots, const size_t start_node_ind, PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d, const T min_dim2_val);
+__global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slots,
+										const size_t start_node_ind,
+										PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d,
+										const T min_dim2_val);
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType=void, size_t num_IDs=0>
@@ -206,6 +226,8 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 			getDim1ValsRoot(root_d, num_elem_slots)[node_ind] = source_data.dim1_val;
 			getDim2ValsRoot(root_d, num_elem_slots)[node_ind] = source_data.dim2_val;
 			getMedDim1ValsRoot(root_d, num_elem_slots)[node_ind] = median_dim1_val;
+			if constexpr (num_IDs == 1)
+				getIDsRoot(root, num_elem_slots)[node_ind] = source_data.id;
 		};
 
 		__forceinline__ __device__ static void constructNode(T *const &root_d,
@@ -224,17 +246,70 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 																size_t &right_subarr_num_elems);
 
 		// Helper functions for determining how to delegate work during searches
-		__forceinline__ __device__ static void do3SidedSearchDelegation(const unsigned char &curr_node_bitcode, T *const &root_d, const size_t &num_elem_slots, PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d, const T &min_dim1_val, const T &max_dim1_val, const T &curr_node_med_dim1_val, const T &min_dim2_val, long long &search_ind, long long *const &search_inds_arr, unsigned char &search_code, unsigned char *const &search_codes_arr);
-		__forceinline__ __device__ static void doLeftSearchDelegation(const bool range_split_poss, const unsigned char &curr_node_bitcode, T *const &root_d, const size_t &num_elem_slots, PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d, const T &min_dim2_val, long long &search_ind, long long *const &search_inds_arr, unsigned char &search_code, unsigned char *const &search_codes_arr);
-		__forceinline__ __device__ static void doRightSearchDelegation(const bool range_split_poss, const unsigned char &curr_node_bitcode, T *const &root_d, const size_t &num_elem_slots, PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d, const T &min_dim2_val, long long &search_ind, long long *const &search_inds_arr, unsigned char &search_code, unsigned char *const &search_codes_arr);
-		__forceinline__ __device__ static void doReportAllNodesDelegation(const unsigned char &curr_node_bitcode, T *const &root_d, const size_t &num_elem_slots, PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d, const T &min_dim2_val, long long &search_ind, long long *const &search_inds_arr, unsigned char *const &search_codes_arr = nullptr);
+		__forceinline__ __device__ static void do3SidedSearchDelegation(const unsigned char &curr_node_bitcode,
+																T *const &root_d,
+																const size_t &num_elem_slots,
+																PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d,
+																const T &min_dim1_val,
+																const T &max_dim1_val,
+																const T &curr_node_med_dim1_val,
+																const T &min_dim2_val,
+																long long &search_ind,
+																long long *const &search_inds_arr,
+																unsigned char &search_code,
+																unsigned char *const &search_codes_arr);
+		__forceinline__ __device__ static void doLeftSearchDelegation(const bool range_split_poss,
+																const unsigned char &curr_node_bitcode,
+																T *const &root_d,
+																const size_t &num_elem_slots,
+																PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d,
+																const T &min_dim2_val,
+																long long &search_ind,
+																long long *const &search_inds_arr,
+																unsigned char &search_code,
+																unsigned char *const &search_codes_arr);
+		__forceinline__ __device__ static void doRightSearchDelegation(const bool range_split_poss,
+																const unsigned char &curr_node_bitcode,
+																T *const &root_d,
+																const size_t &num_elem_slots,
+																PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d,
+																const T &min_dim2_val,
+																long long &search_ind,
+																long long *const &search_inds_arr,
+																unsigned char &search_code,
+																unsigned char *const &search_codes_arr);
+		__forceinline__ __device__ static void doReportAllNodesDelegation(const unsigned char &curr_node_bitcode,
+																T *const &root_d,
+																const size_t &num_elem_slots,
+																PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d,
+																const T &min_dim2_val,
+																long long &search_ind,
+																long long *const &search_inds_arr,
+																unsigned char *const &search_codes_arr = nullptr);
 
 		// Helper functions for delegating work during searches
-		__forceinline__ __device__ static void splitLeftSearchWork(T *const &root_d, const size_t &num_elem_slots, const size_t &target_node_ind, PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d, const T &max_dim1_val, const T &min_dim2_val, long long *const &search_inds_arr, unsigned char *const &search_codes_arr);
-		__forceinline__ __device__ static void splitReportAllNodesWork(T *const &root_d, const size_t &num_elem_slots, const size_t &target_node_ind, PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d, const T &min_dim2_val, long long *const &search_inds_arr, unsigned char *const &search_codes_arr = nullptr);
+		__forceinline__ __device__ static void splitLeftSearchWork(T *const &root_d,
+																	const size_t &num_elem_slots,
+																	const size_t &target_node_ind,
+																	PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d,
+																	const T &max_dim1_val,
+																	const T &min_dim2_val,
+																	long long *const &search_inds_arr,
+																	unsigned char *const &search_codes_arr);
+		__forceinline__ __device__ static void splitReportAllNodesWork(T *const &root_d,
+																		const size_t &num_elem_slots,
+																		const size_t &target_node_ind,
+																		PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d,
+																		const T &min_dim2_val,
+																		long long *const &search_inds_arr,
+																		unsigned char *const &search_codes_arr = nullptr);
 
 		// Helper function for threads to determine whether all iterations have ended
-		__forceinline__ __device__ static void detInactivity(long long &search_ind, long long *const &search_inds_arr, bool &cont_iter, unsigned char *const search_code = nullptr, unsigned char *const &search_codes_arr = nullptr);
+		__forceinline__ __device__ static void detInactivity(long long &search_ind,
+																long long *const &search_inds_arr,
+																bool &cont_iter,
+																unsigned char *const search_code = nullptr,
+																unsigned char *const &search_codes_arr = nullptr);
 
 		// Helper functions for getting start indices for various arrays
 		__forceinline__ __host__ __device__ static T* getDim1ValsRoot(T *const root, const size_t num_elem_slots)
@@ -243,12 +318,23 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 			{return root + num_elem_slots;};
 		__forceinline__ __host__ __device__ static T* getMedDim1ValsRoot(T *const root, const size_t num_elem_slots)
 			{return root + (num_elem_slots << 1);};
+		__forceinline__ __host__ __device__ static IDType* getIDsRoot(T *const root, const size_t num_elem_slots)
+			{return reinterpret_cast<IDType *>(root + num_elem_slots * num_val_subarrs);};
 		__forceinline__ __host__ __device__ static unsigned char* getBitcodesRoot(T *const root, const size_t num_elem_slots)
 			// Use reinterpret_cast for pointer conversions
-			{return reinterpret_cast<unsigned char*> (root + num_val_subarrs * num_elem_slots);};
+			{
+				if constexpr (num_IDs == 0)
+					// Argument of cast is of type T *
+					return reinterpret_cast<unsigned char*>(root + num_val_subarrs * num_elem_slots);
+				else
+					// Argument of cast is of type IDType *
+					return reinterpret_cast<unsigned char*>(getIDsRoot(root, num_elem_slots) + num_ID_subarrs * num_elem_slots);
+			};
 
-		// Helper function for calculating the number of elements of size T necessary to instantiate an array for root
-		__forceinline__ __host__ __device__ static size_t calcTotArrSizeNumTs(const size_t num_elem_slots);
+		// Helper function for calculating the number of elements of size U necessary to instantiate an array for root, for data types U and V such that sizeof(U) >= sizeof(V)
+		template <typename U, size_t num_U_subarrs, typename V, size_t num_V_subarrs>
+			requires sizeof(U) >= sizeof(V)
+		__forceinline__ __host__ __device__ static size_t calcTotArrSizeNumUs(const size_t num_elem_slots);
 
 		// Helper function for calculating the next power of 2 greater than num
 		__forceinline__ __host__ __device__ static size_t nextGreaterPowerOf2(const size_t num)
@@ -283,7 +369,9 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		int warp_multiplier = 1;
 		int num_devs;
 
+		// 1 subarray each for dim1_val, dim2_val and med_dim1_val
 		const static size_t num_val_subarrs = 3;
+		const static size_t num_ID_subarrs = num_IDs;
 
 		// Declare helper nested class for accessing specific nodes and define in implementation file; as nested class are not attached to any particular instance of the outer class by default (i.e. are like Java's static nested classes by default), only functions contained within need to be declared as static
 		class TreeNode;
@@ -306,15 +394,40 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		For friend functions of template classes, for the compiler to recognise the function as a template function, it is necessary to either pre-declare each template friend function before the template class and modify the class-internal function declaration with an additional <> between the operator and the parameter list; or to simply define the friend function when it is declared
 		https://isocpp.org/wiki/faq/templates#template-friends
 	*/
-	friend __global__ void populateTree <> (T *const root_d, const size_t num_elem_slots, PointStructTemplate<T, IDType, num_IDs> *const pt_arr_d, size_t *const dim1_val_ind_arr_d, size_t *dim2_val_ind_arr_d, size_t *dim2_val_ind_arr_secondary_d, const size_t val_ind_arr_start_ind, const size_t num_elems, const size_t target_node_start_ind);
+	friend __global__ void populateTree <> (T *const root_d, const size_t num_elem_slots,
+											PointStructTemplate<T, IDType, num_IDs> *const pt_arr_d,
+											size_t *const dim1_val_ind_arr_d, size_t *dim2_val_ind_arr_d,
+											size_t *dim2_val_ind_arr_secondary_d,
+											const size_t val_ind_arr_start_ind, const size_t num_elems,
+											const size_t target_node_start_ind);
 
-	friend __global__ void threeSidedSearchGlobal <> (T *const root_d, const size_t num_elem_slots, const size_t start_node_ind, PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d, const T min_dim1_val, const T max_dim1_val, const T min_dim2_val);
+	friend __global__ void threeSidedSearchGlobal <> (T *const root_d,
+														const size_t num_elem_slots,
+														const size_t start_node_ind,
+														PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d,
+														const T min_dim1_val,
+														const T max_dim1_val,
+														const T min_dim2_val);
 
-	friend __global__ void twoSidedLeftSearchGlobal <> (T *const root_d, const size_t num_elem_slots, const size_t start_node_ind, PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d, const T max_dim1_val, const T min_dim2_val);
+	friend __global__ void twoSidedLeftSearchGlobal <> (T *const root_d,
+														const size_t num_elem_slots,
+														const size_t start_node_ind,
+														PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d,
+														const T max_dim1_val,
+														const T min_dim2_val);
 
-	friend __global__ void twoSidedRightSearchGlobal <> (T *const root_d, const size_t num_elem_slots, const size_t start_node_ind, PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d, const T min_dim1_val, const T min_dim2_val);
+	friend __global__ void twoSidedRightSearchGlobal <> (T *const root_d,
+															const size_t num_elem_slots,
+															const size_t start_node_ind,
+															PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d,
+															const T min_dim1_val,
+															const T min_dim2_val);
 
-	friend __global__ void reportAllNodesGlobal <> (T *const root_d, const size_t num_elem_slots, const size_t start_node_ind, PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d, const T min_dim2_val);
+	friend __global__ void reportAllNodesGlobal <> (T *const root_d,
+													const size_t num_elem_slots,
+													const size_t start_node_ind,
+													PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d,
+													const T min_dim2_val);
 };
 
 // Implementation file; for class templates, implementations must be in the same file as the declaration so that the compiler can access them

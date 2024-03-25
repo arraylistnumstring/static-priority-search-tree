@@ -4,8 +4,9 @@
 
 #include "err-chk.h"
 
-template <typename T>
-StaticPSTGPU<T>::StaticPSTGPU(PointStructGPU<T> *const &pt_arr, size_t num_elems)
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr, size_t num_elems)
 {
 	if (num_elems == 0)
 	{
@@ -60,6 +61,7 @@ StaticPSTGPU<T>::StaticPSTGPU(PointStructGPU<T> *const &pt_arr, size_t num_elems
 	// Number of element slots in each container subarray is nextGreaterPowerOf2(num_elems) - 1
 	num_elem_slots = nextGreaterPowerOf2(num_elems) - 1;
 
+
 	// Calculate total array size in units of sizeof(T) bytes so that array will satisfy datatype T's alignment requirements (as T is the largest datatype present in this data structure)
 	size_t tot_arr_size_num_Ts = calcTotArrSizeNumTs(num_elem_slots);
 
@@ -69,7 +71,7 @@ StaticPSTGPU<T>::StaticPSTGPU(PointStructGPU<T> *const &pt_arr, size_t num_elems
 		Space requirement is greater than that needed for reporting nodes, which is simply at most tree_size + num_elems * size of PointStructGPU
 	*/
 	const size_t global_mem_needed = tot_arr_size_num_Ts * sizeof(T)
-									 + num_elems * (sizeof(PointStructGPU<T>) + 3 * sizeof(size_t));
+									 + num_elems * (sizeof(PointStructTemplate<T, IDType, num_IDs>) + 3 * sizeof(size_t));
 	if (global_mem_needed > device.totalGlobalMem)
 		throwErr("Error: needed global memory space of " + std::to_string(global_mem_needed)
 					+ " B required for data structure and processing exceeds limit of global memory = "
@@ -121,7 +123,7 @@ StaticPSTGPU<T>::StaticPSTGPU(PointStructGPU<T> *const &pt_arr, size_t num_elems
 	size_t *dim2_val_ind_arr_secondary_d;
 
 	// Create GPU-side array of PointStructGPU objects for the index arrays to reference
-	PointStructGPU<T> *pt_arr_d;
+	PointStructTemplate<T, IDType, num_IDs> *pt_arr_d;
 
 
 	gpuErrorCheck(cudaMalloc(&dim1_val_ind_arr_d, num_elems * sizeof(size_t)),
@@ -136,7 +138,7 @@ StaticPSTGPU<T>::StaticPSTGPU(PointStructGPU<T> *const &pt_arr, size_t num_elems
 					"Error in allocating secondary array of PointStructGPU indices ordered by dimension 2 on device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 					+ ": ");
-	gpuErrorCheck(cudaMalloc(&pt_arr_d, num_elems * sizeof(PointStructGPU<T>)),
+	gpuErrorCheck(cudaMalloc(&pt_arr_d, num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>)),
 					"Error in allocating array of PointStructGPU objects on device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 					+ ": ");
@@ -150,7 +152,7 @@ StaticPSTGPU<T>::StaticPSTGPU(PointStructGPU<T> *const &pt_arr, size_t num_elems
 					"Error in copying array of PointStructGPU indices ordered by dimension 2 to device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 					+ ": ");
-	gpuErrorCheck(cudaMemcpy(pt_arr_d, pt_arr, num_elems * sizeof(PointStructGPU<T>), cudaMemcpyDefault), 
+	gpuErrorCheck(cudaMemcpy(pt_arr_d, pt_arr, num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>), cudaMemcpyDefault), 
 					"Error in copying array of PointStructGPU objects to device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 					+ ": ");
@@ -196,8 +198,9 @@ StaticPSTGPU<T>::StaticPSTGPU(PointStructGPU<T> *const &pt_arr, size_t num_elems
 }
 
 // const keyword after method name indicates that the method does not modify any data members of the associated class
-template <typename T>
-void StaticPSTGPU<T>::print(std::ostream &os) const
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::print(std::ostream &os) const
 {
 	if (num_elem_slots == 0)
 	{
@@ -219,10 +222,11 @@ void StaticPSTGPU<T>::print(std::ostream &os) const
 }
 
 // static keyword should only be used when declaring a function in the header file
-template <typename T>
-__forceinline__ __device__ void StaticPSTGPU<T>::constructNode(T *const &root_d,
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+__forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::constructNode(T *const &root_d,
 																const size_t &num_elem_slots,
-																PointStructGPU<T> *const &pt_arr_d,
+																PointStructTemplate<T, IDType, num_IDs> *const &pt_arr_d,
 																size_t &target_node_ind,
 																const size_t &num_elems,
 																size_t *const &dim1_val_ind_arr_d,
@@ -327,8 +331,20 @@ __forceinline__ __device__ void StaticPSTGPU<T>::constructNode(T *const &root_d,
 	}
 }
 
-template <typename T>
-__forceinline__ __device__ void StaticPSTGPU<T>::do3SidedSearchDelegation(const unsigned char &curr_node_bitcode, T *const &root_d, const size_t &num_elem_slots, PointStructGPU<T> *const res_pt_arr_d, const T &min_dim1_val, const T &max_dim1_val, const T &curr_node_med_dim1_val, const T &min_dim2_val, long long &search_ind, long long *const &search_inds_arr, unsigned char &search_code, unsigned char *const &search_codes_arr)
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+__forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::do3SidedSearchDelegation(const unsigned char &curr_node_bitcode,
+																T *const &root_d,
+																const size_t &num_elem_slots,
+																PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d,
+																const T &min_dim1_val,
+																const T &max_dim1_val,
+																const T &curr_node_med_dim1_val,
+																const T &min_dim2_val,
+																long long &search_ind,
+																long long *const &search_inds_arr,
+																unsigned char &search_code,
+																unsigned char *const &search_codes_arr)
 {
 	// Splitting of query is only possible if the current node has two children and min_dim1_val <= curr_node_med_dim1_val <= max_dim1_val; the equality on max_dim1_val is for the edge case where a median point may be duplicated, with one copy going to the left subtree and the other to the right subtree
 	if (min_dim1_val <= curr_node_med_dim1_val
@@ -377,8 +393,18 @@ __forceinline__ __device__ void StaticPSTGPU<T>::do3SidedSearchDelegation(const 
 	}
 }
 
-template <typename T>
-__forceinline__ __device__ void StaticPSTGPU<T>::doLeftSearchDelegation(const bool range_split_poss, const unsigned char &curr_node_bitcode, T *const &root_d, const size_t &num_elem_slots, PointStructGPU<T> *const res_pt_arr_d, const T &min_dim2_val, long long &search_ind, long long *const &search_inds_arr, unsigned char &search_code, unsigned char *const &search_codes_arr)
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+__forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doLeftSearchDelegation(const bool range_split_poss,
+																const unsigned char &curr_node_bitcode,
+																T *const &root_d,
+																const size_t &num_elem_slots,
+																PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d,
+																const T &min_dim2_val,
+																long long &search_ind,
+																long long *const &search_inds_arr,
+																unsigned char &search_code,
+																unsigned char *const &search_codes_arr)
 {
 	// Report all nodes in left subtree, "recurse" search on right
 	// Because reportAllNodesGlobal uses less shared memory, prefer launching reportAllNodesGlobal over launching a search when utilising dynamic parallelism
@@ -418,8 +444,18 @@ __forceinline__ __device__ void StaticPSTGPU<T>::doLeftSearchDelegation(const bo
 	}
 }
 
-template <typename T>
-__forceinline__ __device__ void StaticPSTGPU<T>::doRightSearchDelegation(const bool range_split_poss, const unsigned char &curr_node_bitcode, T *const &root_d, const size_t &num_elem_slots, PointStructGPU<T> *const res_pt_arr_d, const T &min_dim2_val, long long &search_ind, long long *const &search_inds_arr, unsigned char &search_code, unsigned char *const &search_codes_arr)
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+__forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doRightSearchDelegation(const bool range_split_poss,
+																const unsigned char &curr_node_bitcode,
+																T *const &root_d,
+																const size_t &num_elem_slots,
+																PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d,
+																const T &min_dim2_val,
+																long long &search_ind,
+																long long *const &search_inds_arr,
+																unsigned char &search_code,
+																unsigned char *const &search_codes_arr)
 {
 	// Report all nodes in right subtree, "recurse" search on left
 	// Because reportAllNodesGlobal uses less shared memory, prefer launching reportAllNodesGlobal over launching a search when utilising dynamic parallelism
@@ -458,8 +494,16 @@ __forceinline__ __device__ void StaticPSTGPU<T>::doRightSearchDelegation(const b
 }
 
 // C++ allows trailing arguments to have default values; need not specify the default arguments after their initial declaration
-template <typename T>
-__forceinline__ __device__ void StaticPSTGPU<T>::doReportAllNodesDelegation(const unsigned char &curr_node_bitcode, T *const &root_d, const size_t &num_elem_slots, PointStructGPU<T> *const res_pt_arr_d, const T &min_dim2_val, long long &search_ind, long long *const &search_inds_arr, unsigned char *const &search_codes_arr)
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+__forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodesDelegation(const unsigned char &curr_node_bitcode,
+																T *const &root_d,
+																const size_t &num_elem_slots,
+																PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d,
+																const T &min_dim2_val,
+																long long &search_ind,
+																long long *const &search_inds_arr,
+																unsigned char *const &search_codes_arr)
 {
 	if (TreeNode::hasLeftChild(curr_node_bitcode)
 			&& TreeNode::hasRightChild(curr_node_bitcode))
@@ -484,8 +528,16 @@ __forceinline__ __device__ void StaticPSTGPU<T>::doReportAllNodesDelegation(cons
 	}
 }
 
-template <typename T>
-__forceinline__ __device__ void StaticPSTGPU<T>::splitLeftSearchWork(T *const &root_d, const size_t &num_elem_slots, const size_t &target_node_ind, PointStructGPU<T> *const res_pt_arr_d, const T &max_dim1_val, const T &min_dim2_val, long long *const &search_inds_arr, unsigned char *const &search_codes_arr)
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+__forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::splitLeftSearchWork(T *const &root_d,
+																const size_t &num_elem_slots,
+																const size_t &target_node_ind,
+																PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d,
+																const T &max_dim1_val,
+																const T &min_dim2_val,
+																long long *const &search_inds_arr,
+																unsigned char *const &search_codes_arr)
 {
 	// Find next inactive thread by iterating through search_inds_arr atomically
 	// i < blockDim.x check comes before atomicCAS() operation because short-circuit evaluation will ensure atomicCAS() does not write to a point beyond the end of search_inds_arr
@@ -513,8 +565,15 @@ __forceinline__ __device__ void StaticPSTGPU<T>::splitLeftSearchWork(T *const &r
 	}
 }
 
-template <typename T>
-__forceinline__ __device__ void StaticPSTGPU<T>::splitReportAllNodesWork(T *const &root_d, const size_t &num_elem_slots, const size_t &target_node_ind, PointStructGPU<T> *const res_pt_arr_d, const T &min_dim2_val, long long *const &search_inds_arr, unsigned char *const &search_codes_arr)
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+__forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::splitReportAllNodesWork(T *const &root_d,
+																const size_t &num_elem_slots,
+																const size_t &target_node_ind,
+																PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d,
+																const T &min_dim2_val,
+																long long *const &search_inds_arr,
+																unsigned char *const &search_codes_arr)
 {
 	// Find next inactive thread by iterating through search_inds_arr atomically
 	// i < blockDim.x check comes before atomicCAS() operation because short-circuit evaluation will ensure atomicCAS() does not write to a point beyond the end of search_inds_arr
@@ -545,8 +604,13 @@ __forceinline__ __device__ void StaticPSTGPU<T>::splitReportAllNodesWork(T *cons
 	}
 }
 
-template <typename T>
-__forceinline__ __device__ void StaticPSTGPU<T>::detInactivity(long long &search_ind, long long *const &search_inds_arr, bool &cont_iter, unsigned char *const search_code_ptr, unsigned char *const &search_codes_arr)
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+__forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::detInactivity(long long &search_ind,
+																long long *const &search_inds_arr,
+																bool &cont_iter,
+																unsigned char *const search_code_ptr,
+																unsigned char *const &search_codes_arr)
 {
 	// INACTIVE threads check wehther they should be active in the next iteration; if not, and all threads are inactive, set iteration toggle to false
 
@@ -571,8 +635,9 @@ __forceinline__ __device__ void StaticPSTGPU<T>::detInactivity(long long &search
 	}
 }
 
-template <typename T>
-__forceinline__ size_t StaticPSTGPU<T>::calcTotArrSizeNumTs(const size_t num_elem_slots)
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+__forceinline__ size_t StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSizeNumTs(const size_t num_elem_slots)
 {
 	/*
 		tot_arr_size_num_Ts = ceil(num_elem_slots * (num_val_subarrs + num_Ts/bitcode))
@@ -592,8 +657,9 @@ __forceinline__ size_t StaticPSTGPU<T>::calcTotArrSizeNumTs(const size_t num_ele
 	return tot_arr_size_num_Ts;
 }
 
-template <typename T>
-__forceinline__ __host__ __device__ size_t StaticPSTGPU<T>::expOfNextGreaterPowerOf2(const size_t num)
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+__forceinline__ __host__ __device__ size_t StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::expOfNextGreaterPowerOf2(const size_t num)
 {
 	/*
 		Smallest power of 2 greater than num is equal to 2^ceil(lg(num + 1))
@@ -605,8 +671,9 @@ __forceinline__ __host__ __device__ size_t StaticPSTGPU<T>::expOfNextGreaterPowe
 	return exp;
 }
 
-template <typename T>
-__forceinline__ __host__ __device__ long long StaticPSTGPU<T>::binarySearch(PointStructGPU<T> *const &pt_arr, size_t *const &dim1_val_ind_arr, PointStructGPU<T> &elem_to_find, const size_t &init_ind, const size_t &num_elems)
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+__forceinline__ __host__ __device__ long long StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::binarySearch(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr, size_t *const &dim1_val_ind_arr, PointStructTemplate<T, IDType, num_IDs> &elem_to_find, const size_t &init_ind, const size_t &num_elems)
 {
 	size_t low_ind = init_ind;
 	size_t high_ind = init_ind + num_elems;
@@ -629,8 +696,9 @@ __forceinline__ __host__ __device__ long long StaticPSTGPU<T>::binarySearch(Poin
 	return -1;	// Element not found
 }
 
-template <typename T>
-void StaticPSTGPU<T>::printRecur(std::ostream &os, T *const &tree_root, const size_t curr_ind, const size_t num_elem_slots, std::string prefix, std::string child_prefix) const
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::printRecur(std::ostream &os, T *const &tree_root, const size_t curr_ind, const size_t num_elem_slots, std::string prefix, std::string child_prefix) const
 {
 	os << prefix << '(' << getDim1ValsRoot(tree_root, num_elem_slots)[curr_ind]
 				<< ", " << getDim2ValsRoot(tree_root, num_elem_slots)[curr_ind]

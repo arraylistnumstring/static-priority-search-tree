@@ -1,6 +1,12 @@
 // Utilises dynamic parallelism
-template <typename T>
-__global__ void populateTree (T *const root_d, const size_t num_elem_slots, PointStructGPU<T> *const pt_arr_d, size_t *const dim1_val_ind_arr_d, size_t *dim2_val_ind_arr_d, size_t *dim2_val_ind_arr_secondary_d, const size_t val_ind_arr_start_ind, const size_t num_elems, const size_t target_node_start_ind)
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+__global__ void populateTree (T *const root_d, const size_t num_elem_slots,
+								PointStructTemplate<T, IDType, num_IDs> *const pt_arr_d,
+								size_t *const dim1_val_ind_arr_d, size_t *dim2_val_ind_arr_d,
+								size_t *dim2_val_ind_arr_secondary_d,
+								const size_t val_ind_arr_start_ind, const size_t num_elems,
+								const size_t target_node_start_ind)
 {
 	// For correctness, only 1 block can ever be active, as synchronisation across blocks (i.e. global synchronisation) is not possible without exiting the kernel entirely
 	if (blockIdx.x != 0)
@@ -32,7 +38,7 @@ __global__ void populateTree (T *const root_d, const size_t num_elem_slots, Poin
 		if (threadIdx.x < nodes_per_level && num_subelems_arr[threadIdx.x] > 0)
 		{
 			// Find index in dim1_val_ind_arr_d of PointStructGPU with maximal dim2_val 
-			long long array_search_res_ind = StaticPSTGPU<T>::binarySearch(pt_arr_d, dim1_val_ind_arr_d,
+			long long array_search_res_ind = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::binarySearch(pt_arr_d, dim1_val_ind_arr_d,
 																			pt_arr_d[dim2_val_ind_arr_d[subelems_start_inds_arr[threadIdx.x]]],
 																			subelems_start_inds_arr[threadIdx.x],
 																			num_subelems_arr[threadIdx.x]);
@@ -44,7 +50,7 @@ __global__ void populateTree (T *const root_d, const size_t num_elem_slots, Poin
 			// Note: potential sign conversion issue when computer memory becomes of size 2^64
 			const size_t max_dim2_val_dim1_array_ind = array_search_res_ind;
 
-			StaticPSTGPU<T>::constructNode(root_d, num_elem_slots,
+			StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::constructNode(root_d, num_elem_slots,
 											pt_arr_d, target_node_inds_arr[threadIdx.x], num_elems,
 											dim1_val_ind_arr_d, dim2_val_ind_arr_d,
 												dim2_val_ind_arr_secondary_d,
@@ -59,7 +65,7 @@ __global__ void populateTree (T *const root_d, const size_t num_elem_slots, Poin
 				subelems_start_inds_arr[threadIdx.x + nodes_per_level] = right_subarr_start_ind;
 				num_subelems_arr[threadIdx.x + nodes_per_level] = right_subarr_num_elems;
 				target_node_inds_arr[threadIdx.x + nodes_per_level] =
-					StaticPSTGPU<T>::TreeNode::getRightChild(target_node_inds_arr[threadIdx.x]);
+					StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::getRightChild(target_node_inds_arr[threadIdx.x]);
 			}
 			// Dynamic parallelism; use cudaStreamFireAndForget to allow children grids to be independent of each other
 			else
@@ -68,12 +74,12 @@ __global__ void populateTree (T *const root_d, const size_t num_elem_slots, Poin
 					(root_d, num_elem_slots, pt_arr_d, dim1_val_ind_arr_d,
 						dim2_val_ind_arr_d, dim2_val_ind_arr_secondary_d,
 						right_subarr_start_ind, right_subarr_num_elems,
-						StaticPSTGPU<T>::TreeNode::getRightChild(target_node_inds_arr[threadIdx.x]));
+						StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::getRightChild(target_node_inds_arr[threadIdx.x]));
 			}
 
 			num_subelems_arr[threadIdx.x] = left_subarr_num_elems;
 			target_node_inds_arr[threadIdx.x] =
-				StaticPSTGPU<T>::TreeNode::getLeftChild(target_node_inds_arr[threadIdx.x]);
+				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::getLeftChild(target_node_inds_arr[threadIdx.x]);
 		}
 
 		// Every thread must swap its primary and secondary dim2_val_ind_arr pointers in order to have the correct subordering of indices at a given node
@@ -88,7 +94,7 @@ __global__ void populateTree (T *const root_d, const size_t num_elem_slots, Poin
 	while (num_subelems_arr[threadIdx.x] > 0)
 	{
 		// Find index in dim1_val_ind_arr_d of PointStructGPU with maximal dim2_val 
-		long long array_search_res_ind = StaticPSTGPU<T>::binarySearch(pt_arr_d, dim1_val_ind_arr_d,
+		long long array_search_res_ind = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::binarySearch(pt_arr_d, dim1_val_ind_arr_d,
 																		pt_arr_d[dim2_val_ind_arr_d[subelems_start_inds_arr[threadIdx.x]]],
 																		subelems_start_inds_arr[threadIdx.x],
 																		num_subelems_arr[threadIdx.x]);
@@ -100,7 +106,7 @@ __global__ void populateTree (T *const root_d, const size_t num_elem_slots, Poin
 		// Note: potential sign conversion issue when computer memory becomes of size 2^64
 		const size_t max_dim2_val_dim1_array_ind = array_search_res_ind;
 
-		StaticPSTGPU<T>::constructNode(root_d, num_elem_slots,
+		StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::constructNode(root_d, num_elem_slots,
 										pt_arr_d, target_node_inds_arr[threadIdx.x], num_elems,
 										dim1_val_ind_arr_d, dim2_val_ind_arr_d,
 											dim2_val_ind_arr_secondary_d,
@@ -114,11 +120,11 @@ __global__ void populateTree (T *const root_d, const size_t num_elem_slots, Poin
 			(root_d, num_elem_slots, pt_arr_d, dim1_val_ind_arr_d,
 				dim2_val_ind_arr_d, dim2_val_ind_arr_secondary_d,
 				right_subarr_start_ind, right_subarr_num_elems,
-				StaticPSTGPU<T>::TreeNode::getRightChild(target_node_inds_arr[threadIdx.x]));
+				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::getRightChild(target_node_inds_arr[threadIdx.x]));
 
 		num_subelems_arr[threadIdx.x] = left_subarr_num_elems;
 		target_node_inds_arr[threadIdx.x] =
-			StaticPSTGPU<T>::TreeNode::getLeftChild(target_node_inds_arr[threadIdx.x]);
+			StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::getLeftChild(target_node_inds_arr[threadIdx.x]);
 
 		size_t *temp = dim2_val_ind_arr_d;
 		dim2_val_ind_arr_d = dim2_val_ind_arr_secondary_d;
