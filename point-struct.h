@@ -28,7 +28,7 @@ struct PointStruct
 
 	// Printing function for << printing operator to use, as private data members may be accessed in the process
 	// const keyword after method name indicates that the method does not modify any data members of the associated class
-	inline void print(std::ostream &os) const
+	inline virtual void print(std::ostream &os) const
 	{
 		os << '(' << dim1_val << ", " << dim2_val << ')';
 	};

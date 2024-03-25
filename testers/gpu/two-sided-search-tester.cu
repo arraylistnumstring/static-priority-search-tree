@@ -77,7 +77,8 @@ int main(int argc, char* argv[])
 			Code that is only compiled when debugging; to define this preprocessor variable, compile with the option -DDEBUG, as in
 				nvcc -DDEBUG <source-code-file>
 		*/
-		printArray(pt_arr, 0, num_elems);
+		printArray(std::cout, pt_arr, 0, num_elems);
+		std::cout << '\n';
 	#endif
 
 		StaticPSTGPU<double> *tree = new StaticPSTGPU<double>(pt_arr, num_elems);
@@ -111,7 +112,8 @@ int main(int argc, char* argv[])
 						return pt_1.compareDim1(pt_2) < 0;
 					});
 
-		printArray(res_pt_arr, 0, num_res_elems);
+		printArray(std::cout, res_pt_arr, 0, num_res_elems);
+		std::cout << '\n';
 
 
 		// As concatenatenation is left-to-right, string literals are of type const char * and typeid().name() shows up before the first instance of an std::string, it is necessary to transform either the first or second concatenation operands to type std::string
@@ -140,7 +142,8 @@ int main(int argc, char* argv[])
 			pt_arr[i].dim2_val = unif_float_dist(mt_eng);
 		}
 	#ifdef DEBUG
-		printArray(pt_arr, 0, num_elems);
+		printArray(std::cout, pt_arr, 0, num_elems);
+		std::cout << '\n';
 	#endif
 
 		StaticPSTGPU<float> *tree = new StaticPSTGPU<float>(pt_arr, num_elems);
@@ -166,7 +169,8 @@ int main(int argc, char* argv[])
 			pt_arr[i].dim2_val = unif_int_dist(mt_eng);
 		}
 	#ifdef DEBUG
-		printArray(pt_arr, 0, num_elems);
+		printArray(std::cout, pt_arr, 0, num_elems);
+		std::cout << '\n';
 	#endif
 
 		StaticPSTGPU<int> *tree = new StaticPSTGPU<int>(pt_arr, num_elems);
@@ -192,7 +196,8 @@ int main(int argc, char* argv[])
 			pt_arr[i].dim2_val = unif_long_dist(mt_eng);
 		}
 	#ifdef DEBUG
-		printArray(pt_arr, 0, num_elems);
+		printArray(std::cout, pt_arr, 0, num_elems);
+		std::cout << '\n';
 	#endif
 
 		StaticPSTGPU<long> *tree = new StaticPSTGPU<long>(pt_arr, num_elems);

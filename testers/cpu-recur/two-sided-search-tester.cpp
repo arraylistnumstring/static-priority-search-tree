@@ -75,7 +75,8 @@ int main(int argc, char* argv[])
 			Code that is only compiled when debugging; to define this preprocessor variable, compile with the option -DDEBUG, as in
 				nvcc -DDEBUG <source-code-file>
 		*/
-		printArray(pt_arr, 0, num_elems);
+		printArray(std::cout, pt_arr, 0, num_elems);
+		std::cout << '\n';
 	#endif
 
 		StaticPSTCPURecur<double> *tree = new StaticPSTCPURecur<double>(pt_arr, num_elems);
@@ -97,7 +98,8 @@ int main(int argc, char* argv[])
 						return pt_1.compareDim1(pt_2) < 0;
 					});
 
-		printArray(res_pt_arr, 0, num_res_elems);
+		printArray(std::cout, res_pt_arr, 0, num_res_elems);
+		std::cout << '\n';
 
 		delete[] pt_arr;
 		delete[] res_pt_arr;
@@ -118,7 +120,8 @@ int main(int argc, char* argv[])
 			pt_arr[i].dim2_val = unif_float_dist(mt_eng);
 		}
 	#ifdef DEBUG
-		printArray(pt_arr, 0, num_elems);
+		printArray(std::cout, pt_arr, 0, num_elems);
+		std::cout << '\n';
 	#endif
 
 		StaticPSTCPURecur<float> *tree = new StaticPSTCPURecur<float>(pt_arr, num_elems);
@@ -144,7 +147,8 @@ int main(int argc, char* argv[])
 			pt_arr[i].dim2_val = unif_int_dist(mt_eng);
 		}
 	#ifdef DEBUG
-		printArray(pt_arr, 0, num_elems);
+		printArray(std::cout, pt_arr, 0, num_elems);
+		std::cout << '\n';
 	#endif
 
 		StaticPSTCPURecur<int> *tree = new StaticPSTCPURecur<int>(pt_arr, num_elems);
@@ -170,7 +174,8 @@ int main(int argc, char* argv[])
 			pt_arr[i].dim2_val = unif_long_dist(mt_eng);
 		}
 	#ifdef DEBUG
-		printArray(pt_arr, 0, num_elems);
+		printArray(std::cout, pt_arr, 0, num_elems);
+		std::cout << '\n';
 	#endif
 
 		StaticPSTCPURecur<long> *tree = new StaticPSTCPURecur<long>(pt_arr, num_elems);

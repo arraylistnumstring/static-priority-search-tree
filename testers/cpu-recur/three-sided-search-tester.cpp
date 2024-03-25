@@ -44,7 +44,8 @@ int main(int argc, char* argv[])
 
 	PointStruct<int> *res_arr = tree->threeSidedSearch(num_res_elems, min_dim1_val, max_dim1_val, min_dim2_val);
 
-	printArray(res_arr, 0, num_res_elems);
+	printArray(std::cout, res_arr, 0, num_res_elems);
+	std::cout << '\n';
 
 	delete[] pt_arr;
 	delete tree;

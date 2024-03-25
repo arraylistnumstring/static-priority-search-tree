@@ -61,7 +61,8 @@ int main(int argc, char* argv[])
 			pt_arr[i].dim2_val = unif_double_dist(mt_eng);
 		}
 	#ifdef DEBUG
-		printArray(pt_arr, 0, num_elems);
+		printArray(std::cout, pt_arr, 0, num_elems);
+		std::cout << '\n';
 	#endif
 
 		StaticPSTCPURecur<double> *tree = new StaticPSTCPURecur<double>(pt_arr, num_elems);
@@ -87,7 +88,8 @@ int main(int argc, char* argv[])
 			pt_arr[i].dim2_val = unif_float_dist(mt_eng);
 		}
 	#ifdef DEBUG
-		printArray(pt_arr, 0, num_elems);
+		printArray(std::cout, pt_arr, 0, num_elems);
+		std::cout << '\n';
 	#endif
 
 		StaticPSTCPURecur<float> *tree = new StaticPSTCPURecur<float>(pt_arr, num_elems);
@@ -113,7 +115,8 @@ int main(int argc, char* argv[])
 			pt_arr[i].dim2_val = unif_int_dist(mt_eng);
 		}
 	#ifdef DEBUG
-		printArray(pt_arr, 0, num_elems);
+		printArray(std::cout, pt_arr, 0, num_elems);
+		std::cout << '\n';
 	#endif
 
 		StaticPSTCPURecur<int> *tree = new StaticPSTCPURecur<int>(pt_arr, num_elems);
@@ -139,7 +142,8 @@ int main(int argc, char* argv[])
 			pt_arr[i].dim2_val = unif_long_dist(mt_eng);
 		}
 	#ifdef DEBUG
-		printArray(pt_arr, 0, num_elems);
+		printArray(std::cout, pt_arr, 0, num_elems);
+		std::cout << '\n';
 	#endif
 
 		StaticPSTCPURecur<long> *tree = new StaticPSTCPURecur<long>(pt_arr, num_elems);

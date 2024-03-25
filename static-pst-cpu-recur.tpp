@@ -42,13 +42,17 @@ StaticPSTCPURecur<T>::StaticPSTCPURecur(PointStruct<T> *pt_arr, size_t num_elems
 		Explicitly printed to sanity-check the corresponding code in StaticPSTCPUIter
 	*/
 	std::cout << "PointStructs ordered by dimension 1 via pointers:\n";
-	printArrayDereferenced(dim1_val_ptr_arr, 0, num_elems);
+	printArrayDereferenced(std::cout, dim1_val_ptr_arr, 0, num_elems);
+	std::cout << '\n';
 	std::cout << "\tCorresponding indices:\n\t\t";
-	printArrayOffsetFromStart(pt_arr, dim1_val_ptr_arr, 0, num_elems);
+	printArrayOffsetFromStart(std::cout, pt_arr, dim1_val_ptr_arr, 0, num_elems);
+	std::cout << '\n';
 	std::cout << "PointStructs ordered by dimension 2 via pointers:\n";
-	printArrayDereferenced(dim2_val_ptr_arr, 0, num_elems);
+	printArrayDereferenced(std::cout, dim2_val_ptr_arr, 0, num_elems);
+	std::cout << '\n';
 	std::cout << "\tCorresponding indices:\n\t\t";
-	printArrayOffsetFromStart(pt_arr, dim2_val_ptr_arr, 0, num_elems);
+	printArrayOffsetFromStart(std::cout, pt_arr, dim2_val_ptr_arr, 0, num_elems);
+	std::cout << '\n';
 #endif
 
 	// Minimum number of array slots necessary to construct tree given it is fully balanced by construction and given the unknown placement of nodes in the partially empty last row
