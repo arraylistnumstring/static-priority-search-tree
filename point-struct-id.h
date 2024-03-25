@@ -11,22 +11,22 @@ struct PointStructID : public PointStruct<T, num_IDs>
 	// Throws a compile-time error if the condition is not met
 	// static_assert() is a C++11 feature
 	// static_assert() must have two arguments to compile on CIMS
-	static_assert(num_ID_fields > 0, "Number of ID fields num_ID_fields not greater than 0");
+	static_assert(num_IDs > 0, "Number of ID fields num_IDs not greater than 0");
 
-	IDType ids[num_ID_fields];
+	IDType ids[num_IDs];
 
-	// Use of (&ids)[num_ID_fields] forces passed-in array reference to have length num_ID_fields
-	PointStructID(IDType (&ids)[num_ID_fields])
-		: PointStruct<T, num_ID_fields>()		// Constructor delegation prevents other parameters from being initialised with member initialiser lists
+	// Use of (&ids)[num_IDs] forces passed-in array reference to have length num_IDs
+	PointStructID(IDType (&ids)[num_IDs])
+		: PointStruct<T, num_IDs>()		// Constructor delegation prevents other parameters from being initialised with member initialiser lists
 	{
-		for (size_t i = 0; i < num_ID_fields; i++)
+		for (size_t i = 0; i < num_IDs; i++)
 			this->ids[i] = ids[i];
 	};
 
-	PointStructID(T dim1_val, T dim2_val, IDType (&ids)[num_ID_fields])
-		: PointStruct<T, num_ID_fields>(dim1_val, dim2_val)
+	PointStructID(T dim1_val, T dim2_val, IDType (&ids)[num_IDs])
+		: PointStruct<T, num_IDs>(dim1_val, dim2_val)
 	{
-		for (size_t i = 0; i < num_ID_fields; i++)
+		for (size_t i = 0; i < num_IDs; i++)
 			this->ids[i] = ids[i];
 	};
 	// For built-in types, implicit assignment operator and implicit copy constructor default to copying bits from source to destination
@@ -39,7 +39,7 @@ struct PointStructID : public PointStruct<T, num_IDs>
 		// Source:
 		// https://isocpp.org/wiki/faq/templates#nondependent-name-lookup-members
 		// const_cast<>() necessary to allow conversion of const array to non-const pointer parameter type as required by printArray()
-		os << '(' << this->dim1_val << ", " << this->dim2_val << "; " << printArray(os, const_cast<IDType *>(ids), 0, num_ID_fields) << ')';
+		os << '(' << this->dim1_val << ", " << this->dim2_val << "; " << printArray(os, const_cast<IDType *>(ids), 0, num_IDs) << ')';
 	};
 
 	// Comparison functions return < 0 if the dim1 value of this is ordered before the dim1 value of other, > 0 if the dim1 value of this is ordered after the dim1 value of other, and the result of calling comparisonTiebreaker() if this->dim1_val == other.dim1_val (similar statements hold true for comparison by dim2 values)
@@ -50,7 +50,7 @@ struct PointStructID : public PointStruct<T, num_IDs>
 #else
 	inline
 #endif
-	int compareDim1(const PointStructID<T, num_ID_fields, IDType> &other) const
+	int compareDim1(const PointStructID<T, num_IDs, IDType> &other) const
 	{
 		if (this->dim1_val != other.dim1_val)
 			// In case of unsigned types, subtraction will never return a negative result
@@ -63,7 +63,7 @@ struct PointStructID : public PointStruct<T, num_IDs>
 #else
 	inline
 #endif
-	int compareDim2(const PointStructID<T, num_ID_fields, IDType> &other) const
+	int compareDim2(const PointStructID<T, num_IDs, IDType> &other) const
 	{
 		if (this->dim2_val != other.dim2_val)
 			return this->dim2_val < other.dim2_val ? -1 : 1;
@@ -77,10 +77,10 @@ struct PointStructID : public PointStruct<T, num_IDs>
 #else
 	inline
 #endif
-	int comparisonTiebreaker(const PointStructID<T, num_ID_fields, IDType> &other) const
+	int comparisonTiebreaker(const PointStructID<T, num_IDs, IDType> &other) const
 	{
 		// Order by successive ID field values
-		for (size_t i = 0; i < num_ID_fields; i++)
+		for (size_t i = 0; i < num_IDs; i++)
 		{
 			if (ids[i] < other.ids[i])
 				return -1;
@@ -97,10 +97,10 @@ struct PointStructID : public PointStruct<T, num_IDs>
 #else
 	inline
 #endif
-	bool operator==(const PointStructID<T, num_ID_fields, IDType> &other) const
+	bool operator==(const PointStructID<T, num_IDs, IDType> &other) const
 	{
 		// Check that ID values all agree
-		for (size_t i = 0; i < num_ID_fields; i++)
+		for (size_t i = 0; i < num_IDs; i++)
 			if (ids[i] != other.ids[i])
 				return false;
 
@@ -108,8 +108,8 @@ struct PointStructID : public PointStruct<T, num_IDs>
 	};
 };
 
-template <typename T, size_t num_ID_fields, typename IDType>
-std::ostream &operator<<(std::ostream &os, const PointStructID<T, num_ID_fields, IDType> &ptstr)
+template <typename T, size_t num_IDs, typename IDType>
+std::ostream &operator<<(std::ostream &os, const PointStructID<T, num_IDs, IDType> &ptstr)
 {
 	ptstr.print(os);
 	return os;

@@ -22,8 +22,8 @@ class StaticPrioritySearchTree	// abstract class
 		virtual PointStructClass* twoSidedRightSearch(size_t &num_res_elems, T min_dim1_val, T min_dim2_val) = 0;
 };
 
-template <typename T>
-std::ostream &operator<<(std::ostream &os, StaticPrioritySearchTree<T> &t)
+template <typename T, class PointStructClass>
+std::ostream &operator<<(std::ostream &os, StaticPrioritySearchTree<T, PointStructClass> &t)
 {
 	t.print(os);
 	return os;
