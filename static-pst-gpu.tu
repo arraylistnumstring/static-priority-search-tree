@@ -3,6 +3,7 @@
 #include <thrust/sort.h>		// To use parallel sorting algorithm
 
 #include "err-chk.h"
+#include "helper-cuda--modified.h"
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
@@ -15,43 +16,21 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 		return;
 	}
 
-	// Check number of GPUs attached to machine
-	int num_devices = 0;
+	// Check and save number of GPUs attached to machine
+	gpuErrorCheck(cudaGetDeviceCount(&num_devs), "Error in getting number of devices: ");
+	if (num_devs < 1)	// No GPUs attached
+		throwErr("Error: " + std::to_string(num_devs) + " GPUs attached to host");
 
-	gpuErrorCheck(cudaGetDeviceCount(&num_devices), "Error in getting number of devices: ");
-	if (num_devices < 1)	// No GPUs attached
-		throwErr("Error: " + std::to_string(num_devices) + " GPUs attached to host");
+	// Use modified version of CUDA's gpuGetMaxGflopsDeviceId() to get top-performing GPU capable of unified virtual addressing; also used so that device in use is the same as that for marching cubes
+	dev_ind = gpuGetMaxGflopsDeviceId();
+	gpuErrorCheck(cudaGetDeviceProperties(&dev_props, dev_ind),
+					"Error in getting device properties of device "
+					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+					+ " total devices: ");
 
-	int device_ind = 0;		// Instantiate outside of for loop so it remains available
-	cudaDeviceProp device;
-	for (device_ind = 0; device_ind < num_devices; device_ind++)
-	{
-		gpuErrorCheck(cudaGetDeviceProperties(&device, device_ind),
-						"Error in getting device properties of device "
-						+ std::to_string(device_ind) + " of " + std::to_string(num_devices)
-						+ " total devices: ");
-
-		if (device.unifiedAddressing)
-			break;
-	}
-
-	if (!device.unifiedAddressing)	// Unified virtual addressing unsupported
-		throwErr("Error: none of the " + std::to_string(num_devices)
-					+ " devices attached to the system support unified virtual addressing");
-
-	int curr_device;
-	gpuErrorCheck(cudaGetDevice(&curr_device), "Error getting default device index: ");
-
-	if (curr_device != device_ind)
-		gpuErrorCheck(cudaSetDevice(device_ind), "Error setting default device to device "
-						+ std::to_string(device_ind) + " of " + std::to_string(num_devices)
-						+ " total devices: ");
-
-
-	// Save GPU info for later usage
-	dev_ind = device_ind;
-	dev_warp_size = device.warpSize;
-	num_devs = num_devices;
+	gpuErrorCheck(cudaSetDevice(dev_ind), "Error setting default device to device "
+					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+					+ " total devices: ");
 
 	this->num_elems = num_elems;
 	/*
@@ -61,116 +40,130 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 	// Number of element slots in each container subarray is nextGreaterPowerOf2(num_elems) - 1
 	num_elem_slots = nextGreaterPowerOf2(num_elems) - 1;
 
-
-	// Calculate total array size in units of sizeof(T) bytes so that array will satisfy datatype T's alignment requirements (as T is the largest datatype present in this data structure)
-	size_t tot_arr_size_num_Ts = calcTotArrSizeNumTs(num_elem_slots);
+	// Allocate as a T array so that alignment requirements for larger data types are obeyed
+	// Use of () after new and new[] causes value-initialisation (to 0) starting in C++03; needed for any nodes that technically contain no data
+	// constexpr if is a C++17 feature that only compiles the branch of code that evaluates to true at compile-time, saving executable space and execution runtime
+	size_t tot_arr_size_num_datatype;
+	size_t global_mem_needed;
+	if constexpr (num_IDs == 0 || sizeof(T) >= sizeof(IDType))
+	{
+		// No IDs present or sizeof(T) >= sizeof(IDType), so calculate total array size in units of sizeof(T) so that datatype T's alignment requirements will be satisfied
+		tot_arr_size_num_datatype = calcTotArrSizeNumUs<T, num_val_subarrs, IDType, num_ID_subarrs>(num_elem_slots);
+		global_mem_needed = tot_arr_size_num_datatype * sizeof(T);
+	}
+	else
+	{
+		// sizeof(IDType) > sizeof(T), so calculate total array size in units of sizeof(IDType) so that datatype IDType's alignment requirements will be satisfied
+		tot_arr_size_num_datatype = calcTotArrSizeNumUs<IDType, num_ID_subarrs, T, num_val_subarrs>(num_elem_slots);
+		global_mem_needed = tot_arr_size_num_datatype * sizeof(IDType);
+	}
 
 	/*
-		Space needed for instantiation = tree size + num_elems * (size of PointStructGPU + 3 * size of PointStructGPU pointers)
+		Space needed for instantiation = tree size + num_elems * (size of PointStructTemplate<T, IDType, num_IDs> + 3 * size of PointStructTemplate indices)
 			Enough space to contain 3 size_t indices for every node is needed because the splitting of pointers in the dim2_val array at each node creates a need for the dim2_val arrays to be duplicated
-		Space requirement is greater than that needed for reporting nodes, which is simply at most tree_size + num_elems * size of PointStructGPU
+		Space requirement is greater than that needed for reporting nodes, which is simply at most tree_size + num_elems * size of PointStructTemplate
 	*/
-	const size_t global_mem_needed = tot_arr_size_num_Ts * sizeof(T)
-									 + num_elems * (sizeof(PointStructTemplate<T, IDType, num_IDs>) + 3 * sizeof(size_t));
+	const size_t num_working_ind_arrays = 3;
+	global_mem_needed += num_elems * (sizeof(PointStructTemplate<T, IDType, num_IDs>) + num_working_ind_arrays * sizeof(size_t));
 	if (global_mem_needed > device.totalGlobalMem)
 		throwErr("Error: needed global memory space of " + std::to_string(global_mem_needed)
 					+ " B required for data structure and processing exceeds limit of global memory = "
 					+ std::to_string(device.totalGlobalMem) + " B on device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs));
 
-	// Allocate as a T array so that alignment requirements for larger data types are obeyed
-	// Use of () after new and new[] causes value-initialisation (to 0) starting in C++03; needed for any nodes that technically contain no data
-	T *complete_arr = new T[tot_arr_size_num_Ts]();
-
-	if (complete_arr == nullptr)
-		throwErr("Error: could not allocate " + std::to_string(num_elems)
-					+ " elements of type " + typeid(T).name()
-					+ " to instantiate host copy of root array");
-
-	T *complete_arr_d;
-
-	gpuErrorCheck(cudaMalloc(&complete_arr_d, tot_arr_size_num_Ts * sizeof(T)),
-					"Error in allocating priority search tree storage array on device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-					+ ": ");
-
-	gpuErrorCheck(cudaMemcpy(complete_arr_d, complete_arr, tot_arr_size_num_Ts * sizeof(T), cudaMemcpyDefault),
-					"Error in zero-initialising on-device priority search tree storage array via cudaMemcpy() on device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-					+ ": ");
-
-	delete[] complete_arr;
-
-	root_d = complete_arr_d;
-
-	// Create two arrays of PointStructGPU indices for processing PointStructGPU objects on CPU or GPU
-	size_t *dim1_val_ind_arr = new size_t[num_elems];
-	if (dim1_val_ind_arr == nullptr)
-		throwErr("Error: could not allocate " + std::to_string(num_elems)
-					+ " elements of type size_t to dim1_val_ind_arr");
-	size_t *dim2_val_ind_arr = new size_t[num_elems];
-	if (dim2_val_ind_arr == nullptr)
-		throwErr("Error: could not allocate " + std::to_string(num_elems)
-					+ " elements of type size_t to dim2_val_ind_arr");
-
-	for (size_t i = 0; i < num_elems; i++)
-		dim1_val_ind_arr[i] = dim2_val_ind_arr[i] = i;
+	// Memory transfer only permitted for on-host pinned (page-locked) memory, so do operations in the default stream
+	if constexpr (num_IDs == 0 || sizeof(T) >= sizeof(IDType))
+	{
+		// Allocate as a T array so that alignment requirements for larger data types are obeyed
+		gpuErrorCheck(cudaMalloc(&root_d, tot_arr_size_num_datatype * sizeof(T)),
+						"Error in allocating priority search tree storage array on device "
+						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+						+ ": ");
+	}
+	else
+	{
+		// Allocate as an IDType array so that alignment requirements for larger data types are obeyed
+		gpuErrorCheck(cudaMalloc(&root_d, tot_arr_size_num_datatype * sizeof(IDType)),
+						"Error in allocating priority search tree storage array on device "
+						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+						+ ": ");
+	}
 
 
-	// Create GPU-side array of PointStructGPU indices to store sorted results; as this array is not meant to be permanent, avoid storing the two arrays as one contiguous array in order to avoid allocation failure due to global memory fragmentation
+	// Create GPU-side array of PointStructTemplate<T, IDType, num_IDs> indices to store sorted results; as this array is not meant to be permanent, avoid storing the two arrays as one contiguous array in order to avoid allocation failure due to global memory fragmentation
 	size_t *dim1_val_ind_arr_d;
 	size_t *dim2_val_ind_arr_d;
 	size_t *dim2_val_ind_arr_secondary_d;
 
-	// Create GPU-side array of PointStructGPU objects for the index arrays to reference
+	// Create GPU-side array of PointStructTemplate<T, IDType, num_IDs> objects for the index arrays to reference
 	PointStructTemplate<T, IDType, num_IDs> *pt_arr_d;
 
 
 	gpuErrorCheck(cudaMalloc(&dim1_val_ind_arr_d, num_elems * sizeof(size_t)),
-					"Error in allocating array of PointStructGPU indices ordered by dimension 1 on device "
+					"Error in allocating array of PointStructTemplate<T, IDType, num_IDs> indices ordered by dimension 1 on device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 					+ ": ");
 	gpuErrorCheck(cudaMalloc(&dim2_val_ind_arr_d, num_elems * sizeof(size_t)),
-					"Error in allocating array of PointStructGPU indices ordered by dimension 2 on device "
+					"Error in allocating array of PointStructTemplate<T, IDType, num_IDs> indices ordered by dimension 2 on device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 					+ ": ");
 	gpuErrorCheck(cudaMalloc(&dim2_val_ind_arr_secondary_d, num_elems * sizeof(size_t)),
-					"Error in allocating secondary array of PointStructGPU indices ordered by dimension 2 on device "
+					"Error in allocating secondary array of PointStructTemplate<T, IDType, num_IDs> indices ordered by dimension 2 on device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 					+ ": ");
 	gpuErrorCheck(cudaMalloc(&pt_arr_d, num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>)),
-					"Error in allocating array of PointStructGPU objects on device "
+					"Error in allocating array of PointStructTemplate<T, IDType, num_IDs> objects on device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 					+ ": ");
 
 
-	gpuErrorCheck(cudaMemcpy(dim1_val_ind_arr_d, dim1_val_ind_arr, num_elems * sizeof(size_t), cudaMemcpyDefault),
-					"Error in copying array of PointStructGPU indices ordered by dimension 1 to device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-					+ ": ");
-	gpuErrorCheck(cudaMemcpy(dim2_val_ind_arr_d, dim2_val_ind_arr, num_elems * sizeof(size_t), cudaMemcpyDefault), 
-					"Error in copying array of PointStructGPU indices ordered by dimension 2 to device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-					+ ": ");
+	// Use cudaMemcpy() call as implicit call to cudaDeviceSynchronize(), as cudaMemcpy() calls are only truly asynchronous for pinned memory
 	gpuErrorCheck(cudaMemcpy(pt_arr_d, pt_arr, num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>), cudaMemcpyDefault), 
-					"Error in copying array of PointStructGPU objects to device "
+					"Error in copying array of PointStructTemplate<T, IDType, num_IDs> objects to device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 					+ ": ");
 
+	if constexpr (num_IDs == 0 || sizeof(T) >= sizeof(IDType))
+	{
+		gpuErrorCheck(cudaMemsetAsync(root_d, 0, tot_arr_size_num_data * sizeof(T), cudaStreamFireAndForget),
+						"Error in zero-intialising on-device priority search tree storage array via cudaMemset() on device "
+						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+						+ ": ");
+	}
+	else
+	{
+		gpuErrorCheck(cudaMemsetAsync(root_d, 0, tot_arr_size_num_data * sizeof(IDType), cudaStreamFireAndForget),
+						"Error in zero-intialising on-device priority search tree storage array via cudaMemset() on device "
+						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+						+ ": ");
+	}
 
-	delete[] dim1_val_ind_arr;
-	delete[] dim2_val_ind_arr;
-
+	// Create concurrent streams for index-initialising and sorting the dimension-1 and dimension-2 index arrays
+	cudaStream_t stream_dim1;
+	cudaStreamCreateWithFlags(&stream_dim1, cudaStreamNonBlocking);
+	indexInitialisation<<<, warpSize, 0, stream_dim1>>>(dim1_val_ind_arr_d, num_elems);
 	// Sort dimension-1 values index array in ascending order; in-place sort using a curried comparison function; guaranteed O(n) running time or better
-	thrust::sort(thrust::device, dim1_val_ind_arr_d, dim1_val_ind_arr_d + num_elems,
+	// Execution policy of thrust::cuda::par.on(stream_dim1) guarantees kernel is submitted to stream_dim1
+	thrust::sort(thrust::cuda::par.on(stream_dim1), dim1_val_ind_arr_d, dim1_val_ind_arr_d + num_elems,
 					Dim1ValIndCompIncOrd(pt_arr_d));
+	cudaStreamDestroy(stream_dim1);
 
+	
+	cudaStream_t stream_dim2;
+	cudaStreamCreateWithFlags(&stream_dim2, cudaStreamNonBlocking);
+	indexInitialisation<<<, dev_props.warpSize, 0, stream_dim2>>>(dim1_val_ind_arr_d, num_elems);
 	// Sort dimension-2 values index array in descending order; in-place sort using a curried comparison function; guaranteed O(n) running time or better
-	thrust::sort(thrust::device, dim2_val_ind_arr_d, dim2_val_ind_arr_d + num_elems,
+	thrust::sort(thrust::cuda::par.on(stream_dim2), dim2_val_ind_arr_d, dim2_val_ind_arr_d + num_elems,
 					Dim2ValIndCompDecOrd(pt_arr_d));
+	cudaStreamDestroy(stream_dim2);
+
+	// For correctness, must wait for all streams doing pre-construction pre-processing work to complete before continuing
+	gpuErrorCheck(cudaDeviceSynchronize(), "Error in synchronizing with device "
+					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+					+ " after tree pre-construction pre-processing: ");
 
 	// Populate tree with a number of threads that is a multiple of the warp size
-	populateTree<<<1, dev_warp_size, dev_warp_size * sizeof(size_t) * 3>>>
+	populateTree<<<1, dev_props.warpSize, dev_props.warpSize * sizeof(size_t) * num_working_ind_arrays>>>
 				(root_d, num_elem_slots, pt_arr_d, dim1_val_ind_arr_d, dim2_val_ind_arr_d, dim2_val_ind_arr_secondary_d, 0, num_elems, 0);
 
 
@@ -180,19 +173,19 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 
 	// All threads have finished using these arrays; free them and return
 	gpuErrorCheck(cudaFree(dim1_val_ind_arr_d),
-					"Error in freeing array of PointStructGPU indices ordered by dimension 1 on device "
+					"Error in freeing array of PointStructTemplate<T, IDType, num_IDs> indices ordered by dimension 1 on device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 					+ ": ");
 	gpuErrorCheck(cudaFree(dim2_val_ind_arr_d),
-					"Error in freeing array of PointStructGPU indices ordered by dimension 2 on device "
+					"Error in freeing array of PointStructTemplate<T, IDType, num_IDs> indices ordered by dimension 2 on device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 					+ ": ");
 	gpuErrorCheck(cudaFree(dim2_val_ind_arr_secondary_d), 
-					"Error in freeing secondary array of PointStructGPU indices ordered by dimension 2 on device "
+					"Error in freeing secondary array of PointStructTemplate<T, IDType, num_IDs> indices ordered by dimension 2 on device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 					+ ": ");
 	gpuErrorCheck(cudaFree(pt_arr_d),
-					"Error in freeing array of PointStructGPU objects on device "
+					"Error in freeing array of PointStructTemplate<T, IDType, num_IDs> objects on device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 					+ ": ");
 }
@@ -207,12 +200,36 @@ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::print(std::ostream &
 		os << "Tree is empty\n";
 		return;
 	}
-	T *temp_root = new T[calcTotArrSizeNumTs(num_elem_slots)];
+
+	size_t tot_arr_size_num_datatype;
+	T *temp_root;
+	if constexpr (num_IDs == 0 || sizeof(T) >= sizeof(IDType))
+	{
+		// No IDs present or sizeof(T) >= sizeof(IDType), so calculate total array size in units of sizeof(T) so that datatype T's alignment requirements will be satisfied
+		tot_arr_size_num_datatype = calcTotArrSizeNumUs<T, num_val_subarrs, IDType, num_ID_subarrs>(num_elem_slots);
+		temp_root = new T[tot_arr_size_num_Ts]();
+	}
+	else
+	{
+		// sizeof(IDType) > sizeof(T), so calculate total array size in units of sizeof(IDType) so that datatype IDType's alignment requirements will be satisfied
+		tot_arr_size_num_datatypes = calcTotArrSizeNumUs<IDType, num_ID_subarrs, T, num_val_subarrs>(num_elem_slots);
+		temp_root = reinterpret_cast<T *>(new IDType[tot_arr_size_num_IDTypes]());
+	}
+	
 	if (temp_root == nullptr)
 		throwErr("Error: could not allocate " + std::to_string(num_elem_slots)
 					+ " elements of type " + typeid(T).name() + "to temp_root");
-	gpuErrorCheck(cudaMemcpy(temp_root, root_d, calcTotArrSizeNumTs(num_elem_slots) * sizeof(T), cudaMemcpyDefault),
-					"Error in copying array underlying StaticPSTGPU instance from device to host: ");
+
+	if constexpr (num_IDs == 0 || sizeof(T) >= sizeof(IDType))
+	{
+		gpuErrorCheck(cudaMemcpy(temp_root, root_d, tot_arr_size_num_datatypes * sizeof(T), cudaMemcpyDefault),
+						"Error in copying array underlying StaticPSTGPU instance from device to host: ");
+	}
+	else
+	{
+		gpuErrorCheck(cudaMemcpy(temp_root, root_d, tot_arr_size_num_datatypes * sizeof(IDType), cudaMemcpyDefault),
+						"Error in copying array underlying StaticPSTGPU instance from device to host: ");
+	}
 
 	std::string prefix = "";
 	std::string child_prefix = "";
@@ -320,11 +337,11 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 				i < subelems_start_inds_arr[threadIdx.x] + num_subelems_arr[threadIdx.x];
 				i++)
 		{
-			// dim2_val_ind_arr_d[i] is the index of a PointStructGPU that comes before or is the PointStructGPU of median dim1 value in dim1_val_ind_arr_d
+			// dim2_val_ind_arr_d[i] is the index of a PointStructTemplate<T, IDType, num_IDs> that comes before or is the PointStructTemplate<T, IDType, num_IDs> of median dim1 value in dim1_val_ind_arr_d
 			if (pt_arr_d[dim2_val_ind_arr_d[i]].compareDim1(pt_arr_d[dim1_val_ind_arr_d[median_dim1_val_ind]]) <= 0)
 				// Postfix ++ returns the current value before incrementing
 				dim2_val_ind_arr_secondary_d[left_dim2_subarr_iter_ind++] = dim2_val_ind_arr_d[i];
-			// dim2_val_ind_arr_d[i] is the index of a PointStructGPU that comes after the PointStructGPU of median dim1 value in dim1_val_ind_arr_d
+			// dim2_val_ind_arr_d[i] is the index of a PointStructTemplate<T, IDType, num_IDs> that comes after the PointStructTemplate<T, IDType, num_IDs> of median dim1 value in dim1_val_ind_arr_d
 			else
 				dim2_val_ind_arr_secondary_d[right_dim2_subarr_iter_ind++] = dim2_val_ind_arr_d[i];
 		}
@@ -637,24 +654,26 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-__forceinline__ size_t StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSizeNumTs(const size_t num_elem_slots)
+template <typename U, size_t num_U_subarrs, typename V, size_t num_V_subarrs>
+	requires sizeof(U) >= sizeof(V)
+__forceinline__ size_t StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSizeNumUs<U, num_U_subarrs, V, num_V_subarrs>(const size_t num_elem_slots)
 {
 	/*
-		tot_arr_size_num_Ts = ceil(num_elem_slots * (num_val_subarrs + num_Ts/bitcode))
-							= ceil(num_elem_slots * (num_val_subarrs + 1 B/bitcode * 1 T/#Bs))
-							= ceil(num_elem_slots * (num_val_subarrs + 1/sizeof(T)))
-							= ceil(num_elem_slots * num_val_subarrs + num_elem_slots / sizeof(T))
-							= num_elem_slots * num_val_subarrs + ceil(num_elem_slots / sizeof(T))
+		tot_arr_size_num_Us = ceil(1/sizeof(U) * num_elem_slots * (sizeof(U) * num_U_subarrs + sizeof(V) * num_V_subarrs + 1 B/bitcode * 1 bitcode))
 			With integer truncation:
-				if num_elem_slots % codes_per_byte != 0:
-							= num_elem_slots * num_val_subarrs + num_elem_slots / sizeof(T) + 1
-				if num_elem_slots % codes_per_byte == 0:
-							= num_elem_slots * num_val_subarrs + num_elem_slots / sizeof(T)
+				if tot_arr_size_bytes % sizeof(U) != 0:
+							= tot_arr_size_bytes + 1
+				if tot_arr_size_bytes % sizeof(U) == 0:
+							= tot_arr_size_bytes
 	*/
-	size_t tot_arr_size_num_Ts = num_val_subarrs * num_elem_slots + num_elem_slots/sizeof(T);
-	if (num_elem_slots % sizeof(T) != 0)
-		tot_arr_size_num_Ts++;
-	return tot_arr_size_num_Ts;
+	// Calculate total size in bytes
+	size_t tot_arr_size_bytes = num_elem_slots * (sizeof(U) * num_U_subarrs + sizeof(V) * num_V_subarrs + 1);
+	// Divide by sizeof(U)
+	size_t tot_arr_size_num_Us = tot_arr_size_bytes / sizeof(U);
+	// If tot_arr_size_bytes % sizeof(U) != 0, then tot_arr_size_num_Us * sizeof(U) < tot_arr_size_bytes, so add 1 to tot_arr_size_num_Us
+	if (tot_arr_size_bytes % sizeof(U) != 0)
+		tot_arr_size_num_Us++;
+	return tot_arr_size_num_Us;
 }
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
@@ -702,8 +721,10 @@ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::printRecur(std::ostr
 {
 	os << prefix << '(' << getDim1ValsRoot(tree_root, num_elem_slots)[curr_ind]
 				<< ", " << getDim2ValsRoot(tree_root, num_elem_slots)[curr_ind]
-				<< "; " << getMedDim1ValsRoot(tree_root, num_elem_slots)[curr_ind]
-				<< ')';
+				<< "; " << getMedDim1ValsRoot(tree_root, num_elem_slots)[curr_ind];
+	if constexpr (num_IDs == 1)
+		os << "; " << getIDsRoot(tree_root, num_elem_slots)[curr_ind];
+	os << ')';
 	const unsigned char curr_node_bitcode = getBitcodesRoot(tree_root, num_elem_slots)[curr_ind];
 	if (TreeNode::hasLeftChild(curr_node_bitcode)
 			&& TreeNode::hasRightChild(curr_node_bitcode))

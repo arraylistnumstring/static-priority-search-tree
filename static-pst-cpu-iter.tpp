@@ -616,10 +616,10 @@ size_t StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSize
 	/*
 		tot_arr_size_num_Us = ceil(1/sizeof(U) * num_elem_slots * (sizeof(U) * num_U_subarrs + sizeof(V) * num_V_subarrs + 1 B/bitcode * 1 bitcode))
 			With integer truncation:
-				if num_elem_slots % codes_per_byte != 0:
-							= num_elem_slots * num_U_subarrs + num_elem_slots / sizeof(U) + 1
-				if num_elem_slots % codes_per_byte == 0:
-							= num_elem_slots * num_U_subarrs + num_elem_slots / sizeof(U)
+				if tot_arr_size_bytes % sizeof(U) != 0:
+							= tot_arr_size_bytes + 1
+				if tot_arr_size_bytes % sizeof(U) == 0:
+							= tot_arr_size_bytes
 	*/
 	// Calculate total size in bytes
 	size_t tot_arr_size_bytes = num_elem_slots * (sizeof(U) * num_U_subarrs + sizeof(V) * num_V_subarrs + 1);

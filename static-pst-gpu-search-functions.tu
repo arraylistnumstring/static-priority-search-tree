@@ -36,6 +36,8 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 	T curr_node_dim1_val;
 	T curr_node_dim2_val;
 	T curr_node_med_dim1_val;
+	if constexpr (num_IDs == 1)
+		IDType curr_node_id;
 	unsigned char curr_node_bitcode;
 
 	while (cont_iter)
@@ -47,6 +49,8 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 			curr_node_dim1_val = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getDim1ValsRoot(root_d, num_elem_slots)[search_ind];
 			curr_node_dim2_val = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getDim2ValsRoot(root_d, num_elem_slots)[search_ind];
 			curr_node_med_dim1_val = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getMedDim1ValsRoot(root_d, num_elem_slots)[search_ind];
+			if constexpr (num_IDs == 1)
+				curr_node_id = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(root_d, num_elem_slots)[search_ind];
 			curr_node_bitcode = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getBitcodesRoot(root_d, num_elem_slots)[search_ind];
 
 			if (min_dim2_val > curr_node_dim2_val)
@@ -63,6 +67,8 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 					unsigned long long res_ind_to_access = atomicAdd(&res_arr_ind_d, 1);
 					res_pt_arr_d[res_ind_to_access].dim1_val = curr_node_dim1_val;
 					res_pt_arr_d[res_ind_to_access].dim2_val = curr_node_dim2_val;
+					if constexpr (num_IDs == 1)
+						res_pt_arr_d[num_res_elems].id = curr_node_id;
 				}
 
 				// If node has no children or the subtree satisfying the search range has no children, the thread becomes inactive; inactivity must occur on this side of the following syncthreads() call to avoid race conditions
@@ -172,6 +178,8 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 	T curr_node_dim1_val;
 	T curr_node_dim2_val;
 	T curr_node_med_dim1_val;
+	if constexpr (num_IDs == 1)
+		IDType curr_node_id;
 	unsigned char curr_node_bitcode;
 
 	while (cont_iter)
@@ -183,6 +191,8 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 			curr_node_dim1_val = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getDim1ValsRoot(root_d, num_elem_slots)[search_ind];
 			curr_node_dim2_val = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getDim2ValsRoot(root_d, num_elem_slots)[search_ind];
 			curr_node_med_dim1_val = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getMedDim1ValsRoot(root_d, num_elem_slots)[search_ind];
+			if constexpr (num_IDs == 1)
+				curr_node_id = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(root_d, num_elem_slots)[search_ind];
 			curr_node_bitcode = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getBitcodesRoot(root_d, num_elem_slots)[search_ind];
 
 			if (min_dim2_val > curr_node_dim2_val)
@@ -198,6 +208,8 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 					unsigned long long res_ind_to_access = atomicAdd(&res_arr_ind_d, 1);
 					res_pt_arr_d[res_ind_to_access].dim1_val = curr_node_dim1_val;
 					res_pt_arr_d[res_ind_to_access].dim2_val = curr_node_dim2_val;
+					if constexpr (num_IDs == 1)
+						res_pt_arr_d[num_res_elems].id = curr_node_id;
 				}
 
 				// Check if thread becomes inactive because current node has no children
@@ -281,6 +293,8 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 	T curr_node_dim1_val;
 	T curr_node_dim2_val;
 	T curr_node_med_dim1_val;
+	if constexpr (num_IDs == 1)
+		IDType curr_node_id;
 	unsigned char curr_node_bitcode;
 
 	while (cont_iter)
@@ -292,6 +306,8 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 			curr_node_dim1_val = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getDim1ValsRoot(root_d, num_elem_slots)[search_ind];
 			curr_node_dim2_val = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getDim2ValsRoot(root_d, num_elem_slots)[search_ind];
 			curr_node_med_dim1_val = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getMedDim1ValsRoot(root_d, num_elem_slots)[search_ind];
+			if constexpr (num_IDs == 1)
+				curr_node_id = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(root_d, num_elem_slots)[search_ind];
 			curr_node_bitcode = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getBitcodesRoot(root_d, num_elem_slots)[search_ind];
 
 			if (min_dim2_val > curr_node_dim2_val)
@@ -307,6 +323,8 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 					unsigned long long res_ind_to_access = atomicAdd(&res_arr_ind_d, 1);
 					res_pt_arr_d[res_ind_to_access].dim1_val = curr_node_dim1_val;
 					res_pt_arr_d[res_ind_to_access].dim2_val = curr_node_dim2_val;
+					if constexpr (num_IDs == 1)
+						res_pt_arr_d[num_res_elems].id = curr_node_id;
 				}
 
 				// Check if thread becomes inactive because current node has no children
@@ -385,6 +403,8 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 
 	// curr_node_dim1_val will only be accessed once, so no need to create an automatic variable for it
 	T curr_node_dim2_val;
+	if constexpr (num_IDs == 1)
+		IDType curr_node_id;
 	unsigned char curr_node_bitcode;
 
 	while (cont_iter)
@@ -394,6 +414,8 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 		if (search_ind != StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND)
 		{
 			curr_node_dim2_val = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getDim2ValsRoot(root_d, num_elem_slots)[search_ind];
+			if constexpr (num_IDs == 1)
+				curr_node_id = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(root_d, num_elem_slots)[search_ind];
 			curr_node_bitcode = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getBitcodesRoot(root_d, num_elem_slots)[search_ind];
 			
 			if (min_dim2_val > curr_node_dim2_val)
@@ -408,6 +430,8 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 				res_pt_arr_d[res_ind_to_access].dim1_val
 						= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getDim1ValsRoot(root_d, num_elem_slots)[search_ind];
 				res_pt_arr_d[res_ind_to_access].dim2_val = curr_node_dim2_val;
+				if constexpr (num_IDs == 1)
+					res_pt_arr_d[num_res_elems].id = curr_node_id;
 
 				// Check if thread becomes inactive because current node has no children
 				if (!StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::hasChildren(curr_node_bitcode))
