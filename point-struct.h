@@ -2,6 +2,8 @@
 #define POINT_STRUCT_H
 
 #include <cstring>		// To use memcpy()
+#include <iostream>
+#include <type_traits>	// To use static_assert()
 
 template <typename T>
 // C++ structs differ from classes only in that structs default to public access of all members, while classes default to private access of all members
@@ -57,7 +59,7 @@ struct PointStruct
 		return this == &other ? 0 : this < &other ? -1 : 1;
 	};
 
-	inline bool operator==(const PointStruct<T> &other) const
+	inline  bool operator==(const PointStruct<T> &other) const
 	{
 		return dim1_val == other.dim1_val && dim2_val == other.dim2_val;
 	};
