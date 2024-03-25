@@ -7,9 +7,13 @@
 
 #include "print-array.h"
 
-template <typename T, size_t num_IDs=0, typename IDType=void>
-// C++ structs differ from classes only in that structs default to public access of all members, while classes default to private access of all members
+template <typename T, typename IDType, size_t num_IDs>
 struct PointStruct
+{};
+
+template <typename T>
+// C++ structs differ from classes only in that structs default to public access of all members, while classes default to private access of all members
+struct PointStruct<T, void, 0>
 {
 	// Throws a compile-time error if T is not of arithmetic (numeric) type
 	// static_assert() and std::is_arithmetic are C++11 features
@@ -45,7 +49,7 @@ struct PointStruct
 #else
 	inline
 #endif
-	int compareDim1(const PointStruct<T> &other) const
+	int compareDim1(const PointStruct<T, void, 0> &other) const
 	{
 		if (dim1_val != other.dim1_val)
 			// In case of unsigned types, subtraction will never return a negative result
@@ -58,7 +62,7 @@ struct PointStruct
 #else
 	inline
 #endif
-	int compareDim2(const PointStruct<T> &other) const
+	int compareDim2(const PointStruct<T, void, 0> &other) const
 	{
 		if (dim2_val != other.dim2_val)
 			return dim2_val < other.dim2_val ? -1 : 1;
@@ -72,7 +76,7 @@ struct PointStruct
 #else
 	inline
 #endif
-	int comparisonTiebreaker(const PointStruct<T> &other) const
+	int comparisonTiebreaker(const PointStruct<T, void, 0> &other) const
 	{
 		return this == &other ? 0 : this < &other ? -1 : 1;
 	};
@@ -82,15 +86,15 @@ struct PointStruct
 #else
 	inline
 #endif
-	bool operator==(const PointStruct<T> &other) const
+	bool operator==(const PointStruct<T, void, 0> &other) const
 	{
 		return dim1_val == other.dim1_val && dim2_val == other.dim2_val;
 	};
 };
 
 // Specialisation of PointStruct only for these two values of num_IDs because of performance hits when accessing arrays with threads on GPU
-template <typename T, size_t num_IDs=1, typename IDType>
-struct PointStruct
+template <typename T, typename IDType>
+struct PointStruct<T, IDType, 1>
 {
 	// Throws a compile-time error if T is not of arithmetic (numeric) type
 	// static_assert() and std::is_arithmetic are C++11 features
@@ -102,13 +106,13 @@ struct PointStruct
 	T dim2_val;
 	IDType id;
 
-	PointStructID(IDType id)
+	PointStruct(IDType id)
 		: dim1_val(0),
 		dim2_val(0),
 		id(id)
 	{};
 
-	PointStructID(T dim1_val, T dim2_val, IDType id)
+	PointStruct(T dim1_val, T dim2_val, IDType id)
 		: dim1_val(dim1_val),
 		dim2_val(dim2_val),
 		id(id)
@@ -130,7 +134,7 @@ struct PointStruct
 #else
 	inline
 #endif
-	int compareDim1(const PointStructID<T, num_IDs, IDType> &other) const
+	int compareDim1(const PointStruct<T, IDType, 1> &other) const
 	{
 		if (dim1_val != other.dim1_val)
 			// In case of unsigned types, subtraction will never return a negative result
@@ -143,7 +147,7 @@ struct PointStruct
 #else
 	inline
 #endif
-	int compareDim2(const PointStructID<T, num_IDs, IDType> &other) const
+	int compareDim2(const PointStruct<T, IDType, 1> &other) const
 	{
 		if (dim2_val != other.dim2_val)
 			return dim2_val < other.dim2_val ? -1 : 1;
@@ -157,7 +161,7 @@ struct PointStruct
 #else
 	inline
 #endif
-	int comparisonTiebreaker(const PointStructID<T, num_IDs, IDType> &other) const
+	int comparisonTiebreaker(const PointStruct<T, IDType, 1> &other) const
 	{
 		// Order by ID field value, or, if all else fails, by address in memory to guarantee stable sorting
 		return id < other.id ? -1 :
@@ -171,15 +175,14 @@ struct PointStruct
 #else
 	inline
 #endif
-	bool operator==(const PointStructID<T, num_IDs, IDType> &other) const
+	bool operator==(const PointStruct<T, IDType, 1> &other) const
 	{
 		return dim1_val == other.dim1_val && dim2_val == other.dim2_val && id == other.id;
 	};
-
 };
 
 template <typename T, size_t num_IDs, typename IDType>
-std::ostream &operator<<(std::ostream &os, const PointStruct<T, num_IDs, IDType> &ptstr)
+std::ostream &operator<<(std::ostream &os, const PointStruct<T, IDType, num_IDs> &ptstr)
 {
 	ptstr.print(os);
 	return os;
