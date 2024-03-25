@@ -106,6 +106,12 @@ struct PointStruct<T, IDType, 1>
 	T dim2_val;
 	IDType id;
 
+	PointStruct()
+		: dim1_val(0),
+		dim2_val(0),
+		id(0)
+	{};
+
 	PointStruct(IDType id)
 		: dim1_val(0),
 		dim2_val(0),

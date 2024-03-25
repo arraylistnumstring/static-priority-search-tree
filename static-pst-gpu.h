@@ -11,28 +11,34 @@ __device__ unsigned long long res_arr_ind_d;
 
 // To use __global__ function as a friend, must not define it at the same time as it is declared
 // As references passed to a global function live on host code, references to variables are not valid if the value does not reside in pinned memory
-template <typename T>
-__global__ void populateTree(T *const root_d, const size_t num_elem_slots, PointStructGPU<T> *const pt_arr_d, size_t *const dim1_val_ind_arr_d, size_t *dim2_val_ind_arr_d, size_t *dim2_val_ind_arr_secondary_d, const size_t val_ind_arr_start_ind, const size_t num_elems, const size_t target_node_start_ind);
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+__global__ void populateTree(T *const root_d, const size_t num_elem_slots, PointStructTemplate<T, IDType, num_IDs> *const pt_arr_d, size_t *const dim1_val_ind_arr_d, size_t *dim2_val_ind_arr_d, size_t *dim2_val_ind_arr_secondary_d, const size_t val_ind_arr_start_ind, const size_t num_elems, const size_t target_node_start_ind);
 
 // Cannot overload a global function over a host function, even if the number of arguments differs
-template <typename T>
-__global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_slots, const size_t start_node_ind, PointStructGPU<T> *const res_pt_arr_d, const T min_dim1_val, const T max_dim1_val, const T min_dim2_val);
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+__global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_slots, const size_t start_node_ind, PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d, const T min_dim1_val, const T max_dim1_val, const T min_dim2_val);
 
-template <typename T>
-__global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_slots, const size_t start_node_ind, PointStructGPU<T> *const res_pt_arr_d, const T max_dim1_val, const T min_dim2_val);
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+__global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_slots, const size_t start_node_ind, PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d, const T max_dim1_val, const T min_dim2_val);
 
-template <typename T>
-__global__ void twoSidedRightSearchGlobal (T *const root_d, const size_t num_elem_slots, const size_t start_node_ind, PointStructGPU<T> *const res_pt_arr_d, const T min_dim1_val, const T min_dim2_val);
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+__global__ void twoSidedRightSearchGlobal (T *const root_d, const size_t num_elem_slots, const size_t start_node_ind, PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d, const T min_dim1_val, const T min_dim2_val);
 
-template <typename T>
-__global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slots, const size_t start_node_ind, PointStructGPU<T> *const res_pt_arr_d, const T min_dim2_val);
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+__global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slots, const size_t start_node_ind, PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d, const T min_dim2_val);
 
-template <typename T>
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType=void, size_t num_IDs=0>
 // public superclass means that all public and protected members of base-class retain their access status in the subclass
-class StaticPSTGPU : public StaticPrioritySearchTree<T>
+class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDType, num_IDs>
 {
 	public:
-		StaticPSTGPU(PointStructGPU<T> *const &pt_arr, size_t num_elems);
+		StaticPSTGPU(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr, size_t num_elems);
 		// Since arrays were allocated continguously, only need to free one of the array pointers
 		virtual ~StaticPSTGPU() {if (num_elem_slots != 0) cudaFree(root_d);};
 
@@ -44,7 +50,7 @@ class StaticPSTGPU : public StaticPrioritySearchTree<T>
 		int getDevWarpSize() const {return dev_warp_size;};
 		int getNumDevs() const {return num_devs;};
 
-		virtual PointStructGPU<T>* threeSidedSearch(size_t &num_res_elems, T min_dim1_val, T max_dim1_val, T min_dim2_val)
+		virtual PointStructTemplate<T, IDType, num_IDs>* threeSidedSearch(size_t &num_res_elems, T min_dim1_val, T max_dim1_val, T min_dim2_val)
 		{
 			if (num_elems == 0)
 			{
@@ -53,8 +59,8 @@ class StaticPSTGPU : public StaticPrioritySearchTree<T>
 				return nullptr;
 			}
 
-			PointStructGPU<T>* pt_arr_d;
-			gpuErrorCheck(cudaMalloc(&pt_arr_d, num_elems * sizeof(PointStructGPU<T>)),
+			PointStructTemplate<T, IDType, num_IDs>* pt_arr_d;
+			gpuErrorCheck(cudaMalloc(&pt_arr_d, num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>)),
 							"Error in allocating array to store PointStruct search result on device "
 							+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 							+ ": ");
@@ -83,7 +89,7 @@ class StaticPSTGPU : public StaticPrioritySearchTree<T>
 			// Return device pointer in case more on-device computations need to be done, e.g. Marching Cubes
 			return pt_arr_d;
 		};
-		virtual PointStructGPU<T>* twoSidedLeftSearch(size_t &num_res_elems, T max_dim1_val, T min_dim2_val)
+		virtual PointStructTemplate<T, IDType, num_IDs>* twoSidedLeftSearch(size_t &num_res_elems, T max_dim1_val, T min_dim2_val)
 		{
 			if (num_elems == 0)
 			{
@@ -92,8 +98,8 @@ class StaticPSTGPU : public StaticPrioritySearchTree<T>
 				return nullptr;
 			}
 
-			PointStructGPU<T>* pt_arr_d;
-			gpuErrorCheck(cudaMalloc(&pt_arr_d, num_elems * sizeof(PointStructGPU<T>)),
+			PointStructTemplate<T, IDType, num_IDs>* pt_arr_d;
+			gpuErrorCheck(cudaMalloc(&pt_arr_d, num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>)),
 							"Error in allocating array to store PointStruct search result on device "
 							+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 							+ ": ");
@@ -122,7 +128,7 @@ class StaticPSTGPU : public StaticPrioritySearchTree<T>
 			// Return device pointer in case more on-device computations need to be done, e.g. Marching Cubes
 			return pt_arr_d;
 		};
-		virtual PointStructGPU<T>* twoSidedRightSearch(size_t &num_res_elems, T min_dim1_val, T min_dim2_val)
+		virtual PointStructTemplate<T, IDType, num_IDs>* twoSidedRightSearch(size_t &num_res_elems, T min_dim1_val, T min_dim2_val)
 		{
 			if (num_elems == 0)
 			{
@@ -131,8 +137,8 @@ class StaticPSTGPU : public StaticPrioritySearchTree<T>
 				return nullptr;
 			}
 
-			PointStructGPU<T>* pt_arr_d;
-			gpuErrorCheck(cudaMalloc(&pt_arr_d, num_elems * sizeof(PointStructGPU<T>)),
+			PointStructTemplate<T, IDType, num_IDs>* pt_arr_d;
+			gpuErrorCheck(cudaMalloc(&pt_arr_d, num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>)),
 							"Error in allocating array to store PointStruct search result on device "
 							+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 							+ ": ");
@@ -166,7 +172,7 @@ class StaticPSTGPU : public StaticPrioritySearchTree<T>
 		// Must be public to be accessible in __global__ functions
 		struct Dim1ValIndCompIncOrd
 		{
-			Dim1ValIndCompIncOrd(PointStructGPU<T> *pt_arr_d) : pt_arr_d(pt_arr_d) {};
+			Dim1ValIndCompIncOrd(PointStructTemplate<T, IDType, num_IDs> *pt_arr_d) : pt_arr_d(pt_arr_d) {};
 
 			__host__ __device__ bool operator()(const size_t &i, const size_t &j)
 			{
@@ -174,11 +180,11 @@ class StaticPSTGPU : public StaticPrioritySearchTree<T>
 			};
 
 			private:
-				PointStructGPU<T> *pt_arr_d;
+				PointStructTemplate<T, IDType, num_IDs> *pt_arr_d;
 		};
 		struct Dim2ValIndCompDecOrd
 		{
-			Dim2ValIndCompDecOrd(PointStructGPU<T> *pt_arr_d) : pt_arr_d(pt_arr_d) {};
+			Dim2ValIndCompDecOrd(PointStructTemplate<T, IDType, num_IDs> *pt_arr_d) : pt_arr_d(pt_arr_d) {};
 
 			__host__ __device__ bool operator()(const size_t &i, const size_t &j)
 			{
@@ -186,7 +192,7 @@ class StaticPSTGPU : public StaticPrioritySearchTree<T>
 			};
 
 			private:
-				PointStructGPU<T> *pt_arr_d;
+				PointStructTemplate<T, IDType, num_IDs> *pt_arr_d;
 		};
 
 	private:
@@ -195,7 +201,7 @@ class StaticPSTGPU : public StaticPrioritySearchTree<T>
 		StaticPSTGPU(StaticPSTGPU &tree);	// copy constructor
 
 
-		__forceinline__ __host__ __device__ static void setNode(T *const root_d, const size_t node_ind, const size_t num_elem_slots, PointStruct<T> &source_data, T median_dim1_val)
+		__forceinline__ __host__ __device__ static void setNode(T *const root_d, const size_t node_ind, const size_t num_elem_slots, PointStructTemplate<T, IDType, num_IDs> &source_data, T median_dim1_val)
 		{
 			getDim1ValsRoot(root_d, num_elem_slots)[node_ind] = source_data.dim1_val;
 			getDim2ValsRoot(root_d, num_elem_slots)[node_ind] = source_data.dim2_val;
@@ -204,7 +210,7 @@ class StaticPSTGPU : public StaticPrioritySearchTree<T>
 
 		__forceinline__ __device__ static void constructNode(T *const &root_d,
 																const size_t &num_elem_slots,
-																PointStructGPU<T> *const &pt_arr_d,
+																PointStructTemplate<T, IDType, num_IDs> *const &pt_arr_d,
 																size_t &target_node_ind,
 																const size_t &num_elems,
 																size_t *const &dim1_val_ind_arr_d,
@@ -218,14 +224,14 @@ class StaticPSTGPU : public StaticPrioritySearchTree<T>
 																size_t &right_subarr_num_elems);
 
 		// Helper functions for determining how to delegate work during searches
-		__forceinline__ __device__ static void do3SidedSearchDelegation(const unsigned char &curr_node_bitcode, T *const &root_d, const size_t &num_elem_slots, PointStructGPU<T> *const res_pt_arr_d, const T &min_dim1_val, const T &max_dim1_val, const T &curr_node_med_dim1_val, const T &min_dim2_val, long long &search_ind, long long *const &search_inds_arr, unsigned char &search_code, unsigned char *const &search_codes_arr);
-		__forceinline__ __device__ static void doLeftSearchDelegation(const bool range_split_poss, const unsigned char &curr_node_bitcode, T *const &root_d, const size_t &num_elem_slots, PointStructGPU<T> *const res_pt_arr_d, const T &min_dim2_val, long long &search_ind, long long *const &search_inds_arr, unsigned char &search_code, unsigned char *const &search_codes_arr);
-		__forceinline__ __device__ static void doRightSearchDelegation(const bool range_split_poss, const unsigned char &curr_node_bitcode, T *const &root_d, const size_t &num_elem_slots, PointStructGPU<T> *const res_pt_arr_d, const T &min_dim2_val, long long &search_ind, long long *const &search_inds_arr, unsigned char &search_code, unsigned char *const &search_codes_arr);
-		__forceinline__ __device__ static void doReportAllNodesDelegation(const unsigned char &curr_node_bitcode, T *const &root_d, const size_t &num_elem_slots, PointStructGPU<T> *const res_pt_arr_d, const T &min_dim2_val, long long &search_ind, long long *const &search_inds_arr, unsigned char *const &search_codes_arr = nullptr);
+		__forceinline__ __device__ static void do3SidedSearchDelegation(const unsigned char &curr_node_bitcode, T *const &root_d, const size_t &num_elem_slots, PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d, const T &min_dim1_val, const T &max_dim1_val, const T &curr_node_med_dim1_val, const T &min_dim2_val, long long &search_ind, long long *const &search_inds_arr, unsigned char &search_code, unsigned char *const &search_codes_arr);
+		__forceinline__ __device__ static void doLeftSearchDelegation(const bool range_split_poss, const unsigned char &curr_node_bitcode, T *const &root_d, const size_t &num_elem_slots, PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d, const T &min_dim2_val, long long &search_ind, long long *const &search_inds_arr, unsigned char &search_code, unsigned char *const &search_codes_arr);
+		__forceinline__ __device__ static void doRightSearchDelegation(const bool range_split_poss, const unsigned char &curr_node_bitcode, T *const &root_d, const size_t &num_elem_slots, PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d, const T &min_dim2_val, long long &search_ind, long long *const &search_inds_arr, unsigned char &search_code, unsigned char *const &search_codes_arr);
+		__forceinline__ __device__ static void doReportAllNodesDelegation(const unsigned char &curr_node_bitcode, T *const &root_d, const size_t &num_elem_slots, PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d, const T &min_dim2_val, long long &search_ind, long long *const &search_inds_arr, unsigned char *const &search_codes_arr = nullptr);
 
 		// Helper functions for delegating work during searches
-		__forceinline__ __device__ static void splitLeftSearchWork(T *const &root_d, const size_t &num_elem_slots, const size_t &target_node_ind, PointStructGPU<T> *const res_pt_arr_d, const T &max_dim1_val, const T &min_dim2_val, long long *const &search_inds_arr, unsigned char *const &search_codes_arr);
-		__forceinline__ __device__ static void splitReportAllNodesWork(T *const &root_d, const size_t &num_elem_slots, const size_t &target_node_ind, PointStructGPU<T> *const res_pt_arr_d, const T &min_dim2_val, long long *const &search_inds_arr, unsigned char *const &search_codes_arr = nullptr);
+		__forceinline__ __device__ static void splitLeftSearchWork(T *const &root_d, const size_t &num_elem_slots, const size_t &target_node_ind, PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d, const T &max_dim1_val, const T &min_dim2_val, long long *const &search_inds_arr, unsigned char *const &search_codes_arr);
+		__forceinline__ __device__ static void splitReportAllNodesWork(T *const &root_d, const size_t &num_elem_slots, const size_t &target_node_ind, PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d, const T &min_dim2_val, long long *const &search_inds_arr, unsigned char *const &search_codes_arr = nullptr);
 
 		// Helper function for threads to determine whether all iterations have ended
 		__forceinline__ __device__ static void detInactivity(long long &search_ind, long long *const &search_inds_arr, bool &cont_iter, unsigned char *const search_code = nullptr, unsigned char *const &search_codes_arr = nullptr);
@@ -252,7 +258,7 @@ class StaticPSTGPU : public StaticPrioritySearchTree<T>
 
 		// From the specification of C, pointers are const if the const qualifier appears to the right of the corresponding *
 		// Returns index in dim1_val_ind_arr of elem_to_find
-		__forceinline__ __host__ __device__ static long long binarySearch(PointStructGPU<T> *const &pt_arr, size_t *const &dim1_val_ind_arr, PointStructGPU<T> &elem_to_find, const size_t &init_ind, const size_t &num_elems);
+		__forceinline__ __host__ __device__ static long long binarySearch(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr, size_t *const &dim1_val_ind_arr, PointStructTemplate<T, IDType, num_IDs> &elem_to_find, const size_t &init_ind, const size_t &num_elems);
 
 		void printRecur(std::ostream &os, T *const &tree_root, const size_t curr_ind, const size_t num_elem_slots, std::string prefix, std::string child_prefix) const;
 
@@ -300,15 +306,15 @@ class StaticPSTGPU : public StaticPrioritySearchTree<T>
 		For friend functions of template classes, for the compiler to recognise the function as a template function, it is necessary to either pre-declare each template friend function before the template class and modify the class-internal function declaration with an additional <> between the operator and the parameter list; or to simply define the friend function when it is declared
 		https://isocpp.org/wiki/faq/templates#template-friends
 	*/
-	friend __global__ void populateTree <> (T *const root_d, const size_t num_elem_slots, PointStructGPU<T> *const pt_arr_d, size_t *const dim1_val_ind_arr_d, size_t *dim2_val_ind_arr_d, size_t *dim2_val_ind_arr_secondary_d, const size_t val_ind_arr_start_ind, const size_t num_elems, const size_t target_node_start_ind);
+	friend __global__ void populateTree <> (T *const root_d, const size_t num_elem_slots, PointStructTemplate<T, IDType, num_IDs> *const pt_arr_d, size_t *const dim1_val_ind_arr_d, size_t *dim2_val_ind_arr_d, size_t *dim2_val_ind_arr_secondary_d, const size_t val_ind_arr_start_ind, const size_t num_elems, const size_t target_node_start_ind);
 
-	friend __global__ void threeSidedSearchGlobal <> (T *const root_d, const size_t num_elem_slots, const size_t start_node_ind, PointStructGPU<T> *const res_pt_arr_d, const T min_dim1_val, const T max_dim1_val, const T min_dim2_val);
+	friend __global__ void threeSidedSearchGlobal <> (T *const root_d, const size_t num_elem_slots, const size_t start_node_ind, PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d, const T min_dim1_val, const T max_dim1_val, const T min_dim2_val);
 
-	friend __global__ void twoSidedLeftSearchGlobal <> (T *const root_d, const size_t num_elem_slots, const size_t start_node_ind, PointStructGPU<T> *const res_pt_arr_d, const T max_dim1_val, const T min_dim2_val);
+	friend __global__ void twoSidedLeftSearchGlobal <> (T *const root_d, const size_t num_elem_slots, const size_t start_node_ind, PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d, const T max_dim1_val, const T min_dim2_val);
 
-	friend __global__ void twoSidedRightSearchGlobal <> (T *const root_d, const size_t num_elem_slots, const size_t start_node_ind, PointStructGPU<T> *const res_pt_arr_d, const T min_dim1_val, const T min_dim2_val);
+	friend __global__ void twoSidedRightSearchGlobal <> (T *const root_d, const size_t num_elem_slots, const size_t start_node_ind, PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d, const T min_dim1_val, const T min_dim2_val);
 
-	friend __global__ void reportAllNodesGlobal <> (T *const root_d, const size_t num_elem_slots, const size_t start_node_ind, PointStructGPU<T> *const res_pt_arr_d, const T min_dim2_val);
+	friend __global__ void reportAllNodesGlobal <> (T *const root_d, const size_t num_elem_slots, const size_t start_node_ind, PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d, const T min_dim2_val);
 };
 
 // Implementation file; for class templates, implementations must be in the same file as the declaration so that the compiler can access them

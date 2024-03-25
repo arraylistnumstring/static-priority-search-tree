@@ -3,18 +3,24 @@
 
 #include <stack>
 
-#include "point-struct-cpu-iter.h"
+#include "point-struct.h"
 #include "static-priority-search-tree.h"
 
-template <typename T>
-void populateTree(T *const root, const size_t num_elem_slots, PointStructCPUIter<T> *const pt_arr, size_t *const dim1_val_ind_arr, size_t *dim2_val_ind_arr, size_t *dim2_val_ind_arr_secondary, const size_t start_ind, const size_t num_elems);
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+void populateTree(T *const root, const size_t num_elem_slots,
+					PointStructTemplate<T, IDType, num_IDs> *const pt_arr,
+					size_t *const dim1_val_ind_arr, size_t *dim2_val_ind_arr,
+					size_t *dim2_val_ind_arr_secondary,
+					const size_t start_ind, const size_t num_elems);
 
-template <typename T>
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType=void, size_t num_IDs=0>
 // public superclass means that all public and protected members of base-class retain their access status in the subclass
-class StaticPSTCPUIter : public StaticPrioritySearchTree<T>
+class StaticPSTCPUIter : public StaticPrioritySearchTree<T, PointStructTemplate, IDType, num_IDs>
 {
 	public:
-		StaticPSTCPUIter(PointStructCPUIter<T> *const &pt_arr, size_t num_elems);
+		StaticPSTCPUIter(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr, size_t num_elems);
 		// Since arrays were allocated continguously, only need to free one of the array pointers
 		virtual ~StaticPSTCPUIter() {if (num_elem_slots != 0) free(root);};
 
@@ -23,9 +29,9 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T>
 		virtual void print(std::ostream &os) const;
 
 		// Uses stacks instead of recursion or dynamic parallelism
-		virtual PointStructCPUIter<T>* threeSidedSearch(size_t &num_res_elems, T min_dim1_val, T max_dim1_val, T min_dim2_val);
-		virtual PointStructCPUIter<T>* twoSidedLeftSearch(size_t &num_res_elems, T max_dim1_val, T min_dim2_val);
-		virtual PointStructCPUIter<T>* twoSidedRightSearch(size_t &num_res_elems, T min_dim1_val, T min_dim2_val);
+		virtual PointStructTemplate<T, IDType, num_IDs>* threeSidedSearch(size_t &num_res_elems, T min_dim1_val, T max_dim1_val, T min_dim2_val);
+		virtual PointStructTemplate<T, IDType, num_IDs>* twoSidedLeftSearch(size_t &num_res_elems, T max_dim1_val, T min_dim2_val);
+		virtual PointStructTemplate<T, IDType, num_IDs>* twoSidedRightSearch(size_t &num_res_elems, T min_dim1_val, T min_dim2_val);
 
 	private:
 		// Want unique copies of each tree, so no assignment or copying allowed
@@ -33,7 +39,7 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T>
 		StaticPSTCPUIter(StaticPSTCPUIter &tree);	// copy constructor
 
 
-		static void setNode(T *const root, const size_t node_ind, const size_t num_elem_slots, PointStruct<T> &source_data, T median_dim1_val)
+		static void setNode(T *const root, const size_t node_ind, const size_t num_elem_slots, PointStructTemplate<T, IDType, num_IDs> &source_data, T median_dim1_val)
 		{
 			getDim1ValsRoot(root, num_elem_slots)[node_ind] = source_data.dim1_val;
 			getDim2ValsRoot(root, num_elem_slots)[node_ind] = source_data.dim2_val;
@@ -42,7 +48,7 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T>
 
 		static void constructNode(T *const &root,
 									const size_t &num_elem_slots,
-									PointStructCPUIter<T> *const &pt_arr,
+									PointStructTemplate<T, IDType, num_IDs> *const &pt_arr,
 									size_t &target_node_ind,
 									const size_t &num_elems,
 									size_t *const &dim1_val_ind_arr,
@@ -68,12 +74,23 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T>
 			{return root + num_elem_slots;};
 		static T* getMedDim1ValsRoot(T *const root, const size_t num_elem_slots)
 			{return root + (num_elem_slots << 1);};
+		static IDType* getIDsRoot(T *const root, const size_t num_elem_slots)
+			{return reinterpret_cast<IDType *>(root + num_elem_slots * num_val_subarrs);};
 		static unsigned char* getBitcodesRoot(T *const root, const size_t num_elem_slots)
 			// Use reinterpret_cast for pointer conversions
-			{return reinterpret_cast<unsigned char*> (root + num_val_subarrs * num_elem_slots);};
+			{
+				if constexpr (num_IDs == 0)
+					// Argument of cast is of type T *
+					return reinterpret_cast<unsigned char*>(root + num_val_subarrs * num_elem_slots);
+				else
+					// Argument of cast is of type IDType *
+					return reinterpret_cast<unsigned char*>(getIDsRoot(root, num_elem_slots) + num_ID_subarrs * num_elem_slots);
+			};	
 
-		// Helper function for calculating the number of elements of size T necessary to instantiate an array for root
-		static size_t calcTotArrSizeNumTs(const size_t num_elem_slots);
+		// Helper function for calculating the number of elements of size U necessary to instantiate an array for root, for data types U and V such that sizeof(U) >= sizeof(V)
+		template <typename U, size_t num_U_subarrs, typename V, size_t num_V_subarrs>
+			requires sizeof(U) >= sizeof(V)
+		static size_t calcTotArrSizeNumUs(const size_t num_elem_slots);
 
 		// Helper function for calculating the next power of 2 greater than num
 		static size_t nextGreaterPowerOf2(const size_t num)
@@ -82,7 +99,7 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T>
 
 		// From the specification of C, pointers are const if the const qualifier appears to the right of the corresponding *
 		// Returns index in dim1_val_ind_arr of elem_to_find
-		static long long binarySearch(PointStructCPUIter<T> *const &pt_arr, size_t *const &dim1_val_ind_arr, PointStructCPUIter<T> &elem_to_find, const size_t &init_ind, const size_t &num_elems);
+		static long long binarySearch(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr, size_t *const &dim1_val_ind_arr, PointStructTemplate<T, IDType, num_IDs> &elem_to_find, const size_t &init_ind, const size_t &num_elems);
 
 		void printRecur(std::ostream &os, T *const &tree_root, const size_t curr_ind, const size_t num_elem_slots, std::string prefix, std::string child_prefix) const;
 
@@ -100,7 +117,9 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T>
 		// Number of actual elements in tree; maintained because num_elem_slots - num_elems could be up to 2 * num_elems if there is only one element in the final level
 		size_t num_elems;
 
+		// 1 subarray each for dim1_val, dim2_val and med_dim1_val
 		const static size_t num_val_subarrs = 3;
+		const static size_t num_ID_subarrs = num_IDs;
 
 		// Declare helper nested class for accessing specific nodes and define in implementation file; as nested class are not attached to any particular instance of the outer class by default (i.e. are like Java's static nested classes by default), only functions contained within need to be declared as static
 		class TreeNode;
@@ -119,7 +138,7 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T>
 		For friend functions of template classes, for the compiler to recognise the function as a template function, it is necessary to either pre-declare each template friend function before the template class and modify the class-internal function declaration with an additional <> between the operator and the parameter list; or to simply define the friend function when it is declared
 		https://isocpp.org/wiki/faq/templates#template-friends
 	*/
-	friend void populateTree <> (T *const root, const size_t num_elem_slots, PointStructCPUIter<T> *const pt_arr, size_t *const dim1_val_ind_arr, size_t *dim2_val_ind_arr, size_t *dim2_val_ind_arr_secondary, const size_t start_ind, const size_t num_elems);
+	friend void populateTree <> (T *const root, const size_t num_elem_slots, PointStructTemplate<T, IDType, num_IDs> *const pt_arr, size_t *const dim1_val_ind_arr, size_t *dim2_val_ind_arr, size_t *dim2_val_ind_arr_secondary, const size_t start_ind, const size_t num_elems);
 };
 
 // Implementation file; for class templates, implementations must be in the same file as the declaration so that the compiler can access them

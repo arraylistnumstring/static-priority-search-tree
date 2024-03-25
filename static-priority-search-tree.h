@@ -1,43 +1,26 @@
 #ifndef STATIC_PRIORITY_SEARCH_TREE_H
 #define STATIC_PRIORITY_SEARCH_TREE_H
 
-#include <concepts>		// To create abstract class template; requires C++20
 #include <iostream>
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
-			template<typename, template<typename, typename, size_t> class, typename, size_t> class StaticPrioritySearchTree,
-			typename IDType=void, size_t num_ID_fields=0
-		 >
-concept StaticPST = requires (T t, PointStructTemplate<T, IDType, num_ID_fields> ptstr,
-								StaticPrioritySearchTree<T, PointStructTemplate, IDType, num_ID_fields> static_pst,
-								IDType id_type)
+			typename IDType=void, size_t num_ID_fields=0>
+class StaticPrioritySearchTree
 {
-	// Printing function for printing operator << to use, as private data members must be accessed in the process
-	// {} -> type_func<> passes in result of curly braces to the first template parameter of type_func<>
-	{static_pst.print(std::declval<std::ostream &>())} -> std::is_void;
+	public:
+		// = 0 indicates that this is a pure virtual function, i.e. defines an interface strictly for subclasses to implement
+		// Printing function for printing operator << to use, as private data members must be accessed in the process
+		// const keyword after method name indicates that the method does not modify any data members of the associated class
+		virtual void print(std::ostream &os) const = 0;
 
-	// Required search functions
-	{static_pst.threeSidedSearch(std::declval<size_t &>(/* num_res_elems */),
-									std::declval<T>(/* min_dim1_val */),
-									std::declval<T>(/* max_dim1_val */),
-									std::declval<T>(/* min_dim2_val */))}
-								-> std::same_as<PointStructTemplate<T, IDType, num_ID_fields>*>;
-	{static_pst.twoSidedLeftSearch(std::declval<size_t &>(/* num_res_elems */),
-									std::declval<T>(/* max_dim1_val */),
-									std::declval<T>(/* min_dim2_val */))}
-								-> std::same_as<PointStructTemplate<T, IDType, num_ID_fields>*>;
-	{static_pst.twoSidedRightSearch(std::declval<size_t &>(/* num_res_elems */),
-									std::declval<T>(/* min_dim1_val */),
-									std::declval<T>(/* min_dim2_val */))}
-								-> std::same_as<PointStructTemplate<T, IDType, num_ID_fields>*>;
-};
+		// Search functions, though necessary, are not made to be virtual functions here, as virtual functions with template return types are not allowed (as the vtable, a lookup table with which virtual functions are often implemented, would necessarily be potentially infinite, to allow for all the potential variations and inheritances of any possible template type)
+}
 
 // As the concept StaticPST is not a type, using it as a constraint must be done with a trailing requires keyword
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			template<typename, template<typename, typename, size_t> class, typename, size_t> class StaticPrioritySearchTree,
-			typename IDType=void, size_t num_ID_fields=0
+			typename IDType, size_t num_ID_fields
 		 >
-	requires StaticPST<T, PointStructTemplate, StaticPrioritySearchTree, IDType, num_ID_fields>
 std::ostream &operator<<(std::ostream &os, StaticPrioritySearchTree<T, PointStructTemplate, IDType, num_ID_fields> &pst)
 {
 	pst.print(os);

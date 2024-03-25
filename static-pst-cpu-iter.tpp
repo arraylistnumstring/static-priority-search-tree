@@ -5,8 +5,9 @@
 #include "err-chk.h"
 #include "resize-array.h"
 
-template <typename T>
-StaticPSTCPUIter<T>::StaticPSTCPUIter(PointStructCPUIter<T> *const &pt_arr, size_t num_elems)
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::StaticPSTCPUIter(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr, size_t num_elems)
 {
 	if (num_elems == 0)
 	{
@@ -19,12 +20,23 @@ StaticPSTCPUIter<T>::StaticPSTCPUIter(PointStructCPUIter<T> *const &pt_arr, size
 	// Number of element slots in each container subarray is nextGreaterPowerOf2(num_elems) - 1
 	num_elem_slots = nextGreaterPowerOf2(num_elems) - 1;
 
-	// Calculate total array size in units of sizeof(T) bytes so that array will satisfy datatype T's alignment requirements (as T is the largest datatype present in this data structure)
-	size_t tot_arr_size_num_Ts = calcTotArrSizeNumTs(num_elem_slots);
 
 	// Allocate as a T array so that alignment requirements for larger data types are obeyed
 	// Use of () after new and new[] causes value-initialisation (to 0) starting in C++03; needed for any nodes that technically contain no data
-	root = new T[tot_arr_size_num_Ts]();
+	// constexpr if is a C++17 feature that only compiles the branch of code that evaluates to true at compile-time, saving executable space and execution runtime
+	if constexpr (num_IDs == 0 || sizeof(T) >= sizeof(IDType))
+	{
+		// No IDs present or sizeof(T) >= sizeof(IDType), so calculate total array size in units of sizeof(T) so that datatype T's alignment requirements will be satisfied
+		size_t tot_arr_size_num_Ts = calcTotArrSizeNumUs<T, num_val_subarrs, IDType, num_ID_subarrs>(num_elem_slots);
+		root = new T[tot_arr_size_num_Ts]();
+	}
+	else
+	{
+		// sizeof(IDType) > sizeof(T), so calculate total array size in units of sizeof(IDType) so that datatype IDType's alignment requirements will be satisfied
+		size_t tot_arr_size_num_IDTypes = calcTotArrSizeNumUs<IDType, num_ID_subarrs, T, num_val_subarrs>(num_elem_slots);
+		root = reinterpret_cast<T *>(new IDType[tot_arr_size_num_IDTypes]());
+	}
+
 	if (root == nullptr)
 		throwErr("Error: could not allocate " + std::to_string(num_elems) + " elements of type " + typeid(T).name() + " to root");
 
@@ -44,7 +56,7 @@ StaticPSTCPUIter<T>::StaticPSTCPUIter(PointStructCPUIter<T> *const &pt_arr, size
 
 	// Sort dimension-1 values index array in ascending order; in-place sort using a curried comparison function
 	std::sort(dim1_val_ind_arr, dim1_val_ind_arr + num_elems,
-				[](PointStructCPUIter<T> *const &pt_arr)
+				[](PointStructTemplate<T, IDType, num_IDs> *const &pt_arr)
 					{
 						// [&] captures all variables in enclosing scope by reference so that they can be used within the body of the lambda function
 						return [&](const size_t &i, const size_t &j)
@@ -55,7 +67,7 @@ StaticPSTCPUIter<T>::StaticPSTCPUIter(PointStructCPUIter<T> *const &pt_arr, size
 
 	// Sort dimension-2 values index array in descending order; in-place sort using a curried comparison function
 	std::sort(dim2_val_ind_arr, dim2_val_ind_arr + num_elems,
-				[](PointStructCPUIter<T> *const &pt_arr)
+				[](PointStructTemplate<T, IDType, num_IDs> *const &pt_arr)
 					{
 						return [&](const size_t &i, const size_t &j)
 							{
@@ -80,8 +92,9 @@ StaticPSTCPUIter<T>::StaticPSTCPUIter(PointStructCPUIter<T> *const &pt_arr, size
 }
 
 // const keyword after method name indicates that the method does not modify any data members of the associated class
-template <typename T>
-void StaticPSTCPUIter<T>::print(std::ostream &os) const
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::print(std::ostream &os) const
 {
 	if (num_elem_slots == 0)
 	{
@@ -94,8 +107,9 @@ void StaticPSTCPUIter<T>::print(std::ostream &os) const
 	printRecur(os, root, 0, num_elem_slots, prefix, child_prefix);
 }
 
-template <typename T>
-PointStructCPUIter<T>* StaticPSTCPUIter<T>::threeSidedSearch(size_t &num_res_elems, T min_dim1_val, T max_dim1_val, T min_dim2_val)
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+PointStructTemplate<T, IDType, num_IDs>* StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::threeSidedSearch(size_t &num_res_elems, T min_dim1_val, T max_dim1_val, T min_dim2_val)
 {
 	if (num_elems == 0)
 	{
@@ -105,7 +119,7 @@ PointStructCPUIter<T>* StaticPSTCPUIter<T>::threeSidedSearch(size_t &num_res_ele
 	}
 
 	size_t res_pt_arr_size = num_elems;
-	PointStructCPUIter<T>* res_pt_arr = new PointStructCPUIter<T>[res_pt_arr_size];
+	PointStructTemplate<T, IDType, num_IDs>* res_pt_arr = new PointStructTemplate<T, IDType, num_IDs>[res_pt_arr_size];
 	num_res_elems = 0;
 
 	std::stack<long long> search_inds_stack;
@@ -120,6 +134,8 @@ PointStructCPUIter<T>* StaticPSTCPUIter<T>::threeSidedSearch(size_t &num_res_ele
 	T curr_node_dim1_val;
 	T curr_node_dim2_val;
 	T curr_node_med_dim1_val;
+	if constexpr (num_IDs == 1)
+		IDType curr_node_id;
 	unsigned char curr_node_bitcode;
 
 	// Stacks are synchronised, so 1 stack is empty exactly when both are
@@ -134,6 +150,8 @@ PointStructCPUIter<T>* StaticPSTCPUIter<T>::threeSidedSearch(size_t &num_res_ele
 		curr_node_dim1_val = getDim1ValsRoot(root, num_elem_slots)[search_ind];
 		curr_node_dim2_val = getDim2ValsRoot(root, num_elem_slots)[search_ind];
 		curr_node_med_dim1_val = getMedDim1ValsRoot(root, num_elem_slots)[search_ind];
+		if constexpr (num_IDs == 1)
+			curr_node_id = getIDsRoot(root, num_elem_slots)[search_ind];
 		curr_node_bitcode = getBitcodesRoot(root, num_elem_slots)[search_ind];
 
 		// Only process node if its dimension-2 value satisfies the dimension-2 search bound
@@ -145,6 +163,8 @@ PointStructCPUIter<T>* StaticPSTCPUIter<T>::threeSidedSearch(size_t &num_res_ele
 			{
 				res_pt_arr[num_res_elems].dim1_val = curr_node_dim1_val;
 				res_pt_arr[num_res_elems].dim2_val = curr_node_dim2_val;
+				if constexpr (num_IDs == 1)
+					res_pt_arr[num_res_elems].id = curr_node_id;
 				num_res_elems++;
 			}
 
@@ -190,8 +210,9 @@ PointStructCPUIter<T>* StaticPSTCPUIter<T>::threeSidedSearch(size_t &num_res_ele
 	return res_pt_arr;
 }
 
-template <typename T>
-PointStructCPUIter<T>* StaticPSTCPUIter<T>::twoSidedLeftSearch(size_t &num_res_elems, T max_dim1_val, T min_dim2_val)
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+PointStructTemplate<T, IDType, num_IDs>* StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSearch(size_t &num_res_elems, T max_dim1_val, T min_dim2_val)
 {
 	if (num_elems == 0)
 	{
@@ -201,7 +222,7 @@ PointStructCPUIter<T>* StaticPSTCPUIter<T>::twoSidedLeftSearch(size_t &num_res_e
 	}
 
 	size_t res_pt_arr_size = num_elems;
-	PointStructCPUIter<T>* res_pt_arr = new PointStructCPUIter<T>[res_pt_arr_size];
+	PointStructTemplate<T, IDType, num_IDs>* res_pt_arr = new PointStructTemplate<T, IDType, num_IDs>[res_pt_arr_size];
 	num_res_elems = 0;
 
 	std::stack<long long> search_inds_stack;
@@ -216,6 +237,8 @@ PointStructCPUIter<T>* StaticPSTCPUIter<T>::twoSidedLeftSearch(size_t &num_res_e
 	T curr_node_dim1_val;
 	T curr_node_dim2_val;
 	T curr_node_med_dim1_val;
+	if constexpr (num_IDs == 1)
+		IDType curr_node_id;
 	unsigned char curr_node_bitcode;
 
 	// Stacks are synchronised, so 1 stack is empty exactly when both are
@@ -230,6 +253,8 @@ PointStructCPUIter<T>* StaticPSTCPUIter<T>::twoSidedLeftSearch(size_t &num_res_e
 		curr_node_dim1_val = getDim1ValsRoot(root, num_elem_slots)[search_ind];
 		curr_node_dim2_val = getDim2ValsRoot(root, num_elem_slots)[search_ind];
 		curr_node_med_dim1_val = getMedDim1ValsRoot(root, num_elem_slots)[search_ind];
+		if constexpr (num_IDs == 1)
+			curr_node_id = getIDsRoot(root, num_elem_slots)[search_ind];
 		curr_node_bitcode = getBitcodesRoot(root, num_elem_slots)[search_ind];
 
 		// Only process node if its dimension-2 value satisfies the dimension-2 search bound
@@ -240,6 +265,8 @@ PointStructCPUIter<T>* StaticPSTCPUIter<T>::twoSidedLeftSearch(size_t &num_res_e
 			{
 				res_pt_arr[num_res_elems].dim1_val = curr_node_dim1_val;
 				res_pt_arr[num_res_elems].dim2_val = curr_node_dim2_val;
+				if constexpr (num_IDs == 1)
+					res_pt_arr[num_res_elems].id = curr_node_id;
 				num_res_elems++;
 			}
 
@@ -270,8 +297,9 @@ PointStructCPUIter<T>* StaticPSTCPUIter<T>::twoSidedLeftSearch(size_t &num_res_e
 	return res_pt_arr;
 }
 
-template <typename T>
-PointStructCPUIter<T>* StaticPSTCPUIter<T>::twoSidedRightSearch(size_t &num_res_elems, T min_dim1_val, T min_dim2_val)
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+PointStructTemplate<T, IDType, num_IDs>* StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::twoSidedRightSearch(size_t &num_res_elems, T min_dim1_val, T min_dim2_val)
 {
 	if (num_elems == 0)
 	{
@@ -281,7 +309,7 @@ PointStructCPUIter<T>* StaticPSTCPUIter<T>::twoSidedRightSearch(size_t &num_res_
 	}
 
 	size_t res_pt_arr_size = num_elems;
-	PointStructCPUIter<T>* res_pt_arr = new PointStructCPUIter<T>[res_pt_arr_size];
+	PointStructTemplate<T, IDType, num_IDs>* res_pt_arr = new PointStructTemplate<T, IDType, num_IDs>[res_pt_arr_size];
 	num_res_elems = 0;
 
 	std::stack<long long> search_inds_stack;
@@ -296,6 +324,8 @@ PointStructCPUIter<T>* StaticPSTCPUIter<T>::twoSidedRightSearch(size_t &num_res_
 	T curr_node_dim1_val;
 	T curr_node_dim2_val;
 	T curr_node_med_dim1_val;
+	if constexpr (num_IDs == 1)
+		IDType curr_node_id;
 	unsigned char curr_node_bitcode;
 
 	// Stacks are synchronised, so 1 stack is empty exactly when both are
@@ -310,6 +340,8 @@ PointStructCPUIter<T>* StaticPSTCPUIter<T>::twoSidedRightSearch(size_t &num_res_
 		curr_node_dim1_val = getDim1ValsRoot(root, num_elem_slots)[search_ind];
 		curr_node_dim2_val = getDim2ValsRoot(root, num_elem_slots)[search_ind];
 		curr_node_med_dim1_val = getMedDim1ValsRoot(root, num_elem_slots)[search_ind];
+		if constexpr (num_IDs == 1)
+			curr_node_id = getIDsRoot(root, num_elem_slots)[search_ind];
 		curr_node_bitcode = getBitcodesRoot(root, num_elem_slots)[search_ind];
 
 		// Only process node if its dimension-2 value satisfies the dimension-2 search bound
@@ -320,6 +352,8 @@ PointStructCPUIter<T>* StaticPSTCPUIter<T>::twoSidedRightSearch(size_t &num_res_
 			{
 				res_pt_arr[num_res_elems].dim1_val = curr_node_dim1_val;
 				res_pt_arr[num_res_elems].dim2_val = curr_node_dim2_val;
+				if constexpr (num_IDs == 1)
+					res_pt_arr[num_res_elems].id = curr_node_id;
 				num_res_elems++;
 			}
 
@@ -351,10 +385,11 @@ PointStructCPUIter<T>* StaticPSTCPUIter<T>::twoSidedRightSearch(size_t &num_res_
 }
 
 // static keyword should only be used when declaring a function in the header file
-template <typename T>
-void StaticPSTCPUIter<T>::constructNode(T *const &root,
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::constructNode(T *const &root,
 										const size_t &num_elem_slots,
-										PointStructCPUIter<T> *const &pt_arr,
+										PointStructTemplate<T, IDType, num_IDs> *const &pt_arr,
 										size_t &target_node_ind,
 										const size_t &num_elems,
 										size_t *const &dim1_val_ind_arr,
@@ -459,8 +494,9 @@ void StaticPSTCPUIter<T>::constructNode(T *const &root,
 	}
 }
 
-template <typename T>
-void StaticPSTCPUIter<T>::do3SidedSearchDelegation(const unsigned char &curr_node_bitcode, T min_dim1_val, T max_dim1_val, T curr_node_med_dim1_val, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack)
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::do3SidedSearchDelegation(const unsigned char &curr_node_bitcode, T min_dim1_val, T max_dim1_val, T curr_node_med_dim1_val, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack)
 {
 	// Splitting of query is only possible if the current node has two children and min_dim1_val <= curr_node_med_dim1_val <= max_dim1_val; the equality on max_dim1_val is for the edge case where a median point may be duplicated, with one copy going to the left subtree and the other to the right subtree
 	if (min_dim1_val <= curr_node_med_dim1_val
@@ -496,8 +532,9 @@ void StaticPSTCPUIter<T>::do3SidedSearchDelegation(const unsigned char &curr_nod
 	}
 }
 
-template <typename T>
-void StaticPSTCPUIter<T>::doLeftSearchDelegation(const bool range_split_poss, const unsigned char &curr_node_bitcode, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack)
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::doLeftSearchDelegation(const bool range_split_poss, const unsigned char &curr_node_bitcode, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack)
 {
 	// Report all nodes in left subtree, "recurse" search on right
 	// Though the upper bound of the dimension-1 search range is typically open, if there are duplicates of the median point and one happens to be allocated to each subtree, both trees must be traversed for correctness
@@ -525,8 +562,9 @@ void StaticPSTCPUIter<T>::doLeftSearchDelegation(const bool range_split_poss, co
 	}
 }
 
-template <typename T>
-void StaticPSTCPUIter<T>::doRightSearchDelegation(const bool range_split_poss, const unsigned char &curr_node_bitcode, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack)
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::doRightSearchDelegation(const bool range_split_poss, const unsigned char &curr_node_bitcode, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack)
 {
 	// Report all nodes in right subtree, "recurse" search on left
 	if (range_split_poss)
@@ -553,8 +591,9 @@ void StaticPSTCPUIter<T>::doRightSearchDelegation(const bool range_split_poss, c
 	}
 }
 
-template <typename T>
-void StaticPSTCPUIter<T>::doReportAllNodesDelegation(const unsigned char &curr_node_bitcode, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack)
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodesDelegation(const unsigned char &curr_node_bitcode, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack)
 {
 	if (TreeNode::hasLeftChild(curr_node_bitcode))
 	{
@@ -568,29 +607,33 @@ void StaticPSTCPUIter<T>::doReportAllNodesDelegation(const unsigned char &curr_n
 	}
 }
 
-template <typename T>
-size_t StaticPSTCPUIter<T>::calcTotArrSizeNumTs(const size_t num_elem_slots)
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+template <typename U, size_t num_U_subarrs, typename V, size_t num_V_subarrs>
+	requires sizeof(U) >= sizeof(V)
+size_t StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSizeNumUs<U, num_U_subarrs, V, num_V_subarrs>(const size_t num_elem_slots);
 {
 	/*
-		tot_arr_size_num_Ts = ceil(num_elem_slots * (num_val_subarrs + num_Ts/bitcode))
-							= ceil(num_elem_slots * (num_val_subarrs + 1 B/bitcode * 1 T/#Bs))
-							= ceil(num_elem_slots * (num_val_subarrs + 1/sizeof(T)))
-							= ceil(num_elem_slots * num_val_subarrs + num_elem_slots / sizeof(T))
-							= num_elem_slots * num_val_subarrs + ceil(num_elem_slots / sizeof(T))
+		tot_arr_size_num_Us = ceil(1/sizeof(U) * num_elem_slots * (sizeof(U) * num_U_subarrs + sizeof(V) * num_V_subarrs + 1 B/bitcode * 1 bitcode))
 			With integer truncation:
 				if num_elem_slots % codes_per_byte != 0:
-							= num_elem_slots * num_val_subarrs + num_elem_slots / sizeof(T) + 1
+							= num_elem_slots * num_U_subarrs + num_elem_slots / sizeof(U) + 1
 				if num_elem_slots % codes_per_byte == 0:
-							= num_elem_slots * num_val_subarrs + num_elem_slots / sizeof(T)
+							= num_elem_slots * num_U_subarrs + num_elem_slots / sizeof(U)
 	*/
-	size_t tot_arr_size_num_Ts = num_val_subarrs * num_elem_slots + num_elem_slots/sizeof(T);
-	if (num_elem_slots % sizeof(T) != 0)
-		tot_arr_size_num_Ts++;
-	return tot_arr_size_num_Ts;
+	// Calculate total size in bytes
+	size_t tot_arr_size_bytes = num_elem_slots * (sizeof(U) * num_U_subarrs + sizeof(V) * num_V_subarrs + 1);
+	// Divide by sizeof(U)
+	size_t tot_arr_size_num_Us = tot_arr_size_bytes / sizeof(U);
+	// If tot_arr_size_bytes % sizeof(U) != 0, then tot_arr_size_num_Us * sizeof(U) < tot_arr_size_bytes, so add 1 to tot_arr_size_num_Us
+	if (tot_arr_size_bytes % sizeof(U) != 0)
+		tot_arr_size_num_Us++;
+	return tot_arr_size_num_Us;
 }
 
-template <typename T>
-size_t StaticPSTCPUIter<T>::expOfNextGreaterPowerOf2(const size_t num)
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+size_t StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::expOfNextGreaterPowerOf2(const size_t num)
 {
 	/*
 		Smallest power of 2 greater than num is equal to 2^ceil(lg(num + 1))
@@ -602,8 +645,9 @@ size_t StaticPSTCPUIter<T>::expOfNextGreaterPowerOf2(const size_t num)
 	return exp;
 }
 
-template <typename T>
-long long StaticPSTCPUIter<T>::binarySearch(PointStructCPUIter<T> *const &pt_arr, size_t *const &dim1_val_ind_arr, PointStructCPUIter<T> &elem_to_find, const size_t &init_ind, const size_t &num_elems)
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+long long StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::binarySearch(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr, size_t *const &dim1_val_ind_arr, PointStructTemplate<T, IDType, num_IDs> &elem_to_find, const size_t &init_ind, const size_t &num_elems)
 {
 	size_t low_ind = init_ind;
 	size_t high_ind = init_ind + num_elems;
@@ -625,13 +669,16 @@ long long StaticPSTCPUIter<T>::binarySearch(PointStructCPUIter<T> *const &pt_arr
 	return -1;	// Element not found
 }
 
-template <typename T>
-void StaticPSTCPUIter<T>::printRecur(std::ostream &os, T *const &tree_root, const size_t curr_ind, const size_t num_elem_slots, std::string prefix, std::string child_prefix) const
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::printRecur(std::ostream &os, T *const &tree_root, const size_t curr_ind, const size_t num_elem_slots, std::string prefix, std::string child_prefix) const
 {
 	os << prefix << '(' << getDim1ValsRoot(tree_root, num_elem_slots)[curr_ind]
 				<< ", " << getDim2ValsRoot(tree_root, num_elem_slots)[curr_ind]
-				<< "; " << getMedDim1ValsRoot(tree_root, num_elem_slots)[curr_ind]
-				<< ')';
+				<< "; " << getMedDim1ValsRoot(tree_root, num_elem_slots)[curr_ind];
+	if constexpr (num_IDs == 1)
+		os << "; " << getIDsRoot(tree_root, num_elem_slots)[curr_ind];
+	os << ')';
 	const unsigned char curr_node_bitcode = getBitcodesRoot(tree_root, num_elem_slots)[curr_ind];
 	if (TreeNode::hasLeftChild(curr_node_bitcode)
 			&& TreeNode::hasRightChild(curr_node_bitcode))

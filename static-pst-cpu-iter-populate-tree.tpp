@@ -1,6 +1,11 @@
 // Uses stack instead of dynamic parallelism
-template <typename T>
-void populateTree (T *const root, const size_t num_elem_slots, PointStructCPUIter<T> *const pt_arr, size_t *const dim1_val_ind_arr, size_t *dim2_val_ind_arr, size_t *dim2_val_ind_arr_secondary, const size_t start_ind, const size_t num_elems)
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+void populateTree (T *const root, const size_t num_elem_slots,
+					PointStructTemplate<T, IDType, num_IDs> *const pt_arr,
+					size_t *const dim1_val_ind_arr, size_t *dim2_val_ind_arr,
+					size_t *dim2_val_ind_arr_secondary,
+					const size_t start_ind, const size_t num_elems)
 {
 	std::stack<size_t> subelems_start_inds;
 	std::stack<size_t> num_subelems_stack;
@@ -25,7 +30,7 @@ void populateTree (T *const root, const size_t num_elem_slots, PointStructCPUIte
 			First node, in level 1 (1-indexed), uses the original primary/secondary designations, and subsequent levels alternate
 			Must use 1-indexed location as input parameter in order for all nodes of the same level to require the same amount of bitshifting; with this scheme, the first level requires 1 bitshift, the second requires 2, etc. As all odd levels use the original designations of primary and secondary arrays and because calculated output values are either 0 or 1, which translate directly to true (1) or false (0), no equality check is needed.
 		*/
-		if (StaticPSTCPUIter<T>::expOfNextGreaterPowerOf2(target_node_inds.top() + 1) % 2)
+		if (StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::expOfNextGreaterPowerOf2(target_node_inds.top() + 1) % 2)
 		{
 			curr_iter_dim2_val_ind_arr = dim2_val_ind_arr;
 			curr_iter_dim2_val_ind_arr_secondary = dim2_val_ind_arr_secondary;
@@ -37,7 +42,7 @@ void populateTree (T *const root, const size_t num_elem_slots, PointStructCPUIte
 		}
 
 		// Find index in dim1_val_ind_arr of PointStructCPUIter with maximal dim2_val 
-		long long array_search_res_ind = StaticPSTCPUIter<T>::binarySearch(pt_arr, dim1_val_ind_arr,
+		long long array_search_res_ind = StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::binarySearch(pt_arr, dim1_val_ind_arr,
 																		pt_arr[curr_iter_dim2_val_ind_arr[subelems_start_inds.top()]],
 																		subelems_start_inds.top(),
 																		num_subelems_stack.top());
@@ -49,7 +54,7 @@ void populateTree (T *const root, const size_t num_elem_slots, PointStructCPUIte
 		// Note: potential sign conversion issue when computer memory becomes of size 2^64
 		const size_t max_dim2_val_dim1_array_ind = array_search_res_ind;
 
-		StaticPSTCPUIter<T>::constructNode(root, num_elem_slots,
+		StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::constructNode(root, num_elem_slots,
 											pt_arr, target_node_inds.top(), num_elems,
 											dim1_val_ind_arr, curr_iter_dim2_val_ind_arr,
 												curr_iter_dim2_val_ind_arr_secondary,
@@ -73,27 +78,27 @@ void populateTree (T *const root, const size_t num_elem_slots, PointStructCPUIte
 			Code that is only compiled when debugging; to define this preprocessor variable, compile with the option -DDEBUG, as in
 				nvcc -DDEBUG <source-code-file>
 
-			These variables are explicitly printed because gdb has access to all variables except those under the StaticPSTCPUIter<T>::TreeNode namespace (even when explicitly qualified like so); whitespace is meant to clearly separate output of different nodes
+			These variables are explicitly printed because gdb has access to all variables except those under the StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::TreeNode namespace (even when explicitly qualified like so); whitespace is meant to clearly separate output of different nodes
 		*/
 		for (size_t i = 0; i < 10; i++)
 			std::cout << '\n';
 
-		unsigned char curr_node_bitcode = StaticPSTCPUIter<T>::TreeNode::getBitcodesRoot(root, num_elem_slots)[curr_node_ind];
-		std::cout << "Current node has left child: " << StaticPSTCPUIter<T>::TreeNode::hasLeftChild(curr_node_bitcode) << '\n';
-		std::cout << "Current node has right child: " << StaticPSTCPUIter<T>::TreeNode::hasRightChild(curr_node_bitcode) << '\n';
-		std::cout << "Current node has children: " << StaticPSTCPUIter<T>::TreeNode::hasChildren(curr_node_bitcode) << '\n';
+		unsigned char curr_node_bitcode = StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::TreeNode::getBitcodesRoot(root, num_elem_slots)[curr_node_ind];
+		std::cout << "Current node has left child: " << StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::TreeNode::hasLeftChild(curr_node_bitcode) << '\n';
+		std::cout << "Current node has right child: " << StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::TreeNode::hasRightChild(curr_node_bitcode) << '\n';
+		std::cout << "Current node has children: " << StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::TreeNode::hasChildren(curr_node_bitcode) << '\n';
 	#endif
 
 		// Update information for next iteration
 		if (right_subarr_num_elems > 0)
 		{
-			target_node_inds.push(StaticPSTCPUIter<T>::TreeNode::getRightChild(curr_node_ind));
+			target_node_inds.push(StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::TreeNode::getRightChild(curr_node_ind));
 			subelems_start_inds.push(right_subarr_start_ind);
 			num_subelems_stack.push(right_subarr_num_elems);
 		}
 		if (left_subarr_num_elems > 0)
 		{
-			target_node_inds.push(StaticPSTCPUIter<T>::TreeNode::getLeftChild(curr_node_ind));
+			target_node_inds.push(StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::TreeNode::getLeftChild(curr_node_ind));
 			subelems_start_inds.push(left_subarr_start_ind);
 			num_subelems_stack.push(left_subarr_num_elems);
 		}
