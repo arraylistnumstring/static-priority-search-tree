@@ -65,7 +65,14 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 	public:
 		StaticPSTGPU(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr, size_t num_elems);
 		// Since arrays were allocated continguously, only need to free one of the array pointers
-		virtual ~StaticPSTGPU() {if (num_elem_slots != 0) cudaFree(root_d);};
+		virtual ~StaticPSTGPU()
+		{
+			if (num_elem_slots != 0)
+				gpuErrorCheck(cudaFree(root_d),
+								"Error in freeing array storing on-device PST on device "
+								+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+								+ ": ");
+		};
 
 		// Printing function for printing operator << to use, as private data members must be accessed in the process
 		// const keyword after method name indicates that the method does not modify any data members of the associated class
@@ -91,7 +98,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 							+ ": ");
 			// Set on-device global result array index to 0
 			unsigned long long res_arr_ind = 0;
-			// Copying to a defined symbol requires symbol; note that a symbol is neither a pointer nor a direct data value, but instead the handle by which the variable is denoted, with look-up necessary to generate a pointer if cudaMemcpy is used (whereas cudaMemcpyToSymbol()/cudaMemcpyFromSymbol() do the lookup and memory copy altogether)
+			// Copying to a defined symbol requires symbol; note that a symbol is neither a pointer nor a direct data value, but instead the handle by which the variable is denoted, with look-up necessary to generate a pointer if cudaMemcpy() is used (whereas cudaMemcpyToSymbol()/cudaMemcpyFromSymbol() do the lookup and memory copy altogether)
 			gpuErrorCheck(cudaMemcpyToSymbol(res_arr_ind_d, &res_arr_ind, sizeof(size_t),
 												0, cudaMemcpyDefault),
 							"Error in initialising global result array index to 0 on device "
@@ -102,7 +109,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 			threeSidedSearchGlobal<<<1, dev_props.warpSize, dev_props.warpSize * (sizeof(long long) + sizeof(signed char))>>>
 				(root_d, num_elem_slots, 0, pt_arr_d, min_dim1_val, max_dim1_val, min_dim2_val);
 
-			// Because all calls to the device are placed in the same stream (queue) and because cudaMemcpy is (host-)blocking, this code will not return before the computation has completed
+			// Because all calls to the device are placed in the same stream (queue) and because cudaMemcpy() is (host-)blocking, this code will not return before the computation has completed
 			// res_arr_ind_d points to the next index to write to, meaning that it actually contains the number of elements returned
 			gpuErrorCheck(cudaMemcpyFromSymbol(&num_res_elems, res_arr_ind_d,
 												sizeof(unsigned long long), 0,
@@ -130,7 +137,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 							+ ": ");
 			// Set on-device global result array index to 0
 			unsigned long long res_arr_ind = 0;
-			// Copying to a defined symbol requires symbol; note that a symbol is neither a pointer nor a direct data value, but instead the handle by which the variable is denoted, with look-up necessary to generate a pointer if cudaMemcpy is used (whereas cudaMemcpyToSymbol()/cudaMemcpyFromSymbol() do the lookup and memory copy altogether)
+			// Copying to a defined symbol requires symbol; note that a symbol is neither a pointer nor a direct data value, but instead the handle by which the variable is denoted, with look-up necessary to generate a pointer if cudaMemcpy() is used (whereas cudaMemcpyToSymbol()/cudaMemcpyFromSymbol() do the lookup and memory copy altogether)
 			gpuErrorCheck(cudaMemcpyToSymbol(res_arr_ind_d, &res_arr_ind, sizeof(size_t),
 												0, cudaMemcpyDefault),
 							"Error in initialising global result array index to 0 on device "
@@ -141,7 +148,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 			twoSidedLeftSearchGlobal<<<1, dev_props.warpSize, dev_props.warpSize * (sizeof(long long) + sizeof(signed char))>>>
 				(root_d, num_elem_slots, 0, pt_arr_d, max_dim1_val, min_dim2_val);
 
-			// Because all calls to the device are placed in the same stream (queue) and because cudaMemcpy is (host-)blocking, this code will not return before the computation has completed
+			// Because all calls to the device are placed in the same stream (queue) and because cudaMemcpy() is (host-)blocking, this code will not return before the computation has completed
 			// res_arr_ind_d points to the next index to write to, meaning that it actually contains the number of elements returned
 			gpuErrorCheck(cudaMemcpyFromSymbol(&num_res_elems, res_arr_ind_d,
 												sizeof(unsigned long long), 0,
@@ -169,7 +176,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 							+ ": ");
 			// Set on-device global result array index to 0
 			unsigned long long res_arr_ind = 0;
-			// Copying to a defined symbol requires symbol; note that a symbol is neither a pointer nor a direct data value, but instead the handle by which the variable is denoted, with look-up necessary to generate a pointer if cudaMemcpy is used (whereas cudaMemcpyToSymbol()/cudaMemcpyFromSymbol() do the lookup and memory copy altogether)
+			// Copying to a defined symbol requires symbol; note that a symbol is neither a pointer nor a direct data value, but instead the handle by which the variable is denoted, with look-up necessary to generate a pointer if cudaMemcpy() is used (whereas cudaMemcpyToSymbol()/cudaMemcpyFromSymbol() do the lookup and memory copy altogether)
 			gpuErrorCheck(cudaMemcpyToSymbol(res_arr_ind_d, &res_arr_ind, sizeof(size_t),
 												0, cudaMemcpyDefault),
 							"Error in initialising global result array index to 0 on device "
@@ -180,7 +187,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 			twoSidedRightSearchGlobal<<<1, dev_props.warpSize, dev_props.warpSize * (sizeof(long long) + sizeof(signed char))>>>
 				(root_d, num_elem_slots, 0, pt_arr_d, min_dim1_val, min_dim2_val);
 
-			// Because all calls to the device are placed in the same stream (queue) and because cudaMemcpy is (host-)blocking, this code will not return before the computation has completed
+			// Because all calls to the device are placed in the same stream (queue) and because cudaMemcpy() is (host-)blocking, this code will not return before the computation has completed
 			// res_arr_ind_d points to the next index to write to, meaning that it actually contains the number of elements returned
 			gpuErrorCheck(cudaMemcpyFromSymbol(&num_res_elems, res_arr_ind_d,
 												sizeof(unsigned long long), 0,

@@ -19,7 +19,7 @@ For debugging options, use:
 - `-g` to get debugging info about host code
 - `-lineinfo` to get info on which lines are causing errors
 
-Standard is set to C++20 because Thrust has deprecated versions of C++ older than C++14 (which also allows use of simpler auto return types), while requires is a C++20 language feature.
+Standard is set to C++20 because Thrust has deprecated versions of C++ older than C++14 (which also allows use of simpler auto return types), constexpr if (compile-time-evaluated conditionals that may optimise away unused code) are a C++17 language feature, and requires is a C++20 language feature.
 
 
 To run these testers individually, please go to `testers/`, choose one of the subfolders, and execute the `*tester.out` files.

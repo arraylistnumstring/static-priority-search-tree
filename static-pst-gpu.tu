@@ -143,23 +143,34 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 
 	// Create concurrent streams for index-initialising and sorting the dimension-1 and dimension-2 index arrays
 	cudaStream_t stream_dim1;
-	cudaStreamCreateWithFlags(&stream_dim1, cudaStreamNonBlocking);
+	gpuErrorCheck(cudaStreamCreateWithFlags(&stream_dim1, cudaStreamNonBlocking),
+					"Error in creating asynchronous stream for assignment and sorting of "
+					+ "indices by dimension 1 on device " + std::to_string(dev_ind) + " of "
+					+ std::to_string(num_devs) + ": ");
 	indexAssignment<<<index_assign_num_blocks, index_assign_threads_per_block, 0, stream_dim1>>>(dim1_val_ind_arr_d, num_elems);
 	// Sort dimension-1 values index array in ascending order; in-place sort using a curried comparison function; guaranteed O(n) running time or better
 	// Execution policy of thrust::cuda::par.on(stream_dim1) guarantees kernel is submitted to stream_dim1
 	thrust::sort(thrust::cuda::par.on(stream_dim1), dim1_val_ind_arr_d, dim1_val_ind_arr_d + num_elems,
 					Dim1ValIndCompIncOrd(pt_arr_d));
 	// cudaStreamDestroy() is also a kernel submitted to the indicated stream, so it only runs once all previous calls have completed
-	cudaStreamDestroy(stream_dim1);
+	gpuErrorCheck(cudaStreamDestroy(stream_dim1), "Error in destroying asynchronous stream for "
+					+ "assignment and sorting of indices by dimension 1 on device "
+					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs) + ": ");
 
 	
 	cudaStream_t stream_dim2;
-	cudaStreamCreateWithFlags(&stream_dim2, cudaStreamNonBlocking);
+	gpuErrorCheck(cudaStreamCreateWithFlags(&stream_dim2, cudaStreamNonBlocking),
+					"Error in creating asynchronous stream for assignment and sorting of "
+					+ "indices by dimension 2 on device " + std::to_string(dev_ind) + " of "
+					+ std::to_string(num_devs) + ": ");
 	indexAssignment<<<index_assign_num_blocks, index_assign_threads_per_block, 0, stream_dim2>>>(dim2_val_ind_arr_d, num_elems);
 	// Sort dimension-2 values index array in descending order; in-place sort using a curried comparison function; guaranteed O(n) running time or better
 	thrust::sort(thrust::cuda::par.on(stream_dim2), dim2_val_ind_arr_d, dim2_val_ind_arr_d + num_elems,
 					Dim2ValIndCompDecOrd(pt_arr_d));
-	cudaStreamDestroy(stream_dim2);
+	gpuErrorCheck(cudaStreamDestroy(stream_dim2), "Error in destroying asynchronous stream for "
+					+ "assignment and sorting of indices by dimension 2 on device "
+					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs) + ": ");
+
 
 	// For correctness, must wait for all streams doing pre-construction pre-processing work to complete before continuing
 	gpuErrorCheck(cudaDeviceSynchronize(), "Error in synchronizing with device "
