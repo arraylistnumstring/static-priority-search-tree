@@ -11,8 +11,8 @@
 #		Provides line number information to debuggers
 #	-rdc=true
 #		Allows for dynamic parallelism
-#	-std=c++20
-#		Compiles using the C++20 standard
+#	-std=c++14
+#		Compiles using the C++14 standard
 
 for file in testers/*pu*/*.c*;
 do

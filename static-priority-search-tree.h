@@ -3,11 +3,15 @@
 
 #include <iostream>
 
-#include "point-struct.h"
-
-template <class PointStructClass>
+template <typename T, class PointStructClass>
 class StaticPrioritySearchTree	// abstract class
 {
+
+	// Throws a compile-time error if T is not of the type used in PointStructClass (which checks if T is of arithmetic (numeric) type)
+	// static_assert() and std::is_same are C++11 features
+	// static_assert() must have two arguments to compile on CIMS
+	static_assert(std::is_same<decltype(PointStructClass::dim1_value), T>::value, "Input type T not of same type as that stored in PointStructClass");
+
 	public:
 		// = 0 indicates that this is a pure virtual function, i.e. defines an interface strictly for subclasses to implement
 		// Printing function for printing operator << to use, as private data members must be accessed in the process
