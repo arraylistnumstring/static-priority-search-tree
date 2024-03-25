@@ -1,60 +1,28 @@
 #ifndef STATIC_PRIORITY_SEARCH_TREE_H
 #define STATIC_PRIORITY_SEARCH_TREE_H
 
-#include <concepts>
 #include <iostream>
-#include <type_traits>	// To filter out non-numeric types of T
 
-// Use concepts, a C++20 feature, to determine that the provided PtStruct type is valid
-// PtStruct is a template template parameter, i.e. is a template parameter that takes in a template parameter, so has template in front of its definition
-template <typename T, template <typename, size_t=0, typename=void> class PtStructTemplate>
-concept ValidPtStruct = requires(T t, PtStructTemplate<T> ptstr)
+#include "point-struct.h"
+
+template <class PointStructClass>
+class StaticPrioritySearchTree	// abstract class
 {
-	// Throws a compile-time error if T is not of arithmetic (numeric) type
-	requires std::is_arithmetic<T>::value;
-	// Checks for the existence of the following data members and member functions
-	ptstr.dim1_val;
-	ptstr.dim2_val;
-	ptstr.compareDim1(ptstr);
-	ptstr.compareDim2(ptstr);
-};
-
-template <typename T, template <typename, size_t, typename> class PtStructIDTemplate,
-			size_t num_ID_fields, typename IDType>
-concept ValidPtStructID = requires (T t, PtStructIDTemplate<T, num_ID_fields, IDType> ptstr_id, IDType id_type)
-{
-	requires ValidPtStruct<T, PtStructIDTemplate>;
-	requires num_ID_fields > 0;
-	requires !std::is_void<IDType>::value;
-	ptstr_id.ids;
-};
-
-template <typename T, template<typename, size_t, typename> class PtStructTemplate,
-			template<typename, template<typename, size_t, typename> class, size_t, typename> class StaticPrioritySearchTree,
-			size_t num_ID_fields=0, typename IDType=void>
-// Functionally an abstract class or an interface
-concept StaticPrioritySearchTree = requires (T t, PtStructTemplate<T, num_ID_fields, IDType> ptstr,
-												StaticPrioritySearchTree<T, PtStructTemplate, num_ID_fields, IDType> static_pst,
-												IDType id_type)
-{
-	requires ((ValidPtStruct<T, PtStructTemplate> PtStruct)
-	{
-		requires num_ID_fields == 0;
-		{static_pst.threeSidedSearch(size_t &num_res_elems, T min_dim1_val, T max_dim1_val, T min_dim2_val)} -> PtStruct*;
-		{static_pst.twoSidedLeftSearch(size_t &num_res_elems, T max_dim1_val, T min_dim2_val)} -> PtStruct*;
-		{static_pst.twoSidedRightSearch(size_t &num_res_elems, T min_dim1_val, T min_dim2_val)} -> PtStruct*;
-	})
-
-			|| (ValidPtStructID<T, PtStructTemplate, num_ID_fields, IDType> PtStructID)
-	{
-		{static_pst.threeSidedSearch(size_t &num_res_elems, T min_dim1_val, T max_dim1_val, T min_dim2_val)} -> PtStructID*;
-		{static_pst.twoSidedLeftSearch(size_t &num_res_elems, T max_dim1_val, T min_dim2_val)} -> PtStructID*;
-		{static_pst.twoSidedRightSearch(size_t &num_res_elems, T min_dim1_val, T min_dim2_val)} -> PtStructID*;
-	};
-	requires (std::ostream &os) {
+	public:
+		// = 0 indicates that this is a pure virtual function, i.e. defines an interface strictly for subclasses to implement
 		// Printing function for printing operator << to use, as private data members must be accessed in the process
-		{static_pst.print(os)} -> void;
-	};
+		// const keyword after method name indicates that the method does not modify any data members of the associated class
+		virtual void print(std::ostream &os) const = 0;
+		virtual PointStructClass* threeSidedSearch(size_t &num_res_elems, T min_dim1_val, T max_dim1_val, T min_dim2_val) = 0;
+		virtual PointStructClass* twoSidedLeftSearch(size_t &num_res_elems, T max_dim1_val, T min_dim2_val) = 0;
+		virtual PointStructClass* twoSidedRightSearch(size_t &num_res_elems, T min_dim1_val, T min_dim2_val) = 0;
 };
+
+template <typename T>
+std::ostream &operator<<(std::ostream &os, StaticPrioritySearchTree<T> &t)
+{
+	t.print(os);
+	return os;
+}
 
 #endif

@@ -5,7 +5,7 @@
 #include <iostream>
 #include <type_traits>	// To use static_assert()
 
-template <typename T>
+template <typename T, size_t num_IDs=0>
 // C++ structs differ from classes only in that structs default to public access of all members, while classes default to private access of all members
 struct PointStruct
 {
@@ -16,6 +16,8 @@ struct PointStruct
 
 	T dim1_val;
 	T dim2_val;
+
+	static const size_t num_ID_fields = num_IDs;
 
 	PointStruct()
 		: dim1_val(0),

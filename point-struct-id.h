@@ -4,9 +4,9 @@
 #include "point-struct.h"
 #include "print-array.h"
 
-template <typename T, size_t num_ID_fields, typename IDType>
+template <typename T, size_t num_IDs, typename IDType>
 // C++ structs differ from classes only in that structs default to public access of all members, while classes default to private access of all members
-struct PointStructID : public PointStruct<T>
+struct PointStructID : public PointStruct<T, num_IDs>
 {
 	// Throws a compile-time error if the condition is not met
 	// static_assert() is a C++11 feature
@@ -17,14 +17,14 @@ struct PointStructID : public PointStruct<T>
 
 	// Use of (&ids)[num_ID_fields] forces passed-in array reference to have length num_ID_fields
 	PointStructID(IDType (&ids)[num_ID_fields])
-		: PointStruct<T>()		// Constructor delegation prevents other parameters from being initialised with member initialiser lists
+		: PointStruct<T, num_ID_fields>()		// Constructor delegation prevents other parameters from being initialised with member initialiser lists
 	{
 		for (size_t i = 0; i < num_ID_fields; i++)
 			this->ids[i] = ids[i];
 	};
 
 	PointStructID(T dim1_val, T dim2_val, IDType (&ids)[num_ID_fields])
-		: PointStruct<T>(dim1_val, dim2_val)
+		: PointStruct<T, num_ID_fields>(dim1_val, dim2_val)
 	{
 		for (size_t i = 0; i < num_ID_fields; i++)
 			this->ids[i] = ids[i];
