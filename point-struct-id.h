@@ -42,7 +42,13 @@ struct PointStructID : public PointStruct<T>
 
 	// Comparison functions return < 0 if the dim1 value of this is ordered before the dim1 value of other, > 0 if the dim1 value of this is ordered after the dim1 value of other, and the result of calling comparisonTiebreaker() if this->dim1_val == other.dim1_val (similar statements hold true for comparison by dim2 values)
 	// Declaring other as const is necessary to allow for sort comparator lambda functions to compile properly
-	inline int compareDim1(const PointStructID<num_ID_fields, T, IDType> &other) const
+	// Preprocessor directives to add keywords based on whether CUDA GPU support is available
+#ifdef __CUDA_ARCH__
+	__forceinline__ __host__ __device__
+#else
+	inline
+#endif
+	int compareDim1(const PointStructID<num_ID_fields, T, IDType> &other) const
 	{
 		if (this->dim1_val != other.dim1_val)
 			// In case of unsigned types, subtraction will never return a negative result
@@ -50,7 +56,12 @@ struct PointStructID : public PointStruct<T>
 		else
 			return comparisonTiebreaker(other);
 	};
-	inline int compareDim2(const PointStructID<num_ID_fields, T, IDType> &other) const
+#ifdef __CUDA_ARCH__
+	__forceinline__ __host__ __device__
+#else
+	inline
+#endif
+	int compareDim2(const PointStructID<num_ID_fields, T, IDType> &other) const
 	{
 		if (this->dim2_val != other.dim2_val)
 			return this->dim2_val < other.dim2_val ? -1 : 1;
@@ -59,7 +70,12 @@ struct PointStructID : public PointStruct<T>
 	};
 
 	// For comparison tiebreakers, returns < 0 if memory address of this is less than memory address of other; == 0 if the memory addresses are equal (i.e. both objects are the same); > 0 if memory address of this is greater than memory address of other
-	inline int comparisonTiebreaker(const PointStructID<num_ID_fields, T, IDType> &other) const
+#ifdef __CUDA_ARCH__
+	__forceinline__ __host__ __device__
+#else
+	inline
+#endif
+	int comparisonTiebreaker(const PointStructID<num_ID_fields, T, IDType> &other) const
 	{
 		// Order by successive ID field values
 		for (size_t i = 0; i < num_ID_fields; i++)
@@ -74,7 +90,12 @@ struct PointStructID : public PointStruct<T>
 		return this == &other ? 0 : this < &other ? -1 : 1;
 	};
 
-	inline bool operator==(const PointStructID<num_ID_fields, T, IDType> &other) const
+#ifdef __CUDA_ARCH__
+	__forceinline__ __host__ __device__
+#else
+	inline
+#endif
+	bool operator==(const PointStructID<num_ID_fields, T, IDType> &other) const
 	{
 		// Check that ID values all agree
 		for (size_t i = 0; i < num_ID_fields; i++)

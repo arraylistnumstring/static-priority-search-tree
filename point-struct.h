@@ -37,7 +37,13 @@ struct PointStruct
 
 	// Comparison functions return < 0 if the dim1 value of this is ordered before the dim1 value of other, > 0 if the dim1 value of this is ordered after the dim1 value of other, and the result of calling comparisonTiebreaker() if dim1_val == other.dim1_val (similar statements hold true for comparison by dim2 values)
 	// Declaring other as const is necessary to allow for sort comparator lambda functions to compile properly
-	inline int compareDim1(const PointStruct<T> &other) const
+	// Preprocessor directives to add keywords based on whether CUDA GPU support is available
+#ifdef __CUDA_ARCH__
+	__forceinline__ __host__ __device__
+#else
+	inline
+#endif
+	int compareDim1(const PointStruct<T> &other) const
 	{
 		if (dim1_val != other.dim1_val)
 			// In case of unsigned types, subtraction will never return a negative result
@@ -45,7 +51,12 @@ struct PointStruct
 		else
 			return this->comparisonTiebreaker(other);
 	};
-	inline int compareDim2(const PointStruct<T> &other) const
+#ifdef __CUDA_ARCH__
+	__forceinline__ __host__ __device__
+#else
+	inline
+#endif
+	int compareDim2(const PointStruct<T> &other) const
 	{
 		if (dim2_val != other.dim2_val)
 			return this->dim2_val < other.dim2_val ? -1 : 1;
@@ -54,12 +65,22 @@ struct PointStruct
 	};
 
 	// For comparison tiebreakers, returns < 0 if memory address of this is less than memory address of other; == 0 if the memory addresses are equal (i.e. both objects are the same); > 0 if memory address of this is greater than memory address of other
-	inline int comparisonTiebreaker(const PointStruct<T> &other) const
+#ifdef __CUDA_ARCH__
+	__forceinline__ __host__ __device__
+#else
+	inline
+#endif
+	int comparisonTiebreaker(const PointStruct<T> &other) const
 	{
 		return this == &other ? 0 : this < &other ? -1 : 1;
 	};
 
-	inline  bool operator==(const PointStruct<T> &other) const
+#ifdef __CUDA_ARCH__
+	__forceinline__ __host__ __device__
+#else
+	inline
+#endif
+	bool operator==(const PointStruct<T> &other) const
 	{
 		return dim1_val == other.dim1_val && dim2_val == other.dim2_val;
 	};
