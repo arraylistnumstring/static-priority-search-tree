@@ -32,6 +32,8 @@ __global__ void populateTree (T *const root_d, const size_t num_elem_slots,
 	size_t right_subarr_num_elems;
 
 	// At any given level of the tree, each thread creates one node; as depth h of a tree has 2^h nodes, the number of active threads at level h is 2^h
+	// num_subelems_arr[threadIdx.x] > 0 condition not written here, as almost all threads except for thread 0 start out with the value num_subelems_arr[threadIdx.x] == 0
+#pragma unroll
 	for (size_t nodes_per_level = 1; nodes_per_level < blockDim.x; nodes_per_level <<= 1)
 	{
 		// Only active threads process a node
@@ -130,4 +132,15 @@ __global__ void populateTree (T *const root_d, const size_t num_elem_slots,
 		dim2_val_ind_arr_d = dim2_val_ind_arr_secondary_d;
 		dim2_val_ind_arr_secondary_d = temp;
 	}
+}
+
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+__global__ void indexAssignment(size_t *const ind_arr, const size_t num_elems)
+{
+	// Simple iteration over entire array, instantiating each array element with the value of its index; no conflicts possible, so no synchronisation necessary
+	// Use pragma unroll to decrease register occupation, as the number of loops is known at compile time
+#pragma unroll
+	for (size_t i = 0; i < num_elems; i += gridDim.x * blockDim.x)
+		ind_arr[i + blockIdx.x * blockDim.x + threadIdx.x] = i + blockIdx.x * blockDim.x + threadIdx.x;
 }
