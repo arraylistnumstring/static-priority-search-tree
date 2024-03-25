@@ -22,6 +22,11 @@ __global__ void populateTree(T *const root_d, const size_t num_elem_slots,
 								const size_t num_elems,
 								const size_t target_node_start_ind);
 
+// Assigning elements of an array on device such that array[i] = i
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+__global__ void indexAssignment(size_t *const ind_arr, const size_t num_elems);
+
 // Cannot overload a global function over a host function, even if the number of arguments differs
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
@@ -400,6 +405,8 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 											size_t *dim2_val_ind_arr_secondary_d,
 											const size_t val_ind_arr_start_ind, const size_t num_elems,
 											const size_t target_node_start_ind);
+
+	friend __global__ void indexAssignment <> (size_t *const ind_arr, const size_t num_elems);
 
 	friend __global__ void threeSidedSearchGlobal <> (T *const root_d,
 														const size_t num_elem_slots,

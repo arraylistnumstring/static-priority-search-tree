@@ -138,20 +138,24 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 						+ ": ");
 	}
 
+	const size_t index_assign_threads_per_block = 8 * dev_props.warpSize;
+	const size_t index_assign_num_blocks = std::min(num_elems % index_assign_threads_per_block == 0 ? num_elems/index_assign_threads_per_block : num_elems/index_assign_threads_per_block + 1, dev_props.warpSize * dev_props.warpSize);
+
 	// Create concurrent streams for index-initialising and sorting the dimension-1 and dimension-2 index arrays
 	cudaStream_t stream_dim1;
 	cudaStreamCreateWithFlags(&stream_dim1, cudaStreamNonBlocking);
-	indexInitialisation<<<, warpSize, 0, stream_dim1>>>(dim1_val_ind_arr_d, num_elems);
+	indexAssignment<<<index_assign_num_blocks, index_assign_threads_per_block, 0, stream_dim1>>>(dim1_val_ind_arr_d, num_elems);
 	// Sort dimension-1 values index array in ascending order; in-place sort using a curried comparison function; guaranteed O(n) running time or better
 	// Execution policy of thrust::cuda::par.on(stream_dim1) guarantees kernel is submitted to stream_dim1
 	thrust::sort(thrust::cuda::par.on(stream_dim1), dim1_val_ind_arr_d, dim1_val_ind_arr_d + num_elems,
 					Dim1ValIndCompIncOrd(pt_arr_d));
+	// cudaStreamDestroy() is also a kernel submitted to the indicated stream, so it only runs once all previous calls have completed
 	cudaStreamDestroy(stream_dim1);
 
 	
 	cudaStream_t stream_dim2;
 	cudaStreamCreateWithFlags(&stream_dim2, cudaStreamNonBlocking);
-	indexInitialisation<<<, dev_props.warpSize, 0, stream_dim2>>>(dim1_val_ind_arr_d, num_elems);
+	indexAssignment<<<index_assign_num_blocks, index_assign_threads_per_block, 0, stream_dim2>>>(dim2_val_ind_arr_d, num_elems);
 	// Sort dimension-2 values index array in descending order; in-place sort using a curried comparison function; guaranteed O(n) running time or better
 	thrust::sort(thrust::cuda::par.on(stream_dim2), dim2_val_ind_arr_d, dim2_val_ind_arr_d + num_elems,
 					Dim2ValIndCompDecOrd(pt_arr_d));
