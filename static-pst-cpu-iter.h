@@ -13,11 +13,6 @@ template <typename T>
 // public superclass means that all public and protected members of base-class retain their access status in the subclass
 class StaticPSTCPUIter : public StaticPrioritySearchTree<T>
 {
-	// Throws a compile-time error if T is not of arithmetic (numeric) type
-	// static_assert() and std::is_arithmetic are C++11 features
-	// static_assert() must have two arguments to compile on CIMS
-	static_assert(std::is_arithmetic<T>::value, "Input type T not of arithmetic type");
-
 	public:
 		StaticPSTCPUIter(PointStructCPUIter<T> *const &pt_arr, size_t num_elems);
 		// Since arrays were allocated continguously, only need to free one of the array pointers
