@@ -2,8 +2,9 @@
 #define POINT_STRUCT_ID_H
 
 #include "point-struct.h"
+#include "print-array.h"
 
-template <size_t num_ID_fields, typename T, typename IDType>
+template <typename T, size_t num_ID_fields, typename IDType>
 // C++ structs differ from classes only in that structs default to public access of all members, while classes default to private access of all members
 struct PointStructID : public PointStruct<T>
 {
@@ -48,7 +49,7 @@ struct PointStructID : public PointStruct<T>
 #else
 	inline
 #endif
-	int compareDim1(const PointStructID<num_ID_fields, T, IDType> &other) const
+	int compareDim1(const PointStructID<T, num_ID_fields, IDType> &other) const
 	{
 		if (this->dim1_val != other.dim1_val)
 			// In case of unsigned types, subtraction will never return a negative result
@@ -61,7 +62,7 @@ struct PointStructID : public PointStruct<T>
 #else
 	inline
 #endif
-	int compareDim2(const PointStructID<num_ID_fields, T, IDType> &other) const
+	int compareDim2(const PointStructID<T, num_ID_fields, IDType> &other) const
 	{
 		if (this->dim2_val != other.dim2_val)
 			return this->dim2_val < other.dim2_val ? -1 : 1;
@@ -75,7 +76,7 @@ struct PointStructID : public PointStruct<T>
 #else
 	inline
 #endif
-	int comparisonTiebreaker(const PointStructID<num_ID_fields, T, IDType> &other) const
+	int comparisonTiebreaker(const PointStructID<T, num_ID_fields, IDType> &other) const
 	{
 		// Order by successive ID field values
 		for (size_t i = 0; i < num_ID_fields; i++)
@@ -95,7 +96,7 @@ struct PointStructID : public PointStruct<T>
 #else
 	inline
 #endif
-	bool operator==(const PointStructID<num_ID_fields, T, IDType> &other) const
+	bool operator==(const PointStructID<T, num_ID_fields, IDType> &other) const
 	{
 		// Check that ID values all agree
 		for (size_t i = 0; i < num_ID_fields; i++)
@@ -106,8 +107,8 @@ struct PointStructID : public PointStruct<T>
 	};
 };
 
-template <size_t num_ID_fields, typename T, typename IDType>
-std::ostream &operator<<(std::ostream &os, const PointStructID<num_ID_fields, T, IDType> &ptstr)
+template <typename T, size_t num_ID_fields, typename IDType>
+std::ostream &operator<<(std::ostream &os, const PointStructID<T, num_ID_fields, IDType> &ptstr)
 {
 	ptstr.print(os);
 	return os;
