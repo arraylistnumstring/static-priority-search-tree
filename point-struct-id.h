@@ -42,8 +42,8 @@ struct PointStructID : public PointStruct<T>
 
 	// Comparison functions return < 0 if the dim1 value of this is ordered before the dim1 value of other, > 0 if the dim1 value of this is ordered after the dim1 value of other, and the result of calling comparisonTiebreaker() if this->dim1_val == other.dim1_val (similar statements hold true for comparison by dim2 values)
 	// Declaring other as const is necessary to allow for sort comparator lambda functions to compile properly
-	// Preprocessor directives to add keywords based on whether CUDA GPU support is available
-#ifdef __CUDA_ARCH__
+	// Preprocessor directives to add keywords based on whether CUDA GPU support is available; __CUDA_ARCH__ is either undefined or defined as 0 in host code
+#if (defined(__CUDA_ARCH__) && (__CUDA_ARCH__ > 0))
 	__forceinline__ __host__ __device__
 #else
 	inline
@@ -56,7 +56,7 @@ struct PointStructID : public PointStruct<T>
 		else
 			return comparisonTiebreaker(other);
 	};
-#ifdef __CUDA_ARCH__
+#if (defined(__CUDA_ARCH__) && (__CUDA_ARCH__ > 0))
 	__forceinline__ __host__ __device__
 #else
 	inline
@@ -70,7 +70,7 @@ struct PointStructID : public PointStruct<T>
 	};
 
 	// For comparison tiebreakers, returns < 0 if memory address of this is less than memory address of other; == 0 if the memory addresses are equal (i.e. both objects are the same); > 0 if memory address of this is greater than memory address of other
-#ifdef __CUDA_ARCH__
+#if (defined(__CUDA_ARCH__) && (__CUDA_ARCH__ > 0))
 	__forceinline__ __host__ __device__
 #else
 	inline
@@ -90,7 +90,7 @@ struct PointStructID : public PointStruct<T>
 		return this == &other ? 0 : this < &other ? -1 : 1;
 	};
 
-#ifdef __CUDA_ARCH__
+#if (defined(__CUDA_ARCH__) && (__CUDA_ARCH__ > 0))
 	__forceinline__ __host__ __device__
 #else
 	inline

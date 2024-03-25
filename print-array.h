@@ -1,6 +1,8 @@
 #ifndef PRINT_ARRAY_H
 #define PRINT_ARRAY_H
 
+#include <iostream>
+
 template <typename T>
 std::ostream printArray(std::ostream os, T *const &T_arr, const size_t start_ind, const size_t num_elems);
 
