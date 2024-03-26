@@ -111,17 +111,36 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 					"Error in allocating secondary array of PointStructTemplate<T, IDType, num_IDs> indices ordered by dimension 2 on device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 					+ ": ");
-	gpuErrorCheck(cudaMalloc(&pt_arr_d, num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>)),
-					"Error in allocating array of PointStructTemplate<T, IDType, num_IDs> objects on device "
+
+	CUcontext *ptr_info;
+	gpuErrorCheck(cuPointerGetAttribute(ptr_info, CU_POINTER_ATTRIBUTE_MEMORY_TYPE, pt_arr),
+					"Error in attempting to get attribute information of pt_arr on device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 					+ ": ");
+	if (ptr_info == CU_MEMORYTYPE_HOST)		// pt_arr is on host; allocate memory for and copy pt_arr
+	{
+		gpuErrorCheck(cudaMalloc(&pt_arr_d, num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>)),
+						"Error in allocating array of PointStructTemplate<T, IDType, num_IDs> objects on device "
+						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+						+ ": ");
 
+		// Use cudaMemcpy() call as implicit call to cudaDeviceSynchronize(), as cudaMemcpy() calls are only truly asynchronous for pinned memory
+		gpuErrorCheck(cudaMemcpy(pt_arr_d, pt_arr, num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>), cudaMemcpyDefault), 
+						"Error in copying array of PointStructTemplate<T, IDType, num_IDs> objects to device "
+						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+						+ ": ");
+	}
+	else if (ptr_info == CU_MEMORYTYPE_DEVICE)	// pt_arr is already on device; use it as pt_arr_d
+	{
+		pt_arr_d = pt_arr;
+		// No implicit synchronization call as with cudaMemcpy, so instead all cudaDeviceSynchornize() explicitly
+		gpuErrorCheck(cudaDeviceSynchronize(), "Error in synchronizing with GPU after "
+						+ "allocating data on device " + std::to_string(dev_ind) + " of "
+						+ std::to_string(num_devs) + ": ");
+	}
+	else	// Something has gone very wrong; exit
+		return;
 
-	// Use cudaMemcpy() call as implicit call to cudaDeviceSynchronize(), as cudaMemcpy() calls are only truly asynchronous for pinned memory
-	gpuErrorCheck(cudaMemcpy(pt_arr_d, pt_arr, num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>), cudaMemcpyDefault), 
-					"Error in copying array of PointStructTemplate<T, IDType, num_IDs> objects to device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-					+ ": ");
 
 	if constexpr (num_IDs == 0 || sizeof(T) >= sizeof(IDType))
 	{
