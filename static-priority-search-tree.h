@@ -4,7 +4,7 @@
 #include <iostream>
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
-			typename IDType=void, size_t num_ID_fields=0>
+			typename IDType=void, size_t num_IDs=0>
 class StaticPrioritySearchTree
 {
 	public:
@@ -19,9 +19,9 @@ class StaticPrioritySearchTree
 // As the concept StaticPST is not a type, using it as a constraint must be done with a trailing requires keyword
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			template<typename, template<typename, typename, size_t> class, typename, size_t> class StaticPrioritySearchTree,
-			typename IDType, size_t num_ID_fields
+			typename IDType, size_t num_IDs
 		 >
-std::ostream &operator<<(std::ostream &os, StaticPrioritySearchTree<T, PointStructTemplate, IDType, num_ID_fields> &pst)
+std::ostream &operator<<(std::ostream &os, StaticPrioritySearchTree<T, PointStructTemplate, IDType, num_IDs> &pst)
 {
 	pst.print(os);
 	return os;

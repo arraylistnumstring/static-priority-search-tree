@@ -87,6 +87,7 @@ int main(int argc, char* argv[])
 			pt_arr[i].dim1_val = unif_float_dist(mt_eng);
 			pt_arr[i].dim2_val = unif_float_dist(mt_eng);
 		}
+
 	#ifdef DEBUG
 		printArray(std::cout, pt_arr, 0, num_elems);
 		std::cout << '\n';
