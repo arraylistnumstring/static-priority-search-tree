@@ -13,7 +13,10 @@ class StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::TreeNode
 		// const keyword after method name indicates that the method does not modify any data members of the associated class
 		virtual void print(std::ostream &os) const
 		{
-			os << '(' << pt.dim1_val << ", " << pt.dim2_val  << "; " << median_dim1_val << ')';
+			os << '(' << pt.dim1_val << ", " << pt.dim2_val  << "; " << median_dim1_val;
+			if constexpr (num_IDs == 1)
+				os << "; " << pt.id;
+			os << ')';
 		};
 
 		void setTreeNode(PointStructTemplate<T, IDType, num_IDs> &source_data, T median_dim1_val);

@@ -1,6 +1,7 @@
 #ifndef PST_TEST_INFO_STRUCT_H
 #define PST_TEST_INF_STRUCT_H
 
+#include <algorithm>
 #include <random>
 #include <string>
 
@@ -21,7 +22,7 @@ struct PSTTestInfoStruct
 	DataType data_type;
 	PSTTestCodes test_type;
 	PSTType tree_type;
-	std::string search_range_strings[NumSearchVals::NUM_VALS_THREE_SEARCH];
+	std::string search_range_strings[NumSearchVals::NUM_VALS_THREE_SEARCH] = {"0", "0", "0"};
 
 	bool pts_with_ids = false;
 	DataType id_type;
@@ -30,7 +31,7 @@ struct PSTTestInfoStruct
 
 	// Number of values necessary to define the bounds of an interval
 	const static size_t NUM_VALS_INT_BOUNDS = 2;
-	std::string tree_val_range_strings[NUM_VALS_INT_BOUNDS];
+	std::string tree_val_range_strings[NUM_VALS_INT_BOUNDS] = {"0", "0"};
 
 	size_t num_elems;
 
