@@ -1,15 +1,11 @@
 #include <random>	// To use uniform_int_distribution and uniform_real_distribution
 #include <string>	// To use stoi() and string operators for command-line argument parsing
 
-#include "../point-struct.h"
-#include "../static-pst-cpu-iter.h"
-#include "../static-pst-cpu-recur.h"
-#include "../static-pst-gpu.h"
-#include "pst-tester-helpers.h"
+#include "pst-test-info-struct.h"
 
 int main(int argc, char *argv[])
 {
-	TestInfoStruct test_info;
+	PSTTestInfoStruct test_info;
 
 	// Parse command-line arguments
 	for (int i = 0; i < argc; i++)
@@ -76,21 +72,21 @@ int main(int argc, char *argv[])
 					|| arg == "-T" || arg == "--three"
 				)
 		{
-			TestInfoStruct::NumSearchVals num_search_vals;
+			PSTTestInfoStruct::NumSearchVals num_search_vals;
 
 			if (arg == "-L" || arg == "--left")
 			{
-				num_search_vals = NUM_VALS_TWO_SEARCH;
+				num_search_vals = PSTTestInfoStruct::NumSearchVals::NUM_VALS_TWO_SEARCH;
 				test_info.test_type = PSTTestCodes::LEFT_SEARCH;
 			}
 			else if (arg == "-R" || arg == "--right")
 			{
-				num_search_vals = NUM_VALS_TWO_SEARCH;
+				num_search_vals = PSTTestInfoStruct::NumSearchVals::NUM_VALS_TWO_SEARCH;
 				test_info.test_type = PSTTestCodes::RIGHT_SEARCH;
 			}
 			else	// arg == "-T" || arg == "--three"
 			{
-				num_search_vals = NUM_VALS_THREE_SEARCH;
+				num_search_vals = PSTTestInfoStruct::NumSearchVals::NUM_VALS_THREE_SEARCH;
 				test_info.test_type = PSTTestCodes::THREE_SEARCH;
 			}
 
@@ -184,7 +180,7 @@ int main(int argc, char *argv[])
 		// Tree value parsing
 		else if (arg == "-b" || arg == "--val-bounds")
 		{
-			for (int j = 0; j < NUM_VALS_INT_BOUNDS; j++)
+			for (int j = 0; j < PSTTestInfoStruct::NUM_VALS_INT_BOUNDS; j++)
 			{
 				i++;
 				if (i >= argc)

@@ -1,12 +1,16 @@
-#ifndef PST_TESTER_HELPER_H
-#define PST_TESTER_HELPER_H
+#ifndef PST_TEST_INFO_STRUCT_H
+#define PST_TEST_INF_STRUCT_H
 
 #include <random>
 #include <string>
 
+#include "../point-struct.h"
+#include "../static-pst-cpu-iter.h"
+#include "../static-pst-cpu-recur.h"
+#include "../static-pst-gpu.h"
 #include "pst-tester.h"
 
-struct TestInfoStruct
+struct PSTTestInfoStruct
 {
 	enum NumSearchVals
 	{
@@ -16,7 +20,7 @@ struct TestInfoStruct
 	DataType data_type;
 	PSTTestCodes test_type;
 	PSTType tree_type;
-	search_range_strings[NUM_VALS_THREE_SEARCH];
+	std::string search_range_strings[NumSearchVals::NUM_VALS_THREE_SEARCH];
 
 	bool pts_with_ids = false;
 	DataType id_type;
@@ -24,7 +28,7 @@ struct TestInfoStruct
 	size_t rand_seed = 0;
 
 	// Number of values necessary to define the bounds of an interval
-	const size_t NUM_VALS_INT_BOUNDS = 2;
+	const static size_t NUM_VALS_INT_BOUNDS = 2;
 	std::string tree_val_range_strings[NUM_VALS_INT_BOUNDS];
 
 	size_t num_elems;
@@ -41,7 +45,7 @@ struct TestInfoStruct
 									std::stod(search_range_strings[1]),
 									std::stod(search_range_strings[2]));
 			
-			treeTypeWrapper(pst_tester);
+			IDTypeWrapper(pst_tester);
 		}
 		else if (data_type == DataType::FLOAT)
 		{
@@ -52,7 +56,7 @@ struct TestInfoStruct
 									std::stof(search_range_strings[1]),
 									std::stof(search_range_strings[2]));
 			
-			treeTypeWrapper(pst_tester);
+			IDTypeWrapper(pst_tester);
 		}
 		else if (data_type == DataType::INT)
 		{
@@ -63,7 +67,7 @@ struct TestInfoStruct
 									std::stoi(search_range_strings[1]),
 									std::stoi(search_range_strings[2]));
 			
-			treeTypeWrapper(pst_tester);
+			IDTypeWrapper(pst_tester);
 		}
 		else if (data_type == DataType::LONG)
 		{
@@ -74,37 +78,13 @@ struct TestInfoStruct
 									std::stol(search_range_strings[1]),
 									std::stol(search_range_strings[2]));
 			
-			treeTypeWrapper(pst_tester);
-		}
-	};
-
-	// Instantiate next PSTTester type with respect to tree type
-	template <typename PSTTesterDataInstantiated>
-	void treeTypeWrapper(PSTTesterDataInstantiated pst_tester)
-	{
-		if (tree_type == PSTType::CPU_ITER)
-		{
-			pst_tester.TreeTypeWrapper<PointStruct, StaticPSTCPUIter> pst_tester_tree_instan;
-
-			IDTypeWrapper(pst_tester_tree_instan);
-		}
-		else if (tree_type == PSTType::CPU_RECUR)
-		{
-			pst_tester.TreeTypeWrapper<PointStruct, StaticPSTCPURecur> pst_tester_tree_instan;
-
-			IDTypeWrapper(pst_tester_tree_instan);
-		}
-		else	// tree_type == PSTType::GPU
-		{
-			pst_tester.TreeTypeWrapper<PointStruct, StaticPSTGPU> pst_tester_tree_instan;
-
-			IDTypeWrapper(pst_tester_tree_instan);
+			IDTypeWrapper(pst_tester);
 		}
 	};
 
 	// Instantiate next PSTTester type with respect to ID type
-	template <typename PSTTesterDataTreeInstantiated>
-	void IDTypeWrapper(PSTTesterDataTreeInstantiated pst_tester)
+	template <typename PSTTesterDataInstantiated>
+	void IDTypeWrapper(PSTTesterDataInstantiated pst_tester)
 	{
 		if (id_type == DataType::CHAR)
 		{
@@ -139,20 +119,44 @@ struct TestInfoStruct
 	};
 
 	// Instantiate next PSTTester type with respect to number of IDs
-	template <typename PSTTesterDataTreeIDTypesInstantiated>
-	void numIDsWrapper(PSTTesterDataTreeIDTypesInstantiated pst_tester)
+	template <typename PSTTesterDataIDTypesInstantiated>
+	void numIDsWrapper(PSTTesterDataIDTypesInstantiated pst_tester)
 	{
 		if (pts_with_ids)
 		{
-			pst_tester.NumIDsWrapper<1> pst_tester_fully_instan;
+			pst_tester.NumIDsWrapper<1> pst_tester_num_ids_instan;
 			
-			testWrapper(pst_tester_fully_instan);
+			treeTypeWrapper(pst_tester_num_ids_instan);
 		}
 		else	// !pts_with_ids
 		{
-			pst_tester.NumIDsWrapper<0> pst_tester_fully_instan;
+			pst_tester.NumIDsWrapper<0> pst_tester_ids_instan;
 
-			testWrapper(pst_tester_fully_instan);
+			treeTypeWrapper(pst_tester_num_ids_instan);
+		}
+	};
+
+	// Instantiate next PSTTester type with respect to tree type
+	template <typename PSTTesterDataIDInfoInstantiated>
+	void treeTypeWrapper(PSTTesterDataIDInfoInstantiated pst_tester)
+	{
+		if (tree_type == PSTType::CPU_ITER)
+		{
+			pst_tester.TreeTypeWrapper<PointStruct, StaticPSTCPUIter> pst_tester_tree_instan;
+
+			testWrapper(pst_tester_tree_instan);
+		}
+		else if (tree_type == PSTType::CPU_RECUR)
+		{
+			pst_tester.TreeTypeWrapper<PointStruct, StaticPSTCPURecur> pst_tester_tree_instan;
+
+			testWrapper(pst_tester_tree_instan);
+		}
+		else	// tree_type == PSTType::GPU
+		{
+			pst_tester.TreeTypeWrapper<PointStruct, StaticPSTGPU> pst_tester_tree_instan;
+
+			testWrapper(pst_tester_tree_instan);
 		}
 	};
 

@@ -54,8 +54,7 @@ struct PSTTester
 		min_dim2_val(min_dim2_val)
 	{};
 
-	// Functor to allow for templated function calling without needing to pass in dummy parameters just to indicate type
-	// Nested structs to allow for the metaprogramming equivalent of currying, but with types instead of parameters
+	// Nested structs to allow for the metaprogramming equivalent of currying, but with type parameters
 	template <template<typename, typename, size_t> class PointStructTemplate,
 				template<typename, template<typename, typename, size_t> class, typename, size_t> class StaticPSTTemplate>
 	struct TreeTypeWrapper
