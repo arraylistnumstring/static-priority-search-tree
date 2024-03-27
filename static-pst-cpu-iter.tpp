@@ -316,7 +316,7 @@ PointStructTemplate<T, IDType, num_IDs>* StaticPSTCPUIter<T, PointStructTemplate
 	std::stack<unsigned char> search_codes_stack;
 
 	search_inds_stack.push(0);
-	search_codes_stack.push(LEFT_SEARCH);
+	search_codes_stack.push(RIGHT_SEARCH);
 
 	long long search_ind;
 	unsigned char search_code;

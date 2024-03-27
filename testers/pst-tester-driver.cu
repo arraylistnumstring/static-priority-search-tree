@@ -1,42 +1,15 @@
+#include <random>	// To use uniform_int_distribution and uniform_real_distribution
 #include <string>	// To use stoi() and string operators for command-line argument parsing
 
 #include "../point-struct.h"
 #include "../static-pst-cpu-iter.h"
 #include "../static-pst-cpu-recur.h"
 #include "../static-pst-gpu.h"
-#include "pst-tester.h"
+#include "pst-tester-helpers.h"
 
-int main(int argc, char *agrv[])
+int main(int argc, char *argv[])
 {
-	enum DataType {BOOL, CHAR, DOUBLE, FLOAT, INT, LONG};
-
-	enum NumSearchVals
-	{
-		NUM_VALS_TWO_SEARCH=2,
-		NUM_VALS_THREE_SEARCH=3
-	};
-
-	enum PSTType {CPU_ITER, CPU_RECUR, GPU};
-
-
-	DataType data_type;
-	
-	PSTTester::TestCodes test_type;
-	
-	PSTType tree_type;
-	
-	std::string search_range_strings[NUM_VALS_THREE_SEARCH];
-
-	unsigned char num_ids = 0;
-	DataType id_type;
-
-	size_t rand_seed = 0;
-	
-	// Number of values necessary to define the bounds of an interval
-	const size_t NUM_VALS_INT_BOUNDS = 2;
-	std::string tree_val_range_strings[NUM_VALS_INT_BOUNDS];
-
-	size_t num_elems;
+	TestInfoStruct test_info;
 
 	// Parse command-line arguments
 	for (int i = 0; i < argc; i++)
@@ -48,7 +21,7 @@ int main(int argc, char *agrv[])
 		{
 			std::cerr << "Usage: ./pst-tester-driver <datatype-flag> <test-type-flag> ";
 			std::cerr << "<tree-type-flag> ";
-			std::cerr << "[-I] "
+			std::cerr << "[-I ID_TYPE] ";
 			std::cerr << "[-r RAND_SEED] ";
 			std::cerr << "-b MIN_VAL MAX_VAL ";
 			std::cerr << "-n NUM_ELEMS";
@@ -74,7 +47,7 @@ int main(int argc, char *agrv[])
 			std::cerr << "\t\t--recur\tUse StaticPSTCPURecur\n";
 			std::cerr << '\n';
 
-			std::cerr << "\t-I, --ids-on\tToggles on IDs for nodes of the tree; defaults to false\n\n";
+			std::cerr << "\t-I, --ids DATA_TYPE\tToggles assignment of IDs to the nodes of the tree with data type DATA_TYPE; defaults to false; valid data types are char, double, float, int, long\n\n";
 
 			std::cerr << "\t-b, --val-bounds MIN_VAL MAX_VAL\tBounds of values (inclusive) to use when generating random values for PST; must be castable to chosen datatype\n\n";
 
@@ -87,38 +60,38 @@ int main(int argc, char *agrv[])
 
 		// Data-type parsing
 		else if (arg == "-d" || arg == "--double")
-			data_type = DataType::DOUBLE;
+			test_info.data_type = DataType::DOUBLE;
 		else if (arg == "-f" || arg == "--float")
-			data_type = DataType::FLOAT;
+			test_info.data_type = DataType::FLOAT;
 		else if (arg == "-i" || arg == "--int")
-			data_type = DataType::INT;
+			test_info.data_type = DataType::INT;
 		else if (arg == "l" || arg == "--long")
-			data_type = DataType::LONG;
+			test_info.data_type = DataType::LONG;
 
 		// Test-type parsing
 		else if (arg == "-C" || arg == "--construct")
-			test_type = PSTTester::TestCodes::CONSTRUCT;
+			test_info.test_type = PSTTestCodes::CONSTRUCT;
 		else if (arg == "-L" || arg == "--left"
 					|| arg == "-R" || arg == "--right"
 					|| arg == "-T" || arg == "--three"
 				)
 		{
-			NumSearchVals num_search_vals;
+			TestInfoStruct::NumSearchVals num_search_vals;
 
 			if (arg == "-L" || arg == "--left")
 			{
 				num_search_vals = NUM_VALS_TWO_SEARCH;
-				test_type = PSTTester::TestCodes::LEFT_SEARCH;
+				test_info.test_type = PSTTestCodes::LEFT_SEARCH;
 			}
 			else if (arg == "-R" || arg == "--right")
 			{
 				num_search_vals = NUM_VALS_TWO_SEARCH;
-				test_type = PSTTester::TestCodes::RIGHT_SEARCH;
+				test_info.test_type = PSTTestCodes::RIGHT_SEARCH;
 			}
 			else	// arg == "-T" || arg == "--three"
 			{
 				num_search_vals = NUM_VALS_THREE_SEARCH;
-				test_type = PSTTester::TestCodes::THREE_SEARCH;
+				test_info.test_type = PSTTestCodes::THREE_SEARCH;
 			}
 
 			// Consume requisite number of arguments for later conversion to search range values
@@ -132,7 +105,8 @@ int main(int argc, char *agrv[])
 				}
 				try
 				{
-					search_range_strings[j](argv[i]);
+					// Curly braces necessary around try blocks
+					test_info.search_range_strings[j] = std::string(argv[i]);
 				}
 				catch (std::invalid_argument const &ex)
 				{
@@ -144,16 +118,16 @@ int main(int argc, char *agrv[])
 
 		// Tree type parsing
 		else if (arg == "-g" || arg == "--gpu")
-			tree_type = PSTType::GPU;
+			test_info.tree_type = PSTType::GPU;
 		else if (arg == "--iter")
-			tree_type = PSTType::CPU_ITER;
+			test_info.tree_type = PSTType::CPU_ITER;
 		else if (arg == "--recur")
-			tree_type = PSTType::CPU_RECUR;
+			test_info.tree_type = PSTType::CPU_RECUR;
 
 		// ID flag and ID type parsing
 		else if (arg == "-I" || arg == "--ids-on")
 		{
-			num_ids = 1;
+			test_info.pts_with_ids = true;
 
 			i++;
 			if (i >= argc)
@@ -163,22 +137,22 @@ int main(int argc, char *agrv[])
 			}
 			try
 			{
+				// Convert id_type_string to lowercase for easier processing
 				std::string id_type_string(argv[i]);
-				std::transform(data.begin(), data.end(), data.begin(),
+				std::transform(id_type_string.begin(), id_type_string.end(),
+								id_type_string.begin(),
 								[](unsigned char c){ return std::tolower(c); });
 
-				if (id_type_string == "bool")
-					data_type = DataType::BOOL;
-				else if (id_type_string == "char")
-					data_type = DataType::CHAR;
+				if (id_type_string == "char")
+					test_info.id_type = DataType::CHAR;
 				else if (id_type_string == "double")
-					data_type = DataType::DOUBLE;
-				else if (id_type_string == "--float")
-					data_type = DataType::FLOAT;
-				else if (id_type_string == "--int")
-					data_type = DataType::INT;
-				else if (id_type_string == "--long")
-					data_type = DataType::LONG;
+					test_info.id_type = DataType::DOUBLE;
+				else if (id_type_string == "float")
+					test_info.id_type = DataType::FLOAT;
+				else if (id_type_string == "int")
+					test_info.id_type = DataType::INT;
+				else if (id_type_string == "long")
+					test_info.id_type = DataType::LONG;
 			}
 			catch (std::invalid_argument const &ex)
 			{
@@ -198,7 +172,7 @@ int main(int argc, char *agrv[])
 			}
 			try
 			{
-				rand_seed = std::stoull(argv[i], nullptr, 0);
+				test_info.rand_seed = std::stoull(argv[i], nullptr, 0);
 			}
 			catch (std::invalid_argument const &ex)
 			{
@@ -220,7 +194,7 @@ int main(int argc, char *agrv[])
 				}
 				try
 				{
-					tree_val_range_strings[j](argv[i]);
+					test_info.tree_val_range_strings[j] = std::string(argv[i]);
 				}
 				catch (std::invalid_argument const &ex)
 				{
@@ -241,7 +215,7 @@ int main(int argc, char *agrv[])
 			}
 			try
 			{
-				num_elems = std::stoull(argv[i], nullptr, 0);
+				test_info.num_elems = std::stoull(argv[i], nullptr, 0);
 			}
 			catch (std::invalid_argument const &ex)
 			{
@@ -252,139 +226,8 @@ int main(int argc, char *agrv[])
 		}
 	}
 
-	// Instantiate PSTTester based on datatype
-	if (data_type == DOUBLE)
-	{
-		PSTTester<double> pst_tester(rand_seed, std::stod(tree_val_range_strings[0]),
-										std::stod(tree_val_range_strings[1]));
-
-		if (tree_type == PSTType::CPU_ITER)
-			pst_tester.testPST<PointStruct,
-								StaticPSTCPUIter,
-								id_type,
-								num_ids>
-									(num_elems, test_type, std::stod(search_range_strings[0]),
-									 std::stod(search_range_strings[1]),
-									 std::stod(search_range_strings[2])
-									);
-		else if (tree_type == PSTType::CPU_RECUR)
-			pst_tester.testPST<PointStruct,
-								StaticPSTCPURecur,
-								id_type,
-								num_ids>
-									(num_elems, test_type, std::stod(search_range_strings[0]),
-									 std::stod(search_range_strings[1]),
-									 std::stod(search_range_strings[2])
-									);
-		else if (tree_type == PSTType::GPU)
-			pst_tester.testPST<PointStruct,
-								StaticPSTGPU,
-								id_type,
-								num_ids>
-									(num_elems, test_type, std::stod(search_range_strings[0]),
-									 std::stod(search_range_strings[1]),
-									 std::stod(search_range_strings[2])
-									);
-	}
-	else if (data_type == FLOAT)
-	{
-		PSTTester<float> pst_tester(rand_seed, std::stof(tree_val_range_strings[0]),
-										std::stof(tree_val_range_strings[1]));
-
-		if (tree_type == PSTType::CPU_ITER)
-			pst_tester.testPST<PointStruct,
-								StaticPSTCPUIter,
-								id_type,
-								num_ids>
-									(num_elems, test_type, std::stof(search_range_strings[0]),
-									 std::stof(search_range_strings[1]),
-									 std::stof(search_range_strings[2])
-									);
-		else if (tree_type == PSTType::CPU_RECUR)
-			pst_tester.testPST<PointStruct,
-								StaticPSTCPURecur,
-								id_type,
-								num_ids>
-									(num_elems, test_type, std::stof(search_range_strings[0]),
-									 std::stof(search_range_strings[1]),
-									 std::stof(search_range_strings[2])
-									);
-		else if (tree_type == PSTType::GPU)
-			pst_tester.testPST<PointStruct,
-								StaticPSTGPU,
-								id_type,
-								num_ids>
-									(num_elems, test_type, std::stof(search_range_strings[0]),
-									 std::stof(search_range_strings[1]),
-									 std::stof(search_range_strings[2])
-									);
-	}
-	else if (data_type == INT)
-	{
-		PSTTester<int> pst_tester(rand_seed, std::stoi(tree_val_range_strings[0]),
-										std::stoi(tree_val_range_strings[1]));
-
-		if (tree_type == PSTType::CPU_ITER)
-			pst_tester.testPST<PointStruct,
-								StaticPSTCPUIter,
-								id_type,
-								num_ids>
-									(num_elems, test_type, std::stoi(search_range_strings[0]),
-									 std::stoi(search_range_strings[1]),
-									 std::stoi(search_range_strings[2])
-									);
-		else if (tree_type == PSTType::CPU_RECUR)
-			pst_tester.testPST<PointStruct,
-								StaticPSTCPURecur,
-								id_type,
-								num_ids>
-									(num_elems, test_type, std::stoi(search_range_strings[0]),
-									 std::stoi(search_range_strings[1]),
-									 std::stoi(search_range_strings[2])
-									);
-		else if (tree_type == PSTType::GPU)
-			pst_tester.testPST<PointStruct,
-								StaticPSTGPU,
-								id_type,
-								num_ids>
-									(num_elems, test_type, std::stoi(search_range_strings[0]),
-									 std::stoi(search_range_strings[1]),
-									 std::stoi(search_range_strings[2])
-									);
-	}
-	else if (data_type == LONG)
-	{
-		PSTTester<long> pst_tester(rand_seed, std::stol(tree_val_range_strings[0]),
-										std::stol(tree_val_range_strings[1]));
-
-		if (tree_type == PSTType::CPU_ITER)
-			pst_tester.testPST<PointStruct,
-								StaticPSTCPUIter,
-								id_type,
-								num_ids>
-									(num_elems, test_type, std::stol(search_range_strings[0]),
-									 std::stol(search_range_strings[1]),
-									 std::stol(search_range_strings[2])
-									);
-		else if (tree_type == PSTType::CPU_RECUR)
-			pst_tester.testPST<PointStruct,
-								StaticPSTCPURecur,
-								id_type,
-								num_ids>
-									(num_elems, test_type, std::stol(search_range_strings[0]),
-									 std::stol(search_range_strings[1]),
-									 std::stol(search_range_strings[2])
-									);
-		else if (tree_type == PSTType::GPU)
-			pst_tester.testPST<PointStruct,
-								StaticPSTGPU,
-								id_type,
-								num_ids>
-									(num_elems, test_type, std::stol(search_range_strings[0]),
-									 std::stol(search_range_strings[1]),
-									 std::stol(search_range_strings[2])
-									);
-	}
+	// Run test
+	test_info.test();
 
 	return 0;
 }

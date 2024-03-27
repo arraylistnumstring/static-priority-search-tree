@@ -1,5 +1,5 @@
 #include <string>				// To use string-building functions
-#include <thrust/execution_policy.h>	// To use thrust::device execution policy for sorting
+#include <thrust/execution_policy.h>	// To use thrust::cuda::par::on() stream-specifying execution policy for sorting
 #include <thrust/sort.h>		// To use parallel sorting algorithm
 
 #include "err-chk.h"
@@ -65,10 +65,10 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 	*/
 	const size_t num_working_ind_arrays = 3;
 	global_mem_needed += num_elems * (sizeof(PointStructTemplate<T, IDType, num_IDs>) + num_working_ind_arrays * sizeof(size_t));
-	if (global_mem_needed > device.totalGlobalMem)
+	if (global_mem_needed > dev_props.totalGlobalMem)
 		throwErr("Error: needed global memory space of " + std::to_string(global_mem_needed)
 					+ " B required for data structure and processing exceeds limit of global memory = "
-					+ std::to_string(device.totalGlobalMem) + " B on device "
+					+ std::to_string(dev_props.totalGlobalMem) + " B on device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs));
 
 	// Memory transfer only permitted for on-host pinned (page-locked) memory, so do operations in the default stream
@@ -112,12 +112,12 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 					+ ": ");
 
-	CUcontext *ptr_info;
+	CUmemorytype *ptr_info;
 	gpuErrorCheck(cuPointerGetAttribute(ptr_info, CU_POINTER_ATTRIBUTE_MEMORY_TYPE, pt_arr),
 					"Error in attempting to get attribute information of pt_arr on device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 					+ ": ");
-	if (ptr_info == CU_MEMORYTYPE_HOST)		// pt_arr is on host; allocate memory for and copy pt_arr
+	if (*ptr_info == CU_MEMORYTYPE_HOST)		// pt_arr is on host; allocate memory for and copy pt_arr
 	{
 		gpuErrorCheck(cudaMalloc(&pt_arr_d, num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>)),
 						"Error in allocating array of PointStructTemplate<T, IDType, num_IDs> objects on device "
@@ -130,12 +130,13 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 						+ ": ");
 	}
-	else if (ptr_info == CU_MEMORYTYPE_DEVICE)	// pt_arr is already on device; use it as pt_arr_d
+	else if (*ptr_info == CU_MEMORYTYPE_DEVICE)	// pt_arr is already on device; use it as pt_arr_d
 	{
 		pt_arr_d = pt_arr;
 		// No implicit synchronization call as with cudaMemcpy, so instead all cudaDeviceSynchornize() explicitly
-		gpuErrorCheck(cudaDeviceSynchronize(), "Error in synchronizing with GPU after "
-						+ "allocating data on device " + std::to_string(dev_ind) + " of "
+		gpuErrorCheck(cudaDeviceSynchronize(),
+						"Error in synchronizing with GPU after allocating data on device "
+						+ std::to_string(dev_ind) + " of "
 						+ std::to_string(num_devs) + ": ");
 	}
 	else	// Something has gone very wrong; exit
@@ -144,27 +145,31 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 
 	if constexpr (num_IDs == 0 || sizeof(T) >= sizeof(IDType))
 	{
-		gpuErrorCheck(cudaMemsetAsync(root_d, 0, tot_arr_size_num_data * sizeof(T), cudaStreamFireAndForget),
+		gpuErrorCheck(cudaMemsetAsync(root_d, 0, tot_arr_size_num_datatype * sizeof(T), cudaStreamFireAndForget),
 						"Error in zero-intialising on-device priority search tree storage array via cudaMemset() on device "
 						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 						+ ": ");
 	}
 	else
 	{
-		gpuErrorCheck(cudaMemsetAsync(root_d, 0, tot_arr_size_num_data * sizeof(IDType), cudaStreamFireAndForget),
+		gpuErrorCheck(cudaMemsetAsync(root_d, 0, tot_arr_size_num_datatype * sizeof(IDType), cudaStreamFireAndForget),
 						"Error in zero-intialising on-device priority search tree storage array via cudaMemset() on device "
 						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 						+ ": ");
 	}
 
 	const size_t index_assign_threads_per_block = 8 * dev_props.warpSize;
-	const size_t index_assign_num_blocks = std::min(num_elems % index_assign_threads_per_block == 0 ? num_elems/index_assign_threads_per_block : num_elems/index_assign_threads_per_block + 1, dev_props.warpSize * dev_props.warpSize);
+	const size_t index_assign_num_blocks = std::min(num_elems % index_assign_threads_per_block == 0 ?
+													num_elems/index_assign_threads_per_block
+													: num_elems/index_assign_threads_per_block + 1,
+													// static_cast to size_t necessary as dev_props.warpSize is of type int, and std::min fails to compile on arguments of different types
+													static_cast<size_t>(dev_props.warpSize * dev_props.warpSize));
 
 	// Create concurrent streams for index-initialising and sorting the dimension-1 and dimension-2 index arrays
 	cudaStream_t stream_dim1;
 	gpuErrorCheck(cudaStreamCreateWithFlags(&stream_dim1, cudaStreamNonBlocking),
-					"Error in creating asynchronous stream for assignment and sorting of "
-					+ "indices by dimension 1 on device " + std::to_string(dev_ind) + " of "
+					"Error in creating asynchronous stream for assignment and sorting of indices by dimension 1 on device "
+					+ std::to_string(dev_ind) + " of "
 					+ std::to_string(num_devs) + ": ");
 	indexAssignment<<<index_assign_num_blocks, index_assign_threads_per_block, 0, stream_dim1>>>(dim1_val_ind_arr_d, num_elems);
 	// Sort dimension-1 values index array in ascending order; in-place sort using a curried comparison function; guaranteed O(n) running time or better
@@ -172,22 +177,22 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 	thrust::sort(thrust::cuda::par.on(stream_dim1), dim1_val_ind_arr_d, dim1_val_ind_arr_d + num_elems,
 					Dim1ValIndCompIncOrd(pt_arr_d));
 	// cudaStreamDestroy() is also a kernel submitted to the indicated stream, so it only runs once all previous calls have completed
-	gpuErrorCheck(cudaStreamDestroy(stream_dim1), "Error in destroying asynchronous stream for "
-					+ "assignment and sorting of indices by dimension 1 on device "
+	gpuErrorCheck(cudaStreamDestroy(stream_dim1),
+					"Error in destroying asynchronous stream for assignment and sorting of indices by dimension 1 on device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs) + ": ");
 
 	
 	cudaStream_t stream_dim2;
 	gpuErrorCheck(cudaStreamCreateWithFlags(&stream_dim2, cudaStreamNonBlocking),
-					"Error in creating asynchronous stream for assignment and sorting of "
-					+ "indices by dimension 2 on device " + std::to_string(dev_ind) + " of "
+					"Error in creating asynchronous stream for assignment and sorting of indices by dimension 2 on device "
+					+ std::to_string(dev_ind) + " of "
 					+ std::to_string(num_devs) + ": ");
 	indexAssignment<<<index_assign_num_blocks, index_assign_threads_per_block, 0, stream_dim2>>>(dim2_val_ind_arr_d, num_elems);
 	// Sort dimension-2 values index array in descending order; in-place sort using a curried comparison function; guaranteed O(n) running time or better
 	thrust::sort(thrust::cuda::par.on(stream_dim2), dim2_val_ind_arr_d, dim2_val_ind_arr_d + num_elems,
 					Dim2ValIndCompDecOrd(pt_arr_d));
-	gpuErrorCheck(cudaStreamDestroy(stream_dim2), "Error in destroying asynchronous stream for "
-					+ "assignment and sorting of indices by dimension 2 on device "
+	gpuErrorCheck(cudaStreamDestroy(stream_dim2),
+					"Error in destroying asynchronous stream for assignment and sorting of indices by dimension 2 on device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs) + ": ");
 
 
@@ -241,13 +246,13 @@ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::print(std::ostream &
 	{
 		// No IDs present or sizeof(T) >= sizeof(IDType), so calculate total array size in units of sizeof(T) so that datatype T's alignment requirements will be satisfied
 		tot_arr_size_num_datatype = calcTotArrSizeNumUs<T, num_val_subarrs, IDType, num_ID_subarrs>(num_elem_slots);
-		temp_root = new T[tot_arr_size_num_Ts]();
+		temp_root = new T[tot_arr_size_num_datatype]();
 	}
 	else
 	{
 		// sizeof(IDType) > sizeof(T), so calculate total array size in units of sizeof(IDType) so that datatype IDType's alignment requirements will be satisfied
-		tot_arr_size_num_datatypes = calcTotArrSizeNumUs<IDType, num_ID_subarrs, T, num_val_subarrs>(num_elem_slots);
-		temp_root = reinterpret_cast<T *>(new IDType[tot_arr_size_num_IDTypes]());
+		tot_arr_size_num_datatype = calcTotArrSizeNumUs<IDType, num_ID_subarrs, T, num_val_subarrs>(num_elem_slots);
+		temp_root = reinterpret_cast<T *>(new IDType[tot_arr_size_num_datatype]());
 	}
 	
 	if (temp_root == nullptr)
@@ -256,12 +261,12 @@ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::print(std::ostream &
 
 	if constexpr (num_IDs == 0 || sizeof(T) >= sizeof(IDType))
 	{
-		gpuErrorCheck(cudaMemcpy(temp_root, root_d, tot_arr_size_num_datatypes * sizeof(T), cudaMemcpyDefault),
+		gpuErrorCheck(cudaMemcpy(temp_root, root_d, tot_arr_size_num_datatype * sizeof(T), cudaMemcpyDefault),
 						"Error in copying array underlying StaticPSTGPU instance from device to host: ");
 	}
 	else
 	{
-		gpuErrorCheck(cudaMemcpy(temp_root, root_d, tot_arr_size_num_datatypes * sizeof(IDType), cudaMemcpyDefault),
+		gpuErrorCheck(cudaMemcpy(temp_root, root_d, tot_arr_size_num_datatype * sizeof(IDType), cudaMemcpyDefault),
 						"Error in copying array underlying StaticPSTGPU instance from device to host: ");
 	}
 

@@ -812,7 +812,6 @@ inline int gpuGetMaxGflopsDeviceId() {
   current_device = 0;
 
   while (current_device < device_count) {
-    int computeMode = -1, major = 0, minor = 0;
     int computeMode = -1, major = 0, minor = 0, unifiedAddressing = 0;
     checkCudaErrors(cudaDeviceGetAttribute(&computeMode, cudaDevAttrComputeMode, current_device));
     checkCudaErrors(cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, current_device));

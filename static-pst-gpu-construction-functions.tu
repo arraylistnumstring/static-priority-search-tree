@@ -134,8 +134,6 @@ __global__ void populateTree (T *const root_d, const size_t num_elem_slots,
 	}
 }
 
-template <typename T, template<typename, typename, size_t> class PointStructTemplate,
-			typename IDType, size_t num_IDs>
 __global__ void indexAssignment(size_t *const ind_arr, const size_t num_elems)
 {
 	// Simple iteration over entire array, instantiating each array element with the value of its index; no conflicts possible, so no synchronisation necessary

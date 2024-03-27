@@ -25,8 +25,6 @@ __global__ void populateTree(T *const root_d, const size_t num_elem_slots,
 								const size_t target_node_start_ind);
 
 // Assigning elements of an array on device such that array[i] = i
-template <typename T, template<typename, typename, size_t> class PointStructTemplate,
-			typename IDType, size_t num_IDs>
 __global__ void indexAssignment(size_t *const ind_arr, const size_t num_elems);
 
 // Cannot overload a global function over a host function, even if the number of arguments differs
@@ -241,7 +239,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 			getDim2ValsRoot(root_d, num_elem_slots)[node_ind] = source_data.dim2_val;
 			getMedDim1ValsRoot(root_d, num_elem_slots)[node_ind] = median_dim1_val;
 			if constexpr (num_IDs == 1)
-				getIDsRoot(root, num_elem_slots)[node_ind] = source_data.id;
+				getIDsRoot(root_d, num_elem_slots)[node_ind] = source_data.id;
 		};
 
 		__forceinline__ __device__ static void constructNode(T *const &root_d,
@@ -415,7 +413,8 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 											const size_t val_ind_arr_start_ind, const size_t num_elems,
 											const size_t target_node_start_ind);
 
-	friend __global__ void indexAssignment <> (size_t *const ind_arr, const size_t num_elems);
+	// Non-template friend
+	friend __global__ void indexAssignment (size_t *const ind_arr, const size_t num_elems);
 
 	friend __global__ void threeSidedSearchGlobal <> (T *const root_d,
 														const size_t num_elem_slots,
