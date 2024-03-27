@@ -55,16 +55,15 @@ struct PSTTester
 	{};
 
 	// Nested structs to allow for the metaprogramming equivalent of currying, but with type parameters
-	template <template<typename, typename, size_t> class PointStructTemplate,
-				template<typename, template<typename, typename, size_t> class, typename, size_t> class StaticPSTTemplate>
-	struct TreeTypeWrapper
+	template <typename IDType>
+	struct IDTypeWrapper
 	{
-		// Allow IDType and num_IDs to be determined separately from PointStructTemplate and StaticPSTTemplate; essentially currying at the template level with types
-		template <typename IDType>
-		struct IDTypeWrapper
+		template <size_t num_IDs>
+		struct NumIDsWrapper
 		{
-			template <size_t num_IDs>
-			struct NumIDsWrapper
+			template <template<typename, typename, size_t> class PointStructTemplate,
+						template<typename, template<typename, typename, size_t> class, typename, size_t> class StaticPSTTemplate>
+			struct TreeTypeWrapper
 			{
 				void operator()(size_t num_elems, PSTTestCodes test_type=CONSTRUCT)
 				{
