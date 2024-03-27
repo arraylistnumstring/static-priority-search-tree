@@ -3,6 +3,7 @@
 
 #include <algorithm>	// To use sort()
 #include <iostream>
+#include <limits>		// To get numeric limits of each datatype
 #include <random>		// To use std::mt19937
 #include <type_traits>
 
@@ -55,16 +56,39 @@ struct PSTTester
 	{};
 
 	// Nested structs to allow for the metaprogramming equivalent of currying, but with type parameters
-	template <typename IDType>
+	template <typename IDType, template <typename> typename IDDistrib>
 	struct IDTypeWrapper
 	{
+		// Nested class have access to all levels of access of their enclosing scope; however, as nested classes are not associated with any enclosing class instance in particular, must keep track of the desired "parent" instance, if any
+		PSTTester<T, Distrib, RandNumEng> pst_tester;
+
+		IDDistrib<IDType> id_distr;
+
+		IDTypeWrapper(PSTTester<T, Distrib, RandNumEng> pst_tester)
+			: pst_tester(pst_tester),
+			// Bounds of distribution [a, b] must satisfy b - a <= std::numeric_limits<IDType>::max()
+			id_distr(0, std::numeric_limits<IDType>::max())
+		{};
+
 		template <size_t num_IDs>
 		struct NumIDsWrapper
 		{
+			IDTypeWrapper<IDType, IDDistrib> id_type_wrapper;
+			
+			NumIDsWrapper(IDTypeWrapper<IDType, IDDistrib> id_type_wrapper)
+				: id_type_wrapper(id_type_wrapper)
+			{};
+
 			template <template<typename, typename, size_t> class PointStructTemplate,
 						template<typename, template<typename, typename, size_t> class, typename, size_t> class StaticPSTTemplate>
 			struct TreeTypeWrapper
 			{
+				NumIDsWrapper<num_IDs> num_ids_wrapper;
+
+				TreeTypeWrapper(NumIDsWrapper<num_IDs> num_ids_wrapper)
+					: num_ids_wrapper(num_ids_wrapper)
+				{};
+
 				void operator()(size_t num_elems, PSTTestCodes test_type=CONSTRUCT)
 				{
 					PointStructTemplate<T, IDType, num_IDs> *pt_arr = new PointStructTemplate<T, IDType, num_IDs>[num_elems];
@@ -72,11 +96,11 @@ struct PSTTester
 					for (size_t i = 0; i < num_elems; i++)
 					{
 						// Distribution takes random number engine as parameter with which to generate its next value
-						pt_arr[i].dim1_val = distr(rand_num_eng);
-						pt_arr[i].dim2_val = distr(rand_num_eng);
+						pt_arr[i].dim1_val = num_ids_wrapper.id_type_wrapper.pst_tester.distr(num_ids_wrapper.id_type_wrapper.pst_tester.rand_num_eng);
+						pt_arr[i].dim2_val = num_ids_wrapper.id_type_wrapper.pst_tester.distr(num_ids_wrapper.id_type_wrapper.pst_tester.rand_num_eng);
 						// Lazy instantiation of value of type IDType from type T
 						if constexpr (num_IDs == 1)
-							pt_arr[i].id = *const_cast<IDType *>(&distr(rand_num_eng));
+							pt_arr[i].id = num_ids_wrapper.id_type_wrapper.id_distr(num_ids_wrapper.id_type_wrapper.pst_tester.rand_num_eng);
 					}
 
 #ifdef DEBUG
@@ -102,15 +126,22 @@ struct PSTTester
 					// Search/report test phase
 					if (test_type == LEFT_SEARCH)
 					{
-						res_pt_arr = tree->twoSidedLeftSearch(num_res_elems, dim1_val_bound1, min_dim2_val);
+						res_pt_arr = tree->twoSidedLeftSearch(num_res_elems,
+																num_ids_wrapper.id_type_wrapper.pst_tester.dim1_val_bound1,
+																num_ids_wrapper.id_type_wrapper.pst_tester.min_dim2_val);
 					}
 					else if (test_type == RIGHT_SEARCH)
 					{
-						res_pt_arr = tree->twoSidedRightSearch(num_res_elems, dim1_val_bound1, min_dim2_val);
+						res_pt_arr = tree->twoSidedRightSearch(num_res_elems,
+																num_ids_wrapper.id_type_wrapper.pst_tester.dim1_val_bound1,
+																num_ids_wrapper.id_type_wrapper.pst_tester.min_dim2_val);
 					}
 					else if (test_type == THREE_SEARCH)
 					{
-						res_pt_arr = tree->threeSidedSearch(num_res_elems, dim1_val_bound1, dim1_val_bound2, min_dim2_val);
+						res_pt_arr = tree->threeSidedSearch(num_res_elems,
+															num_ids_wrapper.id_type_wrapper.pst_tester.dim1_val_bound1,
+															num_ids_wrapper.id_type_wrapper.pst_tester.dim1_val_bound2,
+															num_ids_wrapper.id_type_wrapper.pst_tester.min_dim2_val);
 					}
 					// If test_type == CONSTRUCT, do nothing for the search/report phase
 

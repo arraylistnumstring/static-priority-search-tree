@@ -112,11 +112,9 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 					+ ": ");
 
-	CUmemorytype *ptr_info;
-	gpuErrorCheck(cuPointerGetAttribute(ptr_info, CU_POINTER_ATTRIBUTE_MEMORY_TYPE, pt_arr),
-					"Error in attempting to get attribute information of pt_arr on device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-					+ ": ");
+	CUmemorytype *ptr_info = nullptr;
+	cuPointerGetAttribute(ptr_info, CU_POINTER_ATTRIBUTE_MEMORY_TYPE, reinterpret_cast<CUdeviceptr>(pt_arr));
+
 	if (*ptr_info == CU_MEMORYTYPE_HOST)		// pt_arr is on host; allocate memory for and copy pt_arr
 	{
 		gpuErrorCheck(cudaMalloc(&pt_arr_d, num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>)),
