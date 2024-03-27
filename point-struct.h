@@ -7,9 +7,17 @@
 
 #include "print-array.h"
 
+// Struct to prevent instantiation of base, unspecialised version of PointStruct; templating necessary in order to defer failure of static_assert() until attempt to instantiate primary template of PointStruct
+// Source:
+//	https://stackoverflow.com/questions/49315890/disable-construction-of-non-fully-specialized-template-class
+template <typename...>
+struct deferred_false: std::false_type{};
+
 template <typename T, typename IDType, size_t num_IDs>
 struct PointStruct
-{};
+{
+	static_assert(deferred_false<T, IDType, num_IDs>::value, "Trying to instantiate PointStruct<>");
+};
 
 template <typename T>
 // C++ structs differ from classes only in that structs default to public access of all members, while classes default to private access of all members
@@ -100,7 +108,7 @@ struct PointStruct<T, IDType, 1>
 	// static_assert() and std::is_arithmetic are C++11 features
 	// static_assert() must have two arguments to compile on CIMS
 	static_assert(std::is_arithmetic<T>::value, "Input type T not of arithmetic type");
-	static_assert(!std::is_void<IDType>::value, "IDType is void");
+	static_assert(std::is_arithmetic<IDType>::value, "Input type IDType not of arithmetic type");
 
 	T dim1_val;
 	T dim2_val;

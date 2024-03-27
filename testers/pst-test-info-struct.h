@@ -46,7 +46,7 @@ struct PSTTestInfoStruct
 									std::stod(search_range_strings[1]),
 									std::stod(search_range_strings[2]));
 			
-			IDTypeWrap(pst_tester);
+			TreeTypeWrap(pst_tester);
 		}
 		else if (data_type == DataType::FLOAT)
 		{
@@ -57,7 +57,7 @@ struct PSTTestInfoStruct
 									std::stof(search_range_strings[1]),
 									std::stof(search_range_strings[2]));
 			
-			IDTypeWrap(pst_tester);
+			TreeTypeWrap(pst_tester);
 		}
 		else if (data_type == DataType::INT)
 		{
@@ -68,7 +68,7 @@ struct PSTTestInfoStruct
 									std::stoi(search_range_strings[1]),
 									std::stoi(search_range_strings[2]));
 			
-			IDTypeWrap(pst_tester);
+			TreeTypeWrap(pst_tester);
 		}
 		else if (data_type == DataType::LONG)
 		{
@@ -79,7 +79,49 @@ struct PSTTestInfoStruct
 									std::stol(search_range_strings[1]),
 									std::stol(search_range_strings[2]));
 			
-			IDTypeWrap(pst_tester);
+			TreeTypeWrap(pst_tester);
+		}
+	};
+
+	// Instantiate next PSTTester type with respect to tree type
+	template <typename PSTTesterDataIDInfoInstantiated>
+	void treeTypeWrap(PSTTesterDataIDInfoInstantiated pst_tester)
+	{
+		if (tree_type == PSTType::CPU_ITER)
+		{
+			typename PSTTesterDataIDInfoInstantiated::TreeTypeWrapper<PointStruct, StaticPSTCPUIter> pst_tester_tree_instan(pst_tester);
+
+			numIDsWrap(pst_tester_tree_instan);
+		}
+		else if (tree_type == PSTType::CPU_RECUR)
+		{
+			typename PSTTesterDataIDInfoInstantiated::TreeTypeWrapper<PointStruct, StaticPSTCPURecur> pst_tester_tree_instan(pst_tester);
+
+			numIDsWrap(pst_tester_tree_instan);
+		}
+		else	// tree_type == PSTType::GPU
+		{
+			typename PSTTesterDataIDInfoInstantiated::TreeTypeWrapper<PointStruct, StaticPSTGPU> pst_tester_tree_instan(pst_tester);
+
+			numIDsWrap(pst_tester_tree_instan);
+		}
+	};
+
+	// Instantiate next PSTTester type with respect to number of IDs
+	template <typename PSTTesterDataIDTypesInstantiated>
+	void numIDsWrap(PSTTesterDataIDTypesInstantiated pst_tester)
+	{
+		if (pts_with_ids)
+		{
+			typename PSTTesterDataIDTypesInstantiated::NumIDsWrapper<1> pst_tester_num_ids_instan(pst_tester);
+			
+			IDTypeWrap(pst_tester_num_ids_instan);
+		}
+		else	// !pts_with_ids
+		{
+			typename PSTTesterDataIDTypesInstantiated::NumIDsWrapper<0> pst_tester_num_ids_instan(pst_tester);
+
+			IDTypeWrap(pst_tester_num_ids_instan);
 		}
 	};
 
@@ -94,80 +136,38 @@ struct PSTTestInfoStruct
 				// typename necessary, as compiler defaults to treating nested names as variables
 				typename PSTTesterDataInstantiated::IDTypeWrapper<char, std::uniform_int_distribution> pst_tester_id_instan(pst_tester);
 
-				numIDsWrap(pst_tester_id_instan);
+				testWrap(pst_tester_id_instan);
 			}
 			else if (data_type == DataType::DOUBLE)
 			{
 				typename PSTTesterDataInstantiated::IDTypeWrapper<double, std::uniform_real_distribution> pst_tester_id_instan(pst_tester);
 
-				numIDsWrap(pst_tester_id_instan);
+				testWrap(pst_tester_id_instan);
 			}
 			else if (data_type == DataType::FLOAT)
 			{
 				typename PSTTesterDataInstantiated::IDTypeWrapper<float, std::uniform_real_distribution> pst_tester_id_instan(pst_tester);
 
-				numIDsWrap(pst_tester_id_instan);
+				testWrap(pst_tester_id_instan);
 			}
 			else if (data_type == DataType::INT)
 			{
 				typename PSTTesterDataInstantiated::IDTypeWrapper<int, std::uniform_int_distribution> pst_tester_id_instan(pst_tester);
 
-				numIDsWrap(pst_tester_id_instan);
+				testWrap(pst_tester_id_instan);
 			}
 			else if (data_type == DataType::LONG)
 			{
 				typename PSTTesterDataInstantiated::IDTypeWrapper<long, std::uniform_int_distribution> pst_tester_id_instan(pst_tester);
 
-				numIDsWrap(pst_tester_id_instan);
+				testWrap(pst_tester_id_instan);
 			}
-		}
-		else	// No IDs; just use a placeholder type
-		{
-			typename PSTTesterDataInstantiated::IDTypeWrapper<char, std::uniform_int_distribution> pst_tester_id_instan(pst_tester);
-
-			numIDsWrap(pst_tester_id_instan);
-		}
-	};
-
-	// Instantiate next PSTTester type with respect to number of IDs
-	template <typename PSTTesterDataIDTypesInstantiated>
-	void numIDsWrap(PSTTesterDataIDTypesInstantiated pst_tester)
-	{
-		if (pts_with_ids)
-		{
-			typename PSTTesterDataIDTypesInstantiated::NumIDsWrapper<1> pst_tester_num_ids_instan(pst_tester);
-			
-			treeTypeWrap(pst_tester_num_ids_instan);
 		}
 		else	// !pts_with_ids
 		{
-			typename PSTTesterDataIDTypesInstantiated::NumIDsWrapper<0> pst_tester_num_ids_instan(pst_tester);
+			typename PSTTesterDataInstantiated::IDTypeWrapper<void, void> pst_tester_id_instan(pst_tester);
 
-			treeTypeWrap(pst_tester_num_ids_instan);
-		}
-	};
-
-	// Instantiate next PSTTester type with respect to tree type
-	template <typename PSTTesterDataIDInfoInstantiated>
-	void treeTypeWrap(PSTTesterDataIDInfoInstantiated pst_tester)
-	{
-		if (tree_type == PSTType::CPU_ITER)
-		{
-			typename PSTTesterDataIDInfoInstantiated::TreeTypeWrapper<PointStruct, StaticPSTCPUIter> pst_tester_tree_instan(pst_tester);
-
-			testWrap(pst_tester_tree_instan);
-		}
-		else if (tree_type == PSTType::CPU_RECUR)
-		{
-			typename PSTTesterDataIDInfoInstantiated::TreeTypeWrapper<PointStruct, StaticPSTCPURecur> pst_tester_tree_instan(pst_tester);
-
-			testWrap(pst_tester_tree_instan);
-		}
-		else	// tree_type == PSTType::GPU
-		{
-			typename PSTTesterDataIDInfoInstantiated::TreeTypeWrapper<PointStruct, StaticPSTGPU> pst_tester_tree_instan(pst_tester);
-
-			testWrap(pst_tester_tree_instan);
+			testWrap(pst_tester_id_instan);
 		}
 	};
 
