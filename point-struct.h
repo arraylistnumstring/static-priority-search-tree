@@ -16,7 +16,7 @@ struct deferred_false: std::false_type{};
 template <typename T, typename IDType, size_t num_IDs>
 struct PointStruct
 {
-	static_assert(deferred_false<T, IDType, num_IDs>::value, "Trying to instantiate PointStruct<>");
+	static_assert(deferred_false<T, IDType>::value, "Trying to instantiate PointStruct<>");
 };
 
 template <typename T>
