@@ -5,6 +5,8 @@
 
 #include "point-struct.h"
 #include "static-priority-search-tree.h"
+#include "static-pst-concepts.h"
+
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
@@ -91,8 +93,8 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T, PointStructTemplate,
 
 		// Helper function for calculating the number of elements of size U necessary to instantiate an array for root, for data types U and V such that sizeof(U) >= sizeof(V)
 		template <typename U, size_t num_U_subarrs, typename V, size_t num_V_subarrs>
-			requires sizeof(U) >= sizeof(V)
-		static size_t calcTotArrSizeNumUs(const size_t num_elem_slots);
+		static size_t calcTotArrSizeNumUs(const size_t num_elem_slots)
+			requires SizeOfUAtLeastSizeOfV<U, V>;
 
 		// Helper function for calculating the next power of 2 greater than num
 		static size_t nextGreaterPowerOf2(const size_t num)

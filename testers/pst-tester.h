@@ -104,3 +104,6 @@ struct PSTTester
 		delete[] pt_arr;
 	};
 };
+
+
+#endif

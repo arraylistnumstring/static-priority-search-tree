@@ -1,5 +1,6 @@
-template <typename T>
-class StaticPSTCPUIter<T>::TreeNode
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+class StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::TreeNode
 {
 	public:
 		// Current index is this-root

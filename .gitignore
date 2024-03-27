@@ -12,4 +12,7 @@
 
 archival/*
 compilation-testing/*
+
+# Symbolic links
+Common
 marchingCubes

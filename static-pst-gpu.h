@@ -4,6 +4,8 @@
 #include "gpu-err-chk.h"
 #include "point-struct.h"
 #include "static-priority-search-tree.h"
+#include "static-pst-concepts.h"
+
 
 // To use a global memory-scoped variable, must declare it outside of any function
 // To match a valid atomicAdd function signature, res_arr_ind_d must be declared as an unsigned long long (unsigned long long is the same as an unsigned long long int)
@@ -345,8 +347,8 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 
 		// Helper function for calculating the number of elements of size U necessary to instantiate an array for root, for data types U and V such that sizeof(U) >= sizeof(V)
 		template <typename U, size_t num_U_subarrs, typename V, size_t num_V_subarrs>
-			requires sizeof(U) >= sizeof(V)
-		__forceinline__ __host__ __device__ static size_t calcTotArrSizeNumUs(const size_t num_elem_slots);
+		__forceinline__ __host__ __device__ static size_t calcTotArrSizeNumUs(const size_t num_elem_slots)
+			requires SizeOfUAtLeastSizeOfV<U, V>;
 
 		// Helper function for calculating the next power of 2 greater than num
 		__forceinline__ __host__ __device__ static size_t nextGreaterPowerOf2(const size_t num)

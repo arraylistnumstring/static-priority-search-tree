@@ -134,8 +134,8 @@ PointStructTemplate<T, IDType, num_IDs>* StaticPSTCPUIter<T, PointStructTemplate
 	T curr_node_dim1_val;
 	T curr_node_dim2_val;
 	T curr_node_med_dim1_val;
-	if constexpr (num_IDs == 1)
-		IDType curr_node_id;
+	// Will never be used if num_IDs = 0, but will throw an error if contained within a constexpr
+	IDType curr_node_id;
 	unsigned char curr_node_bitcode;
 
 	// Stacks are synchronised, so 1 stack is empty exactly when both are
@@ -237,8 +237,8 @@ PointStructTemplate<T, IDType, num_IDs>* StaticPSTCPUIter<T, PointStructTemplate
 	T curr_node_dim1_val;
 	T curr_node_dim2_val;
 	T curr_node_med_dim1_val;
-	if constexpr (num_IDs == 1)
-		IDType curr_node_id;
+	// Will never be used if num_IDs = 0, but will throw an error if contained within a constexpr
+	IDType curr_node_id;
 	unsigned char curr_node_bitcode;
 
 	// Stacks are synchronised, so 1 stack is empty exactly when both are
@@ -324,8 +324,8 @@ PointStructTemplate<T, IDType, num_IDs>* StaticPSTCPUIter<T, PointStructTemplate
 	T curr_node_dim1_val;
 	T curr_node_dim2_val;
 	T curr_node_med_dim1_val;
-	if constexpr (num_IDs == 1)
-		IDType curr_node_id;
+	// Will never be used if num_IDs = 0, but will throw an error if contained within a constexpr
+	IDType curr_node_id;
 	unsigned char curr_node_bitcode;
 
 	// Stacks are synchronised, so 1 stack is empty exactly when both are
@@ -610,8 +610,8 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodes
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
 template <typename U, size_t num_U_subarrs, typename V, size_t num_V_subarrs>
-	requires sizeof(U) >= sizeof(V)
-size_t StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSizeNumUs<U, num_U_subarrs, V, num_V_subarrs>(const size_t num_elem_slots);
+size_t StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSizeNumUs<U, num_U_subarrs, V, num_V_subarrs>(const size_t num_elem_slots)
+	requires SizeOfUAtLeastSizeOfV<U, V>
 {
 	/*
 		tot_arr_size_num_Us = ceil(1/sizeof(U) * num_elem_slots * (sizeof(U) * num_U_subarrs + sizeof(V) * num_V_subarrs + 1 B/bitcode * 1 bitcode))
