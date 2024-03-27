@@ -2,7 +2,7 @@
 #define STATIC_PST_GPU_H
 
 #include "gpu-err-chk.h"
-#include "point-struct-gpu.h"
+#include "point-struct.h"
 #include "static-priority-search-tree.h"
 
 // To use a global memory-scoped variable, must declare it outside of any function
@@ -445,7 +445,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 };
 
 // Implementation file; for class templates, implementations must be in the same file as the declaration so that the compiler can access them
-#include "static-pst-gpu-populate-tree.tu"
+#include "static-pst-gpu-construction-functions.tu"
 #include "static-pst-gpu-search-functions.tu"
 #include "static-pst-gpu-tree-node.tu"
 #include "static-pst-gpu.tu"
