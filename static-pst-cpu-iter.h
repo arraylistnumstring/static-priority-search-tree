@@ -91,6 +91,9 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T, PointStructTemplate,
 					return reinterpret_cast<unsigned char*>(getIDsRoot(root, num_elem_slots) + num_ID_subarrs * num_elem_slots);
 			};	
 
+		// Helper function for calculating the number of elements of size U necessary to instantiate an array for root, for ID-free data
+		static size_t calcTotArrSizeNumTs(const size_t num_elem_slots, const size_t num_T_subarrs);
+
 		// Helper function for calculating the number of elements of size U necessary to instantiate an array for root, for data types U and V such that sizeof(U) >= sizeof(V)
 		template <typename U, size_t num_U_subarrs, typename V, size_t num_V_subarrs>
 		static size_t calcTotArrSizeNumUs(const size_t num_elem_slots)

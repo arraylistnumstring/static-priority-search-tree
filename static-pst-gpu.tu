@@ -45,17 +45,24 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 	// constexpr if is a C++17 feature that only compiles the branch of code that evaluates to true at compile-time, saving executable space and execution runtime
 	size_t tot_arr_size_num_datatype;
 	size_t global_mem_needed;
-	if constexpr (num_IDs == 0 || sizeof(T) >= sizeof(IDType))
+	if constexpr (num_IDs == 0)
 	{
-		// No IDs present or sizeof(T) >= sizeof(IDType), so calculate total array size in units of sizeof(T) so that datatype T's alignment requirements will be satisfied
-		tot_arr_size_num_datatype = calcTotArrSizeNumUs<T, num_val_subarrs, IDType, num_ID_subarrs>(num_elem_slots);
-		global_mem_needed = tot_arr_size_num_datatype * sizeof(T);
 	}
 	else
 	{
-		// sizeof(IDType) > sizeof(T), so calculate total array size in units of sizeof(IDType) so that datatype IDType's alignment requirements will be satisfied
-		tot_arr_size_num_datatype = calcTotArrSizeNumUs<IDType, num_ID_subarrs, T, num_val_subarrs>(num_elem_slots);
-		global_mem_needed = tot_arr_size_num_datatype * sizeof(IDType);
+		// Separate size-comparison condition from the num_IDs==0 condition so that sizeof(IDType) is well-defined here, as often only one branch of a constexpr if is compiled
+		if constexpr (sizeof(T) >= sizeof(IDType))
+		{
+			// No IDs present or sizeof(T) >= sizeof(IDType), so calculate total array size in units of sizeof(T) so that datatype T's alignment requirements will be satisfied
+			tot_arr_size_num_datatype = calcTotArrSizeNumUs<T, num_val_subarrs, IDType, num_ID_subarrs>(num_elem_slots);
+			global_mem_needed = tot_arr_size_num_datatype * sizeof(T);
+		}
+		else
+		{
+			// sizeof(IDType) > sizeof(T), so calculate total array size in units of sizeof(IDType) so that datatype IDType's alignment requirements will be satisfied
+			tot_arr_size_num_datatype = calcTotArrSizeNumUs<IDType, num_ID_subarrs, T, num_val_subarrs>(num_elem_slots);
+			global_mem_needed = tot_arr_size_num_datatype * sizeof(IDType);
+		}
 	}
 
 	/*

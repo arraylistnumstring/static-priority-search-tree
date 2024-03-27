@@ -24,17 +24,27 @@ StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::StaticPSTCPUIter(Poin
 	// Allocate as a T array so that alignment requirements for larger data types are obeyed
 	// Use of () after new and new[] causes value-initialisation (to 0) starting in C++03; needed for any nodes that technically contain no data
 	// constexpr if is a C++17 feature that only compiles the branch of code that evaluates to true at compile-time, saving executable space and execution runtime
-	if constexpr (num_IDs == 0 || sizeof(T) >= sizeof(IDType))
+	if constexpr (num_IDs == 0)
 	{
-		// No IDs present or sizeof(T) >= sizeof(IDType), so calculate total array size in units of sizeof(T) so that datatype T's alignment requirements will be satisfied
-		size_t tot_arr_size_num_Ts = calcTotArrSizeNumUs<T, num_val_subarrs, IDType, num_ID_subarrs>(num_elem_slots);
+		// No IDs present
+		size_t tot_arr_size_num_Ts = calcTotArrSizeNumTs(num_elem_slots, num_val_subarrs);
 		root = new T[tot_arr_size_num_Ts]();
 	}
 	else
 	{
-		// sizeof(IDType) > sizeof(T), so calculate total array size in units of sizeof(IDType) so that datatype IDType's alignment requirements will be satisfied
-		size_t tot_arr_size_num_IDTypes = calcTotArrSizeNumUs<IDType, num_ID_subarrs, T, num_val_subarrs>(num_elem_slots);
-		root = reinterpret_cast<T *>(new IDType[tot_arr_size_num_IDTypes]());
+		// Separate size-comparison condition from the num_IDs==0 condition so that sizeof(IDType) is well-defined here, as often only one branch of a constexpr if is compiled
+		if constexpr(sizeof(T) >= sizeof(IDType))
+		{
+			// sizeof(T) >= sizeof(IDType), so calculate total array size in units of sizeof(T) so that datatype T's alignment requirements will be satisfied
+			size_t tot_arr_size_num_Ts = calcTotArrSizeNumUs<T, num_val_subarrs, IDType, num_ID_subarrs>(num_elem_slots);
+			root = new T[tot_arr_size_num_Ts]();
+		}
+		else
+		{
+			// sizeof(IDType) > sizeof(T), so calculate total array size in units of sizeof(IDType) so that datatype IDType's alignment requirements will be satisfied
+			size_t tot_arr_size_num_IDTypes = calcTotArrSizeNumUs<IDType, num_ID_subarrs, T, num_val_subarrs>(num_elem_slots);
+			root = reinterpret_cast<T *>(new IDType[tot_arr_size_num_IDTypes]());
+		}
 	}
 
 	if (root == nullptr)
@@ -134,8 +144,6 @@ PointStructTemplate<T, IDType, num_IDs>* StaticPSTCPUIter<T, PointStructTemplate
 	T curr_node_dim1_val;
 	T curr_node_dim2_val;
 	T curr_node_med_dim1_val;
-	// Will never be used if num_IDs = 0, but will throw an error if contained within a constexpr
-	IDType curr_node_id;
 	unsigned char curr_node_bitcode;
 
 	// Stacks are synchronised, so 1 stack is empty exactly when both are
@@ -150,8 +158,6 @@ PointStructTemplate<T, IDType, num_IDs>* StaticPSTCPUIter<T, PointStructTemplate
 		curr_node_dim1_val = getDim1ValsRoot(root, num_elem_slots)[search_ind];
 		curr_node_dim2_val = getDim2ValsRoot(root, num_elem_slots)[search_ind];
 		curr_node_med_dim1_val = getMedDim1ValsRoot(root, num_elem_slots)[search_ind];
-		if constexpr (num_IDs == 1)
-			curr_node_id = getIDsRoot(root, num_elem_slots)[search_ind];
 		curr_node_bitcode = getBitcodesRoot(root, num_elem_slots)[search_ind];
 
 		// Only process node if its dimension-2 value satisfies the dimension-2 search bound
@@ -163,8 +169,9 @@ PointStructTemplate<T, IDType, num_IDs>* StaticPSTCPUIter<T, PointStructTemplate
 			{
 				res_pt_arr[num_res_elems].dim1_val = curr_node_dim1_val;
 				res_pt_arr[num_res_elems].dim2_val = curr_node_dim2_val;
+				// As IDs are only accessed if the node is to be reported and if IDs exist, don't waste a register on it (and avoid compilation failures from attempting to instantiate a potential void variable)
 				if constexpr (num_IDs == 1)
-					res_pt_arr[num_res_elems].id = curr_node_id;
+					res_pt_arr[num_res_elems].id = getIDsRoot(root, num_elem_slots)[search_ind];
 				num_res_elems++;
 			}
 
@@ -237,8 +244,6 @@ PointStructTemplate<T, IDType, num_IDs>* StaticPSTCPUIter<T, PointStructTemplate
 	T curr_node_dim1_val;
 	T curr_node_dim2_val;
 	T curr_node_med_dim1_val;
-	// Will never be used if num_IDs = 0, but will throw an error if contained within a constexpr
-	IDType curr_node_id;
 	unsigned char curr_node_bitcode;
 
 	// Stacks are synchronised, so 1 stack is empty exactly when both are
@@ -253,8 +258,6 @@ PointStructTemplate<T, IDType, num_IDs>* StaticPSTCPUIter<T, PointStructTemplate
 		curr_node_dim1_val = getDim1ValsRoot(root, num_elem_slots)[search_ind];
 		curr_node_dim2_val = getDim2ValsRoot(root, num_elem_slots)[search_ind];
 		curr_node_med_dim1_val = getMedDim1ValsRoot(root, num_elem_slots)[search_ind];
-		if constexpr (num_IDs == 1)
-			curr_node_id = getIDsRoot(root, num_elem_slots)[search_ind];
 		curr_node_bitcode = getBitcodesRoot(root, num_elem_slots)[search_ind];
 
 		// Only process node if its dimension-2 value satisfies the dimension-2 search bound
@@ -266,7 +269,7 @@ PointStructTemplate<T, IDType, num_IDs>* StaticPSTCPUIter<T, PointStructTemplate
 				res_pt_arr[num_res_elems].dim1_val = curr_node_dim1_val;
 				res_pt_arr[num_res_elems].dim2_val = curr_node_dim2_val;
 				if constexpr (num_IDs == 1)
-					res_pt_arr[num_res_elems].id = curr_node_id;
+					res_pt_arr[num_res_elems].id = getIDsRoot(root, num_elem_slots)[search_ind];
 				num_res_elems++;
 			}
 
@@ -324,8 +327,6 @@ PointStructTemplate<T, IDType, num_IDs>* StaticPSTCPUIter<T, PointStructTemplate
 	T curr_node_dim1_val;
 	T curr_node_dim2_val;
 	T curr_node_med_dim1_val;
-	// Will never be used if num_IDs = 0, but will throw an error if contained within a constexpr
-	IDType curr_node_id;
 	unsigned char curr_node_bitcode;
 
 	// Stacks are synchronised, so 1 stack is empty exactly when both are
@@ -340,8 +341,6 @@ PointStructTemplate<T, IDType, num_IDs>* StaticPSTCPUIter<T, PointStructTemplate
 		curr_node_dim1_val = getDim1ValsRoot(root, num_elem_slots)[search_ind];
 		curr_node_dim2_val = getDim2ValsRoot(root, num_elem_slots)[search_ind];
 		curr_node_med_dim1_val = getMedDim1ValsRoot(root, num_elem_slots)[search_ind];
-		if constexpr (num_IDs == 1)
-			curr_node_id = getIDsRoot(root, num_elem_slots)[search_ind];
 		curr_node_bitcode = getBitcodesRoot(root, num_elem_slots)[search_ind];
 
 		// Only process node if its dimension-2 value satisfies the dimension-2 search bound
@@ -353,7 +352,7 @@ PointStructTemplate<T, IDType, num_IDs>* StaticPSTCPUIter<T, PointStructTemplate
 				res_pt_arr[num_res_elems].dim1_val = curr_node_dim1_val;
 				res_pt_arr[num_res_elems].dim2_val = curr_node_dim2_val;
 				if constexpr (num_IDs == 1)
-					res_pt_arr[num_res_elems].id = curr_node_id;
+					res_pt_arr[num_res_elems].id = getIDsRoot(root, num_elem_slots)[search_ind];
 				num_res_elems++;
 			}
 
@@ -609,8 +608,30 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodes
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
+size_t StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSizeNumTs(const size_t num_elem_slots, const size_t num_T_subarrs)
+{
+	/*
+		tot_arr_size_num_Ts = ceil(1/sizeof(T) * num_elem_slots * (sizeof(T) * num_T_subarrs + 1 B/bitcode * 1 bitcode))
+			With integer truncation:
+				if tot_arr_size_bytes % sizeof(T) != 0:
+							= tot_arr_size_bytes + 1
+				if tot_arr_size_bytes % sizeof(T) == 0:
+							= tot_arr_size_bytes
+	*/
+	// Calculate total size in bytes
+	size_t tot_arr_size_bytes = num_elem_slots * (sizeof(T) * num_T_subarrs + 1);
+	// Divide by sizeof(T)
+	size_t tot_arr_size_num_Ts = tot_arr_size_bytes / sizeof(T);
+	// If tot_arr_size_bytes % sizeof(T) != 0, then tot_arr_size_num_Ts * sizeof(T) < tot_arr_size_bytes, so add 1 to tot_arr_size_num_Ts
+	if (tot_arr_size_bytes % sizeof(T) != 0)
+		tot_arr_size_num_Ts++;
+	return tot_arr_size_num_Ts;
+}
+
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
 template <typename U, size_t num_U_subarrs, typename V, size_t num_V_subarrs>
-size_t StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSizeNumUs<U, num_U_subarrs, V, num_V_subarrs>(const size_t num_elem_slots)
+size_t StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSizeNumUs(const size_t num_elem_slots)
 	requires SizeOfUAtLeastSizeOfV<U, V>
 {
 	/*

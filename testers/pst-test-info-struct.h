@@ -121,7 +121,11 @@ struct PSTTestInfoStruct
 		{
 			typename PSTTesterDataIDTypesInstantiated::NumIDsWrapper<0> pst_tester_num_ids_instan(pst_tester);
 
-			typename PSTTesterDataIDTypesInstantiated::NumIDsWrapper<0>::IDTypeWrapper<void, void> pst_tester_fully_instan(pst_tester_num_ids_instan(pst_tester));
+			// As no ID distribution is used anyway, just place a dummy template template parameter taking one type parameter
+			typename PSTTesterDataIDTypesInstantiated
+						::NumIDsWrapper<0>
+						::IDTypeWrapper<std::uniform_real_distribution, void>
+							pst_tester_fully_instan(pst_tester_num_ids_instan);
 
 			testWrap(pst_tester_fully_instan);
 		}
@@ -164,13 +168,6 @@ struct PSTTestInfoStruct
 
 				testWrap(pst_tester_id_instan);
 			}
-		}
-		else	// !pts_with_ids
-		{
-			// As no ID distribution is used anyway, just place a dummy template template parameter taking one type parameter
-			typename PSTTesterDataInstantiated::IDTypeWrapper<std::uniform_real_distribution, void> pst_tester_id_instan(pst_tester);
-
-			testWrap(pst_tester_id_instan);
 		}
 	};
 
