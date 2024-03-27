@@ -92,7 +92,7 @@ class StaticPSTCPURecur : public StaticPrioritySearchTree<T, PointStructTemplate
 		// Note that **const ensures that a second-level pointer (**) is constant, but that the pointer to which it points (i.e. a first-level pointer, *) is not
 		void populateTreeRecur(TreeNode &subtree_root, PointStructTemplate<T, IDType, num_IDs> *const *const dim1_val_ptr_subarr, PointStructTemplate<T, IDType, num_IDs> *const *const dim2_val_ptr_subarr, const size_t num_elems);
 		// Returns index in dim1_val_ptr_arr of elem_to_find
-		size_t binarySearch(PointStructTemplate<T, IDType, num_IDs> *const *const dim1_val_ptr_arr, PointStructTemplate<T, IDType, num_IDs> &elem_to_find, const size_t num_elems);
+		long long binarySearch(PointStructTemplate<T, IDType, num_IDs> *const *const dim1_val_ptr_arr, PointStructTemplate<T, IDType, num_IDs> &elem_to_find, const size_t num_elems);
 
 		void printRecur(std::ostream &os, const TreeNode &subtree_root, std::string prefix, std::string child_prefix) const;
 

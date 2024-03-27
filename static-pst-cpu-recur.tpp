@@ -214,7 +214,7 @@ void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::populateTreeRec
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-size_t StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::binarySearch(PointStructTemplate<T, IDType, num_IDs> *const *const dim1_val_ptr_arr, PointStructTemplate<T, IDType, num_IDs> &elem_to_find, const size_t num_elems)
+long long StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::binarySearch(PointStructTemplate<T, IDType, num_IDs> *const *const dim1_val_ptr_arr, PointStructTemplate<T, IDType, num_IDs> &elem_to_find, const size_t num_elems)
 {
 	size_t low_ind = 0;
 	size_t high_ind = num_elems;
