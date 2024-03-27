@@ -46,7 +46,7 @@ struct PSTTestInfoStruct
 									std::stod(search_range_strings[1]),
 									std::stod(search_range_strings[2]));
 			
-			TreeTypeWrap(pst_tester);
+			treeTypeWrap(pst_tester);
 		}
 		else if (data_type == DataType::FLOAT)
 		{
@@ -57,7 +57,7 @@ struct PSTTestInfoStruct
 									std::stof(search_range_strings[1]),
 									std::stof(search_range_strings[2]));
 			
-			TreeTypeWrap(pst_tester);
+			treeTypeWrap(pst_tester);
 		}
 		else if (data_type == DataType::INT)
 		{
@@ -68,7 +68,7 @@ struct PSTTestInfoStruct
 									std::stoi(search_range_strings[1]),
 									std::stoi(search_range_strings[2]));
 			
-			TreeTypeWrap(pst_tester);
+			treeTypeWrap(pst_tester);
 		}
 		else if (data_type == DataType::LONG)
 		{
@@ -79,7 +79,7 @@ struct PSTTestInfoStruct
 									std::stol(search_range_strings[1]),
 									std::stol(search_range_strings[2]));
 			
-			TreeTypeWrap(pst_tester);
+			treeTypeWrap(pst_tester);
 		}
 	};
 
@@ -117,11 +117,13 @@ struct PSTTestInfoStruct
 			
 			IDTypeWrap(pst_tester_num_ids_instan);
 		}
-		else	// !pts_with_ids
+		else	// !pts_with_ids; can skip IDTypeWrap()
 		{
 			typename PSTTesterDataIDTypesInstantiated::NumIDsWrapper<0> pst_tester_num_ids_instan(pst_tester);
 
-			IDTypeWrap(pst_tester_num_ids_instan);
+			typename PSTTesterDataIDTypesInstantiated::NumIDsWrapper<0>::IDTypeWrapper<void, void> pst_tester_fully_instan(pst_tester_num_ids_instan(pst_tester));
+
+			testWrap(pst_tester_fully_instan);
 		}
 	};
 
@@ -165,7 +167,8 @@ struct PSTTestInfoStruct
 		}
 		else	// !pts_with_ids
 		{
-			typename PSTTesterDataInstantiated::IDTypeWrapper<void, void> pst_tester_id_instan(pst_tester);
+			// As no ID distribution is used anyway, just place a dummy template template parameter taking one type parameter
+			typename PSTTesterDataInstantiated::IDTypeWrapper<std::uniform_real_distribution, void> pst_tester_id_instan(pst_tester);
 
 			testWrap(pst_tester_id_instan);
 		}

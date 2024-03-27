@@ -85,7 +85,7 @@ struct PSTTester
 				IDDistrib<IDType> id_distr;
 
 				IDTypeWrapper(NumIDsWrapper<num_IDs> num_ids_wrapper)
-					: num_ids_wrapper(num_ids_wrapper)
+					: num_ids_wrapper(num_ids_wrapper),
 					id_distr(0, std::numeric_limits<IDType>::max())
 				{};
 
@@ -96,11 +96,11 @@ struct PSTTester
 					for (size_t i = 0; i < num_elems; i++)
 					{
 						// Distribution takes random number engine as parameter with which to generate its next value
-						pt_arr[i].dim1_val = num_ids_wrapper.id_type_wrapper.pst_tester.distr(num_ids_wrapper.id_type_wrapper.pst_tester.rand_num_eng);
-						pt_arr[i].dim2_val = num_ids_wrapper.id_type_wrapper.pst_tester.distr(num_ids_wrapper.id_type_wrapper.pst_tester.rand_num_eng);
+						pt_arr[i].dim1_val = num_ids_wrapper.tree_type_wrapper.pst_tester.distr(num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
+						pt_arr[i].dim2_val = num_ids_wrapper.tree_type_wrapper.pst_tester.distr(num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
 						// Lazy instantiation of value of type IDType from type T
 						if constexpr (num_IDs == 1)
-							pt_arr[i].id = num_ids_wrapper.id_type_wrapper.id_distr(num_ids_wrapper.id_type_wrapper.pst_tester.rand_num_eng);
+							pt_arr[i].id = id_distr(num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
 					}
 
 #ifdef DEBUG
@@ -127,21 +127,21 @@ struct PSTTester
 					if (test_type == LEFT_SEARCH)
 					{
 						res_pt_arr = tree->twoSidedLeftSearch(num_res_elems,
-																num_ids_wrapper.id_type_wrapper.pst_tester.dim1_val_bound1,
-																num_ids_wrapper.id_type_wrapper.pst_tester.min_dim2_val);
+																num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound1,
+																num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val);
 					}
 					else if (test_type == RIGHT_SEARCH)
 					{
 						res_pt_arr = tree->twoSidedRightSearch(num_res_elems,
-																num_ids_wrapper.id_type_wrapper.pst_tester.dim1_val_bound1,
-																num_ids_wrapper.id_type_wrapper.pst_tester.min_dim2_val);
+																num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound1,
+																num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val);
 					}
 					else if (test_type == THREE_SEARCH)
 					{
 						res_pt_arr = tree->threeSidedSearch(num_res_elems,
-															num_ids_wrapper.id_type_wrapper.pst_tester.dim1_val_bound1,
-															num_ids_wrapper.id_type_wrapper.pst_tester.dim1_val_bound2,
-															num_ids_wrapper.id_type_wrapper.pst_tester.min_dim2_val);
+															num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound1,
+															num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound2,
+															num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val);
 					}
 					// If test_type == CONSTRUCT, do nothing for the search/report phase
 
@@ -161,7 +161,7 @@ struct PSTTester
 			};
 
 			// Template specialisation for case with no ID and therefore no ID distribution; sepcialisation must follow primary (completely unspecified) template; full specialisation not allowed in class scope, hence the remaining dummy type
-			template <typename IDDistrib>
+			template <template <typename> typename IDDistrib>
 			struct IDTypeWrapper<IDDistrib, void>
 			{
 				NumIDsWrapper<num_IDs> num_ids_wrapper;
@@ -177,8 +177,8 @@ struct PSTTester
 					for (size_t i = 0; i < num_elems; i++)
 					{
 						// Distribution takes random number engine as parameter with which to generate its next value
-						pt_arr[i].dim1_val = num_ids_wrapper.id_type_wrapper.pst_tester.distr(num_ids_wrapper.id_type_wrapper.pst_tester.rand_num_eng);
-						pt_arr[i].dim2_val = num_ids_wrapper.id_type_wrapper.pst_tester.distr(num_ids_wrapper.id_type_wrapper.pst_tester.rand_num_eng);
+						pt_arr[i].dim1_val = num_ids_wrapper.tree_type_wrapper.pst_tester.distr(num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
+						pt_arr[i].dim2_val = num_ids_wrapper.tree_type_wrapper.pst_tester.distr(num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
 					}
 
 #ifdef DEBUG
@@ -205,21 +205,21 @@ struct PSTTester
 					if (test_type == LEFT_SEARCH)
 					{
 						res_pt_arr = tree->twoSidedLeftSearch(num_res_elems,
-																num_ids_wrapper.id_type_wrapper.pst_tester.dim1_val_bound1,
-																num_ids_wrapper.id_type_wrapper.pst_tester.min_dim2_val);
+																num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound1,
+																num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val);
 					}
 					else if (test_type == RIGHT_SEARCH)
 					{
 						res_pt_arr = tree->twoSidedRightSearch(num_res_elems,
-																num_ids_wrapper.id_type_wrapper.pst_tester.dim1_val_bound1,
-																num_ids_wrapper.id_type_wrapper.pst_tester.min_dim2_val);
+																num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound1,
+																num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val);
 					}
 					else if (test_type == THREE_SEARCH)
 					{
 						res_pt_arr = tree->threeSidedSearch(num_res_elems,
-															num_ids_wrapper.id_type_wrapper.pst_tester.dim1_val_bound1,
-															num_ids_wrapper.id_type_wrapper.pst_tester.dim1_val_bound2,
-															num_ids_wrapper.id_type_wrapper.pst_tester.min_dim2_val);
+															num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound1,
+															num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound2,
+															num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val);
 					}
 					// If test_type == CONSTRUCT, do nothing for the search/report phase
 
