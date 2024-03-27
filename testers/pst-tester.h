@@ -76,13 +76,17 @@ struct PSTTester
 				: tree_type_wrapper(tree_type_wrapper)
 			{};
 
-			// Template specialisation for case with no ID and therefore no ID distribution
-			struct IDTypeWrapper<void, void>
+			template <typename IDType, template <typename> typename IDDistrib>
+			struct IDTypeWrapper
 			{
 				NumIDsWrapper<num_IDs> num_ids_wrapper;
 
+				IDDistrib<IDType> id_distr;
+
 				IDTypeWrapper(NumIDsWrapper<num_IDs> num_ids_wrapper)
 					: num_ids_wrapper(num_ids_wrapper)
+					// Bounds of distribution [a, b] must satisfy b - a <= std::numeric_limits<IDType>::max()
+					id_distr(0, std::numeric_limits<IDType>::max())
 				{};
 
 				void operator()(size_t num_elems, PSTTestCodes test_type=CONSTRUCT)
@@ -156,17 +160,14 @@ struct PSTTester
 				};
 			};
 
-			template <typename IDType, template <typename> typename IDDistrib>
-			struct IDTypeWrapper
+			// Template specialisation for case with no ID and therefore no ID distribution; full specialisation not allowed in class scope, hence the remaining dummy type
+			template <typename IDDistr>
+			struct IDTypeWrapper<void>
 			{
 				NumIDsWrapper<num_IDs> num_ids_wrapper;
 
-				IDDistrib<IDType> id_distr;
-
 				IDTypeWrapper(NumIDsWrapper<num_IDs> num_ids_wrapper)
 					: num_ids_wrapper(num_ids_wrapper)
-					// Bounds of distribution [a, b] must satisfy b - a <= std::numeric_limits<IDType>::max()
-					id_distr(0, std::numeric_limits<IDType>::max())
 				{};
 
 				void operator()(size_t num_elems, PSTTestCodes test_type=CONSTRUCT)
@@ -178,9 +179,6 @@ struct PSTTester
 						// Distribution takes random number engine as parameter with which to generate its next value
 						pt_arr[i].dim1_val = num_ids_wrapper.id_type_wrapper.pst_tester.distr(num_ids_wrapper.id_type_wrapper.pst_tester.rand_num_eng);
 						pt_arr[i].dim2_val = num_ids_wrapper.id_type_wrapper.pst_tester.distr(num_ids_wrapper.id_type_wrapper.pst_tester.rand_num_eng);
-						// Lazy instantiation of value of type IDType from type T
-						if constexpr (num_IDs == 1)
-							pt_arr[i].id = num_ids_wrapper.id_type_wrapper.id_distr(num_ids_wrapper.id_type_wrapper.pst_tester.rand_num_eng);
 					}
 
 #ifdef DEBUG
