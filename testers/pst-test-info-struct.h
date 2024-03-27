@@ -134,31 +134,31 @@ struct PSTTestInfoStruct
 			if (id_type == DataType::CHAR)
 			{
 				// typename necessary, as compiler defaults to treating nested names as variables
-				typename PSTTesterDataInstantiated::IDTypeWrapper<char, std::uniform_int_distribution> pst_tester_id_instan(pst_tester);
+				typename PSTTesterDataInstantiated::IDTypeWrapper<std::uniform_int_distribution, char> pst_tester_id_instan(pst_tester);
 
 				testWrap(pst_tester_id_instan);
 			}
 			else if (data_type == DataType::DOUBLE)
 			{
-				typename PSTTesterDataInstantiated::IDTypeWrapper<double, std::uniform_real_distribution> pst_tester_id_instan(pst_tester);
+				typename PSTTesterDataInstantiated::IDTypeWrapper<std::uniform_real_distribution, double> pst_tester_id_instan(pst_tester);
 
 				testWrap(pst_tester_id_instan);
 			}
 			else if (data_type == DataType::FLOAT)
 			{
-				typename PSTTesterDataInstantiated::IDTypeWrapper<float, std::uniform_real_distribution> pst_tester_id_instan(pst_tester);
+				typename PSTTesterDataInstantiated::IDTypeWrapper<std::uniform_real_distribution, float> pst_tester_id_instan(pst_tester);
 
 				testWrap(pst_tester_id_instan);
 			}
 			else if (data_type == DataType::INT)
 			{
-				typename PSTTesterDataInstantiated::IDTypeWrapper<int, std::uniform_int_distribution> pst_tester_id_instan(pst_tester);
+				typename PSTTesterDataInstantiated::IDTypeWrapper<std::uniform_int_distribution, int> pst_tester_id_instan(pst_tester);
 
 				testWrap(pst_tester_id_instan);
 			}
 			else if (data_type == DataType::LONG)
 			{
-				typename PSTTesterDataInstantiated::IDTypeWrapper<long, std::uniform_int_distribution> pst_tester_id_instan(pst_tester);
+				typename PSTTesterDataInstantiated::IDTypeWrapper<std::uniform_int_distribution, long> pst_tester_id_instan(pst_tester);
 
 				testWrap(pst_tester_id_instan);
 			}

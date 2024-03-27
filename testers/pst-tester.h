@@ -76,16 +76,16 @@ struct PSTTester
 				: tree_type_wrapper(tree_type_wrapper)
 			{};
 
-			template <typename IDType, template <typename> typename IDDistrib>
+			template <template <typename> typename IDDistrib, typename IDType>
 			struct IDTypeWrapper
 			{
 				NumIDsWrapper<num_IDs> num_ids_wrapper;
 
+				// Bounds of distribution [a, b] must satisfy b - a <= std::numeric_limits<IDType>::max()
 				IDDistrib<IDType> id_distr;
 
 				IDTypeWrapper(NumIDsWrapper<num_IDs> num_ids_wrapper)
 					: num_ids_wrapper(num_ids_wrapper)
-					// Bounds of distribution [a, b] must satisfy b - a <= std::numeric_limits<IDType>::max()
 					id_distr(0, std::numeric_limits<IDType>::max())
 				{};
 
@@ -160,9 +160,9 @@ struct PSTTester
 				};
 			};
 
-			// Template specialisation for case with no ID and therefore no ID distribution; full specialisation not allowed in class scope, hence the remaining dummy type
-			template <typename IDDistr>
-			struct IDTypeWrapper<void>
+			// Template specialisation for case with no ID and therefore no ID distribution; sepcialisation must follow primary (completely unspecified) template; full specialisation not allowed in class scope, hence the remaining dummy type
+			template <typename IDDistrib>
+			struct IDTypeWrapper<IDDistrib, void>
 			{
 				NumIDsWrapper<num_IDs> num_ids_wrapper;
 
@@ -172,7 +172,7 @@ struct PSTTester
 
 				void operator()(size_t num_elems, PSTTestCodes test_type=CONSTRUCT)
 				{
-					PointStructTemplate<T, IDType, num_IDs> *pt_arr = new PointStructTemplate<T, IDType, num_IDs>[num_elems];
+					PointStructTemplate<T, void, num_IDs> *pt_arr = new PointStructTemplate<T, void, num_IDs>[num_elems];
 
 					for (size_t i = 0; i < num_elems; i++)
 					{
@@ -187,8 +187,8 @@ struct PSTTester
 #endif
 
 
-					StaticPSTTemplate<T, PointStructTemplate, IDType, num_IDs> *tree =
-						new StaticPSTTemplate<T, PointStructTemplate, IDType, num_IDs>(pt_arr, num_elems);
+					StaticPSTTemplate<T, PointStructTemplate, void, num_IDs> *tree =
+						new StaticPSTTemplate<T, PointStructTemplate, void, num_IDs>(pt_arr, num_elems);
 
 					if (tree == nullptr)
 					{
@@ -199,7 +199,7 @@ struct PSTTester
 					std::cout << *tree << '\n';
 
 					size_t num_res_elems = 0;
-					PointStructTemplate<T, IDType, num_IDs> *res_pt_arr;
+					PointStructTemplate<T, void, num_IDs> *res_pt_arr;
 
 					// Search/report test phase
 					if (test_type == LEFT_SEARCH)
@@ -224,8 +224,8 @@ struct PSTTester
 					// If test_type == CONSTRUCT, do nothing for the search/report phase
 
 					std::sort(res_pt_arr, res_pt_arr + num_res_elems,
-							[](const PointStructTemplate<T, IDType, num_IDs> &pt_1,
-								const PointStructTemplate<T, IDType, num_IDs> &pt_2)
+							[](const PointStructTemplate<T, void, num_IDs> &pt_1,
+								const PointStructTemplate<T, void, num_IDs> &pt_2)
 							{
 							return pt_1.compareDim1(pt_2) < 0;
 							});
