@@ -7,8 +7,8 @@
 #include <random>		// To use std::mt19937
 #include <type_traits>
 
-#include "../err-chk.h"
-#include "../print-array.h"
+#include "err-chk.h"
+#include "print-array.h"
 
 enum DataType {CHAR, DOUBLE, FLOAT, INT, LONG};
 

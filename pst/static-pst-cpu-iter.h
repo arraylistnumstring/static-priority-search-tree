@@ -3,7 +3,6 @@
 
 #include <stack>
 
-#include "point-struct.h"
 #include "static-priority-search-tree.h"
 #include "static-pst-concepts.h"
 

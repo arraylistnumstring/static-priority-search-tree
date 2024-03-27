@@ -2,7 +2,6 @@
 #define STATIC_PST_GPU_H
 
 #include "gpu-err-chk.h"
-#include "point-struct.h"
 #include "static-priority-search-tree.h"
 #include "static-pst-concepts.h"
 

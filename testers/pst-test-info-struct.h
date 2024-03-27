@@ -5,11 +5,11 @@
 #include <random>
 #include <string>
 
-#include "../point-struct.h"
-#include "../static-pst-cpu-iter.h"
-#include "../static-pst-cpu-recur.h"
-#include "../static-pst-gpu.h"
+#include "point-struct.h"
 #include "pst-tester.h"
+#include "static-pst-cpu-iter.h"
+#include "static-pst-cpu-recur.h"
+#include "static-pst-gpu.h"
 
 
 struct PSTTestInfoStruct
