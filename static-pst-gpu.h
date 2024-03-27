@@ -343,6 +343,9 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 					return reinterpret_cast<unsigned char*>(getIDsRoot(root, num_elem_slots) + num_ID_subarrs * num_elem_slots);
 			};
 
+		// Helper function for calculating the number of elements of size T necessary to instantiate an array for root of trees with no ID field
+		__forceinline__ __host__ __device__ static size_t calcTotArrSizeNumTs(const size_t num_elem_slots, const size_t num_T_subarrs);
+
 		// Helper function for calculating the number of elements of size U necessary to instantiate an array for root, for data types U and V such that sizeof(U) >= sizeof(V)
 		template <typename U, size_t num_U_subarrs, typename V, size_t num_V_subarrs>
 		__forceinline__ __host__ __device__ static size_t calcTotArrSizeNumUs(const size_t num_elem_slots)

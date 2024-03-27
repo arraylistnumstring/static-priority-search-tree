@@ -47,13 +47,16 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 	size_t global_mem_needed;
 	if constexpr (num_IDs == 0)
 	{
+		// No IDs present
+		tot_arr_size_num_datatype = calcTotArrSizeNumTs(num_elem_slots, num_val_subarrs);
+		global_mem_needed = tot_arr_size_num_datatype * sizeof(T);
 	}
 	else
 	{
 		// Separate size-comparison condition from the num_IDs==0 condition so that sizeof(IDType) is well-defined here, as often only one branch of a constexpr if is compiled
 		if constexpr (sizeof(T) >= sizeof(IDType))
 		{
-			// No IDs present or sizeof(T) >= sizeof(IDType), so calculate total array size in units of sizeof(T) so that datatype T's alignment requirements will be satisfied
+			// sizeof(T) >= sizeof(IDType), so calculate total array size in units of sizeof(T) so that datatype T's alignment requirements will be satisfied
 			tot_arr_size_num_datatype = calcTotArrSizeNumUs<T, num_val_subarrs, IDType, num_ID_subarrs>(num_elem_slots);
 			global_mem_needed = tot_arr_size_num_datatype * sizeof(T);
 		}
@@ -79,7 +82,7 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs));
 
 	// Memory transfer only permitted for on-host pinned (page-locked) memory, so do operations in the default stream
-	if constexpr (num_IDs == 0 || sizeof(T) >= sizeof(IDType))
+	if constexpr (num_IDs == 0)
 	{
 		// Allocate as a T array so that alignment requirements for larger data types are obeyed
 		gpuErrorCheck(cudaMalloc(&root_d, tot_arr_size_num_datatype * sizeof(T)),
@@ -89,11 +92,22 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 	}
 	else
 	{
-		// Allocate as an IDType array so that alignment requirements for larger data types are obeyed
-		gpuErrorCheck(cudaMalloc(&root_d, tot_arr_size_num_datatype * sizeof(IDType)),
-						"Error in allocating priority search tree storage array on device "
-						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-						+ ": ");
+ 		if constexpr (sizeof(T) >= sizeof(IDType))
+		{
+			// Allocate as a T array so that alignment requirements for larger data types are obeyed
+			gpuErrorCheck(cudaMalloc(&root_d, tot_arr_size_num_datatype * sizeof(T)),
+							"Error in allocating priority search tree storage array on device "
+							+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+							+ ": ");
+		}
+		else
+		{
+			// Allocate as an IDType array so that alignment requirements for larger data types are obeyed
+			gpuErrorCheck(cudaMalloc(&root_d, tot_arr_size_num_datatype * sizeof(IDType)),
+							"Error in allocating priority search tree storage array on device "
+							+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+							+ ": ");
+		}
 	}
 
 
@@ -148,7 +162,7 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 		return;
 
 
-	if constexpr (num_IDs == 0 || sizeof(T) >= sizeof(IDType))
+	if constexpr (num_IDs == 0)
 	{
 		gpuErrorCheck(cudaMemsetAsync(root_d, 0, tot_arr_size_num_datatype * sizeof(T), cudaStreamFireAndForget),
 						"Error in zero-intialising on-device priority search tree storage array via cudaMemset() on device "
@@ -157,10 +171,20 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 	}
 	else
 	{
-		gpuErrorCheck(cudaMemsetAsync(root_d, 0, tot_arr_size_num_datatype * sizeof(IDType), cudaStreamFireAndForget),
-						"Error in zero-intialising on-device priority search tree storage array via cudaMemset() on device "
-						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-						+ ": ");
+		if constexpr (sizeof(T) >= sizeof(IDType))
+		{
+			gpuErrorCheck(cudaMemsetAsync(root_d, 0, tot_arr_size_num_datatype * sizeof(T), cudaStreamFireAndForget),
+							"Error in zero-intialising on-device priority search tree storage array via cudaMemset() on device "
+							+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+							+ ": ");
+		}
+		else
+		{
+			gpuErrorCheck(cudaMemsetAsync(root_d, 0, tot_arr_size_num_datatype * sizeof(IDType), cudaStreamFireAndForget),
+							"Error in zero-intialising on-device priority search tree storage array via cudaMemset() on device "
+							+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+							+ ": ");
+		}
 	}
 
 	const size_t index_assign_threads_per_block = 8 * dev_props.warpSize;
@@ -247,32 +271,49 @@ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::print(std::ostream &
 
 	size_t tot_arr_size_num_datatype;
 	T *temp_root;
-	if constexpr (num_IDs == 0 || sizeof(T) >= sizeof(IDType))
+	if constexpr (num_IDs == 0)
 	{
-		// No IDs present or sizeof(T) >= sizeof(IDType), so calculate total array size in units of sizeof(T) so that datatype T's alignment requirements will be satisfied
-		tot_arr_size_num_datatype = calcTotArrSizeNumUs<T, num_val_subarrs, IDType, num_ID_subarrs>(num_elem_slots);
+		// No IDs present
+		tot_arr_size_num_datatype = calcTotArrSizeNumTs(num_elem_slots, num_val_subarrs);
 		temp_root = new T[tot_arr_size_num_datatype]();
 	}
 	else
 	{
-		// sizeof(IDType) > sizeof(T), so calculate total array size in units of sizeof(IDType) so that datatype IDType's alignment requirements will be satisfied
-		tot_arr_size_num_datatype = calcTotArrSizeNumUs<IDType, num_ID_subarrs, T, num_val_subarrs>(num_elem_slots);
-		temp_root = reinterpret_cast<T *>(new IDType[tot_arr_size_num_datatype]());
+		if constexpr(sizeof(T) >= sizeof(IDType))
+		{
+			// sizeof(T) >= sizeof(IDType), so calculate total array size in units of sizeof(T) so that datatype T's alignment requirements will be satisfied
+			tot_arr_size_num_datatype = calcTotArrSizeNumUs<T, num_val_subarrs, IDType, num_ID_subarrs>(num_elem_slots);
+			temp_root = new T[tot_arr_size_num_datatype]();
+		}
+		else
+		{
+			// sizeof(IDType) > sizeof(T), so calculate total array size in units of sizeof(IDType) so that datatype IDType's alignment requirements will be satisfied
+			tot_arr_size_num_datatype = calcTotArrSizeNumUs<IDType, num_ID_subarrs, T, num_val_subarrs>(num_elem_slots);
+			temp_root = reinterpret_cast<T *>(new IDType[tot_arr_size_num_datatype]());
+		}
 	}
 	
 	if (temp_root == nullptr)
 		throwErr("Error: could not allocate " + std::to_string(num_elem_slots)
 					+ " elements of type " + typeid(T).name() + "to temp_root");
 
-	if constexpr (num_IDs == 0 || sizeof(T) >= sizeof(IDType))
+	if constexpr (num_IDs == 0)
 	{
 		gpuErrorCheck(cudaMemcpy(temp_root, root_d, tot_arr_size_num_datatype * sizeof(T), cudaMemcpyDefault),
 						"Error in copying array underlying StaticPSTGPU instance from device to host: ");
 	}
 	else
 	{
-		gpuErrorCheck(cudaMemcpy(temp_root, root_d, tot_arr_size_num_datatype * sizeof(IDType), cudaMemcpyDefault),
+		if constexpr (sizeof(T) >= sizeof(IDType))
+		{
+		gpuErrorCheck(cudaMemcpy(temp_root, root_d, tot_arr_size_num_datatype * sizeof(T), cudaMemcpyDefault),
 						"Error in copying array underlying StaticPSTGPU instance from device to host: ");
+		}
+		else
+		{
+			gpuErrorCheck(cudaMemcpy(temp_root, root_d, tot_arr_size_num_datatype * sizeof(IDType), cudaMemcpyDefault),
+							"Error in copying array underlying StaticPSTGPU instance from device to host: ");
+		}
 	}
 
 	std::string prefix = "";
@@ -698,8 +739,30 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
+__forceinline__ __host__ __device__ size_t StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSizeNumTs(const size_t num_elem_slots, const size_t num_T_subarrs)
+{
+	/*
+		tot_arr_size_num_Ts = ceil(1/sizeof(T) * num_elem_slots * (sizeof(T) * num_T_subarrs + 1 B/bitcode * 1 bitcode))
+			With integer truncation:
+				if tot_arr_size_bytes % sizeof(T) != 0:
+							= tot_arr_size_bytes + 1
+				if tot_arr_size_bytes % sizeof(T) == 0:
+							= tot_arr_size_bytes
+	*/
+	// Calculate total size in bytes
+	size_t tot_arr_size_bytes = num_elem_slots * (sizeof(T) * num_T_subarrs + 1);
+	// Divide by sizeof(T)
+	size_t tot_arr_size_num_Ts = tot_arr_size_bytes / sizeof(T);
+	// If tot_arr_size_bytes % sizeof(T) != 0, then tot_arr_size_num_Ts * sizeof(T) < tot_arr_size_bytes, so add 1 to tot_arr_size_num_Ts
+	if (tot_arr_size_bytes % sizeof(T) != 0)
+		tot_arr_size_num_Ts++;
+	return tot_arr_size_num_Ts;
+}
+
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
 template <typename U, size_t num_U_subarrs, typename V, size_t num_V_subarrs>
-__forceinline__ size_t StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSizeNumUs<U, num_U_subarrs, V, num_V_subarrs>(const size_t num_elem_slots)
+__forceinline__ __host__ __device__ size_t StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSizeNumUs<U, num_U_subarrs, V, num_V_subarrs>(const size_t num_elem_slots)
 	requires SizeOfUAtLeastSizeOfV<U, V>
 {
 	/*
