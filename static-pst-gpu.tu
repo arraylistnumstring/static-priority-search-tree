@@ -133,11 +133,41 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 					+ ": ");
 
-	CUmemorytype *ptr_info = nullptr;
-	cuPointerGetAttribute(ptr_info, CU_POINTER_ATTRIBUTE_MEMORY_TYPE, reinterpret_cast<CUdeviceptr>(pt_arr));
+	cudaPointerAttributes ptr_info;
+	gpuErrorCheck(cudaPointerGetAttributes(&ptr_info, pt_arr),
+					"Error in determining location type of memory address (i.e. whether on host or device)");
 
-	if (*ptr_info == CU_MEMORYTYPE_HOST)		// pt_arr is on host; allocate memory for and copy pt_arr
+	// pt_arr is already on device; use it as pt_arr_d
+	if (ptr_info.type == cudaMemoryTypeDevice && ptr_info.device == dev_ind)
 	{
+		pt_arr_d = pt_arr;
+		// No implicit synchronization call as with cudaMemcpy, so instead all cudaDeviceSynchornize() explicitly
+		gpuErrorCheck(cudaDeviceSynchronize(),
+						"Error in synchronizing with GPU after allocating data on device "
+						+ std::to_string(dev_ind) + " of "
+						+ std::to_string(num_devs) + ": ");
+	}
+	else
+	{
+		// pt_arr is on another device; copy it to current device
+		if (ptr_info.type == cudaMemoryTypeDevice)
+		{
+			// Attempt to enable access; possible error codes are:
+			//	cudaErrorInvalidDevice if direct memory access is not possible
+			//	cudaErrorPeerAccessAlreadyEnabled if direct access of ptr_info.device by dev_ind has already been enabled
+			//	cudaErrorInvalidValue if flags (second argument of cudaDeviceEnablePeerAccess()) is not 0
+			//	cudaSuccess upon success
+			cudaError_t enable_peer_access = cudaDeviceEnablePeerAccess(ptr_info.device, 0);
+			
+			if (enable_peer_access == cudaErrorInvalidDevice)
+				gpuErrorCheck(enable_peer_access,
+								"Cannot enable memory access to device "
+								+ std::to_string(ptr_info.device) + " by device "
+								+ std::to_string(dev_ind));
+			
+		}
+
+		// pt_arr is on host or another device; allocate memory for and copy pt_arr; technically, alternative options are unregistered host memory, registered host memory and managed memory
 		gpuErrorCheck(cudaMalloc(&pt_arr_d, num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>)),
 						"Error in allocating array of PointStructTemplate<T, IDType, num_IDs> objects on device "
 						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
@@ -149,17 +179,6 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 						+ ": ");
 	}
-	else if (*ptr_info == CU_MEMORYTYPE_DEVICE)	// pt_arr is already on device; use it as pt_arr_d
-	{
-		pt_arr_d = pt_arr;
-		// No implicit synchronization call as with cudaMemcpy, so instead all cudaDeviceSynchornize() explicitly
-		gpuErrorCheck(cudaDeviceSynchronize(),
-						"Error in synchronizing with GPU after allocating data on device "
-						+ std::to_string(dev_ind) + " of "
-						+ std::to_string(num_devs) + ": ");
-	}
-	else	// Something has gone very wrong; exit
-		return;
 
 
 	if constexpr (num_IDs == 0)
