@@ -17,6 +17,7 @@ For debugging options, use:
 - `-DDEBUG` to toggle DEBUG preprocessor flag and corresponding print output to aid with debugging variables that are inaccessible via gdb
 - `-G` to get debugging info about device code (turns off all optimisations; is incompatible with and overrides `-lineinfo`)
 - `-g` to get debugging info about host code
+- `-I<filepath>` to add NVIDIA CUDA sample headers to path of libraries to search
 - `-lineinfo` to get info on which lines are causing errors
 
 Standard is set to C++20 because Thrust has deprecated versions of C++ older than C++14 (which also allows use of simpler auto return types), constexpr if (compile-time-evaluated conditionals that may optimise away unused code) are a C++17 language feature, and requires is a C++20 language feature.
