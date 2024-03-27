@@ -79,7 +79,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		virtual void print(std::ostream &os) const;
 
 		int getDevInd() const {return dev_ind;};
-		int getDevProps() const {return dev_props;};
+		cudaDeviceProp getDevProps() const {return dev_props;};
 		int getNumDevs() const {return num_devs;};
 
 		virtual PointStructTemplate<T, IDType, num_IDs>* threeSidedSearch(size_t &num_res_elems, T min_dim1_val, T max_dim1_val, T min_dim2_val)
