@@ -93,7 +93,8 @@ StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::StaticPSTCPUIter(Poin
 
 		Explicitly printed to sanity-check the corresponding code in StaticPSTGPU
 	*/
-	std::cout << "Would call populateTree() with " << 1 << " block, " << nextGreaterPowerOf2(32 - 1) << " threads, " << (nextGreaterPowerOf2(32 - 1) * sizeof(size_t) << 1) << " B of shared memory\n";
+	const size_t cudaWarpSize = 32;
+	std::cout << "Would call populateTree() with " << 1 << " block, " << nextGreaterPowerOf2(cudaWarpSize - 1) << " threads, " << (nextGreaterPowerOf2(cudaWarpSize - 1) * sizeof(size_t) << 1) << " B of shared memory\n";
 #endif
 	populateTree(root, num_elem_slots, pt_arr, dim1_val_ind_arr, dim2_val_ind_arr, dim2_val_ind_arr_secondary, 0, num_elems);
 
