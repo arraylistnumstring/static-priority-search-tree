@@ -11,7 +11,7 @@ and running commmands within the Singularity interface.
 
 To compile testers, run:
 
-	source tester-compiler.sh -ICommon -Ihelpers -Ipst -rdc=true -std=c++20
+	nvcc testers/pst-tester-driver.cu -ICommon -Ihelpers -Ipst -rdc=true -std=c++20 -o testers/pst-tester-driver.out
 
 - `-I<filepath>` adds the given filepath to the list of paths to search for headers.
 	- `Common`: NVIDIA CUDA sample headers

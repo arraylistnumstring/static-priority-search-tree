@@ -140,5 +140,8 @@ __global__ void indexAssignment(size_t *const ind_arr, const size_t num_elems)
 	// Use pragma unroll to decrease register occupation, as the number of loops is known at compile time
 #pragma unroll
 	for (size_t i = 0; i < num_elems; i += gridDim.x * blockDim.x)
-		ind_arr[i + blockIdx.x * blockDim.x + threadIdx.x] = i + blockIdx.x * blockDim.x + threadIdx.x;
+		// Ensure index to be accessed is not out of bounds
+		if (i + blockIdx.x * blockDim.x + threadIdx.x < num_elems)
+			ind_arr[i + blockIdx.x * blockDim.x + threadIdx.x]
+				= i + blockIdx.x * blockDim.x + threadIdx.x;
 }
