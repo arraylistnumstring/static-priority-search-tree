@@ -206,7 +206,7 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 		}
 	}
 
-	const size_t index_assign_threads_per_block = 8 * dev_props.warpSize;
+	const size_t index_assign_threads_per_block = warp_multiplier * dev_props.warpSize;
 	const size_t index_assign_num_blocks = std::min(num_elems % index_assign_threads_per_block == 0 ?
 													num_elems/index_assign_threads_per_block
 													: num_elems/index_assign_threads_per_block + 1,
@@ -249,8 +249,11 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 					+ " after tree pre-construction pre-processing: ");
 
-	// Populate tree with a number of threads that is a multiple of the warp size
-	populateTree<<<1, dev_props.warpSize, dev_props.warpSize * sizeof(size_t) * num_working_ind_arrays>>>
+	
+
+	// Populate tree with a one-block grid and a number of threads per block that is a multiple of the warp size
+	populateTree<<<1, warp_multiplier * dev_props.warpSize,
+					dev_props.warpSize * sizeof(size_t) * num_working_ind_arrays>>>
 				(root_d, num_elem_slots, pt_arr_d, dim1_val_ind_arr_d, dim2_val_ind_arr_d, dim2_val_ind_arr_secondary_d, 0, num_elems, 0);
 
 
