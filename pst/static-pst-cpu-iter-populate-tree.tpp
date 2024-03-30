@@ -83,7 +83,7 @@ void populateTree (T *const root, const size_t num_elem_slots,
 		for (size_t i = 0; i < 10; i++)
 			std::cout << '\n';
 
-		unsigned char curr_node_bitcode = StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::TreeNode::getBitcodesRoot(root, num_elem_slots)[curr_node_ind];
+		unsigned char curr_node_bitcode = StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::getBitcodesRoot(root, num_elem_slots)[curr_node_ind];
 		std::cout << "Current node has left child: " << StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::TreeNode::hasLeftChild(curr_node_bitcode) << '\n';
 		std::cout << "Current node has right child: " << StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::TreeNode::hasRightChild(curr_node_bitcode) << '\n';
 		std::cout << "Current node has children: " << StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::TreeNode::hasChildren(curr_node_bitcode) << '\n';

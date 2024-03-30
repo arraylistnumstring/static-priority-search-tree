@@ -81,7 +81,11 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 					+ std::to_string(dev_props.totalGlobalMem) + " B on device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs));
 
-	// Memory transfer only permitted for on-host pinned (page-locked) memory, so do operations in the default stream
+#ifdef DEBUG
+	std::cout << "Ready to allocate memory (around line 84)\n";
+#endif
+
+	// Memory transfer only permitted for on-host pinned (page-locked) memory, so do such operations in the default stream
 	if constexpr (num_IDs == 0)
 	{
 		// Allocate as a T array so that alignment requirements for larger data types are obeyed
@@ -116,9 +120,6 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 	size_t *dim2_val_ind_arr_d;
 	size_t *dim2_val_ind_arr_secondary_d;
 
-	// Create GPU-side array of PointStructTemplate<T, IDType, num_IDs> objects for the index arrays to reference
-	PointStructTemplate<T, IDType, num_IDs> *pt_arr_d;
-
 
 	gpuErrorCheck(cudaMalloc(&dim1_val_ind_arr_d, num_elems * sizeof(size_t)),
 					"Error in allocating array of PointStructTemplate<T, IDType, num_IDs> indices ordered by dimension 1 on device "
@@ -132,6 +133,13 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 					"Error in allocating secondary array of PointStructTemplate<T, IDType, num_IDs> indices ordered by dimension 2 on device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 					+ ": ");
+
+#ifdef DEBUG
+	std::cout << "Allocated index arrays (around line 138)\n";
+#endif
+
+	// Create GPU-side array of PointStructTemplate<T, IDType, num_IDs> objects for the index arrays to reference
+	PointStructTemplate<T, IDType, num_IDs> *pt_arr_d;
 
 	cudaPointerAttributes ptr_info;
 	gpuErrorCheck(cudaPointerGetAttributes(&ptr_info, pt_arr),
@@ -164,7 +172,6 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 								"Cannot enable memory access to device "
 								+ std::to_string(ptr_info.device) + " by device "
 								+ std::to_string(dev_ind));
-			
 		}
 
 		// pt_arr is on host or another device; allocate memory for and copy pt_arr; technically, alternative options are unregistered host memory, registered host memory and managed memory
@@ -180,6 +187,9 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 						+ ": ");
 	}
 
+#ifdef DEBUG
+	std::cout << "Got PointStructs on target device (around line 186)\n";
+#endif
 
 	if constexpr (num_IDs == 0)
 	{
@@ -206,6 +216,10 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 		}
 	}
 
+#ifdef DEBUG
+	std::cout << "About to assign index as values to index arrays (around line 209)\n";
+#endif
+
 	const size_t index_assign_threads_per_block = warp_multiplier * dev_props.warpSize;
 	const size_t index_assign_num_blocks = std::min(num_elems % index_assign_threads_per_block == 0 ?
 													num_elems/index_assign_threads_per_block
@@ -229,7 +243,7 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 					"Error in destroying asynchronous stream for assignment and sorting of indices by dimension 1 on device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs) + ": ");
 
-	
+
 	cudaStream_t stream_dim2;
 	gpuErrorCheck(cudaStreamCreateWithFlags(&stream_dim2, cudaStreamNonBlocking),
 					"Error in creating asynchronous stream for assignment and sorting of indices by dimension 2 on device "
@@ -249,7 +263,9 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 					+ " after tree pre-construction pre-processing: ");
 
-	
+#ifdef DEBUG
+	std::cout << "About to assign index as values to index arrays (around line 254)\n";
+#endif
 
 	// Populate tree with a one-block grid and a number of threads per block that is a multiple of the warp size
 	populateTree<<<1, warp_multiplier * dev_props.warpSize,
