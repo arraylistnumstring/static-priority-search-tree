@@ -57,13 +57,13 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 		if constexpr (sizeof(T) >= sizeof(IDType))
 		{
 			// sizeof(T) >= sizeof(IDType), so calculate total array size in units of sizeof(T) so that datatype T's alignment requirements will be satisfied
-			tot_arr_size_num_datatype = calcTotArrSizeNumUs<T, num_val_subarrs, IDType, num_ID_subarrs>(num_elem_slots);
+			tot_arr_size_num_datatype = calcTotArrSizeNumUs<T, num_val_subarrs, IDType, num_IDs>(num_elem_slots);
 			global_mem_needed = tot_arr_size_num_datatype * sizeof(T);
 		}
 		else
 		{
 			// sizeof(IDType) > sizeof(T), so calculate total array size in units of sizeof(IDType) so that datatype IDType's alignment requirements will be satisfied
-			tot_arr_size_num_datatype = calcTotArrSizeNumUs<IDType, num_ID_subarrs, T, num_val_subarrs>(num_elem_slots);
+			tot_arr_size_num_datatype = calcTotArrSizeNumUs<IDType, num_IDs, T, num_val_subarrs>(num_elem_slots);
 			global_mem_needed = tot_arr_size_num_datatype * sizeof(IDType);
 		}
 	}
@@ -304,13 +304,13 @@ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::print(std::ostream &
 		if constexpr(sizeof(T) >= sizeof(IDType))
 		{
 			// sizeof(T) >= sizeof(IDType), so calculate total array size in units of sizeof(T) so that datatype T's alignment requirements will be satisfied
-			tot_arr_size_num_datatype = calcTotArrSizeNumUs<T, num_val_subarrs, IDType, num_ID_subarrs>(num_elem_slots);
+			tot_arr_size_num_datatype = calcTotArrSizeNumUs<T, num_val_subarrs, IDType, num_IDs>(num_elem_slots);
 			temp_root = new T[tot_arr_size_num_datatype]();
 		}
 		else
 		{
 			// sizeof(IDType) > sizeof(T), so calculate total array size in units of sizeof(IDType) so that datatype IDType's alignment requirements will be satisfied
-			tot_arr_size_num_datatype = calcTotArrSizeNumUs<IDType, num_ID_subarrs, T, num_val_subarrs>(num_elem_slots);
+			tot_arr_size_num_datatype = calcTotArrSizeNumUs<IDType, num_IDs, T, num_val_subarrs>(num_elem_slots);
 			temp_root = reinterpret_cast<T *>(new IDType[tot_arr_size_num_datatype]());
 		}
 	}

@@ -342,7 +342,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 					return reinterpret_cast<unsigned char*>(root + num_val_subarrs * num_elem_slots);
 				else
 					// Argument of cast is of type IDType *
-					return reinterpret_cast<unsigned char*>(getIDsRoot(root, num_elem_slots) + num_ID_subarrs * num_elem_slots);
+					return reinterpret_cast<unsigned char*>(getIDsRoot(root, num_elem_slots) + num_IDs * num_elem_slots);
 			};
 
 		// Helper function for calculating the number of elements of size T necessary to instantiate an array for root of trees with no ID field
@@ -389,7 +389,6 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		const static unsigned char num_constr_working_arrs = 3;
 		// 1 subarray each for dim1_val, dim2_val and med_dim1_val
 		const static unsigned char num_val_subarrs = 3;
-		const static unsigned char num_ID_subarrs = num_IDs;
 
 		// Declare helper nested class for accessing specific nodes and define in implementation file; as nested class are not attached to any particular instance of the outer class by default (i.e. are like Java's static nested classes by default), only functions contained within need to be declared as static
 		class TreeNode;

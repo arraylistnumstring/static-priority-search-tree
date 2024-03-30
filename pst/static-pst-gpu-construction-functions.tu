@@ -72,7 +72,8 @@ __global__ void populateTree (T *const root_d, const size_t num_elem_slots,
 			// Dynamic parallelism; use cudaStreamFireAndForget to allow children grids to be independent of each other
 			else
 			{
-				populateTree<<<1, blockDim.x, blockDim.x * sizeof(size_t) * num_constr_working_arrs,
+				populateTree<<<1, blockDim.x, blockDim.x * sizeof(size_t)
+									* StaticPST<T, PointStructTemplate, IDType, num_IDs>::num_constr_working_arrs,
 								cudaStreamFireAndForget>>>
 					(root_d, num_elem_slots, pt_arr_d, dim1_val_ind_arr_d,
 						dim2_val_ind_arr_d, dim2_val_ind_arr_secondary_d,
@@ -119,7 +120,8 @@ __global__ void populateTree (T *const root_d, const size_t num_elem_slots,
 										right_subarr_num_elems);
 
 		// Update information for next iteration
-		populateTree<<<1, blockDim.x, blockDim.x * sizeof(size_t) * num_constr_working_arrs,
+		populateTree<<<1, blockDim.x, blockDim.x * sizeof(size_t)
+							* StaticPST<T, PointStructTemplate, IDType, num_IDs>::num_constr_working_arrs,
 						cudaStreamFireAndForget>>>
 			(root_d, num_elem_slots, pt_arr_d, dim1_val_ind_arr_d,
 				dim2_val_ind_arr_d, dim2_val_ind_arr_secondary_d,
