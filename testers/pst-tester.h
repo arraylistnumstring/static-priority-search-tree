@@ -153,11 +153,56 @@ struct PSTTester
 							});
 
 					// If result pointer array is on GPU, copy it to CPU and print
+					cudaPointerAttributes ptr_info;
+					gpuErrorCheck(cudaPointerGetAttributes(&ptr_info, res_pt_arr),
+									"Error in determining location type of memory address of result PointStruct array (i.e. whether on host or device)");
+					int dev_ind;
+					gpuErrorCheck(cudaGetDevice(&dev_ind),
+									"Error in determining index of current active GPU");
+
+					// res_pt_arr is on device; copy to CPU
+					if (ptr_info.type == cudaMemoryTypeDevice)
+					{
+						// Differentiate on-device and on-host pointers
+						PointStructTemplate<T, IDType, num_IDs> *res_pt_arr_d = res_pt_arr;
+
+						// Allocate space on host for data
+						res_pt_arr = new PointStructTemplate<T, IDType, num_IDs>[num_res_elems];
+
+						if (ptr_info.device != dev_ind)
+						{
+							// Attempt to enable access; possible error codes are:
+							//	cudaErrorInvalidDevice if direct memory access is not possible
+							//	cudaErrorPeerAccessAlreadyEnabled if direct access of ptr_info.device by dev_ind has already been enabled
+							//	cudaErrorInvalidValue if flags (second argument of cudaDeviceEnablePeerAccess()) is not 0
+							//	cudaSuccess upon success
+							cudaError_t enable_peer_access = cudaDeviceEnablePeerAccess(ptr_info.device, 0);
+							
+							if (enable_peer_access == cudaErrorInvalidDevice)
+								gpuErrorCheck(enable_peer_access,
+												"Cannot enable memory access to device "
+												+ std::to_string(ptr_info.device) + " by device "
+												+ std::to_string(dev_ind));
+						}
+
+						// Copy data from res_pt_arr_d to res_pt_arr
+						gpuErrorCheck(cudaMemcpy(res_pt_arr, res_pt_arr_d, num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>),
+											cudaMemcpyDefault), 
+										"Error in copying array of PointStructTemplate<T, IDType, num_IDs> objects to device "
+										+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+										+ ": ");
+
+						// Free on-device array of PointStructTemplates
+						gpuErrorCheck(cudaFree(res_pt_arr_d), "Error in freeing on-device array of result PointStructs on device "
+										+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+										+ ": ");
+					}
 					printArray(std::cout, res_pt_arr, 0, num_res_elems);
 					std::cout << '\n';
 
 					delete tree;
 					delete[] pt_arr;
+					delete[] res_pt_arr;
 				};
 			};
 
