@@ -152,6 +152,7 @@ struct PSTTester
 							return pt_1.compareDim1(pt_2) < 0;
 							});
 
+					// If result pointer array is on GPU, copy it to CPU and print
 					printArray(std::cout, res_pt_arr, 0, num_res_elems);
 					std::cout << '\n';
 
