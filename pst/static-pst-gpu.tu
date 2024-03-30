@@ -253,7 +253,7 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 
 	// Populate tree with a one-block grid and a number of threads per block that is a multiple of the warp size
 	populateTree<<<1, warp_multiplier * dev_props.warpSize,
-					dev_props.warpSize * sizeof(size_t) * num_working_ind_arrays>>>
+					warp_multiplier * dev_props.warpSize * sizeof(size_t) * num_constr_working_arrs>>>
 				(root_d, num_elem_slots, pt_arr_d, dim1_val_ind_arr_d, dim2_val_ind_arr_d, dim2_val_ind_arr_secondary_d, 0, num_elems, 0);
 
 

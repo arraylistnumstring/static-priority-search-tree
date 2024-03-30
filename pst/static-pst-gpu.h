@@ -105,7 +105,8 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 							+ ": ");
 
 			// Call global function for on-device search
-			threeSidedSearchGlobal<<<1, dev_props.warpSize, dev_props.warpSize * (sizeof(long long) + sizeof(signed char))>>>
+			threeSidedSearchGlobal<<<1, warp_multiplier * dev_props.warpSize,
+										dev_props.warpSize * (sizeof(long long) + sizeof(signed char))>>>
 				(root_d, num_elem_slots, 0, pt_arr_d, min_dim1_val, max_dim1_val, min_dim2_val);
 
 			// Because all calls to the device are placed in the same stream (queue) and because cudaMemcpy() is (host-)blocking, this code will not return before the computation has completed
@@ -144,7 +145,8 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 							+ ": ");
 
 			// Call global function for on-device search
-			twoSidedLeftSearchGlobal<<<1, dev_props.warpSize, dev_props.warpSize * (sizeof(long long) + sizeof(signed char))>>>
+			twoSidedLeftSearchGlobal<<<1, warp_multiplier * dev_props.warpSize,
+										dev_props.warpSize * (sizeof(long long) + sizeof(signed char))>>>
 				(root_d, num_elem_slots, 0, pt_arr_d, max_dim1_val, min_dim2_val);
 
 			// Because all calls to the device are placed in the same stream (queue) and because cudaMemcpy() is (host-)blocking, this code will not return before the computation has completed
@@ -183,7 +185,8 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 							+ ": ");
 
 			// Call global function for on-device search
-			twoSidedRightSearchGlobal<<<1, dev_props.warpSize, dev_props.warpSize * (sizeof(long long) + sizeof(signed char))>>>
+			twoSidedRightSearchGlobal<<<1, warp_multiplier * dev_props.warpSize,
+										dev_props.warpSize * (sizeof(long long) + sizeof(signed char))>>>
 				(root_d, num_elem_slots, 0, pt_arr_d, min_dim1_val, min_dim2_val);
 
 			// Because all calls to the device are placed in the same stream (queue) and because cudaMemcpy() is (host-)blocking, this code will not return before the computation has completed
@@ -380,12 +383,13 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		int dev_ind;
 		cudaDeviceProp dev_props;
 		// Number by which to multiply the number of warps in a thread block
-		int warp_multiplier = 1;
+		const static int warp_multiplier = 1;
 		int num_devs;
 
+		const static unsigned char num_constr_working_arrs = 3;
 		// 1 subarray each for dim1_val, dim2_val and med_dim1_val
-		const static size_t num_val_subarrs = 3;
-		const static size_t num_ID_subarrs = num_IDs;
+		const static unsigned char num_val_subarrs = 3;
+		const static unsigned char num_ID_subarrs = num_IDs;
 
 		// Declare helper nested class for accessing specific nodes and define in implementation file; as nested class are not attached to any particular instance of the outer class by default (i.e. are like Java's static nested classes by default), only functions contained within need to be declared as static
 		class TreeNode;
