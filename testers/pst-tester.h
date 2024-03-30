@@ -5,10 +5,14 @@
 #include <iostream>
 #include <limits>		// To get numeric limits of each datatype
 #include <random>		// To use std::mt19937
+#include <thrust/execution_policy.h>	// To use thrust::device execution policy for sorting on device
+#include <thrust/sort.h>		// To use parallel sorting algorithm
 #include <type_traits>
 
 #include "err-chk.h"
+#include "gpu-err-chk.h"
 #include "print-array.h"
+#include "static-pst-gpu.h"
 
 enum DataType {CHAR, DOUBLE, FLOAT, INT, LONG};
 
@@ -145,20 +149,10 @@ struct PSTTester
 					}
 					// If test_type == CONSTRUCT, do nothing for the search/report phase
 
-					std::sort(res_pt_arr, res_pt_arr + num_res_elems,
-							[](const PointStructTemplate<T, IDType, num_IDs> &pt_1,
-								const PointStructTemplate<T, IDType, num_IDs> &pt_2)
-							{
-							return pt_1.compareDim1(pt_2) < 0;
-							});
-
 					// If result pointer array is on GPU, copy it to CPU and print
 					cudaPointerAttributes ptr_info;
 					gpuErrorCheck(cudaPointerGetAttributes(&ptr_info, res_pt_arr),
 									"Error in determining location type of memory address of result PointStruct array (i.e. whether on host or device)");
-					int dev_ind;
-					gpuErrorCheck(cudaGetDevice(&dev_ind),
-									"Error in determining index of current active GPU");
 
 					// res_pt_arr is on device; copy to CPU
 					if (ptr_info.type == cudaMemoryTypeDevice)
@@ -169,34 +163,31 @@ struct PSTTester
 						// Allocate space on host for data
 						res_pt_arr = new PointStructTemplate<T, IDType, num_IDs>[num_res_elems];
 
-						if (ptr_info.device != dev_ind)
-						{
-							// Attempt to enable access; possible error codes are:
-							//	cudaErrorInvalidDevice if direct memory access is not possible
-							//	cudaErrorPeerAccessAlreadyEnabled if direct access of ptr_info.device by dev_ind has already been enabled
-							//	cudaErrorInvalidValue if flags (second argument of cudaDeviceEnablePeerAccess()) is not 0
-							//	cudaSuccess upon success
-							cudaError_t enable_peer_access = cudaDeviceEnablePeerAccess(ptr_info.device, 0);
-							
-							if (enable_peer_access == cudaErrorInvalidDevice)
-								gpuErrorCheck(enable_peer_access,
-												"Cannot enable memory access to device "
-												+ std::to_string(ptr_info.device) + " by device "
-												+ std::to_string(dev_ind));
-						}
+						// Sort data before copying, as parallel sorts are faster
+						thrust::sort(thrust::device, res_pt_arr_d, res_pt_arr_d + num_res_elems,
+										StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::Dim1ValIndCompIncOrd(res_pt_arr_d));
 
 						// Copy data from res_pt_arr_d to res_pt_arr
 						gpuErrorCheck(cudaMemcpy(res_pt_arr, res_pt_arr_d, num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>),
 											cudaMemcpyDefault), 
-										"Error in copying array of PointStructTemplate<T, IDType, num_IDs> objects to device "
-										+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-										+ ": ");
+										"Error in copying array of PointStructTemplate<T, IDType, num_IDs> objects from device "
+										+ std::to_string(ptr_info.device) + ": ");
 
 						// Free on-device array of PointStructTemplates
 						gpuErrorCheck(cudaFree(res_pt_arr_d), "Error in freeing on-device array of result PointStructs on device "
-										+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-										+ ": ");
+										+ std::to_string(ptr_info.device) + ": ");
 					}
+					else	// res_pt_arr is on host; sort res_pt_arr; technically, alternative options are unregistered host memory, registered host memory and managed memory
+					{
+						// Sort output for consistency (specifically compared to GPU-reported outputs, which may be randomly ordered and must therefore also be sorted for consistency)
+						std::sort(res_pt_arr, res_pt_arr + num_res_elems,
+								[](const PointStructTemplate<T, IDType, num_IDs> &pt_1,
+									const PointStructTemplate<T, IDType, num_IDs> &pt_2)
+								{
+									return pt_1.compareDim1(pt_2) < 0;
+								});
+					}
+
 					printArray(std::cout, res_pt_arr, 0, num_res_elems);
 					std::cout << '\n';
 

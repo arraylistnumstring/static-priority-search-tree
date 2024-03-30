@@ -169,7 +169,7 @@ struct PSTTestInfoStruct
 
 				testWrap(pst_tester_id_instan);
 			}
-			else if (data_type == DataType::DOUBLE)
+			else if (id_type == DataType::DOUBLE)
 			{
 				typename PSTTesterDataInstantiated::IDTypeWrapper<std::uniform_real_distribution, double> pst_tester_id_instan(pst_tester);
 
@@ -179,7 +179,7 @@ struct PSTTestInfoStruct
 
 				testWrap(pst_tester_id_instan);
 			}
-			else if (data_type == DataType::FLOAT)
+			else if (id_type == DataType::FLOAT)
 			{
 				typename PSTTesterDataInstantiated::IDTypeWrapper<std::uniform_real_distribution, float> pst_tester_id_instan(pst_tester);
 
@@ -189,7 +189,7 @@ struct PSTTestInfoStruct
 
 				testWrap(pst_tester_id_instan);
 			}
-			else if (data_type == DataType::INT)
+			else if (id_type == DataType::INT)
 			{
 				typename PSTTesterDataInstantiated::IDTypeWrapper<std::uniform_int_distribution, int> pst_tester_id_instan(pst_tester);
 
@@ -199,7 +199,7 @@ struct PSTTestInfoStruct
 
 				testWrap(pst_tester_id_instan);
 			}
-			else if (data_type == DataType::LONG)
+			else if (id_type == DataType::LONG)
 			{
 				typename PSTTesterDataInstantiated::IDTypeWrapper<std::uniform_int_distribution, long> pst_tester_id_instan(pst_tester);
 
