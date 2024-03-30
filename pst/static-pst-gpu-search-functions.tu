@@ -14,7 +14,6 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 	extern __shared__ long long search_shared_mem[];
 	// Node indices for each thread to search
 	long long *search_inds_arr = search_shared_mem;
-	// bool is a 1-byte datatype
 	unsigned char *search_codes_arr = reinterpret_cast<unsigned char*>(search_shared_mem + blockDim.x);
 	// Initialise shared memory
 	// All threads except for thread 0 start by being inactive
@@ -155,7 +154,6 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 	extern __shared__ long long search_shared_mem[];
 	// Node indices for each thread to search
 	long long *search_inds_arr = search_shared_mem;
-	// bool is a 1-byte datatype
 	unsigned char *search_codes_arr = reinterpret_cast<unsigned char*>(search_shared_mem + blockDim.x);
 	// Initialise shared memory
 	// All threads except for thread 0 start by being inactive
@@ -267,7 +265,6 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 	extern __shared__ long long search_shared_mem[];
 	// Node indices for each thread to search
 	long long *search_inds_arr = search_shared_mem;
-	// bool is a 1-byte datatype
 	unsigned char *search_codes_arr = reinterpret_cast<unsigned char*>(search_shared_mem + blockDim.x);
 	// Initialise shared memory
 	// All threads except for thread 0 start by being inactive

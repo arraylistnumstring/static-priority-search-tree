@@ -5,6 +5,9 @@
 
 int main(int argc, char *argv[])
 {
+#ifdef DEBUG_TEST
+	std::cout << "Began PST tester driver\n";
+#endif
 	PSTTestInfoStruct test_info;
 
 	// Parse command-line arguments
@@ -221,6 +224,10 @@ int main(int argc, char *argv[])
 
 		}
 	}
+
+#ifdef DEBUG_TEST
+	std::cout << "Completed command-line argument parsing; beginning test-running code\n";
+#endif
 
 	// Run test
 	test_info.test();

@@ -9,6 +9,10 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 			typename IDType, size_t num_IDs>
 StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr, size_t num_elems)
 {
+#ifdef DEBUG_CONSTR
+	std::cout << "Began constructor\n";
+#endif
+
 	if (num_elems == 0)
 	{
 		root_d = nullptr;
@@ -81,7 +85,7 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 					+ std::to_string(dev_props.totalGlobalMem) + " B on device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs));
 
-#ifdef DEBUG
+#ifdef DEBUG_CONSTR
 	std::cout << "Ready to allocate memory (around line 84)\n";
 #endif
 
@@ -134,7 +138,7 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 					+ ": ");
 
-#ifdef DEBUG
+#ifdef DEBUG_CONSTR
 	std::cout << "Allocated index arrays (around line 138)\n";
 #endif
 
@@ -187,13 +191,19 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 						+ ": ");
 	}
 
-#ifdef DEBUG
+#ifdef DEBUG_CONSTR
 	std::cout << "Got PointStructs on target device (around line 186)\n";
 #endif
 
+	// Synchronous allocations and blocking memory copies complete; do asynchronous initialisations
+	// Create asynchronous stream for initialising to 0, as cudaStreamFireAndForget is only available on device
+	cudaStream_t stream_root_init;
+	gpuErrorCheck(cudaStreamCreateWithFlags(&stream_root_init, cudaStreamNonBlocking),
+					"Error in creating asynchronous stream for zero-intialising on-device priority search tree storage array on device "
+					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs) + ": ");
 	if constexpr (num_IDs == 0)
 	{
-		gpuErrorCheck(cudaMemsetAsync(root_d, 0, tot_arr_size_num_datatype * sizeof(T), cudaStreamFireAndForget),
+		gpuErrorCheck(cudaMemsetAsync(root_d, 0, tot_arr_size_num_datatype * sizeof(T), stream_root_init),
 						"Error in zero-intialising on-device priority search tree storage array via cudaMemset() on device "
 						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 						+ ": ");
@@ -202,21 +212,28 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 	{
 		if constexpr (sizeof(T) >= sizeof(IDType))
 		{
-			gpuErrorCheck(cudaMemsetAsync(root_d, 0, tot_arr_size_num_datatype * sizeof(T), cudaStreamFireAndForget),
+#ifdef DEBUG_CONSTR
+			std::cout << "About to do an async memory assignment (around line 206)\n";
+#endif
+			gpuErrorCheck(cudaMemsetAsync(root_d, 0, tot_arr_size_num_datatype * sizeof(T), stream_root_init),
 							"Error in zero-intialising on-device priority search tree storage array via cudaMemset() on device "
 							+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 							+ ": ");
 		}
 		else
 		{
-			gpuErrorCheck(cudaMemsetAsync(root_d, 0, tot_arr_size_num_datatype * sizeof(IDType), cudaStreamFireAndForget),
+			gpuErrorCheck(cudaMemsetAsync(root_d, 0, tot_arr_size_num_datatype * sizeof(IDType), stream_root_init),
 							"Error in zero-intialising on-device priority search tree storage array via cudaMemset() on device "
 							+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 							+ ": ");
 		}
 	}
+	// cudaStreamDestroy() is also a kernel submitted to the indicated stream, so it only runs once all previous calls have completed
+	gpuErrorCheck(cudaStreamDestroy(stream_root_init),
+					"Error in destroying asynchronous stream for zero-intialising on-device priority search tree storage array on device "
+					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs) + ": ");
 
-#ifdef DEBUG
+#ifdef DEBUG_CONSTR
 	std::cout << "About to assign index as values to index arrays (around line 209)\n";
 #endif
 
@@ -263,7 +280,7 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 					+ " after tree pre-construction pre-processing: ");
 
-#ifdef DEBUG
+#ifdef DEBUG_CONSTR
 	std::cout << "About to assign index as values to index arrays (around line 254)\n";
 #endif
 
