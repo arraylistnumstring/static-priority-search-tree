@@ -73,7 +73,7 @@ __global__ void populateTree (T *const root_d, const size_t num_elem_slots,
 			else
 			{
 				populateTree<<<1, blockDim.x, blockDim.x * sizeof(size_t)
-									* StaticPST<T, PointStructTemplate, IDType, num_IDs>::num_constr_working_arrs,
+									* StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::num_constr_working_arrs,
 								cudaStreamFireAndForget>>>
 					(root_d, num_elem_slots, pt_arr_d, dim1_val_ind_arr_d,
 						dim2_val_ind_arr_d, dim2_val_ind_arr_secondary_d,
@@ -121,7 +121,7 @@ __global__ void populateTree (T *const root_d, const size_t num_elem_slots,
 
 		// Update information for next iteration
 		populateTree<<<1, blockDim.x, blockDim.x * sizeof(size_t)
-							* StaticPST<T, PointStructTemplate, IDType, num_IDs>::num_constr_working_arrs,
+							* StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::num_constr_working_arrs,
 						cudaStreamFireAndForget>>>
 			(root_d, num_elem_slots, pt_arr_d, dim1_val_ind_arr_d,
 				dim2_val_ind_arr_d, dim2_val_ind_arr_secondary_d,
