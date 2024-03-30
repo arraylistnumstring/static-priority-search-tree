@@ -44,7 +44,8 @@ struct PointStruct<T, void, 0>
 
 	// Printing function for << printing operator to use, as private data members may be accessed in the process
 	// const keyword after method name indicates that the method does not modify any data members of the associated class
-	inline virtual void print(std::ostream &os) const
+	// print() being non-virtual avoids segmentation errors that arise when calling the function on on-host data that has been generated on and copied from a GPU
+	inline void print(std::ostream &os) const
 	{
 		os << '(' << dim1_val << ", " << dim2_val << ')';
 	};
@@ -135,7 +136,8 @@ struct PointStruct<T, IDType, 1>
 
 	// Printing function for << printing operator to use, as private data members may be accessed in the process
 	// const keyword after method name indicates that the method does not modify any data members of the associated class
-	inline virtual void print(std::ostream &os) const
+	// print() being non-virtual avoids segmentation errors that arise when calling the function on on-host data that has been generated on and copied from a GPU
+	inline void print(std::ostream &os) const
 	{
 		os << '(' << dim1_val << ", " << dim2_val << "; " << id << ')';
 	};

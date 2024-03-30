@@ -13,6 +13,7 @@
 archival/*
 compilation-testing/*
 cuda-debugger/*
+cuda-dbg/*
 
 # Symbolic links
 Common

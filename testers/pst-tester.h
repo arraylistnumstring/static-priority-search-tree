@@ -5,14 +5,11 @@
 #include <iostream>
 #include <limits>		// To get numeric limits of each datatype
 #include <random>		// To use std::mt19937
-#include <thrust/execution_policy.h>	// To use thrust::device execution policy for sorting on device
-#include <thrust/sort.h>		// To use parallel sorting algorithm
 #include <type_traits>
 
 #include "err-chk.h"
 #include "gpu-err-chk.h"
 #include "print-array.h"
-#include "static-pst-gpu.h"
 
 enum DataType {CHAR, DOUBLE, FLOAT, INT, LONG};
 
@@ -160,15 +157,17 @@ struct PSTTester
 						// Differentiate on-device and on-host pointers
 						PointStructTemplate<T, IDType, num_IDs> *res_pt_arr_d = res_pt_arr;
 
+						res_pt_arr = nullptr;
+
 						// Allocate space on host for data
 						res_pt_arr = new PointStructTemplate<T, IDType, num_IDs>[num_res_elems];
 
-						// Sort data before copying, as parallel sorts are faster
-						thrust::sort(thrust::device, res_pt_arr_d, res_pt_arr_d + num_res_elems,
-										StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::Dim1ValIndCompIncOrd(res_pt_arr_d));
+						if (res_pt_arr == nullptr)
+							throwErr("Error: could not allocate PointStructTemplate<T, IDType, num_IDs> array of size "
+										+ std::to_string(num_res_elems) + " on host");
 
 						// Copy data from res_pt_arr_d to res_pt_arr
-						gpuErrorCheck(cudaMemcpy(res_pt_arr, res_pt_arr_d, num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>),
+						gpuErrorCheck(cudaMemcpy(res_pt_arr, res_pt_arr_d, num_res_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>),
 											cudaMemcpyDefault), 
 										"Error in copying array of PointStructTemplate<T, IDType, num_IDs> objects from device "
 										+ std::to_string(ptr_info.device) + ": ");
@@ -177,17 +176,16 @@ struct PSTTester
 						gpuErrorCheck(cudaFree(res_pt_arr_d), "Error in freeing on-device array of result PointStructs on device "
 										+ std::to_string(ptr_info.device) + ": ");
 					}
-					else	// res_pt_arr is on host; sort res_pt_arr; technically, alternative options are unregistered host memory, registered host memory and managed memory
-					{
-						// Sort output for consistency (specifically compared to GPU-reported outputs, which may be randomly ordered and must therefore also be sorted for consistency)
-						std::sort(res_pt_arr, res_pt_arr + num_res_elems,
-								[](const PointStructTemplate<T, IDType, num_IDs> &pt_1,
-									const PointStructTemplate<T, IDType, num_IDs> &pt_2)
-								{
-									return pt_1.compareDim1(pt_2) < 0;
-								});
-					}
 
+					// Sort output for consistency (specifically compared to GPU-reported outputs, which may be randomly ordered and must therefore be sorted for easy comparisons)
+					std::sort(res_pt_arr, res_pt_arr + num_res_elems,
+							[](const PointStructTemplate<T, IDType, num_IDs> &pt_1,
+								const PointStructTemplate<T, IDType, num_IDs> &pt_2)
+							{
+								return pt_1.compareDim1(pt_2) < 0;
+							});
+
+					// For some reason, the offending line is the access of ptstr.print()
 					printArray(std::cout, res_pt_arr, 0, num_res_elems);
 					std::cout << '\n';
 
@@ -271,15 +269,17 @@ struct PSTTester
 						// Differentiate on-device and on-host pointers
 						PointStructTemplate<T, void, num_IDs> *res_pt_arr_d = res_pt_arr;
 
+						res_pt_arr = nullptr;
+
 						// Allocate space on host for data
 						res_pt_arr = new PointStructTemplate<T, void, num_IDs>[num_res_elems];
 
-						// Sort data before copying, as parallel sorts are faster
-						thrust::sort(thrust::device, res_pt_arr_d, res_pt_arr_d + num_res_elems,
-										StaticPSTGPU<T, PointStructTemplate, void, num_IDs>::Dim1ValIndCompIncOrd(res_pt_arr_d));
+						if (res_pt_arr == nullptr)
+							throwErr("Error: could not allocate PointStructTemplate<T, IDType, num_IDs> array of size "
+										+ std::to_string(num_res_elems) + " on host");
 
 						// Copy data from res_pt_arr_d to res_pt_arr
-						gpuErrorCheck(cudaMemcpy(res_pt_arr, res_pt_arr_d, num_elems * sizeof(PointStructTemplate<T, void, num_IDs>),
+						gpuErrorCheck(cudaMemcpy(res_pt_arr, res_pt_arr_d, num_res_elems * sizeof(PointStructTemplate<T, void, num_IDs>),
 											cudaMemcpyDefault), 
 										"Error in copying array of PointStructTemplate<T, void, num_IDs> objects from device "
 										+ std::to_string(ptr_info.device) + ": ");
@@ -288,17 +288,16 @@ struct PSTTester
 						gpuErrorCheck(cudaFree(res_pt_arr_d), "Error in freeing on-device array of result PointStructs on device "
 										+ std::to_string(ptr_info.device) + ": ");
 					}
-					else	// res_pt_arr is on host; sort res_pt_arr; technically, alternative options are unregistered host memory, registered host memory and managed memory
-					{
-						// Sort output for consistency (specifically compared to GPU-reported outputs, which may be randomly ordered and must therefore also be sorted for consistency)
-						std::sort(res_pt_arr, res_pt_arr + num_res_elems,
-								[](const PointStructTemplate<T, void, num_IDs> &pt_1,
-									const PointStructTemplate<T, void, num_IDs> &pt_2)
-								{
-									return pt_1.compareDim1(pt_2) < 0;
-								});
-					}
 
+					// Sort output for consistency (specifically compared to GPU-reported outputs, which may be randomly ordered and must therefore be sorted for easy comparisons)
+					std::sort(res_pt_arr, res_pt_arr + num_res_elems,
+							[](const PointStructTemplate<T, void, num_IDs> &pt_1,
+								const PointStructTemplate<T, void, num_IDs> &pt_2)
+							{
+								return pt_1.compareDim1(pt_2) < 0;
+							});
+
+					// For some reason, the offending line is the access of ptstr.print()
 					printArray(std::cout, res_pt_arr, 0, num_res_elems);
 					std::cout << '\n';
 
