@@ -269,19 +269,19 @@ struct PSTTester
 					if (ptr_info.type == cudaMemoryTypeDevice)
 					{
 						// Differentiate on-device and on-host pointers
-						PointStructTemplate<T, IDType, num_IDs> *res_pt_arr_d = res_pt_arr;
+						PointStructTemplate<T, void, num_IDs> *res_pt_arr_d = res_pt_arr;
 
 						// Allocate space on host for data
-						res_pt_arr = new PointStructTemplate<T, IDType, num_IDs>[num_res_elems];
+						res_pt_arr = new PointStructTemplate<T, void, num_IDs>[num_res_elems];
 
 						// Sort data before copying, as parallel sorts are faster
 						thrust::sort(thrust::device, res_pt_arr_d, res_pt_arr_d + num_res_elems,
-										StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::Dim1ValIndCompIncOrd(res_pt_arr_d));
+										StaticPSTGPU<T, PointStructTemplate, void, num_IDs>::Dim1ValIndCompIncOrd(res_pt_arr_d));
 
 						// Copy data from res_pt_arr_d to res_pt_arr
-						gpuErrorCheck(cudaMemcpy(res_pt_arr, res_pt_arr_d, num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>),
+						gpuErrorCheck(cudaMemcpy(res_pt_arr, res_pt_arr_d, num_elems * sizeof(PointStructTemplate<T, void, num_IDs>),
 											cudaMemcpyDefault), 
-										"Error in copying array of PointStructTemplate<T, IDType, num_IDs> objects from device "
+										"Error in copying array of PointStructTemplate<T, void, num_IDs> objects from device "
 										+ std::to_string(ptr_info.device) + ": ");
 
 						// Free on-device array of PointStructTemplates
@@ -292,8 +292,8 @@ struct PSTTester
 					{
 						// Sort output for consistency (specifically compared to GPU-reported outputs, which may be randomly ordered and must therefore also be sorted for consistency)
 						std::sort(res_pt_arr, res_pt_arr + num_res_elems,
-								[](const PointStructTemplate<T, IDType, num_IDs> &pt_1,
-									const PointStructTemplate<T, IDType, num_IDs> &pt_2)
+								[](const PointStructTemplate<T, void, num_IDs> &pt_1,
+									const PointStructTemplate<T, void, num_IDs> &pt_2)
 								{
 									return pt_1.compareDim1(pt_2) < 0;
 								});
