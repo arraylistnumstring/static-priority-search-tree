@@ -20,6 +20,9 @@ To compile testers, run:
 
 For debugging options, use:
 - `-DDEBUG` to toggle DEBUG preprocessor flag and corresponding print output to aid with debugging variables that are inaccessible via gdb
+	- `-DDEBUG_CONSTR` to toggle constructor-internal debugging print statements
+	- `-DDEBUG_TEST` to toggle pst-tester-driver.h debugging print statements
+	- `-DDEBUG_WRAP` to toggle pst-test-info.h debugging print statements
 - `-G` to get debugging info about device code (turns off all optimisations; is incompatible with and overrides `-lineinfo`)
 - `-g` to get debugging info about host code
 - `-lineinfo` to get info on which lines are causing errors

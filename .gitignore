@@ -12,6 +12,7 @@
 
 archival/*
 compilation-testing/*
+cuda-debugger/*
 
 # Symbolic links
 Common
