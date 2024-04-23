@@ -86,6 +86,34 @@ Using number of vertices from readback.
    Runs marching cubes on single MC cells within parameter metacells and outputs image to a file. This differs from the original, which ran interactively in a GLUT window or calculated arrays and verified with the provided result files. Accordingly, unused or unnecessary definitions have been removed from this iteration of Marching Cubes.
    */
 
+// Defines C and C++ functions in Windows API
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+#define WINDOWS_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
+#endif
+
+// C headers
+#include <stdlib.h>	// malloc() and free()
+#include <stdio.h>	// printf() function family
+#include <string.h>	// strlen()
+#include <math.h>	// ceil()
+
+// CUDA headers
+#include <cuda_gl_interop.h>	// Allows for graphics resource mapping and related functionality
+#include <vector_functions.h>	// Functions for creating datatype bundles, e.g. make_uint3()
+#include <vector_types.h>	// datatype bundles, e.g. dim3, float3, uint3, etc.
+
+// Helper code found in Common/ folder of NVIDIA sample code
+#include <helper_cuda.h>	// checkCudaErrors(), findCudaDevice()
+#include <helper_gl.h>	// isGLVersionSupported()
+#include <helper_string.h>	// checkCmdLineArgument*(), getCmdLineArgument*(), sdkFindFilePath()
+
+
+// Contains preprocessor variables NTHREADS and SKIP_EMPTY_VOXELS, as well as typedefs for uint and uchar
+#include "defines.h"
+
+
 extern "C" void launch_classifyVoxel(dim3 grid, dim3 threads, uint *voxelVerts,
 		uint *voxelOccupied, uchar *volume,
 		uint3 gridSize, uint3 gridSizeShift,
@@ -109,6 +137,8 @@ extern "C" void createVolumeTexture(uchar *d_volume, size_t buffSize);
 extern "C" void destroyAllTextureObjects();
 extern "C" void ThrustScanWrapper(unsigned int *output, unsigned int *input,
 		unsigned int numElements);
+
+const char *volumeFilename = "Bucky.raw";
 
 uint3 gridSizeLog2 = make_uint3(5, 5, 5);
 uint3 gridSizeShift;
@@ -157,7 +187,7 @@ void initMC(int argc, char **argv);
 void computeIsosurface();
 // Removed: dumpFile(): for output verification only
 
-// For preprocessor DEBUG-delimited statements
+// For preprocessor variable DEBUG-delimited statements
 template <class T>
 void dumpBuffer(T *d_buffer, int nelements, int size_element);
 
@@ -233,7 +263,6 @@ void initMC(int argc, char **argv) {
 			numVoxels);
 	printf("max verts = %d\n", maxVerts);
 
-#if SAMPLE_VOLUME
 	// load volume data
 	char *path = sdkFindFilePath(volumeFilename, argv[0]);
 
@@ -250,16 +279,13 @@ void initMC(int argc, char **argv) {
 	free(volume);
 
 	createVolumeTexture(d_volume, size);
-#endif
 
 	// create VBOs
 	createVBO(&posVbo, maxVerts * sizeof(float) * 4);
-	// DEPRECATED: checkCudaErrors( cudaGLRegisterBufferObject(posVbo) );
 	checkCudaErrors(cudaGraphicsGLRegisterBuffer(
 				&cuda_posvbo_resource, posVbo, cudaGraphicsMapFlagsWriteDiscard));
 
 	createVBO(&normalVbo, maxVerts * sizeof(float) * 4);
-	// DEPRECATED: checkCudaErrors(cudaGLRegisterBufferObject(normalVbo));
 	checkCudaErrors(cudaGraphicsGLRegisterBuffer(
 				&cuda_normalvbo_resource, normalVbo, cudaGraphicsMapFlagsWriteDiscard));
 
@@ -428,17 +454,11 @@ void computeIsosurface() {
 		grid2.y *= 2;
 	}
 
-#if SAMPLE_VOLUME
+	// Input data-based triangle mesh generation
 	launch_generateTriangles2(grid2, NTHREADS, d_pos, d_normal, d_compVoxelArray,
 			d_voxelVertsScan, d_volume, gridSize, gridSizeShift,
 			gridSizeMask, voxelSize, isoValue, activeVoxels,
 			maxVerts);
-#else
-	launch_generateTriangles(grid2, NTHREADS, d_pos, d_normal, d_compVoxelArray,
-			d_voxelVertsScan, gridSize, gridSizeShift,
-			gridSizeMask, voxelSize, isoValue, activeVoxels,
-			maxVerts);
-#endif
 
 	checkCudaErrors(cudaGraphicsUnmapResources(1, &cuda_normalvbo_resource, 0));
 	checkCudaErrors(cudaGraphicsUnmapResources(1, &cuda_posvbo_resource, 0));
@@ -476,6 +496,7 @@ GLuint compileASMShader(GLenum program_type, const char *code) {
 ////////////////////////////////////////////////////////////////////////////////
 bool initGL(int *argc, char **argv) {
 	// Create GL context; may need to replace this portion with EGL or some headless OpenGL context creator
+
 	if (!isGLVersionSupported(2, 0)) {
 		fprintf(stderr, "ERROR: Support for necessary OpenGL extensions missing.");
 		fflush(stderr);
@@ -534,7 +555,6 @@ void createVBO(GLuint *vbo, unsigned int size) {
 void deleteVBO(GLuint *vbo, struct cudaGraphicsResource **cuda_resource) {
 	glBindBuffer(1, *vbo);
 	glDeleteBuffers(1, vbo);
-	// DEPRECATED: checkCudaErrors(cudaGLUnregisterBufferObject(*vbo));
 	cudaGraphicsUnregisterResource(*cuda_resource);
 
 	*vbo = 0;
@@ -564,7 +584,6 @@ void renderIsosurface() {
 //! Display callback
 ////////////////////////////////////////////////////////////////////////////////
 void display() {
-	sdkStartTimer(&timer);
 
 	// run CUDA kernel to generate geometry
 	if (compute) {
