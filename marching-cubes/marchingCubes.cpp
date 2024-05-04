@@ -113,7 +113,6 @@ Using number of vertices from readback.
 // Contains preprocessor variables NTHREADS and SKIP_EMPTY_VOXELS, as well as typedefs for uint and uchar
 #include "defines.h"
 
-
 extern "C" void launch_classifyVoxel(dim3 grid, dim3 threads, uint *voxelVerts,
 		uint *voxelOccupied, uchar *volume,
 		uint3 gridSize, uint3 gridSizeShift,
@@ -173,6 +172,9 @@ uint *d_numVertsTable = 0;
 uint *d_edgeTable = 0;
 uint *d_triTable = 0;
 
+float3 rotate = make_float3(0.0, 0.0, 0.0);
+float3 translate = make_float3(0.0, 0.0, -3.0);
+
 // toggles
 bool wireframe = false;
 // No animation variable, as the goal is to do single-frame image renders
@@ -200,6 +202,26 @@ void deleteVBO(GLuint *vbo, struct cudaGraphicsResource **cuda_resource);
 void display();
 // Remainder in the original block are GLUT callback functions for interactivity
 
+////////////////////////////////////////////////////////////////////////////////
+// Load raw data from disk
+////////////////////////////////////////////////////////////////////////////////
+uchar *loadRawFile(char *filename, int size) {
+  FILE *fp = fopen(filename, "rb");
+
+  if (!fp) {
+    fprintf(stderr, "Error opening file '%s'\n", filename);
+    return 0;
+  }
+
+  uchar *data = (uchar *)malloc(size);
+  size_t read = fread(data, 1, size, fp);
+  fclose(fp);
+
+  printf("Read '%s', %d bytes\n", filename, (int)read);
+
+  return data;
+}
+
 template <class T>
 void dumpBuffer(T *d_buffer, int nelements, int size_element) {
 	uint bytes = nelements * size_element;
@@ -213,6 +235,11 @@ void dumpBuffer(T *d_buffer, int nelements, int size_element) {
 
 	printf("\n");
 	free(h_buffer);
+}
+
+int main(int argc, char ** argv)
+{
+	runGraphicsTest(argc, argv);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -545,8 +572,6 @@ void createVBO(GLuint *vbo, unsigned int size) {
 	// initialize buffer object
 	glBufferData(GL_ARRAY_BUFFER, size, 0, GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-	glutReportErrors();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

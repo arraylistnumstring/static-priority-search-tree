@@ -35,6 +35,7 @@
 #include <helper_cuda.h>	// checkCudaErrors()
 #include <helper_math.h>	// cross(), lerp(), min()
 
+#include <thrust/device_vector.h>	// thrust::device_ptr type
 #include <thrust/scan.h>
 
 // Contains preprocessor variables SKIP_EMPTY_VOXELS and USE_SHARED, as well as typedefs for uint and uchar
