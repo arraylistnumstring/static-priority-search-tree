@@ -18,3 +18,7 @@ Additionally, copying the original files marchingCubes.cpp, marchingCubes_kernel
 	nvcc marchingCubes*.c* -o marchingCubes.out -I../Common -L. -lGL -lGLU -lglut
 
 also fails with the same compilation error.
+
+If declaration for function is added within calling source code file (here, marchingCubes.cpp), prefaced with "extern", compilation fails at linking stage, where "the symbol findCudaDevice" is stated to not be recognised.
+
+Next thing to test: whether target location of symbolic link must be along a path that contains .. (perhaps because those resolve to absolute paths?)
