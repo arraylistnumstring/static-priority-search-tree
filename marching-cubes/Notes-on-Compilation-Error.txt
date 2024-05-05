@@ -1,0 +1,20 @@
+Within Singularity, running
+
+	nvcc marchingCubes*.c* -o marchingCubes.out -I../Common -lGL -lGLU
+
+results in the following compilation error:
+
+	marchingCubes.cpp: In function 'void runGraphicsTest(int, char**)':
+	marchingCubes.cpp:371:9: error: 'findCudaDevice' was not declared in this scope
+	  371 |         findCudaDevice(argc, (const char **)argv);
+		  |         ^~~~~~~~~~~~~~
+
+For some reason, helper_cuda.h is not recognised as the source header for findCudaDevice(), even when the symbolic link for its folder (../Common -> NVIDIA-CUDA-samples/Common) has been added to the include path list.
+
+This is not a symbolic link specific issue, as running the compilation commands in marchingCubes/ with a symbolic link of Common -> ../../../Common works fine.
+
+Additionally, copying the original files marchingCubes.cpp, marchingCubes_kernel.cu and the symbolic link libglut.so -> /usr/lib/x86_64-linux-gnu/libglut.so.3 from marchingCubes/ to the current folder and attempting to compile them by running
+
+	nvcc marchingCubes*.c* -o marchingCubes.out -I../Common -L. -lGL -lGLU -lglut
+
+also fails with the same compilation error.
