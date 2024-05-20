@@ -16,7 +16,6 @@ class StaticPrioritySearchTree
 		// Search functions, though necessary, are not made to be virtual functions here, as virtual functions with template return types are not allowed (as the vtable, a lookup table with which virtual functions are often implemented, would necessarily be potentially infinite, to allow for all the potential variations and inheritances of any possible template type)
 };
 
-// As the concept StaticPST is not a type, using it as a constraint must be done with a trailing requires keyword
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			template<typename, template<typename, typename, size_t> class, typename, size_t> class StaticPrioritySearchTree,
 			typename IDType, size_t num_IDs
