@@ -700,9 +700,10 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 	// i < blockDim.x check comes before atomicCAS() operation because short-circuit evaluation will ensure atomicCAS() does not write to a point beyond the end of search_inds_arr
 	// atomicCAS(addr, cmp, val) takes the value old := *addr, sets *addr = (old == cmp ? val : old) and returns old; the swap took place iff the return value old == cmp; all calculations are done as one atomic operation
 	// Casting necessary to satisfy atomicCAS()'s signature of unsigned long long
+	// Offset is (threadIdx.x + i) % blockDim.x so that no thread starts on the same array element (minimising likelihood of collisions when doing atomic operations), while all potential candidate threads are still checked (self not included, as it will never be inactive)
 	size_t i;
-	for (i = 0; i < blockDim.x
-			&& static_cast<long long>(atomicCAS(reinterpret_cast<unsigned long long *>(search_inds_arr + i),
+	for (i = 1; i < blockDim.x
+			&& static_cast<long long>(atomicCAS(reinterpret_cast<unsigned long long *>(search_inds_arr + (threadIdx.x + i) % blockDim.x),
 												static_cast<unsigned long long>(INACTIVE_IND),
 												target_node_ind))
 										!= INACTIVE_IND;
@@ -736,9 +737,10 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 	// i < blockDim.x check comes before atomicCAS() operation because short-circuit evaluation will ensure atomicCAS() does not write to a point beyond the end of search_inds_arr
 	// atomicCAS(addr, cmp, val) takes the value old := *addr, sets *addr = (old == cmp ? val : old) and returns old; the swap took place iff the return value old == cmp; all calculations are done as one atomic operation
 	// Casting necessary to satisfy atomicCAS()'s signature of unsigned long long
+	// Offset is (threadIdx.x + i) % blockDim.x so that no thread starts on the same array element (minimising likelihood of collisions when doing atomic operations), while all potential candidate threads are still checked (self not included, as it will never be inactive)
 	size_t i;
-	for (i = 0; i < blockDim.x
-			&& static_cast<long long>(atomicCAS(reinterpret_cast<unsigned long long *>(search_inds_arr + i),
+	for (i = 1; i < blockDim.x
+			&& static_cast<long long>(atomicCAS(reinterpret_cast<unsigned long long *>(search_inds_arr + (threadIdx.x + i) % blockDim.x),
 												static_cast<unsigned long long>(INACTIVE_IND),
 												target_node_ind))
 										!= INACTIVE_IND;
