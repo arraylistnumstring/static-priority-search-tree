@@ -1,14 +1,11 @@
 #ifndef STATIC_PST_GPU_H
 #define STATIC_PST_GPU_H
 
+#include "dev-symbols.h"	// For global memory-scoped variable res_arr_ind_d
 #include "gpu-err-chk.h"
 #include "static-priority-search-tree.h"
 #include "static-pst-concepts.h"
 
-
-// To use a global memory-scoped variable, must declare it outside of any function
-// To match a valid atomicAdd function signature, res_arr_ind_d must be declared as an unsigned long long (unsigned long long is the same as an unsigned long long int)
-__device__ unsigned long long res_arr_ind_d;
 
 // To use __global__ function as a friend, must not define it at the same time as it is declared
 // As references passed to a global function live on host code, references to variables are not valid if the value does not reside in pinned memory
@@ -97,7 +94,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 							+ ": ");
 			// Set on-device global result array index to 0
 			unsigned long long res_arr_ind = 0;
-			// Copying to a defined symbol requires symbol; note that a symbol is neither a pointer nor a direct data value, but instead the handle by which the variable is denoted, with look-up necessary to generate a pointer if cudaMemcpy() is used (whereas cudaMemcpyToSymbol()/cudaMemcpyFromSymbol() do the lookup and memory copy altogether)
+			// Copying to a defined symbol requires use of an extant symbol; note that a symbol is neither a pointer nor a direct data value, but instead the handle by which the variable is denoted, with look-up necessary to generate a pointer if cudaMemcpy() is used (whereas cudaMemcpyToSymbol()/cudaMemcpyFromSymbol() do the lookup and memory copy altogether)
 			gpuErrorCheck(cudaMemcpyToSymbol(res_arr_ind_d, &res_arr_ind, sizeof(size_t),
 												0, cudaMemcpyDefault),
 							"Error in initialising global result array index to 0 on device "
@@ -137,7 +134,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 							+ ": ");
 			// Set on-device global result array index to 0
 			unsigned long long res_arr_ind = 0;
-			// Copying to a defined symbol requires symbol; note that a symbol is neither a pointer nor a direct data value, but instead the handle by which the variable is denoted, with look-up necessary to generate a pointer if cudaMemcpy() is used (whereas cudaMemcpyToSymbol()/cudaMemcpyFromSymbol() do the lookup and memory copy altogether)
+			// Copying to a defined symbol requires use of an extant symbol; note that a symbol is neither a pointer nor a direct data value, but instead the handle by which the variable is denoted, with look-up necessary to generate a pointer if cudaMemcpy() is used (whereas cudaMemcpyToSymbol()/cudaMemcpyFromSymbol() do the lookup and memory copy altogether)
 			gpuErrorCheck(cudaMemcpyToSymbol(res_arr_ind_d, &res_arr_ind, sizeof(size_t),
 												0, cudaMemcpyDefault),
 							"Error in initialising global result array index to 0 on device "
@@ -177,7 +174,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 							+ ": ");
 			// Set on-device global result array index to 0
 			unsigned long long res_arr_ind = 0;
-			// Copying to a defined symbol requires symbol; note that a symbol is neither a pointer nor a direct data value, but instead the handle by which the variable is denoted, with look-up necessary to generate a pointer if cudaMemcpy() is used (whereas cudaMemcpyToSymbol()/cudaMemcpyFromSymbol() do the lookup and memory copy altogether)
+			// Copying to a defined symbol requires use of an extant symbol; note that a symbol is neither a pointer nor a direct data value, but instead the handle by which the variable is denoted, with look-up necessary to generate a pointer if cudaMemcpy() is used (whereas cudaMemcpyToSymbol()/cudaMemcpyFromSymbol() do the lookup and memory copy altogether)
 			gpuErrorCheck(cudaMemcpyToSymbol(res_arr_ind_d, &res_arr_ind, sizeof(size_t),
 												0, cudaMemcpyDefault),
 							"Error in initialising global result array index to 0 on device "
