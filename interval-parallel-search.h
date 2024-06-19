@@ -97,18 +97,80 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 			typename IDType, size_t num_IDs>
 __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_IDs> pt_arr_d,
 												const size_t num_elems, auto *const res_arr_d,
-												const bool reportID)
+												const T search_val, const bool reportID)
 {
-	// Liu et al. kernel; iterate over all PointStructTemplate<T, IDType, num_IDs>
+	extern __shared__ size_t *warp_level_num_elems_arr;
+	size_t thread_level_num_elems;	// Calculated with inclusive prefix sum
+	size_t thread_level_offset;		// Calculated with exclusive prefix sum (i.e. preceding element of inclusive prefix sum result)
+	// Needs a separate flag, as thread_level_num_elems will not be 0 as long as there is at least one preceding thread with an active cell assigned
+	bool cell_active;
+
+	// Liu et al. kernel; iterate over all PointStructTemplate<T, IDType, num_IDs> elements in pt_arr_d
 	for (size_t i = blockIdx.x * blockDim.x + threadIdx.x;
 			i < num_elems; i += gridDim.x * blockDim.x)
-	if constexpr (reportID)
 	{
-		// Add ID to array
-	}
-	else
-	{
-		// Add PtStructTemplate<T, IDType, num_IDs> to 
+		thread_level_offset = 0;	// Default value
+
+		// Evaluate if current metacell is active; if active, set corresponding flags and integers to signal to warp-scan (prefix sum)
+		if (pt_arr_d[i].dim1_val <= search_val && search_val <= pt_arr_d[i].dim2_val)
+		{
+			thread_level_num_elems = 1;
+			cell_active = true;
+		}
+		else
+		{
+			thread_level_num_elems = 0;
+			cell_active = false;
+		}
+
+		// Warp-shuffle procedure to calculate inclusive prefix sum, i.e. so current thread knows offset with respect to start index in res_arr_d at which to output result
+
+		// Intra-warp shuffle
+		#pragma unroll
+		for (unsigned shfl_offset = 1; shfl_offset < warpSize; shfl_offset <<= 1)
+			// Copies value of variable thread_level_num_elems from thread with lane ID that is shfl_offset less than current thread's lane ID; no lane ID wrapping occurs, so threads with lane ID lower than shfl_offset will not be affected
+			// Threads can only exchange data with other threads participating in the __shfl_*sync() call; behavior is undefined when interacting with an inactive thread
+			thread_level_num_elems += __shfl_up_sync(0xffffffff, thread_level_num_elems,
+														shfl_offset);
+
+		// Exclusive prefix sum result is simply the element in the preceding index of the result of the inclusive prefix sum; note that as each thread is responsible for at most 1 output element, this is effectively thread_level_num_elems - 1_{cell_active}, where 1_{cell_active} is the indicator function for whether the thread's own value of cell_active is true
+		thread_level_offset = __shfl_up_sync(0xffffffff, thread_level_num_elems, 1);
+
+		// Last thread in warp puts total number of slots necessary for all active cells in the warp_level_num_elems_arr shared memory array
+		if (threadIdx.x % warpSize == warpSize - 1)
+			// Place total number of elements in this warp at the slot assigned to this warp in shared memory array warp_level_num_elems_arr
+			warp_level_num_elems_arr[threadIdx.x / warpSize] = thread_level_num_elems;
+
+		__syncthreads();	// Warp-level info must be ready to use at the block level
+		// Inter-warp shuffle (block-level)
+		// One warp is active in this process
+		if (threadIdx.x / warpSize == 0)
+		{
+			
+		}
+		// If necessary, repeat with base offset until all warps have had their prefix sum calculated
+		__syncthreads();	// Total number of slots needed to store all active metacells is now known
+
+		// Single thread in block allocates space in res_arr_d with atomic operation
+
+		__syncthreads();
+
+		// Output to result array
+		if (cell_active)
+		{
+			size_t output_index = block_level_offset + warp_level_offset + thread_level_offset;
+
+			if constexpr (reportID)
+			{
+				// Add ID to array
+				res_arr_d[output_index] = pt_arr_d[i].id;
+			}
+			else
+			{
+				// Add PtStructTemplate<T, IDType, num_IDs> to array
+				res_arr_d[output_index] = pt_arr_d[i];
+			}
+		}
 	}
 };
 
