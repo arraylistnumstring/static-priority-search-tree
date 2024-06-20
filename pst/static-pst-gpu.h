@@ -103,7 +103,8 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 
 			// Call global function for on-device search
 			threeSidedSearchGlobal<<<1, warp_multiplier * dev_props.warpSize,
-										dev_props.warpSize * (sizeof(long long) + sizeof(signed char))>>>
+										warp_multiplier * dev_props.warpSize
+											* (sizeof(long long) + sizeof(signed char))>>>
 				(root_d, num_elem_slots, 0, pt_arr_d, min_dim1_val, max_dim1_val, min_dim2_val);
 
 			// Because all calls to the device are placed in the same stream (queue) and because cudaMemcpy() is (host-)blocking, this code will not return before the computation has completed
@@ -143,7 +144,8 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 
 			// Call global function for on-device search
 			twoSidedLeftSearchGlobal<<<1, warp_multiplier * dev_props.warpSize,
-										dev_props.warpSize * (sizeof(long long) + sizeof(signed char))>>>
+										warp_multiplier * dev_props.warpSize
+											* (sizeof(long long) + sizeof(signed char))>>>
 				(root_d, num_elem_slots, 0, pt_arr_d, max_dim1_val, min_dim2_val);
 
 			// Because all calls to the device are placed in the same stream (queue) and because cudaMemcpy() is (host-)blocking, this code will not return before the computation has completed
@@ -183,7 +185,8 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 
 			// Call global function for on-device search
 			twoSidedRightSearchGlobal<<<1, warp_multiplier * dev_props.warpSize,
-										dev_props.warpSize * (sizeof(long long) + sizeof(signed char))>>>
+										warp_multiplier * dev_props.warpSize
+											* (sizeof(long long) + sizeof(signed char))>>>
 				(root_d, num_elem_slots, 0, pt_arr_d, min_dim1_val, min_dim2_val);
 
 			// Because all calls to the device are placed in the same stream (queue) and because cudaMemcpy() is (host-)blocking, this code will not return before the computation has completed
@@ -383,6 +386,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		const static int warp_multiplier = 1;
 		int num_devs;
 
+		// Number of working arrays necessary to construct the tree: 1 array of dim1_val indices, 2 arrays for dim2_val indices (one that is the input, one that is the output after dividing up the indices between the current node's two children; this switches at every level of the tree)
 		const static unsigned char num_constr_working_arrs = 3;
 		// 1 subarray each for dim1_val, dim2_val and med_dim1_val
 		const static unsigned char num_val_subarrs = 3;

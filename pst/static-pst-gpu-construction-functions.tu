@@ -1,4 +1,6 @@
 // Utilises dynamic parallelism
+// Shared memory must be at least as large as (total number of threads) * sizeof(size_t) * num_constr_working_arrs (currently 3)
+// Correctness only guaranteed for grids with one active block
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
 __global__ void populateTree (T *const root_d, const size_t num_elem_slots,
@@ -138,6 +140,7 @@ __global__ void populateTree (T *const root_d, const size_t num_elem_slots,
 	}
 }
 
+// No shared memory usage
 __global__ void indexAssignment(size_t *const ind_arr, const size_t num_elems)
 {
 	// Simple iteration over entire array, instantiating each array element with the value of its index; no conflicts possible, so no synchronisation necessary

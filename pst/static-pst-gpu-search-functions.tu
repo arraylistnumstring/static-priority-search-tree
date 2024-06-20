@@ -1,4 +1,6 @@
 // Utilises dynamic parallelism
+// Shared memory must be at least as large as (number of threads) * (sizeof(long long) + sizeof(signed char))
+// Correctness only guaranteed for grids with one active block
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
 __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_slots,
@@ -140,6 +142,8 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 	// End cont_iter loop
 }
 
+// Shared memory must be at least as large as (number of threads) * (sizeof(long long) + sizeof(signed char))
+// Correctness only guaranteed for grids with one active block
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
 __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_slots,
@@ -251,6 +255,8 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 	// End cont_iter loop
 }
 
+// Shared memory must be at least as large as (number of threads) * (sizeof(long long) + sizeof(signed char))
+// Correctness only guaranteed for grids with one active block
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
 __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem_slots,
@@ -363,6 +369,8 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 	// End cont_iter loop
 }
 
+// Shared memory must be at least as large as (number of threads) * sizeof(long long)
+// Correctness only guaranteed for grids with one active block
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
 __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slots,
