@@ -104,7 +104,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 			// Call global function for on-device search
 			threeSidedSearchGlobal<<<1, warp_multiplier * dev_props.warpSize,
 										warp_multiplier * dev_props.warpSize
-											* (sizeof(long long) + sizeof(signed char))>>>
+											* (sizeof(long long) + sizeof(unsigned char))>>>
 				(root_d, num_elem_slots, 0, pt_arr_d, min_dim1_val, max_dim1_val, min_dim2_val);
 
 			// Because all calls to the device are placed in the same stream (queue) and because cudaMemcpy() is (host-)blocking, this code will not return before the computation has completed
@@ -145,7 +145,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 			// Call global function for on-device search
 			twoSidedLeftSearchGlobal<<<1, warp_multiplier * dev_props.warpSize,
 										warp_multiplier * dev_props.warpSize
-											* (sizeof(long long) + sizeof(signed char))>>>
+											* (sizeof(long long) + sizeof(unsigned char))>>>
 				(root_d, num_elem_slots, 0, pt_arr_d, max_dim1_val, min_dim2_val);
 
 			// Because all calls to the device are placed in the same stream (queue) and because cudaMemcpy() is (host-)blocking, this code will not return before the computation has completed
@@ -186,7 +186,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 			// Call global function for on-device search
 			twoSidedRightSearchGlobal<<<1, warp_multiplier * dev_props.warpSize,
 										warp_multiplier * dev_props.warpSize
-											* (sizeof(long long) + sizeof(signed char))>>>
+											* (sizeof(long long) + sizeof(unsigned char))>>>
 				(root_d, num_elem_slots, 0, pt_arr_d, min_dim1_val, min_dim2_val);
 
 			// Because all calls to the device are placed in the same stream (queue) and because cudaMemcpy() is (host-)blocking, this code will not return before the computation has completed
