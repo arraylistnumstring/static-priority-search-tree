@@ -208,18 +208,14 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 		// Output to result array
 		if (cell_active)
 		{
-			unsigned long long output_index = block_level_offset + warp_level_offset + thread_level_offset;
-
 			if constexpr (reportID)
-			{
 				// Add ID to array
-				res_arr_d[output_index] = pt_arr_d[i].id;
-			}
+				res_arr_d[block_level_offset + warp_level_offset + thread_level_offset]
+					= pt_arr_d[i].id;
 			else
-			{
 				// Add PtStructTemplate<T, IDType, num_IDs> to array
-				res_arr_d[output_index] = pt_arr_d[i];
-			}
+				res_arr_d[block_level_offset + warp_level_offset + thread_level_offset]
+					= pt_arr_d[i];
 		}
 	}
 };
