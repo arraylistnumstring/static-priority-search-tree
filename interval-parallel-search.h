@@ -203,7 +203,7 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 		else
 			warp_level_offset = warp_level_num_elems[threadIdx.x / warpSize - 1];
 
-		__syncthreads();
+		__syncthreads();	// Block-level offset now known
 
 		// Output to result array
 		if (cell_active)
