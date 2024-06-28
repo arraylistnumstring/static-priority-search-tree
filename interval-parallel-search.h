@@ -49,18 +49,18 @@ PointStructTemplate<T, IDType, num_IDs>* intervalParallelSearch(PointStructTempl
 	return res_pt_arr_d;
 };
 
-// Given an array of PointStructTemplate<T, IDType, num_IDs>, return an on-device array of indices where each index i satisfies search_val \in [pt_arr[i].dim1_val, pt_arr[i].dim2_val])
+// Given an array of PointStructTemplate<T, IDType, 1>, return an on-device array of indices where each index i satisfies search_val \in [pt_arr[i].dim1_val, pt_arr[i].dim2_val])
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
-			typename IDType, size_t num_IDs=1>
-IDType* intervalParallelSearchID(PointStructTemplate<T, IDType, num_IDs>* pt_arr, const size_t num_pts, size_t &num_res_elems, T search_val, const int dev_ind, const int num_devs)
+			typename IDType>
+IDType* intervalParallelSearchID(PointStructTemplate<T, IDType, 1>* pt_arr, const size_t num_pts, size_t &num_res_elems, T search_val, const int dev_ind, const int num_devs)
 {
 	// Allocate space on GPU for input metacell tag array and copy to device
-	PointStructTemplate<T, IDType, num_IDs>* pt_arr_d;
-	gpuErrorCheck(cudaMalloc(&pt_arr_d, num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>)),
+	PointStructTemplate<T, IDType, 1>* pt_arr_d;
+	gpuErrorCheck(cudaMalloc(&pt_arr_d, num_elems * sizeof(PointStructTemplate<T, IDType, 1>)),
 					"Error in allocating array to store initial PointStructs on device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs) + ": ");
-	gpuErrorCheck(cudaMemcpy(pt_arr_d, pt_arr, num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>)),
-					"Error in copying array of PointStructTemplate<T, IDType, num_IDs> objects to device "
+	gpuErrorCheck(cudaMemcpy(pt_arr_d, pt_arr, num_elems * sizeof(PointStructTemplate<T, IDType, 1>)),
+					"Error in copying array of PointStructTemplate<T, IDType, 1> objects to device "
                                                 + std::to_string(dev_ind) + " of " + std::to_string(num_devs)
                                                 + ": ");
 
