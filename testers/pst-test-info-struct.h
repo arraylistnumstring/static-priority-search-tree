@@ -217,7 +217,7 @@ struct PSTTestInfoStruct
 	void testWrap(PSTTesterClass pst_tester)
 	{
 #ifdef DEBUG_WRAP
-			std::cout << "Beginning test\n";
+		std::cout << "Beginning test\n";
 #endif
 
 		pst_tester(num_elems, test_type);
