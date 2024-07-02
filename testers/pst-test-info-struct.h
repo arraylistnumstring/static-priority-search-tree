@@ -1,5 +1,5 @@
 #ifndef PST_TEST_INFO_STRUCT_H
-#define PST_TEST_INF_STRUCT_H
+#define PST_TEST_INFO_STRUCT_H
 
 #include <algorithm>
 #include <random>
