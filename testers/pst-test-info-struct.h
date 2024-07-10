@@ -12,6 +12,7 @@
 #include "static-pst-gpu.h"
 
 
+// Struct for information necessary to instantiate PSTTester
 struct PSTTestInfoStruct
 {
 	enum NumSearchVals

@@ -84,7 +84,7 @@ struct InterParaSearchTester
 						pt_arr[i].dim1_val = val2;
 						pt_arr[i].dim2_val = val1;
 					}
-					// Lazy instantiation of value of type IDType from type T
+					// Instantiation of value of type IDType
 					if constexpr (num_IDs == 1)
 						pt_arr[i].id = id_distr(num_ids_wrapper.para_search_tester.rand_num_eng);
 				}

@@ -1,14 +1,14 @@
 #include <random>	// To use uniform_int_distribution and uniform_real_distribution
 #include <string>	// To use stoi() and string operators for command-line argument parsing
 
-#include "pst-test-info-struct.h"
+#include "interval-parallel-search-test-info-struct.h"
 
 int main(int argc, char *argv[])
 {
 #ifdef DEBUG_TEST
-	std::cout << "Began PST tester driver\n";
+	std::cout << "Began interval parallel search tester driver\n";
 #endif
-	PSTTestInfoStruct test_info;
+	InterParaSearchTestInfoStruct test_info;
 
 	// Parse command-line arguments
 	for (int i = 0; i < argc; i++)
@@ -18,12 +18,14 @@ int main(int argc, char *argv[])
 		// Help message
 		if (arg == "-h" || arg == "--help")
 		{
-			std::cerr << "Usage: ./pst-tester-driver <datatype-flag> <test-type-flag> ";
-			std::cerr << "<tree-type-flag> ";
+			std::cerr << "Usage: ./interval-parallel-search-tester-driver <datatype-flag> "
 			std::cerr << "[-I ID_TYPE] ";
+			std::cerr << "[-R] ";
 			std::cerr << "[-r RAND_SEED] ";
+			std::cerr << "[-t] ";
 			std::cerr << "-b MIN_VAL MAX_VAL ";
-			std::cerr << "-n NUM_ELEMS";
+			std::cerr << "-n NUM_ELEMS ";
+			std::cerr << "-s SEARCH_VAL";
 			std::cerr << "\n\n";
 
 			std::cerr << "\tdatatype-flag:\n";
@@ -32,27 +34,19 @@ int main(int argc, char *argv[])
 			std::cerr << "\t\t-i, --int\tUse ints for values\n\n";
 			std::cerr << "\t\t-l, --long\tUse longs as values\n\n";
 
-			std::cerr << "\ttest-type-flag:\n";
-			std::cerr << "\t\t-C, --construct\tConstruction-only test\n";
-			std::cerr << "\t\t-L, --left MAX_DIM1_VAL MIN_DIM2_VAL\tLeftwards search, treating MAX_DIM1_VAL as maximum dimension-1 value and MIN_DIM2_VAL as minimum dimension-2 value\n";
-			std::cerr << "\t\t-R, --right MIN_DIM1_VAL MIN_DIM2_VAL\tRightwards search, treating MIN_DIM1_VAL as minimum dimension-1 value and MIN_DIM2_VAL as minimum dimension-2 value\n";
-			std::cerr << "\t\t-T, --three MIN_DIM1_VAL MAX_DIM1_VAL MIN_DIM2_VAL\tThree-sided search, treating MIN_DIM1_VAL as minimum dimension-1 value, MAX_DIM1_VAL as maximum dimension-1 value and MIN_DIM2_VAL as minimum dimension-2 value\n";
-			std::cerr << "\tAll search bounds are inclusive\n";
-			std::cerr << '\n';
-
-			std::cerr << "\ttree-type-flag:\n";
-			std::cerr << "\t\t-g, --gpu\tUse StaticPSTGPU\n";
-			std::cerr << "\t\t--iter\tUse StaticPSTCPUIter\n";
-			std::cerr << "\t\t--recur\tUse StaticPSTCPURecur\n";
-			std::cerr << '\n';
-
-			std::cerr << "\t-I, --ids DATA_TYPE\tToggles assignment of IDs to the nodes of the tree with data type DATA_TYPE; defaults to false; valid data types are char, double, float, int, long\n\n";
-
 			std::cerr << "\t-b, --val-bounds MIN_VAL MAX_VAL\tBounds of values (inclusive) to use when generating random values for PST; must be castable to chosen datatype\n\n";
+
+			std::cerr << "\t-I, --ids DATA_TYPE\tToggles assignment of IDs to the nodes of the tree with data type DATA_TYPE; defaults to false; valid data types are char, double, float, int, long; if false, flags -R, --report-ID have no effect\n\n";
 
 			std::cerr << "\t-n, --num-elems NUM_ELEMS\tNumber of elements to put in tree\n\n";
 
+			std::cerr << "\t-R, --report-ID\tWhether to report point IDs or full info of a point; defaults to full info; if no ID type is specified, always reports full info\n\n";
+
 			std::cerr << "\t-r, --rand-seed RAND_SEED\tRandom seed to use when generating data for tree; defaults to 0\n\n";
+
+			std::cerr << "\t-s, --search-val SEARCH_VAL\tValue to search for in all intervals; interval bounds are treated as inclusive\n\n";
+
+			std::cerr << "\t-t, --timed\tToggles timing of the CUDA portion of the code using on-device functions; defaults to false\n\n";
 
 			return 1;
 		}
@@ -66,62 +60,6 @@ int main(int argc, char *argv[])
 			test_info.data_type = DataType::INT;
 		else if (arg == "l" || arg == "--long")
 			test_info.data_type = DataType::LONG;
-
-		// Test-type parsing
-		else if (arg == "-C" || arg == "--construct")
-			test_info.test_type = PSTTestCodes::CONSTRUCT;
-		else if (arg == "-L" || arg == "--left"
-					|| arg == "-R" || arg == "--right"
-					|| arg == "-T" || arg == "--three"
-				)
-		{
-			PSTTestInfoStruct::NumSearchVals num_search_vals;
-
-			if (arg == "-L" || arg == "--left")
-			{
-				num_search_vals = PSTTestInfoStruct::NumSearchVals::NUM_VALS_TWO_SEARCH;
-				test_info.test_type = PSTTestCodes::LEFT_SEARCH;
-			}
-			else if (arg == "-R" || arg == "--right")
-			{
-				num_search_vals = PSTTestInfoStruct::NumSearchVals::NUM_VALS_TWO_SEARCH;
-				test_info.test_type = PSTTestCodes::RIGHT_SEARCH;
-			}
-			else	// arg == "-T" || arg == "--three"
-			{
-				num_search_vals = PSTTestInfoStruct::NumSearchVals::NUM_VALS_THREE_SEARCH;
-				test_info.test_type = PSTTestCodes::THREE_SEARCH;
-			}
-
-			// Consume requisite number of arguments for later conversion to search range values
-			for (int j = 0; j < num_search_vals; j++)
-			{
-				i++;
-				if (i >= argc)
-				{
-					std::cerr << "Insufficient number of arguments provided for search bounds\n";
-					return 2;
-				}
-				try
-				{
-					// Curly braces necessary around try blocks
-					test_info.search_range_strings[j] = std::string(argv[i]);
-				}
-				catch (std::invalid_argument const &ex)
-				{
-					std::cerr << "Invalid argument for search range value bound: " << argv[i] << '\n';
-					return 3;
-				}
-			}
-		}
-
-		// Tree type parsing
-		else if (arg == "-g" || arg == "--gpu")
-			test_info.tree_type = PSTType::GPU;
-		else if (arg == "--iter")
-			test_info.tree_type = PSTType::CPU_ITER;
-		else if (arg == "--recur")
-			test_info.tree_type = PSTType::CPU_RECUR;
 
 		// ID flag and ID type parsing
 		else if (arg == "-I" || arg == "--ids-on")
@@ -159,6 +97,10 @@ int main(int argc, char *argv[])
 				return 3;
 			}
 		}
+		
+		// Report ID flag parsing
+		else if (arg == "-R" || arg == "--report-ID")
+			test_info.report_ID = true;
 
 		// Random seed parsing
 		else if (arg == "-r" || arg == "--rand-seed")
@@ -183,7 +125,7 @@ int main(int argc, char *argv[])
 		// Tree value parsing
 		else if (arg == "-b" || arg == "--val-bounds")
 		{
-			for (int j = 0; j < PSTTestInfoStruct::NUM_VALS_INT_BOUNDS; j++)
+			for (int j = 0; j < InterParaSearchTestInfoStruct::NUM_VALS_INT_BOUNDS; j++)
 			{
 				i++;
 				if (i >= argc)
@@ -223,7 +165,28 @@ int main(int argc, char *argv[])
 			}
 
 		}
-	}
+	
+		// Search value parsing
+		else if (arg == "-s" || arg == "--search-val")
+		{
+			i++;
+			if (i >= argc)
+			{
+				std::cerr << "Insufficient number of arguments provided for search value\n";
+				return 2;
+			}
+			try
+			{
+				// Curly braces necessary around try blocks
+				test_info.search_val_string = std::string(argv[i]);
+			}
+			catch (std::invalid_argument const &ex)
+			{
+				std::cerr << "Invalid argument for search value: " << argv[i] << '\n';
+				return 3;
+			}
+		}
+}
 
 #ifdef DEBUG_TEST
 	std::cout << "Completed command-line argument parsing; beginning test-running code\n";
