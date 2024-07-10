@@ -21,7 +21,7 @@ struct InterParaSearchTestInfoStruct
 
 	size_t rand_seed = 0;
 
-	bool timed = false;		// Whether to time CUDA code during testing
+	bool timed_CUDA = false;		// Whether to time CUDA code during testing
 
 	// Number of values necessary to define the bounds of an interval
 	const static size_t NUM_VALS_INT_BOUNDS = 2;

@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
 
 			std::cerr << "\t-s, --search-val SEARCH_VAL\tValue to search for in all intervals; interval bounds are treated as inclusive\n\n";
 
-			std::cerr << "\t-t, --timed\tToggles timing of the CUDA portion of the code using on-device functions; defaults to false\n\n";
+			std::cerr << "\t-t, --timed-CUDA\tToggles timing of the CUDA portion of the code using on-device functions; defaults to false\n\n";
 
 			return 1;
 		}
@@ -122,6 +122,10 @@ int main(int argc, char *argv[])
 			}
 		}
 
+		// CUDA code timing flag
+		else if (arg == "-t" || arg == "--timed-CUDA")
+			test_info.timed_CUDA = true;
+
 		// Tree value parsing
 		else if (arg == "-b" || arg == "--val-bounds")
 		{
@@ -130,7 +134,7 @@ int main(int argc, char *argv[])
 				i++;
 				if (i >= argc)
 				{
-					std::cerr << "Insufficient number of arguments provided for tree value bounds\n";
+					std::cerr << "Insufficient number of arguments provided for interval value bounds\n";
 					return 2;
 				}
 				try
