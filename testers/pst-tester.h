@@ -99,7 +99,7 @@ struct PSTTester
 						// Distribution takes random number engine as parameter with which to generate its next value
 						pt_arr[i].dim1_val = num_ids_wrapper.tree_type_wrapper.pst_tester.distr(num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
 						pt_arr[i].dim2_val = num_ids_wrapper.tree_type_wrapper.pst_tester.distr(num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
-						// Lazy instantiation of value of type IDType from type T
+						// Instantiation of value of type IDType
 						if constexpr (num_IDs == 1)
 							pt_arr[i].id = id_distr(num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
 					}
