@@ -27,7 +27,8 @@ enum PSTType {CPU_ITER, CPU_RECUR, GPU};
 template <typename T,
 			template<typename> typename Distrib,
 			// Default random number engine: Mersenne Twister 19937; takes its constructor parameter as its seed
-			typename RandNumEng=std::mt19937>
+			typename RandNumEng=std::mt19937,
+			bool timed_CUDA=false>
 	requires std::is_arithmetic<T>::value
 struct PSTTester
 {
@@ -39,21 +40,25 @@ struct PSTTester
 	T dim1_val_bound2;
 	T min_dim2_val;
 
-	PSTTester(T min_val, T max_val, T dim1_val_bound1, T dim1_val_bound2, T min_dim2_val)
+	bool vals_inc_ordered;
+
+	PSTTester(T min_val, T max_val, T dim1_val_bound1, T dim1_val_bound2, T min_dim2_val, bool vals_inc_ordered)
 		: rand_num_eng(0),
 		distr(min_val, max_val),
 		dim1_val_bound1(dim1_val_bound1),
 		dim1_val_bound2(dim1_val_bound2),
-		min_dim2_val(min_dim2_val)
+		min_dim2_val(min_dim2_val),
+		vals_inc_ordered(vals_inc_ordered)
 	{};
 
 	PSTTester(size_t rand_seed, T min_val, T max_val, T dim1_val_bound1, T dim1_val_bound2,
-				T min_dim2_val)
+				T min_dim2_val, bool vals_inc_ordered)
 		: rand_num_eng(rand_seed),
 		distr(min_val, max_val),
 		dim1_val_bound1(dim1_val_bound1),
 		dim1_val_bound2(dim1_val_bound2),
-		min_dim2_val(min_dim2_val)
+		min_dim2_val(min_dim2_val),
+		vals_inc_ordered(vals_inc_ordered)
 	{};
 
 	// Nested structs to allow for the metaprogramming equivalent of currying, but with type parameters
@@ -77,7 +82,13 @@ struct PSTTester
 				: tree_type_wrapper(tree_type_wrapper)
 			{};
 
-			template <template <typename> typename IDDistrib, typename IDType>
+			template <template <typename> typename IDDistrib, typename IDType, typename RetType>
+				// Requires that RetType is either of type IDType or of type PointStructTemplate<T, IDType, num_IDs>
+				// std::disjunction<B1, ..., Bn> performs a logical OR on enclosed type traits, specifically on the value returned by \Vee_{i=1}^n bool(B1::value)
+				requires std::disjunction<
+					std::is_same<RetType, IDType>,
+									std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+                        >::value
 			struct IDTypeWrapper
 			{
 				NumIDsWrapper<num_IDs> num_ids_wrapper;
@@ -135,76 +146,90 @@ struct PSTTester
 					std::cout << *tree << '\n';
 
 					size_t num_res_elems = 0;
-					PointStructTemplate<T, IDType, num_IDs> *res_pt_arr;
+					RetType *res_arr;
+
+					if constexpr (timed_CUDA)
+						// Start CUDA timer
 
 					// Search/report test phase
 					if (test_type == LEFT_SEARCH)
 					{
-						res_pt_arr = tree->twoSidedLeftSearch(num_res_elems,
-																num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound1,
-																num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val);
+						res_arr = tree->twoSidedLeftSearch(num_res_elems,
+															num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound1,
+															num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val);
 					}
 					else if (test_type == RIGHT_SEARCH)
 					{
-						res_pt_arr = tree->twoSidedRightSearch(num_res_elems,
-																num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound1,
-																num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val);
+						res_arr = tree->twoSidedRightSearch(num_res_elems,
+															num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound1,
+															num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val);
 					}
 					else if (test_type == THREE_SEARCH)
 					{
-						res_pt_arr = tree->threeSidedSearch(num_res_elems,
+						res_arr = tree->threeSidedSearch(num_res_elems,
 															num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound1,
 															num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound2,
 															num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val);
 					}
 					// If test_type == CONSTRUCT, do nothing for the search/report phase
+					
+					if constexpr (timed_CUDA)
+						// End CUDA timer
+						// Report timing
 
 					// If result pointer array is on GPU, copy it to CPU and print
 					cudaPointerAttributes ptr_info;
-					gpuErrorCheck(cudaPointerGetAttributes(&ptr_info, res_pt_arr),
-									"Error in determining location type of memory address of result PointStruct array (i.e. whether on host or device)");
+					gpuErrorCheck(cudaPointerGetAttributes(&ptr_info, res_arr),
+									"Error in determining location type of memory address of result RetType array (i.e. whether on host or device)");
 
-					// res_pt_arr is on device; copy to CPU
+					// res_arr is on device; copy to CPU
 					if (ptr_info.type == cudaMemoryTypeDevice)
 					{
 						// Differentiate on-device and on-host pointers
-						PointStructTemplate<T, IDType, num_IDs> *res_pt_arr_d = res_pt_arr;
+						PointStructTemplate<T, IDType, num_IDs> *res_arr_d = res_arr;
 
-						res_pt_arr = nullptr;
+						res_arr = nullptr;
 
 						// Allocate space on host for data
-						res_pt_arr = new PointStructTemplate<T, IDType, num_IDs>[num_res_elems];
+						res_arr = new RetType[num_res_elems];
 
-						if (res_pt_arr == nullptr)
-							throwErr("Error: could not allocate PointStructTemplate<T, IDType, num_IDs> array of size "
+						if (res_arr == nullptr)
+							throwErr("Error: could not allocate RetType array of size "
 										+ std::to_string(num_res_elems) + " on host");
 
-						// Copy data from res_pt_arr_d to res_pt_arr
-						gpuErrorCheck(cudaMemcpy(res_pt_arr, res_pt_arr_d, num_res_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>),
+						// Copy data from res_arr_d to res_arr
+						gpuErrorCheck(cudaMemcpy(res_arr, res_arr_d, num_res_elems * sizeof(RetType),
 											cudaMemcpyDefault), 
-										"Error in copying array of PointStructTemplate<T, IDType, num_IDs> objects from device "
+										"Error in copying array of RetType objects from device "
 										+ std::to_string(ptr_info.device) + ": ");
 
 						// Free on-device array of PointStructTemplates
-						gpuErrorCheck(cudaFree(res_pt_arr_d), "Error in freeing on-device array of result PointStructs on device "
+						gpuErrorCheck(cudaFree(res_arr_d), "Error in freeing on-device array of result RetType objects on device "
 										+ std::to_string(ptr_info.device) + ": ");
 					}
 
 					// Sort output for consistency (specifically compared to GPU-reported outputs, which may be randomly ordered and must therefore be sorted for easy comparisons)
-					std::sort(res_pt_arr, res_pt_arr + num_res_elems,
-							[](const PointStructTemplate<T, IDType, num_IDs> &pt_1,
-								const PointStructTemplate<T, IDType, num_IDs> &pt_2)
-							{
-								return pt_1.compareDim1(pt_2) < 0;
-							});
+					if constexpr (std::is_same<RetType, IDType>::value)
+						std::sort(res_arr, res_arr + num_res_elems,
+								[](const IDType &id_1, const IDType &id_2)
+								{
+									return id_1 < id_2;
+								});
+					else
+						std::sort(res_arr, res_arr + num_res_elems,
+								[](const PointStructTemplate<T, IDType, num_IDs> &pt_1,
+									const PointStructTemplate<T, IDType, num_IDs> &pt_2)
+								{
+									return pt_1.compareDim1(pt_2) < 0;
+								});
 
 					// For some reason, the offending line is the access of ptstr.print()
-					printArray(std::cout, res_pt_arr, 0, num_res_elems);
+					printArray(std::cout, res_arr, 0, num_res_elems);
 					std::cout << '\n';
 
 					delete tree;
 					delete[] pt_arr;
-					delete[] res_pt_arr;
+					delete[] res_arr;
 				};
 			};
 
@@ -225,8 +250,21 @@ struct PSTTester
 					for (size_t i = 0; i < num_elems; i++)
 					{
 						// Distribution takes random number engine as parameter with which to generate its next value
-						pt_arr[i].dim1_val = num_ids_wrapper.tree_type_wrapper.pst_tester.distr(num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
-						pt_arr[i].dim2_val = num_ids_wrapper.tree_type_wrapper.pst_tester.distr(num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
+						T val1 = num_ids_wrapper.tree_type_wrapper.pst_tester.distr(num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
+						T val2 = num_ids_wrapper.tree_type_wrapper.pst_tester.distr(num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
+
+						// Swap generated values only if val1 > val2 and monotonically increasing order is required
+						if (num_ids_wrapper.tree_type_wrapper.pst_tester.vals_inc_ordered
+								&& val1 > val2)
+						{
+							pt_arr[i].dim1_val = val2;
+							pt_arr[i].dim2_val = val1;
+						}
+						else
+						{
+							pt_arr[i].dim1_val = val1;
+							pt_arr[i].dim2_val = val2;
+						}
 					}
 
 #ifdef DEBUG
@@ -249,6 +287,9 @@ struct PSTTester
 					size_t num_res_elems = 0;
 					PointStructTemplate<T, void, num_IDs> *res_pt_arr;
 
+					if constexpr (timed_CUDA)
+						// Start CUDA timer
+
 					// Search/report test phase
 					if (test_type == LEFT_SEARCH)
 					{
@@ -270,6 +311,10 @@ struct PSTTester
 															num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val);
 					}
 					// If test_type == CONSTRUCT, do nothing for the search/report phase
+
+					if constexpr (timed_CUDA)
+						// End CUDA timer
+						// Report timing
 
 					// If result pointer array is on GPU, copy it to CPU and print
 					cudaPointerAttributes ptr_info;
