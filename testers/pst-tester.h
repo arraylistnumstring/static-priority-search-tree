@@ -61,7 +61,7 @@ struct PSTTester
 				template<typename, template<typename, typename, size_t> class, typename, size_t> class StaticPSTTemplate>
 	struct TreeTypeWrapper
 	{
-		// Nested class have access to all levels of access of their enclosing scope; however, as nested classes are not associated with any enclosing class instance in particular, must keep track of the desired "parent" instance, if any
+		// Nested class have access to all levels of access of their enclosing scope; however, as nested classes are not associated with any enclosing class instance in particular, so must keep track of the desired "parent" instance, if any
 		PSTTester<T, Distrib, RandNumEng> pst_tester;
 
 		TreeTypeWrapper(PSTTester<T, Distrib, RandNumEng> pst_tester)

@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
 				}
 				try
 				{
-					test_info.tree_val_range_strings[j] = std::string(argv[i]);
+					test_info.val_range_strings[j] = std::string(argv[i]);
 				}
 				catch (std::invalid_argument const &ex)
 				{
