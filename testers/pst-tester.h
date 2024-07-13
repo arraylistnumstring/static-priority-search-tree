@@ -97,8 +97,21 @@ struct PSTTester
 					for (size_t i = 0; i < num_elems; i++)
 					{
 						// Distribution takes random number engine as parameter with which to generate its next value
-						pt_arr[i].dim1_val = num_ids_wrapper.tree_type_wrapper.pst_tester.distr(num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
-						pt_arr[i].dim2_val = num_ids_wrapper.tree_type_wrapper.pst_tester.distr(num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
+						T val1 = num_ids_wrapper.tree_type_wrapper.pst_tester.distr(num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
+						T val2 = num_ids_wrapper.tree_type_wrapper.pst_tester.distr(num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
+
+						// Swap generated values only if val1 > val2 and monotonically increasing order is required
+						if (num_ids_wrapper.tree_type_wrapper.pst_tester.vals_inc_ordered
+								&& val1 > val2)
+						{
+							pt_arr[i].dim1_val = val2;
+							pt_arr[i].dim2_val = val1;
+						}
+						else
+						{
+							pt_arr[i].dim1_val = val1;
+							pt_arr[i].dim2_val = val2;
+						}
 						// Instantiation of value of type IDType
 						if constexpr (num_IDs == 1)
 							pt_arr[i].id = id_distr(num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);

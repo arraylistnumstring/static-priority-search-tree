@@ -73,16 +73,16 @@ struct InterParaSearchTester
 					T val1 = num_ids_wrapper.para_search_tester.distr(num_ids_wrapper.para_search_tester.rand_num_eng);
 					T val2 = num_ids_wrapper.para_search_tester.distr(num_ids_wrapper.para_search_tester.rand_num_eng);
 
-					// Interval parallel search requires that first value of PointStruct is no more than the second
-					if (val1 <= val2)
-					{
-						pt_arr[i].dim1_val = val1;
-						pt_arr[i].dim2_val = val2;
-					}
-					else
+					// Interval parallel search requires that first value of PointStruct is no more than the second; written in this order for obvious parity with PSTTester
+					if (val1 > val2)
 					{
 						pt_arr[i].dim1_val = val2;
 						pt_arr[i].dim2_val = val1;
+					}
+					else
+					{
+						pt_arr[i].dim1_val = val1;
+						pt_arr[i].dim2_val = val2;
 					}
 					// Instantiation of value of type IDType
 					if constexpr (num_IDs == 1)
