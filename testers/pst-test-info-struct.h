@@ -86,12 +86,12 @@ struct PSTTestInfoStruct
 	};
 
 	// Instantiate next PSTTester type with respect to tree type
-	template <typename PSTTesterDataIDInfoInstantiated>
-	void treeTypeWrap(PSTTesterDataIDInfoInstantiated pst_tester)
+	template <typename PSTTesterDataTypeInstantiated>
+	void treeTypeWrap(PSTTesterDataTypeInstantiated pst_tester)
 	{
 		if (tree_type == PSTType::CPU_ITER)
 		{
-			typename PSTTesterDataIDInfoInstantiated::TreeTypeWrapper<PointStruct, StaticPSTCPUIter> pst_tester_tree_instan(pst_tester);
+			typename PSTTesterDataTypeInstantiated::TreeTypeWrapper<PointStruct, StaticPSTCPUIter> pst_tester_tree_instan(pst_tester);
 
 #ifdef DEBUG_WRAP
 			std::cout << "Instantiated StaticPSTCPUIter wrapper\n";
@@ -101,7 +101,7 @@ struct PSTTestInfoStruct
 		}
 		else if (tree_type == PSTType::CPU_RECUR)
 		{
-			typename PSTTesterDataIDInfoInstantiated::TreeTypeWrapper<PointStruct, StaticPSTCPURecur> pst_tester_tree_instan(pst_tester);
+			typename PSTTesterDataTypeInstantiated::TreeTypeWrapper<PointStruct, StaticPSTCPURecur> pst_tester_tree_instan(pst_tester);
 
 #ifdef DEBUG_WRAP
 			std::cout << "Instantiated StaticPSTCPURecur wrapper\n";
@@ -111,7 +111,7 @@ struct PSTTestInfoStruct
 		}
 		else	// tree_type == PSTType::GPU
 		{
-			typename PSTTesterDataIDInfoInstantiated::TreeTypeWrapper<PointStruct, StaticPSTGPU> pst_tester_tree_instan(pst_tester);
+			typename PSTTesterDataTypeInstantiated::TreeTypeWrapper<PointStruct, StaticPSTGPU> pst_tester_tree_instan(pst_tester);
 
 #ifdef DEBUG_WRAP
 			std::cout << "Instantiated StaticPSTGPU wrapper\n";
@@ -122,12 +122,12 @@ struct PSTTestInfoStruct
 	};
 
 	// Instantiate next PSTTester type with respect to number of IDs
-	template <typename PSTTesterDataIDTypesInstantiated>
-	void numIDsWrap(PSTTesterDataIDTypesInstantiated pst_tester)
+	template <typename PSTTesterDataTreeTypesInstantiated>
+	void numIDsWrap(PSTTesterDataTreeTypesInstantiated pst_tester)
 	{
 		if (pts_with_ids)
 		{
-			typename PSTTesterDataIDTypesInstantiated::NumIDsWrapper<1> pst_tester_num_ids_instan(pst_tester);
+			typename PSTTesterDataTreeTypesInstantiated::NumIDsWrapper<1> pst_tester_num_ids_instan(pst_tester);
 
 #ifdef DEBUG_WRAP
 			std::cout << "Instantiated num_IDs = 1 wrapper\n";
@@ -137,14 +137,14 @@ struct PSTTestInfoStruct
 		}
 		else	// !pts_with_ids; can skip IDTypeWrap()
 		{
-			typename PSTTesterDataIDTypesInstantiated::NumIDsWrapper<0> pst_tester_num_ids_instan(pst_tester);
+			typename PSTTesterDataTreeTypesInstantiated::NumIDsWrapper<0> pst_tester_num_ids_instan(pst_tester);
 
 #ifdef DEBUG_WRAP
 			std::cout << "Instantiated num_IDs = 0 wrapper\n";
 #endif
 
 			// As no ID distribution is used anyway, just place a dummy template template parameter taking one type parameter
-			typename PSTTesterDataIDTypesInstantiated
+			typename PSTTesterDataTreeTypesInstantiated
 						::NumIDsWrapper<0>
 						::IDTypeWrapper<std::uniform_real_distribution, void>
 							pst_tester_fully_instan(pst_tester_num_ids_instan);
@@ -154,15 +154,15 @@ struct PSTTestInfoStruct
 	};
 
 	// Instantiate next PSTTester type with respect to ID type
-	template <class PSTTesterDataInstantiated>
-	void IDTypeWrap(PSTTesterDataInstantiated pst_tester)
+	template <class PSTTesterDataTreeTypesNumIDsInstantiated>
+	void IDTypeWrap(PSTTesterDataTreeTypesNumIDsInstantiated pst_tester)
 	{
 		if (pts_with_ids)
 		{
 			if (id_type == DataType::CHAR)
 			{
 				// typename necessary, as compiler defaults to treating nested names as variables
-				typename PSTTesterDataInstantiated::IDTypeWrapper<std::uniform_int_distribution, char> pst_tester_id_instan(pst_tester);
+				typename PSTTesterDataTreeTypesNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, char> pst_tester_id_instan(pst_tester);
 
 #ifdef DEBUG_WRAP
 				std::cout << "Instantiated IDType = char wrapper\n";
@@ -172,7 +172,7 @@ struct PSTTestInfoStruct
 			}
 			else if (id_type == DataType::DOUBLE)
 			{
-				typename PSTTesterDataInstantiated::IDTypeWrapper<std::uniform_real_distribution, double> pst_tester_id_instan(pst_tester);
+				typename PSTTesterDataTreeTypesNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, double> pst_tester_id_instan(pst_tester);
 
 #ifdef DEBUG_WRAP
 				std::cout << "Instantiated IDType = double wrapper\n";
@@ -182,7 +182,7 @@ struct PSTTestInfoStruct
 			}
 			else if (id_type == DataType::FLOAT)
 			{
-				typename PSTTesterDataInstantiated::IDTypeWrapper<std::uniform_real_distribution, float> pst_tester_id_instan(pst_tester);
+				typename PSTTesterDataTreeTypesNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, float> pst_tester_id_instan(pst_tester);
 
 #ifdef DEBUG_WRAP
 				std::cout << "Instantiated IDType = float wrapper\n";
@@ -192,7 +192,7 @@ struct PSTTestInfoStruct
 			}
 			else if (id_type == DataType::INT)
 			{
-				typename PSTTesterDataInstantiated::IDTypeWrapper<std::uniform_int_distribution, int> pst_tester_id_instan(pst_tester);
+				typename PSTTesterDataTreeTypesNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, int> pst_tester_id_instan(pst_tester);
 
 #ifdef DEBUG_WRAP
 				std::cout << "Instantiated IDType = int wrapper\n";
@@ -202,7 +202,7 @@ struct PSTTestInfoStruct
 			}
 			else if (id_type == DataType::LONG)
 			{
-				typename PSTTesterDataInstantiated::IDTypeWrapper<std::uniform_int_distribution, long> pst_tester_id_instan(pst_tester);
+				typename PSTTesterDataTreeTypesNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, long> pst_tester_id_instan(pst_tester);
 
 #ifdef DEBUG_WRAP
 				std::cout << "Instantiated IDType = long wrapper\n";
