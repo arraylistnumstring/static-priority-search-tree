@@ -47,9 +47,29 @@ struct InterParaSearchTester
 		// Nested class have access to all levels of access of their enclosing scope; however, as nested classes are not associated with any enclosing class instance in particular, must keep track of the desired "parent" instance, if any
 		InterParaSearchTester<T, Distrib, RandNumEng> para_search_tester;
 
+		// Track CUDA device properties; placed in this struct to reduce code redundancy, as this is the only struct that is unspecialised and has a single constructor
+		int num_devs;
+		int dev_ind;
+
 		NumIDsWrapper(InterParaSearchTester<T, Distrib, RandNumEng> para_search_tester)
 			: para_search_tester(para_search_tester)
-		{};
+		{
+			// Check and save number of GPUs attached to machine
+			gpuErrorCheck(cudaGetDeviceCount(&num_devs), "Error in getting number of devices: ");
+			if (num_devs < 1)       // No GPUs attached
+				throwErr("Error: " + std::to_string(num_devs) + " GPUs attached to host");
+
+			// Use modified version of CUDA's gpuGetMaxGflopsDeviceId() to get top-performing GPU capable of unified virtual addressing; also used so that device in use is the same as that for marching cubes
+			dev_ind = gpuGetMaxGflopsDeviceId();
+			gpuErrorCheck(cudaGetDeviceProperties(&dev_props, dev_ind),
+							"Error in getting device properties of device "
+							+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+							+ " total devices: ");
+
+			gpuErrorCheck(cudaSetDevice(dev_ind), "Error setting default device to device "
+							+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+							+ " total devices: ");
+		};
 
 		template <template <typename> typename IDDistrib, typename IDType, typename RetType>
 			// Requires that RetType is either of type IDType or of type PointStructTemplate<T, IDType, num_IDs>
@@ -104,56 +124,17 @@ struct InterParaSearchTester
 				size_t num_res_elems = 0;
 				RetType *res_arr;
 
-				// TODO: Search test phase
-				// (along with how to orchestrate the designation of report type (IDType vs. PointStructTemplate<T, IDType, num_IDs>)
-	
-
-
-				if constexpr (timed_CUDA)
-					// Start CUDA timer
-
-
 				if constexpr (std::is_same<RetType, IDType>::value)
 					// Do search that returns IDType 
+					res_arr = intervalParallelSearchID(pt_arr, num_elems, num_res_elems, num_ids_wrapper.para_search_tester.search_val, num_ids_wrapper.dev_ind, num_ids_wrapper.num_devs, timed_CUDA);
 				else	// Guaranteed to be of type PointStructTemplate<T, IDType, num_IDs>
 					// Do search that returns PointStructTemplate
-
-
-
-
-				if constexpr (timed_CUDA)
-					// End CUDA timer
-					// Report timing
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+					res_arr = intervalParallelSearch(pt_arr, num_elems, num_res_elems, num_ids_wrapper.para_search_tester.search_val, num_ids_wrapper.dev_ind, num_ids_wrapper.num_devs, timed_CUDA);
 
 				// If result pointer array is on GPU, copy it to CPU and print
 				cudaPointerAttributes ptr_info;
 				gpuErrorCheck(cudaPointerGetAttributes(&ptr_info, res_arr),
-						"Error in determining location type of memory address of result PointStruct array (i.e. whether on host or device)");
+								"Error in determining location type of memory address of result PointStruct array (i.e. whether on host or device)");
 
 				// res_arr is on device; copy to CPU
 				if (ptr_info.type == cudaMemoryTypeDevice)
@@ -259,50 +240,8 @@ struct InterParaSearchTester
 				size_t num_res_elems = 0;
 				PointStructTemplate<T, void, num_IDs> *res_pt_arr;
 
-				// TODO: Search test phase
-				// (along with how to orchestrate the designation of report type (IDType vs. PointStructTemplate<T, IDType, num_IDs>)
-	
-
-
-				if constexpr (timed_CUDA)
-					// Start CUDA timer
-
-
 				// Do search and report that returns PointStructTemplate
-
-
-
-
-				if constexpr (timed_CUDA)
-					// End CUDA timer
-					// Report timing
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+				res_arr = intervalParallelSearch(pt_arr, num_elems, num_res_elems, num_ids_wrapper.para_search_tester.search_val, num_ids_wrapper.dev_ind, num_ids_wrapper.num_devs);
 
 				// If result pointer array is on GPU, copy it to CPU and print
 				cudaPointerAttributes ptr_info;
