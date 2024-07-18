@@ -37,44 +37,36 @@ struct InterParaSearchTestInfoStruct
 		if (data_type == DataType::DOUBLE)
 		{
 			InterParaSearchTester<double, std::uniform_real_distribution>
-						pst_tester(rand_seed, std::stod(tree_val_range_strings[0]),
-									std::stod(tree_val_range_strings[1]),
-									std::stod(search_range_strings[0]),
-									std::stod(search_range_strings[1]),
-									std::stod(search_range_strings[2]));
+						pst_tester(rand_seed, std::stod(val_range_strings[0]),
+									std::stod(val_range_strings[1]),
+									std::stod(search_val_string));
 			
 			treeTypeWrap(pst_tester);
 		}
 		else if (data_type == DataType::FLOAT)
 		{
 			InterParaSearchTester<float, std::uniform_real_distribution>
-						pst_tester(rand_seed, std::stof(tree_val_range_strings[0]),
-									std::stof(tree_val_range_strings[1]),
-									std::stof(search_range_strings[0]),
-									std::stof(search_range_strings[1]),
-									std::stof(search_range_strings[2]));
+						pst_tester(rand_seed, std::stof(val_range_strings[0]),
+									std::stof(val_range_strings[1]),
+									std::stof(search_val_string));
 			
 			treeTypeWrap(pst_tester);
 		}
 		else if (data_type == DataType::INT)
 		{
 			InterParaSearchTester<int, std::uniform_int_distribution>
-						pst_tester(rand_seed, std::stoi(tree_val_range_strings[0]),
-									std::stoi(tree_val_range_strings[1]),
-									std::stoi(search_range_strings[0]),
-									std::stoi(search_range_strings[1]),
-									std::stoi(search_range_strings[2]));
+						pst_tester(rand_seed, std::stoi(val_range_strings[0]),
+									std::stoi(val_range_strings[1]),
+									std::stoi(search_val_string));
 			
 			treeTypeWrap(pst_tester);
 		}
 		else if (data_type == DataType::LONG)
 		{
 			InterParaSearchTester<long, std::uniform_int_distribution>
-						pst_tester(rand_seed, std::stol(tree_val_range_strings[0]),
-									std::stol(tree_val_range_strings[1]),
-									std::stol(search_range_strings[0]),
-									std::stol(search_range_strings[1]),
-									std::stol(search_range_strings[2]));
+						pst_tester(rand_seed, std::stol(val_range_strings[0]),
+									std::stol(val_range_strings[1]),
+									std::stol(search_val_string));
 			
 			treeTypeWrap(pst_tester);
 		}
