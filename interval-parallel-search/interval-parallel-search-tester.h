@@ -124,12 +124,56 @@ struct InterParaSearchTester
 				size_t num_res_elems = 0;
 				RetType *res_arr;
 
+				// Sane construction would not copy identical input data to GPU multiple times, but instead copy once and use it in perpetuity; won't make this optimisation in code here, but make timing reflect this
+				if constexpr (timed_CUDA)
+				{
+					cudaEvent_t construct_start, construct_stop;
+					gpuErrorCheck(cudaEventCreate(&construct_start),
+									"Error in creating start event for timing CUDA search set-up code");
+					gpuErrorCheck(cudaEventCreate(&construct_stop),
+									"Error in creating stop event for timing CUDA search set-up code");
+					
+					// Start CUDA search set-up timer (i.e. place this event into default stream)
+					gpuErrorCheck(cudaEventRecord(construct_start),
+									"Error in recording start event for timing CUDA search set-up code");
+				}
+
+				// Allocate space on GPU for input metacell tag array and copy to device
+				PointStructTemplate<T, IDType, num_IDs>* pt_arr_d;
+				gpuErrorCheck(cudaMalloc(&pt_arr_d, num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>)),
+								"Error in allocating array to store initial PointStructs on device "
+								+ std::to_string(num_ids_wrapper.dev_ind) + " of "
+								+ std::to_string(num_ids_wrapper.num_devs) + ": ");
+				gpuErrorCheck(cudaMemcpy(pt_arr_d, pt_arr, num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>)),
+								"Error in copying array of PointStructTemplate<T, IDType, num_IDs> objects to device "
+								+ std::to_string(num_ids_wrapper.dev_ind) + " of "
+								+ std::to_string(num_ids_wrapper.num_devs) + ": ");
+
+				if constexpr (timed_CUDA)
+				{
+					// End CUDA search set-up timer
+					gpuErrorCheck(cudaEventRecord(construct_stop),
+									"Error in recording stop event for timing CUDA search set-up code");
+
+					// Report construction timing
+					float ms = 0;	// milliseconds
+					gpuErrorCheck(cudaEventElapsedTime(&ms, construct_start, construct_stop),
+									"Error in calculating time elapsed for CUDA search set-up code");
+
+					std::cout << "CUDA interval parallel search set-up time: " << ms << " ms\n";
+
+					gpuErrorCheck(cudaEventDestroy(construct_start),
+									"Error in destroying start event for timing CUDA search set-up code");
+					gpuErrorCheck(cudaEventDestroy(construct_stop),
+									"Error in destroying stop event for timing CUDA search set-up code");
+				}
+
 				if constexpr (std::is_same<RetType, IDType>::value)
 					// Do search that returns IDType 
-					res_arr = intervalParallelSearchID(pt_arr, num_elems, num_res_elems, num_ids_wrapper.para_search_tester.search_val, num_ids_wrapper.dev_ind, num_ids_wrapper.num_devs, timed_CUDA);
+					res_arr = intervalParallelSearchID(pt_arr_d, num_elems, num_res_elems, num_ids_wrapper.para_search_tester.search_val, num_ids_wrapper.dev_ind, num_ids_wrapper.num_devs, timed_CUDA);
 				else	// Guaranteed to be of type PointStructTemplate<T, IDType, num_IDs>
 					// Do search that returns PointStructTemplate
-					res_arr = intervalParallelSearch(pt_arr, num_elems, num_res_elems, num_ids_wrapper.para_search_tester.search_val, num_ids_wrapper.dev_ind, num_ids_wrapper.num_devs, timed_CUDA);
+					res_arr = intervalParallelSearch(pt_arr_d, num_elems, num_res_elems, num_ids_wrapper.para_search_tester.search_val, num_ids_wrapper.dev_ind, num_ids_wrapper.num_devs, timed_CUDA);
 
 				// If result pointer array is on GPU, copy it to CPU and print
 				cudaPointerAttributes ptr_info;

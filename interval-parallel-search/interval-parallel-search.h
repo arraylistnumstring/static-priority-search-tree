@@ -9,43 +9,17 @@
 // Given an array of PointStructTemplate<T, IDType, num_IDs>, return an on-device array of PointStructTemplate<T, IDType, num_IDs> where each point pt satisfies search_val \in [pt.dim1_val, pt.dim2_val])
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-PointStructTemplate<T, IDType, num_IDs>* intervalParallelSearch(PointStructTemplate<T, IDType, num_IDs>* pt_arr, const size_t num_pts, size_t &num_res_elems, T search_val, const int dev_ind, const int num_devs, const bool timed_CUDA)
+PointStructTemplate<T, IDType, num_IDs>* intervalParallelSearch(PointStructTemplate<T, IDType, num_IDs>* pt_arr_d, const size_t num_pts, size_t &num_res_elems, T search_val, const int dev_ind, const int num_devs, const bool timed_CUDA)
 {
-	// Sane construction would not copy identical input data to GPU multiple times, but instead copy once and use it in perpetuity; won't make this optimisation in code here, but make timing reflect this
 	if constexpr (timed_CUDA)
 	{
-		cudaEvent_t construct_start, construct_stop, search_start, search_stop;
-		gpuErrorCheck(cudaEventCreate(&construct_start),
-						"Error in creating start event for timing CUDA search set-up code");
-		gpuErrorCheck(cudaEventCreate(&construct_stop),
-						"Error in creating stop event for timing CUDA search set-up code");
+		cudaEvent_t search_start, search_stop;
 		gpuErrorCheck(cudaEventCreate(&search_start),
 						"Error in creating start event for timing CUDA search code");
 		gpuErrorCheck(cudaEventCreate(&search_stop),
 						"Error in creating stop event for timing CUDA search code");
 		
-		// Start CUDA search set-up timer (i.e. place this event into default stream)
-		gpuErrorCheck(cudaEventRecord(construct_start),
-						"Error in recording start event for timing CUDA search set-up code");
-	}
-
-	// Allocate space on GPU for input metacell tag array and copy to device
-	PointStructTemplate<T, IDType, num_IDs>* pt_arr_d;
-	gpuErrorCheck(cudaMalloc(&pt_arr_d, num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>)),
-					"Error in allocating array to store initial PointStructs on device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs) + ": ");
-	gpuErrorCheck(cudaMemcpy(pt_arr_d, pt_arr, num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>)),
-					"Error in copying array of PointStructTemplate<T, IDType, num_IDs> objects to device "
-                                                + std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-                                                + ": ");
-
-	if constexpr (timed_CUDA)
-	{
-		// End CUDA search set-up timer
-		gpuErrorCheck(cudaEventRecord(construct_stop),
-						"Error in recording stop event for timing CUDA search set-up code");
-
-		// Start CUDA search timer
+		// Start CUDA search timer (i.e. place this event in default stream)
 		gpuErrorCheck(cudaEventRecord(search_start),
 						"Error in recording start event for timing CUDA search code");
 	}
@@ -80,26 +54,18 @@ PointStructTemplate<T, IDType, num_IDs>* intervalParallelSearch(PointStructTempl
 		gpuErrorCheck(cudaEventRecord(search_stop),
 						"Error in recording stop event for timing CUDA search code");
 
-		// Block CPU execution until search stop event has been recorded; as cudaMemcpyFromSymbol() is synchronous (and all events preceding it in the stream have completed), construct_stop is guaranteed to have occurred at this point
+		// Block CPU execution until search stop event has been recorded
 		gpuErrorCheck(cudaEventSynchronize(search_stop),
 						"Error in blocking CPU execution until completion of stop event for timing CUDA search code");
 
 		// Report construction timing
 		float ms = 0;	// milliseconds
-		gpuErrorCheck(cudaEventElapsedTime(&ms, construct_start, construct_stop),
-						"Error in calculating time elapsed for CUDA search set-up code");
-
-		std::cout << "CUDA interval parallel search set-up time: " << ms << " ms\n";
 
 		gpuErrorCheck(cudaEventElapsedTime(&ms, search_start, search_stop),
 						"Error in calculating time elapsed for CUDA search code");
 
 		std::cout << "CUDA interval parallel search time: " << ms << " ms\n";
 
-		gpuErrorCheck(cudaEventDestroy(construct_start),
-						"Error in destroying start event for timing CUDA search set-up code");
-		gpuErrorCheck(cudaEventDestroy(construct_stop),
-						"Error in destroying stop event for timing CUDA search set-up code");
 		gpuErrorCheck(cudaEventDestroy(search_start),
 						"Error in destroying start event for timing CUDA search code");
 		gpuErrorCheck(cudaEventDestroy(search_stop),
@@ -110,46 +76,21 @@ PointStructTemplate<T, IDType, num_IDs>* intervalParallelSearch(PointStructTempl
 	return res_pt_arr_d;
 };
 
-// Given an array of PointStructTemplate<T, IDType, 1>, return an on-device array of indices where each index i satisfies search_val \in [pt_arr[i].dim1_val, pt_arr[i].dim2_val])
+// Given an array of PointStructTemplate<T, IDType, 1>, return an on-device array of indices where each index i satisfies search_val \in [pt_arr_d[i].dim1_val, pt_arr_d[i].dim2_val])
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType>
-IDType* intervalParallelSearchID(PointStructTemplate<T, IDType, 1>* pt_arr, const size_t num_pts, size_t &num_res_elems, T search_val, const int dev_ind, const int num_devs, const bool timed_CUDA)
+IDType* intervalParallelSearchID(PointStructTemplate<T, IDType, 1>* pt_arr_d, const size_t num_pts, size_t &num_res_elems, T search_val, const int dev_ind, const int num_devs, const bool timed_CUDA)
 {
 	// Sane construction would not copy identical input data to GPU multiple times, but instead copy once and use it in perpetuity; won't make this optimisation in code here, but make timing reflect this
 	if constexpr (timed_CUDA)
 	{
-		cudaEvent_t construct_start, construct_stop, search_start, search_stop;
-		gpuErrorCheck(cudaEventCreate(&construct_start),
-						"Error in creating start event for timing CUDA search set-up code");
-		gpuErrorCheck(cudaEventCreate(&construct_stop),
-						"Error in creating stop event for timing CUDA search set-up code");
+		cudaEvent_t search_start, search_stop;
 		gpuErrorCheck(cudaEventCreate(&search_start),
 						"Error in creating start event for timing CUDA search code");
 		gpuErrorCheck(cudaEventCreate(&search_stop),
 						"Error in creating stop event for timing CUDA search code");
-		
-		// Start CUDA search set-up timer (i.e. place this event into default stream)
-		gpuErrorCheck(cudaEventRecord(construct_start),
-						"Error in recording start event for timing CUDA search set-up code");
-	}
 
-	// Allocate space on GPU for input metacell tag array and copy to device
-	PointStructTemplate<T, IDType, 1>* pt_arr_d;
-	gpuErrorCheck(cudaMalloc(&pt_arr_d, num_elems * sizeof(PointStructTemplate<T, IDType, 1>)),
-					"Error in allocating array to store initial PointStructs on device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs) + ": ");
-	gpuErrorCheck(cudaMemcpy(pt_arr_d, pt_arr, num_elems * sizeof(PointStructTemplate<T, IDType, 1>)),
-					"Error in copying array of PointStructTemplate<T, IDType, 1> objects to device "
-                                                + std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-                                                + ": ");
-
-	if constexpr (timed_CUDA)
-	{
-		// End CUDA search set-up timer
-		gpuErrorCheck(cudaEventRecord(construct_stop),
-						"Error in recording stop event for timing CUDA search set-up code");
-
-		// Start CUDA search timer
+		// Start CUDA search timer (i.e. place this event in default stream)
 		gpuErrorCheck(cudaEventRecord(search_start),
 						"Error in recording start event for timing CUDA search code");
 	}
@@ -184,26 +125,18 @@ IDType* intervalParallelSearchID(PointStructTemplate<T, IDType, 1>* pt_arr, cons
 		gpuErrorCheck(cudaEventRecord(search_stop),
 						"Error in recording stop event for timing CUDA search code");
 
-		// Block CPU execution until search stop event has been recorded; as cudaMemcpyFromSymbol() is synchronous (and all events preceding it in the stream have completed), construct_stop is guaranteed to have occurred at this point
+		// Block CPU execution until search stop event has been recorded
 		gpuErrorCheck(cudaEventSynchronize(search_stop),
 						"Error in blocking CPU execution until completion of stop event for timing CUDA search code");
 
 		// Report construction timing
 		float ms = 0;	// milliseconds
-		gpuErrorCheck(cudaEventElapsedTime(&ms, construct_start, construct_stop),
-						"Error in calculating time elapsed for CUDA search set-up code");
-
-		std::cout << "CUDA interval parallel search set-up time: " << ms << " ms\n";
 
 		gpuErrorCheck(cudaEventElapsedTime(&ms, search_start, search_stop),
 						"Error in calculating time elapsed for CUDA search code");
 
 		std::cout << "CUDA interval parallel search time: " << ms << " ms\n";
 
-		gpuErrorCheck(cudaEventDestroy(construct_start),
-						"Error in destroying start event for timing CUDA search set-up code");
-		gpuErrorCheck(cudaEventDestroy(construct_stop),
-						"Error in destroying stop event for timing CUDA search set-up code");
 		gpuErrorCheck(cudaEventDestroy(search_start),
 						"Error in destroying start event for timing CUDA search code");
 		gpuErrorCheck(cudaEventDestroy(search_stop),
