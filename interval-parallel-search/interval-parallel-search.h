@@ -24,7 +24,7 @@ PointStructTemplate<T, IDType, num_IDs>* intervalParallelSearch(PointStructTempl
 		gpuErrorCheck(cudaEventCreate(&search_stop),
 						"Error in creating stop event for timing CUDA search code");
 		
-		// Start CUDA search set-up timer
+		// Start CUDA search set-up timer (i.e. place this event into default stream)
 		gpuErrorCheck(cudaEventRecord(construct_start),
 						"Error in recording start event for timing CUDA search set-up code");
 	}
@@ -128,7 +128,7 @@ IDType* intervalParallelSearchID(PointStructTemplate<T, IDType, 1>* pt_arr, cons
 		gpuErrorCheck(cudaEventCreate(&search_stop),
 						"Error in creating stop event for timing CUDA search code");
 		
-		// Start CUDA search set-up timer
+		// Start CUDA search set-up timer (i.e. place this event into default stream)
 		gpuErrorCheck(cudaEventRecord(construct_start),
 						"Error in recording start event for timing CUDA search set-up code");
 	}
