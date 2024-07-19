@@ -1,10 +1,10 @@
 # Static Priority Search Tree on GPU
 
-Runs on CUDA 12.2.2; requires GCC version 7.4 or higher
+Runs on CUDA 12.3.2; requires GCC version 7.4 or higher
 
-Tested on NYU's Greene HPC, where accessing nvcc version 12.2.2 requires running
+Tested on NYU's Greene HPC, where accessing nvcc version 12.3.2 requires running
 
-	singularity shell --nv /scratch/work/public/singularity/cuda12.2.2-cudnn8.9.4-devel-ubuntu22.04.3.sif
+	singularity shell --nv /scratch/work/public/singularity/cuda12.3.2-cudnn9.0.0-ubuntu-22.04.4.sif
 
 and running commmands within the Singularity interface (alternatively, if only one command needs to be run within singularity, substitute `shell` with `exec` and append the desired command).
 
@@ -29,6 +29,11 @@ For debugging options, use:
 - `-lineinfo` to get info on which lines are causing errors
 
 Standard is set to C++20 because Thrust has deprecated versions of C++ older than C++14 (which also allows use of simpler auto return types), constexpr if (compile-time-evaluated conditionals that may optimise away unused code) are a C++17 language feature, and requires is a C++20 language feature.
+
+Similarly, to compile interval parallel search comparison code, run
+
+	nvcc interval-parallel-search/interval-parallel-search-tester-driver.cu -ICommon -Ihelpers -Iinterval-parallel-search -std=c++20 -o interval-parallel-search/interval-parallel-search-tester-driver.out
+- `interval-parallel-search` option for `-I` flag: interval parallel search testers and code
 
 
 To check memory safety of GPU code, use:

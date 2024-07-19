@@ -11,6 +11,8 @@
 #include "gpu-err-chk.h"
 #include "print-array.h"
 
+#include "interval-parallel-search.h"
+
 enum DataType {CHAR, DOUBLE, FLOAT, INT, LONG};
 
 

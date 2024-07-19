@@ -6,6 +6,7 @@
 #include <string>
 
 #include "point-struct.h"
+
 #include "interval-parallel-search-tester.h"
 
 
