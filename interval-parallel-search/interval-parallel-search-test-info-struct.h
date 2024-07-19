@@ -37,178 +37,142 @@ struct InterParaSearchTestInfoStruct
 		if (data_type == DataType::DOUBLE)
 		{
 			InterParaSearchTester<double, std::uniform_real_distribution>
-						pst_tester(rand_seed, std::stod(val_range_strings[0]),
+						ips_tester(rand_seed, std::stod(val_range_strings[0]),
 									std::stod(val_range_strings[1]),
 									std::stod(search_val_string));
 			
-			treeTypeWrap(pst_tester);
+			numIDsWrap(ips_tester);
 		}
 		else if (data_type == DataType::FLOAT)
 		{
 			InterParaSearchTester<float, std::uniform_real_distribution>
-						pst_tester(rand_seed, std::stof(val_range_strings[0]),
+						ips_tester(rand_seed, std::stof(val_range_strings[0]),
 									std::stof(val_range_strings[1]),
 									std::stof(search_val_string));
 			
-			treeTypeWrap(pst_tester);
+			numIDsWrap(ips_tester);
 		}
 		else if (data_type == DataType::INT)
 		{
 			InterParaSearchTester<int, std::uniform_int_distribution>
-						pst_tester(rand_seed, std::stoi(val_range_strings[0]),
+						ips_tester(rand_seed, std::stoi(val_range_strings[0]),
 									std::stoi(val_range_strings[1]),
 									std::stoi(search_val_string));
 			
-			treeTypeWrap(pst_tester);
+			numIDsWrap(ips_tester);
 		}
 		else if (data_type == DataType::LONG)
 		{
 			InterParaSearchTester<long, std::uniform_int_distribution>
-						pst_tester(rand_seed, std::stol(val_range_strings[0]),
+						ips_tester(rand_seed, std::stol(val_range_strings[0]),
 									std::stol(val_range_strings[1]),
 									std::stol(search_val_string));
 			
-			treeTypeWrap(pst_tester);
-		}
-	};
-
-	// Instantiate next InterParaSearchTester type with respect to tree type
-	template <typename InterParaSearchTesterDataIDInfoInstantiated>
-	void treeTypeWrap(InterParaSearchTesterDataIDInfoInstantiated pst_tester)
-	{
-		if (tree_type == PSTType::CPU_ITER)
-		{
-			typename InterParaSearchTesterDataIDInfoInstantiated::TreeTypeWrapper<PointStruct, StaticPSTCPUIter> pst_tester_tree_instan(pst_tester);
-
-#ifdef DEBUG_WRAP
-			std::cout << "Instantiated StaticPSTCPUIter wrapper\n";
-#endif
-
-			numIDsWrap(pst_tester_tree_instan);
-		}
-		else if (tree_type == PSTType::CPU_RECUR)
-		{
-			typename InterParaSearchTesterDataIDInfoInstantiated::TreeTypeWrapper<PointStruct, StaticPSTCPURecur> pst_tester_tree_instan(pst_tester);
-
-#ifdef DEBUG_WRAP
-			std::cout << "Instantiated StaticPSTCPURecur wrapper\n";
-#endif
-
-			numIDsWrap(pst_tester_tree_instan);
-		}
-		else	// tree_type == PSTType::GPU
-		{
-			typename InterParaSearchTesterDataIDInfoInstantiated::TreeTypeWrapper<PointStruct, StaticPSTGPU> pst_tester_tree_instan(pst_tester);
-
-#ifdef DEBUG_WRAP
-			std::cout << "Instantiated StaticPSTGPU wrapper\n";
-#endif
-
-			numIDsWrap(pst_tester_tree_instan);
+			numIDsWrap(ips_tester);
 		}
 	};
 
 	// Instantiate next InterParaSearchTester type with respect to number of IDs
-	template <typename InterParaSearchTesterDataIDTypesInstantiated>
-	void numIDsWrap(InterParaSearchTesterDataIDTypesInstantiated pst_tester)
+	template <typename InterParaSearchTesterDataTypesInstantiated>
+	void numIDsWrap(InterParaSearchTesterDataTypesInstantiated ips_tester)
 	{
 		if (pts_with_ids)
 		{
-			typename InterParaSearchTesterDataIDTypesInstantiated::NumIDsWrapper<1> pst_tester_num_ids_instan(pst_tester);
+			typename InterParaSearchTesterDataTypesInstantiated::NumIDsWrapper<1> ips_tester_num_ids_instan(ips_tester);
 
 #ifdef DEBUG_WRAP
 			std::cout << "Instantiated num_IDs = 1 wrapper\n";
 #endif
 			
-			IDTypeWrap(pst_tester_num_ids_instan);
+			IDTypeWrap(ips_tester_num_ids_instan);
 		}
 		else	// !pts_with_ids; can skip IDTypeWrap()
 		{
-			typename InterParaSearchTesterDataIDTypesInstantiated::NumIDsWrapper<0> pst_tester_num_ids_instan(pst_tester);
+			typename InterParaSearchTesterDataTypesInstantiated::NumIDsWrapper<0> ips_tester_num_ids_instan(ips_tester);
 
 #ifdef DEBUG_WRAP
 			std::cout << "Instantiated num_IDs = 0 wrapper\n";
 #endif
 
 			// As no ID distribution is used anyway, just place a dummy template template parameter taking one type parameter
-			typename InterParaSearchTesterDataIDTypesInstantiated
+			typename InterParaSearchTesterDataTypesInstantiated
 						::NumIDsWrapper<0>
 						::IDTypeWrapper<std::uniform_real_distribution, void>
-							pst_tester_fully_instan(pst_tester_num_ids_instan);
+							ips_tester_fully_instan(ips_tester_num_ids_instan);
 
-			testWrap(pst_tester_fully_instan);
+			testWrap(ips_tester_fully_instan);
 		}
 	};
 
 	// Instantiate next InterParaSearchTester type with respect to ID type
-	template <class InterParaSearchTesterDataInstantiated>
-	void IDTypeWrap(InterParaSearchTesterDataInstantiated pst_tester)
+	template <class InterParaSearchTesterDataTypeNumIDsInstantiated>
+	void IDTypeWrap(InterParaSearchTesterDataTypeNumIDsInstantiated ips_tester)
 	{
 		if (pts_with_ids)
 		{
 			if (id_type == DataType::CHAR)
 			{
 				// typename necessary, as compiler defaults to treating nested names as variables
-				typename InterParaSearchTesterDataInstantiated::IDTypeWrapper<std::uniform_int_distribution, char> pst_tester_id_instan(pst_tester);
+				typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, char> ips_tester_id_instan(ips_tester);
 
 #ifdef DEBUG_WRAP
 				std::cout << "Instantiated IDType = char wrapper\n";
 #endif
 
-				testWrap(pst_tester_id_instan);
+				testWrap(ips_tester_id_instan);
 			}
 			else if (id_type == DataType::DOUBLE)
 			{
-				typename InterParaSearchTesterDataInstantiated::IDTypeWrapper<std::uniform_real_distribution, double> pst_tester_id_instan(pst_tester);
+				typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, double> ips_tester_id_instan(ips_tester);
 
 #ifdef DEBUG_WRAP
 				std::cout << "Instantiated IDType = double wrapper\n";
 #endif
 
-				testWrap(pst_tester_id_instan);
+				testWrap(ips_tester_id_instan);
 			}
 			else if (id_type == DataType::FLOAT)
 			{
-				typename InterParaSearchTesterDataInstantiated::IDTypeWrapper<std::uniform_real_distribution, float> pst_tester_id_instan(pst_tester);
+				typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, float> ips_tester_id_instan(ips_tester);
 
 #ifdef DEBUG_WRAP
 				std::cout << "Instantiated IDType = float wrapper\n";
 #endif
 
-				testWrap(pst_tester_id_instan);
+				testWrap(ips_tester_id_instan);
 			}
 			else if (id_type == DataType::INT)
 			{
-				typename InterParaSearchTesterDataInstantiated::IDTypeWrapper<std::uniform_int_distribution, int> pst_tester_id_instan(pst_tester);
+				typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, int> ips_tester_id_instan(ips_tester);
 
 #ifdef DEBUG_WRAP
 				std::cout << "Instantiated IDType = int wrapper\n";
 #endif
 
-				testWrap(pst_tester_id_instan);
+				testWrap(ips_tester_id_instan);
 			}
 			else if (id_type == DataType::LONG)
 			{
-				typename InterParaSearchTesterDataInstantiated::IDTypeWrapper<std::uniform_int_distribution, long> pst_tester_id_instan(pst_tester);
+				typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, long> ips_tester_id_instan(ips_tester);
 
 #ifdef DEBUG_WRAP
 				std::cout << "Instantiated IDType = long wrapper\n";
 #endif
 
-				testWrap(pst_tester_id_instan);
+				testWrap(ips_tester_id_instan);
 			}
 		}
 	};
 
 	// Run test
 	template <typename InterParaSearchTesterClass>
-	void testWrap(InterParaSearchTesterClass pst_tester)
+	void testWrap(InterParaSearchTesterClass ips_tester)
 	{
 #ifdef DEBUG_WRAP
 		std::cout << "Beginning test\n";
 #endif
 
-		pst_tester(num_elems, test_type);
+		ips_tester(num_elems, test_type);
 	};
 };
 
