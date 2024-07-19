@@ -9,7 +9,7 @@
 // Given an array of PointStructTemplate<T, IDType, num_IDs>, return an on-device array of PointStructTemplate<T, IDType, num_IDs> where each point pt satisfies search_val \in [pt.dim1_val, pt.dim2_val])
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-PointStructTemplate<T, IDType, num_IDs>* intervalParallelSearch(PointStructTemplate<T, IDType, num_IDs>* pt_arr_d, const size_t num_pts, size_t &num_res_elems, T search_val, const int dev_ind, const int num_devs, const bool timed_CUDA)
+PointStructTemplate<T, IDType, num_IDs>* intervalParallelSearch(PointStructTemplate<T, IDType, num_IDs>* pt_arr_d, const size_t num_elems, size_t &num_res_elems, T search_val, const int dev_ind, const int num_devs, const bool timed_CUDA)
 {
 	if constexpr (timed_CUDA)
 	{
@@ -79,7 +79,7 @@ PointStructTemplate<T, IDType, num_IDs>* intervalParallelSearch(PointStructTempl
 // Given an array of PointStructTemplate<T, IDType, 1>, return an on-device array of indices where each index i satisfies search_val \in [pt_arr_d[i].dim1_val, pt_arr_d[i].dim2_val])
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType>
-IDType* intervalParallelSearchID(PointStructTemplate<T, IDType, 1>* pt_arr_d, const size_t num_pts, size_t &num_res_elems, T search_val, const int dev_ind, const int num_devs, const bool timed_CUDA)
+IDType* intervalParallelSearchID(PointStructTemplate<T, IDType, 1>* pt_arr_d, const size_t num_elems, size_t &num_res_elems, T search_val, const int dev_ind, const int num_devs, const bool timed_CUDA)
 {
 	// Sane construction would not copy identical input data to GPU multiple times, but instead copy once and use it in perpetuity; won't make this optimisation in code here, but make timing reflect this
 	if constexpr (timed_CUDA)
