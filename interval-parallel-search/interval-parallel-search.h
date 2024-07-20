@@ -28,7 +28,7 @@ PointStructTemplate<T, IDType, num_IDs>* intervalParallelSearch(PointStructTempl
 	const unsigned num_warps = threads_per_block / warp_size + ((threads_per_block % warp_size == 0) ? 0 : 1);
 
 	// Call global function for on-device search
-	intervalParallelSearchGlobal<<<num_thread_blocks, threads_per_block, (num_warps + 1) * sizeof(unsigned long long)>>>(pt_arr_d, num_elems, res_pt_arr_d, num_warps, search_val, false);
+	intervalParallelSearchGlobal<<<num_thread_blocks, threads_per_block, (num_warps + 1) * sizeof(unsigned long long)>>>(pt_arr_d, num_elems, res_pt_arr_d, num_warps, search_val);
 	
 	// Because all calls to the device are placed in the same stream (queue) and because cudaMemcpy() is (host-)blocking, this code will not return before the computation has completed
 	// res_arr_ind_d points to the next index to write to, meaning that it actually contains the number of elements returned
@@ -63,7 +63,7 @@ IDType* intervalParallelSearchID(PointStructTemplate<T, IDType, 1>* pt_arr_d, co
 	const unsigned num_warps = threads_per_block / warp_size + ((threads_per_block % warp_size == 0) ? 0 : 1);
 
 	// Call global function for on-device search
-	intervalParallelSearchGlobal<<<num_thread_blocks, threads_per_block, (num_warps + 1) * sizeof(unsigned long long)>>>(pt_arr_d, num_elems, res_id_arr_d, num_warps, search_val, true);
+	intervalParallelSearchGlobal<<<num_thread_blocks, threads_per_block, (num_warps + 1) * sizeof(unsigned long long)>>>(pt_arr_d, num_elems, res_id_arr_d, num_warps, search_val);
 
 	// Because all calls to the device are placed in the same stream (queue) and because cudaMemcpy() is (host-)blocking, this code will not return before the computation has completed
 	// res_arr_ind_d points to the next index to write to, meaning that it actually contains the number of elements returned
@@ -76,14 +76,17 @@ IDType* intervalParallelSearchID(PointStructTemplate<T, IDType, 1>* pt_arr_d, co
 	return res_id_arr_d;
 };
 
-// Search in parallel for all points pt satisfying search_val \in [pt.dim1_val, pt.dim2_val]; output array is of type IDType if reportID = true and of type PointStructTemplate<T, IDType, num_IDs> if reportID = false
+// Search in parallel for all points pt satisfying search_val \in [pt.dim1_val, pt.dim2_val]; output array is of type IDType if decltype(res_arr_d) = IDType and of type PointStructTemplate<T, IDType, num_IDs> if decltype(res_arr_d) = PointStructTemplate<T, IDType, num_IDs>
 // Shared memory must be at least of size (1 + number of warps) * sizeof(unsigned long long), where the 1 stores the block-level offset index of res_arr_d starting at which results are stored (is updated in each iteration)
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
-			typename IDType, size_t num_IDs>
-__global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_IDs> pt_arr_d,
-												const size_t num_elems, auto *const res_arr_d,
-												const unsigned num_warps,
-												const T search_val, const bool reportID)
+			typename IDType, size_t num_IDs, typename RetType>
+			requires std::disjunction<
+								std::is_same<RetType, IDType>,
+								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+			>::value
+__global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_IDs> *pt_arr_d,
+												const size_t num_elems, RetType *const res_arr_d,
+												const unsigned num_warps, const T search_val)
 {
 	extern __shared__ unsigned long long s[];
 	unsigned long long &block_level_offset = *s;
@@ -134,14 +137,14 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 		thread_level_offset = __shfl_up_sync(0xffffffff, thread_level_num_elems, 1);
 
 		// Last thread in warp puts total number of slots necessary for all active cells in the warp_level_num_elems_arr shared memory array
-		if constexpr (threadIdx.x % warpSize == warpSize - 1)
+		if (threadIdx.x % warpSize == warpSize - 1)
 			// Place total number of elements in this warp at the slot assigned to this warp in shared memory array warp_level_num_elems_arr
 			warp_level_num_elems_arr[threadIdx.x / warpSize] = thread_level_num_elems;
 
 		__syncthreads();	// Warp-level info must be ready to use at the block level
 		// Inter-warp prefix sum (block-level)
 		// One warp is active in this process; use the first warp, which is guaranteed to exist
-		if constexpr (threadIdx.x / warpSize == 0)
+		if (threadIdx.x / warpSize == 0)
 		{
 			unsigned long long warp_level_num_elems;
 			unsigned long long interm_warp_num_elem_offset;
@@ -173,7 +176,7 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 		__syncthreads();	// Total number of slots needed to store all active metacells is now known
 
 		// Single thread in block allocates space in res_arr_d with atomic operation
-		if constexpr (threadIdx.x == 0)
+		if (threadIdx.x == 0)
 		{
 			const unsigned long long block_level_num_elems = warp_level_num_elems_arr[num_warps - 1];
 			block_level_offset = atomicAdd(&res_arr_ind_d, block_level_num_elems);
@@ -181,7 +184,7 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 
 		// All warps acquire their warp-level offset, which is the element of index (warp ID - 1) in warp_level_num_elems_arr
 		// Acquisition of warp-level offset is independent of memory allocation, so can occur anytime after the warp-level __syncthreads() call and before writing results to global memory; placed here for optimisation purposes, as all threads other than thread 0 would otherwise be idle between these __syncthreads() calls
-		if constexpr (threadIdx.x / warpSize == 0)
+		if (threadIdx.x / warpSize == 0)
 			warp_level_offset = 0;
 		else
 			warp_level_offset = warp_level_num_elems_arr[threadIdx.x / warpSize - 1];
@@ -191,7 +194,7 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 		// Output to result array
 		if (cell_active)
 		{
-			if constexpr (reportID)
+			if constexpr (std::is_same<RetType, IDType>::value)
 				// Add ID to array
 				res_arr_d[block_level_offset + warp_level_offset + thread_level_offset]
 					= pt_arr_d[i].id;

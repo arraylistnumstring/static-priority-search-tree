@@ -164,7 +164,7 @@ struct InterParaSearchTester
 										"Error in allocating array to store initial PointStructs on device "
 										+ std::to_string(id_type_wrapper.num_ids_wrapper.dev_ind) + " of "
 										+ std::to_string(id_type_wrapper.num_ids_wrapper.num_devs) + ": ");
-						gpuErrorCheck(cudaMemcpy(pt_arr_d, pt_arr, num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>)),
+						gpuErrorCheck(cudaMemcpy(pt_arr_d, pt_arr, num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>), cudaMemcpyDefault),
 										"Error in copying array of PointStructTemplate<T, IDType, num_IDs> objects to device "
 										+ std::to_string(id_type_wrapper.num_ids_wrapper.dev_ind) + " of "
 										+ std::to_string(id_type_wrapper.num_ids_wrapper.num_devs) + ": ");

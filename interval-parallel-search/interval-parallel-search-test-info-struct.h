@@ -34,7 +34,7 @@ struct InterParaSearchTestInfoStruct
 	bool report_IDs = false;
 	bool timed_CUDA = false;		// Whether to time CUDA code during testing
 
-	// Instantiate outermost InterParaSearchTester type with respect to data type
+	// Instantiate outermost InterParaSearchTester type with respect to CUDA timing
 	void test()
 	{
 		if (timed_CUDA)
@@ -74,7 +74,7 @@ struct InterParaSearchTestInfoStruct
 		}
 		else if (data_type == DataType::INT)
 		{
-			typename InterParaSearchTesterTimingDet::DataTypeWrapper<int, std::uniform_real_distribution>
+			typename InterParaSearchTesterTimingDet::DataTypeWrapper<int, std::uniform_int_distribution>
 						ips_tester_data_type_instan(rand_seed, std::stod(val_range_strings[0]),
 													std::stod(val_range_strings[1]),
 													std::stod(search_val_string));
@@ -83,7 +83,7 @@ struct InterParaSearchTestInfoStruct
 		}
 		else if (data_type == DataType::LONG)
 		{
-			typename InterParaSearchTesterTimingDet::DataTypeWrapper<long, std::uniform_real_distribution>
+			typename InterParaSearchTesterTimingDet::DataTypeWrapper<long, std::uniform_int_distribution>
 						ips_tester_data_type_instan(rand_seed, std::stod(val_range_strings[0]),
 													std::stod(val_range_strings[1]),
 													std::stod(search_val_string));
@@ -147,7 +147,8 @@ struct InterParaSearchTestInfoStruct
 				}
 				else
 				{
-					typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, char>::RetTypeWrapper ips_tester_id_ret_types_instan(ips_tester_id_instan);
+					// Must have <> to use default template parameter
+					typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, char>::RetTypeWrapper<> ips_tester_id_ret_types_instan(ips_tester_id_instan);
 					testWrap(ips_tester_id_ret_types_instan);
 				}
 			}
@@ -167,7 +168,7 @@ struct InterParaSearchTestInfoStruct
 				}
 				else
 				{
-					typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, double>::RetTypeWrapper ips_tester_id_ret_types_instan(ips_tester_id_instan);
+					typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, double>::RetTypeWrapper<> ips_tester_id_ret_types_instan(ips_tester_id_instan);
 					testWrap(ips_tester_id_ret_types_instan);
 				}
 			}
@@ -187,7 +188,7 @@ struct InterParaSearchTestInfoStruct
 				}
 				else
 				{
-					typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, float>::RetTypeWrapper ips_tester_id_ret_types_instan(ips_tester_id_instan);
+					typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, float>::RetTypeWrapper<> ips_tester_id_ret_types_instan(ips_tester_id_instan);
 					testWrap(ips_tester_id_ret_types_instan);
 				}
 			}
@@ -207,7 +208,7 @@ struct InterParaSearchTestInfoStruct
 				}
 				else
 				{
-					typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, int>::RetTypeWrapper ips_tester_id_ret_types_instan(ips_tester_id_instan);
+					typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, int>::RetTypeWrapper<> ips_tester_id_ret_types_instan(ips_tester_id_instan);
 					testWrap(ips_tester_id_ret_types_instan);
 				}
 			}
@@ -227,7 +228,7 @@ struct InterParaSearchTestInfoStruct
 				}
 				else
 				{
-					typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, long>::RetTypeWrapper ips_tester_id_ret_types_instan(ips_tester_id_instan);
+					typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, long>::RetTypeWrapper<> ips_tester_id_ret_types_instan(ips_tester_id_instan);
 					testWrap(ips_tester_id_ret_types_instan);
 				}
 			}
