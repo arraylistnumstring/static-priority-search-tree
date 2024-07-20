@@ -8,7 +8,7 @@ Tested on NYU's Greene HPC, where accessing nvcc version 12.2.2 requires running
 
 and running commmands within the Singularity interface (alternatively, if only one command needs to be run within singularity, substitute `shell` with `exec` and append the desired command).
 
-According to HPC support staff, CUDA Singularity image version 12.3.2 may still be buggy as of 2024-07-19, so stick with version 12.2.2.
+According to HPC support staff, CUDA Singularity image version 12.3.2 may still be buggy as of 2024-07-19, so stick with version 12.2.2. Also, as of this date, the PTX toolchain that would work with version 12.3.2 is not compiled on at least some NVIDIA GPUs available on HPC (a quick online search suggests this is due to NVIDIA drivers not being up-to-date).
 
 
 To compile testers, run:
