@@ -27,6 +27,7 @@ struct InterParaSearchTestInfoStruct
 
 	DataType id_type;
 
+	// Data types are chosen to correspond to CUDA data types for corresponding on-device values
 	unsigned num_thread_blocks;
 	unsigned threads_per_block;
 

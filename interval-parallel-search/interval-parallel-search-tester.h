@@ -53,6 +53,7 @@ struct InterParaSearchTester
 			DataTypeWrapper<T, Distrib, RandNumEng> para_search_tester;
 
 			// Track CUDA device properties; placed in this struct to reduce code redundancy, as this is the only struct that is unspecialised and has a single constructor
+			// Data types chosen because they are the ones respectively returned by CUDA
 			int num_devs;
 			int dev_ind;
 			cudaDeviceProp dev_props;

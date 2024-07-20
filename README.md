@@ -1,12 +1,14 @@
 # Static Priority Search Tree on GPU
 
-Runs on CUDA 12.3.2; requires GCC version 7.4 or higher
+Runs on CUDA 12.2.2; requires GCC version 7.4 or higher
 
-Tested on NYU's Greene HPC, where accessing nvcc version 12.3.2 requires running
+Tested on NYU's Greene HPC, where accessing nvcc version 12.2.2 requires running
 
 	singularity shell --nv /scratch/work/public/singularity/cuda12.3.2-cudnn9.0.0-ubuntu-22.04.4.sif
 
 and running commmands within the Singularity interface (alternatively, if only one command needs to be run within singularity, substitute `shell` with `exec` and append the desired command).
+
+According to HPC support staff, CUDA Singularity image version 12.3.2 may still be buggy as of 2024-07-19, so stick with version 12.2.2.
 
 
 To compile testers, run:
