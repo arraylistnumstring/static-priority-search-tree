@@ -9,21 +9,8 @@
 // Given an array of PointStructTemplate<T, IDType, num_IDs>, return an on-device array of PointStructTemplate<T, IDType, num_IDs> where each point pt satisfies search_val \in [pt.dim1_val, pt.dim2_val])
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-PointStructTemplate<T, IDType, num_IDs>* intervalParallelSearch(PointStructTemplate<T, IDType, num_IDs>* pt_arr_d, const size_t num_elems, size_t &num_res_elems, T search_val, const int dev_ind, const int num_devs, const bool timed_CUDA)
+PointStructTemplate<T, IDType, num_IDs>* intervalParallelSearch(PointStructTemplate<T, IDType, num_IDs>* pt_arr_d, const size_t num_elems, size_t &num_res_elems, T search_val, const int dev_ind, const int num_devs, const int warp_size, const unsigned num_thread_blocks, const unsigned threads_per_block)
 {
-	if constexpr (timed_CUDA)
-	{
-		cudaEvent_t search_start, search_stop;
-		gpuErrorCheck(cudaEventCreate(&search_start),
-						"Error in creating start event for timing CUDA search code");
-		gpuErrorCheck(cudaEventCreate(&search_stop),
-						"Error in creating stop event for timing CUDA search code");
-		
-		// Start CUDA search timer (i.e. place this event in default stream)
-		gpuErrorCheck(cudaEventRecord(search_start),
-						"Error in recording start event for timing CUDA search code");
-	}
-
 	// Allocate space on GPU for output metacell tag array
 	PointStructTemplate<T, IDType, num_IDs>* res_pt_arr_d;
 	gpuErrorCheck(cudaMalloc(&res_pt_arr_d, num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>)),
@@ -38,8 +25,10 @@ PointStructTemplate<T, IDType, num_IDs>* intervalParallelSearch(PointStructTempl
 					"Error in initialising global result array index to 0 on device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs) + ": ");
 
+	const unsigned num_warps = threads_per_block / warp_size + ((threads_per_block % warp_size == 0) ? 0 : 1);
+
 	// Call global function for on-device search
-	intervalParallelSearchGlobal<<<, ,>>>(pt_arr_d, num_elems, res_pt_arr_d, search_val, false);
+	intervalParallelSearchGlobal<<<num_thread_blocks, threads_per_block, (num_warps + 1) * sizeof(unsigned long long)>>>(pt_arr_d, num_elems, res_pt_arr_d, num_warps, search_val, false);
 	
 	// Because all calls to the device are placed in the same stream (queue) and because cudaMemcpy() is (host-)blocking, this code will not return before the computation has completed
 	// res_arr_ind_d points to the next index to write to, meaning that it actually contains the number of elements returned
@@ -48,30 +37,6 @@ PointStructTemplate<T, IDType, num_IDs>* intervalParallelSearch(PointStructTempl
 					"Error in copying global result array final index from device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs) + ": ");
 
-	if constexpr (timed_CUDA)
-	{
-		// End CUDA search timer
-		gpuErrorCheck(cudaEventRecord(search_stop),
-						"Error in recording stop event for timing CUDA search code");
-
-		// Block CPU execution until search stop event has been recorded
-		gpuErrorCheck(cudaEventSynchronize(search_stop),
-						"Error in blocking CPU execution until completion of stop event for timing CUDA search code");
-
-		// Report construction timing
-		float ms = 0;	// milliseconds
-
-		gpuErrorCheck(cudaEventElapsedTime(&ms, search_start, search_stop),
-						"Error in calculating time elapsed for CUDA search code");
-
-		std::cout << "CUDA interval parallel search time: " << ms << " ms\n";
-
-		gpuErrorCheck(cudaEventDestroy(search_start),
-						"Error in destroying start event for timing CUDA search code");
-		gpuErrorCheck(cudaEventDestroy(search_stop),
-						"Error in destroying stop event for timing CUDA search code");
-	}
-
 	// Return device pointer in case more on-device computations need to be done, e.g. Marching Cubes
 	return res_pt_arr_d;
 };
@@ -79,25 +44,11 @@ PointStructTemplate<T, IDType, num_IDs>* intervalParallelSearch(PointStructTempl
 // Given an array of PointStructTemplate<T, IDType, 1>, return an on-device array of indices where each index i satisfies search_val \in [pt_arr_d[i].dim1_val, pt_arr_d[i].dim2_val])
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType>
-IDType* intervalParallelSearchID(PointStructTemplate<T, IDType, 1>* pt_arr_d, const size_t num_elems, size_t &num_res_elems, T search_val, const int dev_ind, const int num_devs, const bool timed_CUDA)
+IDType* intervalParallelSearchID(PointStructTemplate<T, IDType, 1>* pt_arr_d, const size_t num_elems, size_t &num_res_elems, T search_val, const int dev_ind, const int num_devs, const int warp_size, const unsigned num_thread_blocks, const unsigned threads_per_block)
 {
-	// Sane construction would not copy identical input data to GPU multiple times, but instead copy once and use it in perpetuity; won't make this optimisation in code here, but make timing reflect this
-	if constexpr (timed_CUDA)
-	{
-		cudaEvent_t search_start, search_stop;
-		gpuErrorCheck(cudaEventCreate(&search_start),
-						"Error in creating start event for timing CUDA search code");
-		gpuErrorCheck(cudaEventCreate(&search_stop),
-						"Error in creating stop event for timing CUDA search code");
-
-		// Start CUDA search timer (i.e. place this event in default stream)
-		gpuErrorCheck(cudaEventRecord(search_start),
-						"Error in recording start event for timing CUDA search code");
-	}
-
 	// Allocate space on GPU for output metacell IDs
 	IDType* res_id_arr_d;
-	gpuErrorCheck(cudaMalloc(&res_id_arr_d, num_elems * sizeof(size_t),
+	gpuErrorCheck(cudaMalloc(&res_id_arr_d, num_elems * sizeof(size_t)),
 					"Error in allocating array to store PointStruct ID search result on device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs) + ": ");
 
@@ -109,8 +60,10 @@ IDType* intervalParallelSearchID(PointStructTemplate<T, IDType, 1>* pt_arr_d, co
 					"Error in initialising global result array index to 0 on device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs) + ": ");
 
+	const unsigned num_warps = threads_per_block / warp_size + ((threads_per_block % warp_size == 0) ? 0 : 1);
+
 	// Call global function for on-device search
-	intervalParallelSearchGlobal<<<, ,>>>(pt_arr_d, num_elems, res_id_arr_d, search_val, true);
+	intervalParallelSearchGlobal<<<num_thread_blocks, threads_per_block, (num_warps + 1) * sizeof(unsigned long long)>>>(pt_arr_d, num_elems, res_id_arr_d, num_warps, search_val, true);
 
 	// Because all calls to the device are placed in the same stream (queue) and because cudaMemcpy() is (host-)blocking, this code will not return before the computation has completed
 	// res_arr_ind_d points to the next index to write to, meaning that it actually contains the number of elements returned
@@ -118,30 +71,6 @@ IDType* intervalParallelSearchID(PointStructTemplate<T, IDType, 1>* pt_arr_d, co
 										sizeof(unsigned long long), 0, cudaMemcpyDefault),
 					"Error in copying global result array final index from device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs) + ": ");
-
-	if constexpr (timed_CUDA)
-	{
-		// End CUDA search timer
-		gpuErrorCheck(cudaEventRecord(search_stop),
-						"Error in recording stop event for timing CUDA search code");
-
-		// Block CPU execution until search stop event has been recorded
-		gpuErrorCheck(cudaEventSynchronize(search_stop),
-						"Error in blocking CPU execution until completion of stop event for timing CUDA search code");
-
-		// Report construction timing
-		float ms = 0;	// milliseconds
-
-		gpuErrorCheck(cudaEventElapsedTime(&ms, search_start, search_stop),
-						"Error in calculating time elapsed for CUDA search code");
-
-		std::cout << "CUDA interval parallel search time: " << ms << " ms\n";
-
-		gpuErrorCheck(cudaEventDestroy(search_start),
-						"Error in destroying start event for timing CUDA search code");
-		gpuErrorCheck(cudaEventDestroy(search_stop),
-						"Error in destroying stop event for timing CUDA search code");
-	}
 
 	// Return device pointer in case more on-device computations need to be done, e.g. Marching Cubes
 	return res_id_arr_d;
@@ -153,13 +82,12 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 			typename IDType, size_t num_IDs>
 __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_IDs> pt_arr_d,
 												const size_t num_elems, auto *const res_arr_d,
+												const unsigned num_warps,
 												const T search_val, const bool reportID)
 {
 	extern __shared__ unsigned long long s[];
 	unsigned long long &block_level_offset = *s;
 	unsigned long long *warp_level_num_elems_arr = s + 1;
-
-	const unsigned long long num_warps = blockDim.x / warpSize + (blockDim.x % warpSize == 0) ? 0 : 1;
 
 	unsigned long long thread_level_num_elems;	// Calculated with inclusive prefix sum
 	unsigned long long thread_level_offset;		// Calculated with exclusive prefix sum	(i.e. preceding element of inclusive prefix sum result)
@@ -256,7 +184,7 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 		if constexpr (threadIdx.x / warpSize == 0)
 			warp_level_offset = 0;
 		else
-			warp_level_offset = warp_level_num_elems[threadIdx.x / warpSize - 1];
+			warp_level_offset = warp_level_num_elems_arr[threadIdx.x / warpSize - 1];
 
 		__syncthreads();	// Block-level offset now known
 

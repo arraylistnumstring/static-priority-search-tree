@@ -18,14 +18,16 @@ int main(int argc, char *argv[])
 		// Help message
 		if (arg == "-h" || arg == "--help")
 		{
-			std::cerr << "Usage: ./interval-parallel-search-tester-driver <datatype-flag> "
+			std::cerr << "Usage: ./interval-parallel-search-tester-driver <datatype-flag> ";
 			std::cerr << "[-I ID_TYPE] ";
 			std::cerr << "[-R] ";
 			std::cerr << "[-r RAND_SEED] ";
 			std::cerr << "[-t] ";
+			std::cerr << "-B NUM_BLOCKS";
 			std::cerr << "-b MIN_VAL MAX_VAL ";
 			std::cerr << "-n NUM_ELEMS ";
 			std::cerr << "-s SEARCH_VAL";
+			std::cerr << "-T THREADS_PER_BLOCK";
 			std::cerr << "\n\n";
 
 			std::cerr << "\tdatatype-flag:\n";
@@ -34,17 +36,21 @@ int main(int argc, char *argv[])
 			std::cerr << "\t\t-i, --int\tUse ints for values\n\n";
 			std::cerr << "\t\t-l, --long\tUse longs as values\n\n";
 
+			std::cerr << "\t-B, --num-blocks NUM_BLOCKS\tNumber of blocks to use in grid for CUDA kernel\n\n";
+
 			std::cerr << "\t-b, --val-bounds MIN_VAL MAX_VAL\tBounds of values (inclusive) to use when generating random values for PST; must be castable to chosen datatype\n\n";
 
-			std::cerr << "\t-I, --ids DATA_TYPE\tToggles assignment of IDs to the nodes of the tree with data type DATA_TYPE; defaults to false; valid data types are char, double, float, int, long; if false, flags -R, --report-ID have no effect\n\n";
+			std::cerr << "\t-I, --ids DATA_TYPE\tToggles assignment of IDs to the nodes of the tree with data type DATA_TYPE; defaults to false; valid data types are char, double, float, int, long; if false, flags -R, --report-IDs have no effect\n\n";
 
 			std::cerr << "\t-n, --num-elems NUM_ELEMS\tNumber of elements to put in tree\n\n";
 
-			std::cerr << "\t-R, --report-ID\tWhether to report point IDs or full info of a point; defaults to full info; if no ID type is specified, always reports full info\n\n";
+			std::cerr << "\t-R, --report-IDs\tWhether to report point IDs or full info of a point; defaults to full info; if no ID type is specified, always reports full info\n\n";
 
 			std::cerr << "\t-r, --rand-seed RAND_SEED\tRandom seed to use when generating data for tree; defaults to 0\n\n";
 
 			std::cerr << "\t-s, --search-val SEARCH_VAL\tValue to search for in all intervals; interval bounds are treated as inclusive\n\n";
+
+			std::cerr << "\t-T, --threads-per-block THREADS_PER_BLOCK\tNumber of threads to use in a thread block\n\n";
 
 			std::cerr << "\t-t, --timed-CUDA\tToggles timing of the CUDA portion of the code using on-device functions; defaults to false\n\n";
 
@@ -72,6 +78,7 @@ int main(int argc, char *argv[])
 				std::cerr << "Insufficient number of arguments provided for ID data type\n";
 				return 2;
 			}
+
 			try
 			{
 				// Convert id_type_string to lowercase for easier processing
@@ -99,8 +106,8 @@ int main(int argc, char *argv[])
 		}
 		
 		// Report ID flag parsing
-		else if (arg == "-R" || arg == "--report-ID")
-			test_info.report_ID = true;
+		else if (arg == "-R" || arg == "--report-IDs")
+			test_info.report_IDs = true;
 
 		// Random seed parsing
 		else if (arg == "-r" || arg == "--rand-seed")
@@ -111,6 +118,7 @@ int main(int argc, char *argv[])
 				std::cerr << "Insufficient number of arguments provided for random seed\n";
 				return 2;
 			}
+
 			try
 			{
 				test_info.rand_seed = std::stoull(argv[i], nullptr, 0);
@@ -126,7 +134,29 @@ int main(int argc, char *argv[])
 		else if (arg == "-t" || arg == "--timed-CUDA")
 			test_info.timed_CUDA = true;
 
-		// Tree value parsing
+		// Number of thread blocks parsing
+		else if (arg == "-B" || arg == "--num-blocks")
+		{
+			i++;
+			if (i >= argc)
+			{
+				std::cerr << "Insufficient number of arguments provided for number of thread blocks\n";
+
+				return 2;
+			}
+
+			try
+			{
+				test_info.num_thread_blocks = std::stoul(argv[i]);
+			}
+			catch (std::invalid_argument const &ex)
+			{
+				std::cerr << "Invalid argument for number of thread blocks: " << argv[i] << '\n';
+				return 3;
+			}
+		}
+
+		// Interval value bound parsing
 		else if (arg == "-b" || arg == "--val-bounds")
 		{
 			for (int j = 0; j < InterParaSearchTestInfoStruct::NUM_VALS_INT_BOUNDS; j++)
@@ -137,13 +167,14 @@ int main(int argc, char *argv[])
 					std::cerr << "Insufficient number of arguments provided for interval value bounds\n";
 					return 2;
 				}
+
 				try
 				{
 					test_info.val_range_strings[j] = std::string(argv[i]);
 				}
 				catch (std::invalid_argument const &ex)
 				{
-					std::cerr << "Invalid argument for tree value bound: " << argv[i] << '\n';
+					std::cerr << "Invalid argument for interval value bound: " << argv[i] << '\n';
 					return 3;
 				}
 			}
@@ -158,6 +189,7 @@ int main(int argc, char *argv[])
 				std::cerr << "Insufficient number of arguments provided for number of elements\n";
 				return 2;
 			}
+
 			try
 			{
 				test_info.num_elems = std::stoull(argv[i], nullptr, 0);
@@ -179,6 +211,7 @@ int main(int argc, char *argv[])
 				std::cerr << "Insufficient number of arguments provided for search value\n";
 				return 2;
 			}
+
 			try
 			{
 				// Curly braces necessary around try blocks
@@ -187,6 +220,27 @@ int main(int argc, char *argv[])
 			catch (std::invalid_argument const &ex)
 			{
 				std::cerr << "Invalid argument for search value: " << argv[i] << '\n';
+				return 3;
+			}
+		}
+
+		// Number of threads per block parsing
+		else if (arg == "-T" || arg == "--threads-per-block")
+		{
+			i++;
+			if (i >= argc)
+			{
+				std::cerr << "Insufficient number of arguments provided for number of threads per block\n";
+				return 2;
+			}
+
+			try
+			{
+				test_info.threads_per_block = std::stoul(argv[i]);
+			}
+			catch (std::invalid_argument const &ex)
+			{
+				std::cerr << "Invalid argument for number of threads per block: " << argv[i] << '\n';
 				return 3;
 			}
 		}
