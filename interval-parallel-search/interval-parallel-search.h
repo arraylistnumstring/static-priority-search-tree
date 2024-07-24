@@ -27,6 +27,10 @@ PointStructTemplate<T, IDType, num_IDs>* intervalParallelSearch(PointStructTempl
 
 	const unsigned num_warps = threads_per_block / warp_size + ((threads_per_block % warp_size == 0) ? 0 : 1);
 
+#ifdef DEBUG_SEARCH
+	std::cout << "Beginning on-device search\n";
+#endif
+
 	// Call global function for on-device search
 	intervalParallelSearchGlobal<<<num_thread_blocks, threads_per_block, (num_warps + 1) * sizeof(unsigned long long)>>>(pt_arr_d, num_elems, res_pt_arr_d, num_warps, search_val);
 	
@@ -61,6 +65,10 @@ IDType* intervalParallelSearchID(PointStructTemplate<T, IDType, 1>* pt_arr_d, co
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs) + ": ");
 
 	const unsigned num_warps = threads_per_block / warp_size + ((threads_per_block % warp_size == 0) ? 0 : 1);
+
+#ifdef DEBUG_SEARCH
+	std::cout << "Beginning on-device search\n";
+#endif
 
 	// Call global function for on-device search
 	intervalParallelSearchGlobal<<<num_thread_blocks, threads_per_block, (num_warps + 1) * sizeof(unsigned long long)>>>(pt_arr_d, num_elems, res_id_arr_d, num_warps, search_val);
@@ -126,15 +134,25 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 #pragma unroll
 		for (unsigned shfl_offset = 1; shfl_offset < warpSize; shfl_offset <<= 1)
 		{
-			// Copies value of variable thread_level_num_elems from thread with lane ID that is shfl_offset less than current thread's lane ID; no lane ID wrapping occurs, so threads with lane ID lower than shfl_offset will not be affected
-			// Threads can only receive data from other threads participating in the __shfl_*sync() call; behavior is undefined when getting data from an inactive thread
-			thread_level_num_elems += __shfl_up_sync(0xffffffff, thread_level_num_elems,
-														shfl_offset);
+			// Copies value of variable thread_level_num_elems from thread with lane ID that is shfl_offset less than current thread's lane ID
+			// Threads can only receive data from other threads participating in the __shfl_*sync() call
+			// Attempting to read from an invalid lane ID or non-participating lane causes a thread to read from its own variable
+			unsigned long long thread_level_num_elems_addend = __shfl_up_sync(0xffffffff,
+																				thread_level_num_elems,
+																				shfl_offset);
+
+			// Only modify thread_level_num_elems if data came from another thread
+			if (threadIdx.x % warpSize >= shfl_offset)
+				thread_level_num_elems += thread_level_num_elems_addend;
 		}
 
 		// Exclusive prefix sum result is simply the element in the preceding index of the result of the inclusive prefix sum; note that as each thread is responsible for at most 1 output element, this is effectively thread_level_num_elems - 1_{cell_active}, where 1_{cell_active} is the indicator function for whether the thread's own value of cell_active is true
 		// Use of __shfl_up_sync() in this instance is for generality and for ease of calculation
 		thread_level_offset = __shfl_up_sync(0xffffffff, thread_level_num_elems, 1);
+
+		// First thread in each warp read from its own value, so reset the offset
+		if (threadIdx.x % warpSize == 0)
+			thread_level_offset = 0;
 
 		// Last thread in warp puts total number of slots necessary for all active cells in the warp_level_num_elems_arr shared memory array
 		if (threadIdx.x % warpSize == warpSize - 1)
@@ -158,6 +176,9 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 												warp_level_num_elems_arr[j - threadIdx.x - 1];
 
 				warp_level_num_elems = interm_warp_num_elem_offset + warp_level_num_elems_arr[j];
+
+				// Create bitmask for __shufl_up_sync that reflects active threads in inter-warp calculation
+				unsigned inter_warp_mask = __ballot_sync(0xffffffff, j < num_warps);
 
 				// Do inclusive prefix sum on warp-level values
 #pragma unroll

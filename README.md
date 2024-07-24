@@ -4,11 +4,13 @@ Runs on CUDA 12.2.2; requires GCC version 7.4 or higher
 
 Tested on NYU's Greene HPC, where accessing nvcc version 12.2.2 requires running
 
-	singularity shell --nv /scratch/work/public/singularity/cuda12.3.2-cudnn9.0.0-ubuntu-22.04.4.sif
+	singularity shell --nv /scratch/work/public/singularity/cuda12.2.2-cudnn8.9.4-devel-ubuntu22.04.3.sif
 
 and running commmands within the Singularity interface (alternatively, if only one command needs to be run within singularity, substitute `shell` with `exec` and append the desired command).
 
-According to HPC support staff, CUDA Singularity image version 12.3.2 may still be buggy as of 2024-07-19, so stick with version 12.2.2. Also, as of this date, the PTX toolchain that would work with version 12.3.2 is not compiled on at least some NVIDIA GPUs available on HPC (a quick online search suggests this is due to NVIDIA drivers not being up-to-date).
+According to HPC support staff, CUDA Singularity image version 12.3.2 may still be buggy as of 2024-07-19, so stick with version 12.2.2. Also, as of this date, compiling with 12.3.2 causes the following error:
+	Error in initialising global result array index to 0 on device 0 of 1: the provided PTX was compiled with an unsupported toolchain
+(a quick online search suggests this is due to NVIDIA drivers not being up-to-date).
 
 
 To compile testers, run:
@@ -36,6 +38,11 @@ Similarly, to compile interval parallel search comparison code, run
 
 	nvcc interval-parallel-search/interval-parallel-search-tester-driver.cu -ICommon -Ihelpers -Iinterval-parallel-search -std=c++20 -o interval-parallel-search/interval-parallel-search-tester-driver.out
 - `interval-parallel-search` option for `-I` flag: interval parallel search testers and code
+- `-D<preprocessor-variable-name>` valid options for `<preprocessor-variable-name>` (same listed effects as above for identical names):
+	- `DEBUG`
+	- `DEBUG_TEST`
+	- `DEBUG_WRAP`
+	- `DEBUG_SEARCH` to toggle search-internal debugging print statements
 
 
 To check memory safety of GPU code, use:
