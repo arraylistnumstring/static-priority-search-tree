@@ -25,14 +25,14 @@ PointStructTemplate<T, IDType, num_IDs>* intervalParallelSearch(PointStructTempl
 					"Error in initialising global result array index to 0 on device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs) + ": ");
 
-	const unsigned num_warps = threads_per_block / warp_size + ((threads_per_block % warp_size == 0) ? 0 : 1);
+	const unsigned warps_per_block = threads_per_block / warp_size + ((threads_per_block % warp_size == 0) ? 0 : 1);
 
 #ifdef DEBUG_SEARCH
 	std::cout << "Beginning on-device search\n";
 #endif
 
 	// Call global function for on-device search
-	intervalParallelSearchGlobal<<<num_thread_blocks, threads_per_block, (num_warps + 1) * sizeof(unsigned long long)>>>(pt_arr_d, num_elems, res_pt_arr_d, num_warps, search_val);
+	intervalParallelSearchGlobal<<<num_thread_blocks, threads_per_block, (warps_per_block + 1) * sizeof(unsigned long long)>>>(pt_arr_d, num_elems, res_pt_arr_d, warps_per_block, search_val);
 	
 	// Because all calls to the device are placed in the same stream (queue) and because cudaMemcpy() is (host-)blocking, this code will not return before the computation has completed
 	// res_arr_ind_d points to the next index to write to, meaning that it actually contains the number of elements returned
@@ -64,14 +64,14 @@ IDType* intervalParallelSearchID(PointStructTemplate<T, IDType, 1>* pt_arr_d, co
 					"Error in initialising global result array index to 0 on device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs) + ": ");
 
-	const unsigned num_warps = threads_per_block / warp_size + ((threads_per_block % warp_size == 0) ? 0 : 1);
+	const unsigned warps_per_block = threads_per_block / warp_size + ((threads_per_block % warp_size == 0) ? 0 : 1);
 
 #ifdef DEBUG_SEARCH
 	std::cout << "Beginning on-device search\n";
 #endif
 
 	// Call global function for on-device search
-	intervalParallelSearchGlobal<<<num_thread_blocks, threads_per_block, (num_warps + 1) * sizeof(unsigned long long)>>>(pt_arr_d, num_elems, res_id_arr_d, num_warps, search_val);
+	intervalParallelSearchGlobal<<<num_thread_blocks, threads_per_block, (warps_per_block + 1) * sizeof(unsigned long long)>>>(pt_arr_d, num_elems, res_id_arr_d, warps_per_block, search_val);
 
 	// Because all calls to the device are placed in the same stream (queue) and because cudaMemcpy() is (host-)blocking, this code will not return before the computation has completed
 	// res_arr_ind_d points to the next index to write to, meaning that it actually contains the number of elements returned
@@ -94,10 +94,10 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 			>::value
 __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_IDs> *pt_arr_d,
 												const size_t num_elems, RetType *const res_arr_d,
-												const unsigned num_warps, const T search_val)
+												const unsigned warps_per_block, const T search_val)
 {
 	extern __shared__ unsigned long long s[];
-	unsigned long long &block_level_offset = *s;
+	unsigned long long &block_level_start_ind = *s;
 	unsigned long long *warp_level_num_elems_arr = s + 1;
 
 	unsigned long long thread_level_num_elems;	// Calculated with inclusive prefix sum
@@ -109,98 +109,132 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 	bool cell_active;
 
 	// Liu et al. kernel; iterate over all PointStructTemplate<T, IDType, num_IDs> elements in pt_arr_d
-	// Use pragma unroll to decrease register occupation, as the number of loops is known at compile time
+	// Due to presence of __syncthreads() calls within for loop, whole block must iterate if at least one thread has an element to process
+	// Loop unrolling, as number of loops is known explicitly when kernel is called
 #pragma unroll
-	for (unsigned long long i = blockIdx.x * blockDim.x + threadIdx.x;
+	for (unsigned long long i = blockIdx.x * blockDim.x;
 			i < num_elems; i += gridDim.x * blockDim.x)
 	{
-		thread_level_offset = 0;	// Default value
+		// Generate mask for threads active during intrawarp phase
+		unsigned intrawarp_mask = __ballot_sync(0xffffffff, i + threadIdx.x < num_elems);
 
-		// Evaluate if current metacell is active; if active, set corresponding flags and integers to signal to warp-scan (prefix sum)
-		if (pt_arr_d[i].dim1_val <= search_val && search_val <= pt_arr_d[i].dim2_val)
+		if (i + threadIdx.x < num_elems)	// Intrawarp condition
 		{
-			thread_level_num_elems = 1;
-			cell_active = true;
-		}
-		else
-		{
-			thread_level_num_elems = 0;
-			cell_active = false;
-		}
+			// Evaluate if current metacell is active; if active, set corresponding flags and integers to signal to warp-scan (prefix sum)
+			if (pt_arr_d[i].dim1_val <= search_val && search_val <= pt_arr_d[i].dim2_val)
+			{
+				thread_level_num_elems = 1;
+				cell_active = true;
+			}
+			else
+			{
+				thread_level_num_elems = 0;
+				cell_active = false;
+			}
 
-		// Warp-shuffle procedure to calculate inclusive prefix sum, i.e. so current thread knows offset with respect to start index in res_arr_d at which to output result
+			// Warp-shuffle procedure to calculate inclusive prefix sum, i.e. so current thread knows offset with respect to start index in res_arr_d at which to output result
 
-		// Intra-warp prefix sum
+			// Intrawarp prefix sum
+			// fls will always be at most warp size, so will evaluate to warp size if the entire warp is active
+			// Parallel prefix sum returns accurate values as long as the shift size runs up to the least power of 2 that is at least as large as shfl_offset
 #pragma unroll
-		for (unsigned shfl_offset = 1; shfl_offset < warpSize; shfl_offset <<= 1)
-		{
-			// Copies value of variable thread_level_num_elems from thread with lane ID that is shfl_offset less than current thread's lane ID
-			// Threads can only receive data from other threads participating in the __shfl_*sync() call
-			// Attempting to read from an invalid lane ID or non-participating lane causes a thread to read from its own variable
-			unsigned long long thread_level_num_elems_addend = __shfl_up_sync(0xffffffff,
-																				thread_level_num_elems,
-																				shfl_offset);
+			for (unsigned intra_shfl_offset = 1, intra_shfl_offset_lim = fls(intrawarp_mask) + 1;
+					intra_shfl_offset < intra_shfl_offset_lim; intra_shfl_offset <<= 1)
+			{
+				// Copies value of variable thread_level_num_elems from thread with lane ID that is intra_shfl_offset less than current thread's lane ID
+				// Threads can only receive data from other threads participating in the __shfl_*sync() call
+				// Attempting to read from an invalid lane ID or non-participating lane causes a thread to read from its own variable
+				unsigned long long thread_level_num_elems_addend = __shfl_up_sync(intrawarp_mask,
+																					thread_level_num_elems,
+																					intra_shfl_offset);
 
-			// Only modify thread_level_num_elems if data came from another thread
-			if (threadIdx.x % warpSize >= shfl_offset)
-				thread_level_num_elems += thread_level_num_elems_addend;
+				// Only modify thread_level_num_elems if data came from another thread
+				if (threadIdx.x % warpSize >= intra_shfl_offset)
+					thread_level_num_elems += thread_level_num_elems_addend;
+			}
+
+			// Exclusive prefix sum result is simply the element in the preceding index of the result of the inclusive prefix sum; note that as each thread is responsible for at most 1 output element, this is effectively thread_level_num_elems - 1_{cell_active}, where 1_{cell_active} is the indicator function for whether the thread's own value of cell_active is true
+			// Use of __shfl_up_sync() in this instance is for generality and for ease of calculation
+			thread_level_offset = __shfl_up_sync(intrawarp_mask, thread_level_num_elems, 1);
+
+			// First thread in each warp read from its own value, so reset the offset
+			if (threadIdx.x % warpSize == 0)
+				thread_level_offset = 0;
+
+			// Last active thread in warp puts total number of slots necessary for all active cells in the warp_level_num_elems_arr shared memory array
+			if (threadIdx.x % warpSize == fls(intrawarp_mask))
+				// Place total number of elements in this warp at the slot assigned to this warp in shared memory array warp_level_num_elems_arr
+				warp_level_num_elems_arr[threadIdx.x / warpSize] = thread_level_num_elems;
 		}
-
-		// Exclusive prefix sum result is simply the element in the preceding index of the result of the inclusive prefix sum; note that as each thread is responsible for at most 1 output element, this is effectively thread_level_num_elems - 1_{cell_active}, where 1_{cell_active} is the indicator function for whether the thread's own value of cell_active is true
-		// Use of __shfl_up_sync() in this instance is for generality and for ease of calculation
-		thread_level_offset = __shfl_up_sync(0xffffffff, thread_level_num_elems, 1);
-
-		// First thread in each warp read from its own value, so reset the offset
-		if (threadIdx.x % warpSize == 0)
-			thread_level_offset = 0;
-
-		// Last thread in warp puts total number of slots necessary for all active cells in the warp_level_num_elems_arr shared memory array
-		if (threadIdx.x % warpSize == warpSize - 1)
-			// Place total number of elements in this warp at the slot assigned to this warp in shared memory array warp_level_num_elems_arr
-			warp_level_num_elems_arr[threadIdx.x / warpSize] = thread_level_num_elems;
 
 		__syncthreads();	// Warp-level info must be ready to use at the block level
-		// Inter-warp prefix sum (block-level)
-		// One warp is active in this process; use the first warp, which is guaranteed to exist
+
+		// Interwarp prefix sum (block-level)
+		// Being a prefix sum, only one warp should be active in this process for speed and correctness; use the first warp, which is guaranteed to exist
+
+		// Calculate the number of active warps in this iteration of the grid; type of dim3 is a 4-byte triple
+		unsigned warps_per_block_curr_iter;
+
+		// Check if all warps in block were active during intrawarp prefix sum
+		// As all numbers here are cardinal, there is no off-by-1 error to compensate for here
+		if (i + blockDim.x <= num_elems)
+			warps_per_block_curr_iter = warps_per_block;
+		else
+			warps_per_block_curr_iter = (num_elems - i) / warpSize
+											+ ( ( (num_elems - i) % warpSize == 0 ) ? 0 : 1);
+
+		// Boundary condition: if only one warp's worth of data needs to be processed in this interation, only one warp is currently active anyway, so no interwarp prefix sum is necessary; however, as the interwarp __shfl_*sync() loop is hence automatically skipped over because of its own enclosing boundary condition, there is no need to explicitly do anything about it here
 		if (threadIdx.x / warpSize == 0)
 		{
-			unsigned long long warp_level_num_elems;
-			unsigned long long interm_warp_num_elem_offset;
+			// If necessary, repeat interwarp prefix sum with base offset of previous iteration until all warps have had their prefix sum calculated
+			// Though would be fine to put __ballot_sync() call in loop initialiser here, as there are currently no __syncwarp() calls within the loop that could cause hang, put within loop anyway in case __syncwarp() calls turn out to be necessary
 #pragma unroll
-			// If necessary, repeat inter-warp prefix sum with base offset of previous iteration until all warps have had their prefix sum calculated
-			// j < (size of warp_level_num_elems_arr == number of warps)
-			for (unsigned long long j = threadIdx.x; j < num_warps; j += warpSize)
+			for (unsigned j = 0; j < warps_per_block_curr_iter; j += warpSize)
 			{
-				// Get offset for values in this iteration from the last result of the previous iteration
-				interm_warp_num_elem_offset = (j < warpSize) ? 0 :
-												warp_level_num_elems_arr[j - threadIdx.x - 1];
+				// Simultaneously serves as a syncwarp call to ensure that writes and reads are separated, as well as a mask generator for interwarp prefix sum
+				unsigned interwarp_mask = __ballot_sync(0xffffffff, threadIdx.x < warps_per_block_curr_iter);
 
-				warp_level_num_elems = interm_warp_num_elem_offset + warp_level_num_elems_arr[j];
-
-				// Create bitmask for __shufl_up_sync that reflects active threads in inter-warp calculation
-				unsigned inter_warp_mask = __ballot_sync(0xffffffff, j < num_warps);
-
-				// Do inclusive prefix sum on warp-level values
-#pragma unroll
-				for (unsigned shfl_offset = 1; shfl_offset < warpSize; shfl_offset <<= 1)
+				// Inter-warp condition
+				if (threadIdx.x < warps_per_block_curr_iter)
 				{
-					// Copies value of variable warp_level_num_elems from thread with lane ID that is shfl_offset less than current thread's lane ID; no lane ID wrapping occurs, so threads with lane ID lower than shfl_offset will not be affected
-					// Threads can only receive data from other threads participating in the __shfl_*sync() call; behavior is undefined when getting data from an inactive thread
-					warp_level_num_elems += __shfl_up_sync(0xffffffff, warp_level_num_elems,
-																shfl_offset);
-				}
+					// If this is not the first set of warps being processed, set the warp group's offset to be the largest result of the previous iteration's interwarp prefix sum
+					unsigned long long warp_gp_offset = (j == 0) ? 0 :
+																warp_level_num_elems_arr[j - 1];
 
-				// Store result in shared memory
-				warp_level_num_elems_arr[j] = warp_level_num_elems;
+					unsigned long long warp_level_num_elems = warp_level_num_elems_arr[j + threadIdx.x];
+
+					// Do inclusive prefix sum on warp-level values
+#pragma unroll
+					for (unsigned inter_shfl_offset = 1,
+								inter_shfl_offset_lim = fls(interwarp_mask) + 1;
+							inter_shfl_offset < inter_shfl_offset_lim; inter_shfl_offset <<= 1)
+					{
+						// Copies value of variable warp_level_num_elems from thread with lane ID that is inter_shfl_offset less than current thread's lane ID
+						// Threads can only receive data from other threads participating in the __shfl_*sync() call; behavior is undefined when getting data from an inactive thread
+						// Attempting to read from an invalid lane ID or non-participating lane causes a thread to read from its own variable
+						unsigned long long warp_level_num_elems_addend += __shfl_up_sync(interwarp_mask,
+																							warp_level_num_elems,
+																							inter_shfl_offset);
+
+						// Only modify warp_level_num_elems if data came from another thread
+						if (threadIdx.x % warpSize >= inter_shfl_offset)
+							warp_level_num_elems += warp_level_num_elems_addend;
+					}
+
+					// Store result in shared memory, including the effect of the offset
+					warp_level_num_elems_arr[j + threadIdx.x] = warp_gp_offset + warp_level_num_elems;
+				}
 			}
 		}
-		__syncthreads();	// Total number of slots needed to store all active metacells is now known
+
+		// Total number of slots needed to store all active metacells processed by block in current iteration is now known
+		__syncthreads();
 
 		// Single thread in block allocates space in res_arr_d with atomic operation
 		if (threadIdx.x == 0)
 		{
-			const unsigned long long block_level_num_elems = warp_level_num_elems_arr[num_warps - 1];
-			block_level_offset = atomicAdd(&res_arr_ind_d, block_level_num_elems);
+			const unsigned long long block_level_num_elems = warp_level_num_elems_arr[warps_per_block_curr_iter - 1];
+			block_level_start_ind = atomicAdd(&res_arr_ind_d, block_level_num_elems);
 		}
 
 		// All warps acquire their warp-level offset, which is the element of index (warp ID - 1) in warp_level_num_elems_arr
@@ -217,14 +251,25 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 		{
 			if constexpr (std::is_same<RetType, IDType>::value)
 				// Add ID to array
-				res_arr_d[block_level_offset + warp_level_offset + thread_level_offset]
+				res_arr_d[block_level_start_ind + warp_level_offset + thread_level_offset]
 					= pt_arr_d[i].id;
 			else
 				// Add PtStructTemplate<T, IDType, num_IDs> to array
-				res_arr_d[block_level_offset + warp_level_offset + thread_level_offset]
+				res_arr_d[block_level_start_ind + warp_level_offset + thread_level_offset]
 					= pt_arr_d[i];
 		}
 	}
+};
+
+// fls for "find last (bit) set", where bits are indexed from least to most significant place value
+template <typename T>
+	requires std::unsigned_integral<T>::value
+__forceinline__ __device__ T fls(T val)	// Equivalent to truncate(log_2(val))
+{
+	T bit_ind = 0;
+	while (val >>= 1)	// Unsigned right shifts are logical, i.e. zero-filling; loop exits when val evaluates to 0 after the right shift
+		bit_ind++;
+	return bit_ind;
 };
 
 #endif
