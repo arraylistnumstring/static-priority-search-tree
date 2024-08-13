@@ -745,7 +745,7 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 												target_node_ind))
 										!= INACTIVE_IND;
 			i++)
-		{}
+	{}
 	// Upon exit, i either contains the index of the thread that will report all nodes in the corresponding subtree; or i >= blockDim.x
 	if (i >= blockDim.x)	// No inactive threads; use dynamic parallelism
 	{
