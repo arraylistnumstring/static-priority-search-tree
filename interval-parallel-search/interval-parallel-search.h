@@ -6,6 +6,17 @@
 
 // Method of Liu et al. (2016): embarrassingly parallel search for active metacells, superficially modified for parity with PST search method
 
+// Helper function fls() for "find last (bit) set", where bits are indexed from least to most significant place value
+template <typename T>
+	requires std::unsigned_integral<T>
+__forceinline__ __device__ T fls(T val)	// Equivalent to truncate(log_2(val))
+{
+	T bit_ind = 0;
+	while (val >>= 1)	// Unsigned right shifts are logical, i.e. zero-filling; loop exits when val evaluates to 0 after the right shift
+		bit_ind++;
+	return bit_ind;
+};
+
 // Given an array of PointStructTemplate<T, IDType, num_IDs>, return an on-device array of PointStructTemplate<T, IDType, num_IDs> where each point pt satisfies search_val \in [pt.dim1_val, pt.dim2_val])
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
@@ -212,7 +223,7 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 						// Copies value of variable warp_level_num_elems from thread with lane ID that is inter_shfl_offset less than current thread's lane ID
 						// Threads can only receive data from other threads participating in the __shfl_*sync() call; behavior is undefined when getting data from an inactive thread
 						// Attempting to read from an invalid lane ID or non-participating lane causes a thread to read from its own variable
-						unsigned long long warp_level_num_elems_addend += __shfl_up_sync(interwarp_mask,
+						unsigned long long warp_level_num_elems_addend = __shfl_up_sync(interwarp_mask,
 																							warp_level_num_elems,
 																							inter_shfl_offset);
 
@@ -259,17 +270,6 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 					= pt_arr_d[i];
 		}
 	}
-};
-
-// fls for "find last (bit) set", where bits are indexed from least to most significant place value
-template <typename T>
-	requires std::unsigned_integral<T>::value
-__forceinline__ __device__ T fls(T val)	// Equivalent to truncate(log_2(val))
-{
-	T bit_ind = 0;
-	while (val >>= 1)	// Unsigned right shifts are logical, i.e. zero-filling; loop exits when val evaluates to 0 after the right shift
-		bit_ind++;
-	return bit_ind;
 };
 
 #endif
