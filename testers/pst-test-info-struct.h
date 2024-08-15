@@ -15,33 +15,58 @@
 // Struct for information necessary to instantiate PSTTester
 struct PSTTestInfoStruct
 {
+	// Ordering of fields chosen to minimise size of struct; std::string type appears to take 32 bytes
 	enum NumSearchVals
 	{
 		NUM_VALS_TWO_SEARCH=2,
 		NUM_VALS_THREE_SEARCH=3
 	};
-	DataType data_type;
-	PSTTestCodes test_type;
-	PSTType tree_type;
 	std::string search_range_strings[NumSearchVals::NUM_VALS_THREE_SEARCH] = {"0", "0", "0"};
-
-	bool pts_with_ids = false;
-	DataType id_type;
-
-	size_t rand_seed = 0;
 
 	// Number of values necessary to define the bounds of an interval
 	const static size_t NUM_VALS_INT_BOUNDS = 2;
 	std::string tree_val_range_strings[NUM_VALS_INT_BOUNDS] = {"0", "0"};
 
+	size_t rand_seed = 0;
 	size_t num_elems;
 
-	// Instantiate outermost PSTTester type with respect to data type
+	// Data types chosen to correspond to CUDA data types for correpsonding on-device values; as number of thread blocks and threads per block are both unsigned values, warps_per_block (which has value at most equal to threads per block) has been chosen similarly
+	unsigned warps_per_block = 1;
+
+	// By the standard, enums must be capable of holding int values, though the actual data-type can be char, signed int or unsigned int, as long as the chosen type can hold all values in the enumeration 
+	DataType data_type;
+	PSTTestCodes test_type;
+	PSTType tree_type;
+	DataType id_type;
+
+	bool pts_with_ids = false;
+	bool timed_CUDA = false;
+	bool ordered_vals = false;
+
+	// Instantiate outermost PSTTester type with respect to CUDA timing
 	void test()
+	{
+		// Must explicitly set class instantiation variables to true and false in each branch in order for code to be compile-time determinable
+		if (timed_CUDA)
+		{
+			PSTTester<true> pst_tester;
+
+			dataTypeWrap(pst_tester);
+		}
+		else
+		{
+			PSTTester<false> pst_tester;
+
+			dataTypeWrap(pst_tester);
+		}
+	};
+
+	template <class PSTTesterTimingDet>
+	void dataTypeWrap(PSTTesterTimingDet pst_tester)
 	{
 		if (data_type == DataType::DOUBLE)
 		{
-			PSTTester<double, std::uniform_real_distribution>
+			typename PSTTesterTimingDet::DataTypeWrapper<double, std::uniform_real_distribution>
 						pst_tester(rand_seed, std::stod(tree_val_range_strings[0]),
 									std::stod(tree_val_range_strings[1]),
 									std::stod(search_range_strings[0]),
@@ -52,7 +77,7 @@ struct PSTTestInfoStruct
 		}
 		else if (data_type == DataType::FLOAT)
 		{
-			PSTTester<float, std::uniform_real_distribution>
+			typename PSTTesterTimingDet::DataTypeWrapper<float, std::uniform_real_distribution>
 						pst_tester(rand_seed, std::stof(tree_val_range_strings[0]),
 									std::stof(tree_val_range_strings[1]),
 									std::stof(search_range_strings[0]),
@@ -63,7 +88,7 @@ struct PSTTestInfoStruct
 		}
 		else if (data_type == DataType::INT)
 		{
-			PSTTester<int, std::uniform_int_distribution>
+			typename PSTTesterTimingDet::DataTypeWrapper<int, std::uniform_int_distribution>
 						pst_tester(rand_seed, std::stoi(tree_val_range_strings[0]),
 									std::stoi(tree_val_range_strings[1]),
 									std::stoi(search_range_strings[0]),
@@ -74,7 +99,7 @@ struct PSTTestInfoStruct
 		}
 		else if (data_type == DataType::LONG)
 		{
-			PSTTester<long, std::uniform_int_distribution>
+			typename PSTTesterTimingDet::DataTypeWrapper<long, std::uniform_int_distribution>
 						pst_tester(rand_seed, std::stol(tree_val_range_strings[0]),
 									std::stol(tree_val_range_strings[1]),
 									std::stol(search_range_strings[0]),
