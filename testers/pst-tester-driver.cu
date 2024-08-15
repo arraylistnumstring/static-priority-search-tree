@@ -21,7 +21,10 @@ int main(int argc, char *argv[])
 			std::cerr << "Usage: ./pst-tester-driver <datatype-flag> <test-type-flag> ";
 			std::cerr << "<tree-type-flag> ";
 			std::cerr << "[-I ID_TYPE] ";
+			std::cerr << "[-O] ";
 			std::cerr << "[-r RAND_SEED] ";
+			std::cerr << "[-t] ";
+			std::cerr << "[-w WARPS_PER_BLOCK] ";
 			std::cerr << "-b MIN_VAL MAX_VAL ";
 			std::cerr << "-n NUM_ELEMS";
 			std::cerr << "\n\n";
@@ -52,7 +55,13 @@ int main(int argc, char *argv[])
 
 			std::cerr << "\t-n, --num-elems NUM_ELEMS\tNumber of elements to put in tree\n\n";
 
+			std::cerr << "\t-O, --ordered-vals\tWhether to order values such that dimension-1 values are always less than or equal to their paired dimension-2 values; defaults to false\n\n";
+
 			std::cerr << "\t-r, --rand-seed RAND_SEED\tRandom seed to use when generating data for tree; defaults to 0\n\n";
+
+			std::cerr << "\t-t, --timed-CUDA\tToggles timing of the CUDA portion of the code using on-device functions; defaults to false\n\n";
+
+			std::cerr << "\t-w, --warps-per-block WARPS_PER_BLOCK\tNumber of warps to use in a thread block; defaults to 1\n\n";
 
 			return 1;
 		}
@@ -102,6 +111,7 @@ int main(int argc, char *argv[])
 					std::cerr << "Insufficient number of arguments provided for search bounds\n";
 					return 2;
 				}
+
 				try
 				{
 					// Curly braces necessary around try blocks
@@ -134,6 +144,7 @@ int main(int argc, char *argv[])
 				std::cerr << "Insufficient number of arguments provided for ID data type\n";
 				return 2;
 			}
+
 			try
 			{
 				// Convert id_type_string to lowercase for easier processing
@@ -160,6 +171,10 @@ int main(int argc, char *argv[])
 			}
 		}
 
+		// Ordered values flag parsing
+		else if (arg == "-O" || arg == "--ordered-vals")
+			test_info.ordered_vals = true;
+
 		// Random seed parsing
 		else if (arg == "-r" || arg == "--rand-seed")
 		{
@@ -169,6 +184,7 @@ int main(int argc, char *argv[])
 				std::cerr << "Insufficient number of arguments provided for random seed\n";
 				return 2;
 			}
+
 			try
 			{
 				test_info.rand_seed = std::stoull(argv[i], nullptr, 0);
@@ -176,6 +192,31 @@ int main(int argc, char *argv[])
 			catch (std::invalid_argument const &ex)
 			{
 				std::cerr << "Invalid argument for random seed: " << argv[i] << '\n';
+				return 3;
+			}
+		}
+
+		// CUDA code timing flag
+		else if (arg == "-t" || arg == "--timed-CUDA")
+			test_info.timed_CUDA = true;
+
+		// Warps per block parsing
+		else if (arg == "-w" || arg == "--warps-per-block")
+		{
+			i++;
+			if (i >= argc)
+			{
+				std::cerr << "Insufficient number of arguments provided for number of warps per thread block\n";
+				return 2;
+			}
+
+			try
+			{
+				test_info.warps_per_block = std::stoul(argv[i], nullptr, 0);
+			}
+			catch (std::invalid_argument const &ex)
+			{
+				std::cerr << "Invalid argument for number of warps per thread block: " << argv[i] << '\n';
 				return 3;
 			}
 		}
@@ -191,6 +232,7 @@ int main(int argc, char *argv[])
 					std::cerr << "Insufficient number of arguments provided for tree value bounds\n";
 					return 2;
 				}
+
 				try
 				{
 					test_info.tree_val_range_strings[j] = std::string(argv[i]);
@@ -212,6 +254,7 @@ int main(int argc, char *argv[])
 				std::cerr << "Insufficient number of arguments provided for number of elements\n";
 				return 2;
 			}
+
 			try
 			{
 				test_info.num_elems = std::stoull(argv[i], nullptr, 0);
