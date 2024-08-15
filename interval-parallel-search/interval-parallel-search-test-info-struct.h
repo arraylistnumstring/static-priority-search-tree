@@ -13,9 +13,7 @@
 // Struct for information necessary to instantiate InterParaSearchTester
 struct InterParaSearchTestInfoStruct
 {
-	// Ordering of fields chosen to minimise size of struct
-	size_t rand_seed = 0;
-	size_t num_elems;
+	// Ordering of fields chosen to minimise size of struct; std::string type appears to take 32 bytes
 
 	// Number of values necessary to define the bounds of an interval
 	const static size_t NUM_VALS_INT_BOUNDS = 2;
@@ -23,13 +21,16 @@ struct InterParaSearchTestInfoStruct
 
 	std::string search_val_string;
 
-	DataType data_type;
-
-	DataType id_type;
+	size_t rand_seed = 0;
+	size_t num_elems;
 
 	// Data types are chosen to correspond to CUDA data types for corresponding on-device values
 	unsigned num_thread_blocks;
 	unsigned threads_per_block;
+
+	// By the standard, enums must be capable of holding int values, though the actual data-type can be char, signed int or unsigned int, as long as the chosen type can hold all values in the enumeration 
+	DataType data_type;
+	DataType id_type;
 
 	bool pts_with_ids = false;
 	bool report_IDs = false;
@@ -38,6 +39,7 @@ struct InterParaSearchTestInfoStruct
 	// Instantiate outermost InterParaSearchTester type with respect to CUDA timing
 	void test()
 	{
+		// Must explicitly set class instantiation variables to true and false in each branch in order for code to be compile-time determinable
 		if (timed_CUDA)
 		{
 			InterParaSearchTester<true> ips_tester;

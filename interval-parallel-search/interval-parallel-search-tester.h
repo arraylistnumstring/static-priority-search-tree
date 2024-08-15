@@ -97,7 +97,7 @@ struct InterParaSearchTester
 					requires std::disjunction<
 										std::is_same<RetType, IDType>,
 										std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-					>::value
+						>::value
 				struct RetTypeWrapper
 				{
 					IDTypeWrapper<IDDistrib, IDType> id_type_wrapper;
@@ -153,7 +153,7 @@ struct InterParaSearchTester
 											"Error in creating start event for timing CUDA search code");
 							gpuErrorCheck(cudaEventCreate(&search_stop),
 											"Error in creating stop event for timing CUDA search code");
-							
+
 							// Start CUDA search set-up timer (i.e. place this event into default stream)
 							gpuErrorCheck(cudaEventRecord(construct_start),
 											"Error in recording start event for timing CUDA search set-up code");
