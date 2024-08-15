@@ -131,109 +131,106 @@ struct InterParaSearchTestInfoStruct
 	template <class InterParaSearchTesterDataTypeNumIDsInstantiated>
 	void IDTypeWrap(InterParaSearchTesterDataTypeNumIDsInstantiated ips_tester)
 	{
-		if (pts_with_ids)
+		if (id_type == DataType::CHAR)
 		{
-			if (id_type == DataType::CHAR)
-			{
-				// typename necessary, as compiler defaults to treating nested names as variables
-				typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, char> ips_tester_id_instan(ips_tester);
+			// typename necessary, as compiler defaults to treating nested names as variables
+			typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, char> ips_tester_id_instan(ips_tester);
 
 #ifdef DEBUG_WRAP
-				std::cout << "Instantiated IDType = char wrapper\n";
+			std::cout << "Instantiated IDType = char wrapper\n";
 #endif
 
-				if (report_IDs)
-				{
-					typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, char>::RetTypeWrapper<char> ips_tester_id_ret_types_instan(ips_tester_id_instan);
+			if (report_IDs)
+			{
+				typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, char>::RetTypeWrapper<char> ips_tester_id_ret_types_instan(ips_tester_id_instan);
 
-					testWrap(ips_tester_id_ret_types_instan);
-				}
-				else
-				{
-					// Must have <> to use default template parameter
-					typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, char>::RetTypeWrapper<> ips_tester_id_ret_types_instan(ips_tester_id_instan);
-					testWrap(ips_tester_id_ret_types_instan);
-				}
+				testWrap(ips_tester_id_ret_types_instan);
 			}
-			else if (id_type == DataType::DOUBLE)
+			else
 			{
-				typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, double> ips_tester_id_instan(ips_tester);
-
-#ifdef DEBUG_WRAP
-				std::cout << "Instantiated IDType = double wrapper\n";
-#endif
-
-				if (report_IDs)
-				{
-					typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, double>::RetTypeWrapper<double> ips_tester_id_ret_types_instan(ips_tester_id_instan);
-
-					testWrap(ips_tester_id_ret_types_instan);
-				}
-				else
-				{
-					typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, double>::RetTypeWrapper<> ips_tester_id_ret_types_instan(ips_tester_id_instan);
-					testWrap(ips_tester_id_ret_types_instan);
-				}
+				// Must have <> to use default template parameter
+				typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, char>::RetTypeWrapper<> ips_tester_id_ret_types_instan(ips_tester_id_instan);
+				testWrap(ips_tester_id_ret_types_instan);
 			}
-			else if (id_type == DataType::FLOAT)
-			{
-				typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, float> ips_tester_id_instan(ips_tester);
+		}
+		else if (id_type == DataType::DOUBLE)
+		{
+			typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, double> ips_tester_id_instan(ips_tester);
 
 #ifdef DEBUG_WRAP
-				std::cout << "Instantiated IDType = float wrapper\n";
+			std::cout << "Instantiated IDType = double wrapper\n";
 #endif
 
-				if (report_IDs)
-				{
-					typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, float>::RetTypeWrapper<float> ips_tester_id_ret_types_instan(ips_tester_id_instan);
+			if (report_IDs)
+			{
+				typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, double>::RetTypeWrapper<double> ips_tester_id_ret_types_instan(ips_tester_id_instan);
 
-					testWrap(ips_tester_id_ret_types_instan);
-				}
-				else
-				{
-					typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, float>::RetTypeWrapper<> ips_tester_id_ret_types_instan(ips_tester_id_instan);
-					testWrap(ips_tester_id_ret_types_instan);
-				}
+				testWrap(ips_tester_id_ret_types_instan);
 			}
-			else if (id_type == DataType::INT)
+			else
 			{
-				typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, int> ips_tester_id_instan(ips_tester);
-
-#ifdef DEBUG_WRAP
-				std::cout << "Instantiated IDType = int wrapper\n";
-#endif
-
-				if (report_IDs)
-				{
-					typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, int>::RetTypeWrapper<int> ips_tester_id_ret_types_instan(ips_tester_id_instan);
-
-					testWrap(ips_tester_id_ret_types_instan);
-				}
-				else
-				{
-					typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, int>::RetTypeWrapper<> ips_tester_id_ret_types_instan(ips_tester_id_instan);
-					testWrap(ips_tester_id_ret_types_instan);
-				}
+				typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, double>::RetTypeWrapper<> ips_tester_id_ret_types_instan(ips_tester_id_instan);
+				testWrap(ips_tester_id_ret_types_instan);
 			}
-			else if (id_type == DataType::LONG)
-			{
-				typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, long> ips_tester_id_instan(ips_tester);
+		}
+		else if (id_type == DataType::FLOAT)
+		{
+			typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, float> ips_tester_id_instan(ips_tester);
 
 #ifdef DEBUG_WRAP
-				std::cout << "Instantiated IDType = long wrapper\n";
+			std::cout << "Instantiated IDType = float wrapper\n";
 #endif
 
-				if (report_IDs)
-				{
-					typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, long>::RetTypeWrapper<long> ips_tester_id_ret_types_instan(ips_tester_id_instan);
+			if (report_IDs)
+			{
+				typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, float>::RetTypeWrapper<float> ips_tester_id_ret_types_instan(ips_tester_id_instan);
 
-					testWrap(ips_tester_id_ret_types_instan);
-				}
-				else
-				{
-					typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, long>::RetTypeWrapper<> ips_tester_id_ret_types_instan(ips_tester_id_instan);
-					testWrap(ips_tester_id_ret_types_instan);
-				}
+				testWrap(ips_tester_id_ret_types_instan);
+			}
+			else
+			{
+				typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, float>::RetTypeWrapper<> ips_tester_id_ret_types_instan(ips_tester_id_instan);
+				testWrap(ips_tester_id_ret_types_instan);
+			}
+		}
+		else if (id_type == DataType::INT)
+		{
+			typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, int> ips_tester_id_instan(ips_tester);
+
+#ifdef DEBUG_WRAP
+			std::cout << "Instantiated IDType = int wrapper\n";
+#endif
+
+			if (report_IDs)
+			{
+				typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, int>::RetTypeWrapper<int> ips_tester_id_ret_types_instan(ips_tester_id_instan);
+
+				testWrap(ips_tester_id_ret_types_instan);
+			}
+			else
+			{
+				typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, int>::RetTypeWrapper<> ips_tester_id_ret_types_instan(ips_tester_id_instan);
+				testWrap(ips_tester_id_ret_types_instan);
+			}
+		}
+		else if (id_type == DataType::LONG)
+		{
+			typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, long> ips_tester_id_instan(ips_tester);
+
+#ifdef DEBUG_WRAP
+			std::cout << "Instantiated IDType = long wrapper\n";
+#endif
+
+			if (report_IDs)
+			{
+				typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, long>::RetTypeWrapper<long> ips_tester_id_ret_types_instan(ips_tester_id_instan);
+
+				testWrap(ips_tester_id_ret_types_instan);
+			}
+			else
+			{
+				typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, long>::RetTypeWrapper<> ips_tester_id_ret_types_instan(ips_tester_id_instan);
+				testWrap(ips_tester_id_ret_types_instan);
 			}
 		}
 	};
