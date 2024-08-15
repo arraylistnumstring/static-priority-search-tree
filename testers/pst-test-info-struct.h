@@ -71,7 +71,8 @@ struct PSTTestInfoStruct
 									std::stod(tree_val_range_strings[1]),
 									std::stod(search_range_strings[0]),
 									std::stod(search_range_strings[1]),
-									std::stod(search_range_strings[2]));
+									std::stod(search_range_strings[2]),
+									ordered_vals);
 			
 			treeTypeWrap(pst_tester);
 		}
@@ -82,7 +83,8 @@ struct PSTTestInfoStruct
 									std::stof(tree_val_range_strings[1]),
 									std::stof(search_range_strings[0]),
 									std::stof(search_range_strings[1]),
-									std::stof(search_range_strings[2]));
+									std::stof(search_range_strings[2]),
+									ordered_vals);
 			
 			treeTypeWrap(pst_tester);
 		}
@@ -93,7 +95,8 @@ struct PSTTestInfoStruct
 									std::stoi(tree_val_range_strings[1]),
 									std::stoi(search_range_strings[0]),
 									std::stoi(search_range_strings[1]),
-									std::stoi(search_range_strings[2]));
+									std::stoi(search_range_strings[2]),
+									ordered_vals);
 			
 			treeTypeWrap(pst_tester);
 		}
@@ -104,7 +107,8 @@ struct PSTTestInfoStruct
 									std::stol(tree_val_range_strings[1]),
 									std::stol(search_range_strings[0]),
 									std::stol(search_range_strings[1]),
-									std::stol(search_range_strings[2]));
+									std::stol(search_range_strings[2]),
+									ordered_vals);
 			
 			treeTypeWrap(pst_tester);
 		}
@@ -182,58 +186,108 @@ struct PSTTestInfoStruct
 	template <class PSTTesterDataTreeTypesNumIDsInstantiated>
 	void IDTypeWrap(PSTTesterDataTreeTypesNumIDsInstantiated pst_tester)
 	{
-		if (pts_with_ids)
+		if (id_type == DataType::CHAR)
 		{
-			if (id_type == DataType::CHAR)
-			{
-				// typename necessary, as compiler defaults to treating nested names as variables
-				typename PSTTesterDataTreeTypesNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, char> pst_tester_id_instan(pst_tester);
+			// typename necessary, as compiler defaults to treating nested names as variables
+			typename PSTTesterDataTreeTypesNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, char> pst_tester_id_instan(pst_tester);
 
 #ifdef DEBUG_WRAP
-				std::cout << "Instantiated IDType = char wrapper\n";
+			std::cout << "Instantiated IDType = char wrapper\n";
 #endif
 
-				testWrap(pst_tester_id_instan);
+			if (report_IDs)
+			{
+				typename PSTTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, char>::RetTypeWrapper<char> pst_tester_id_ret_types_instan(pst_tester_id_instan);
+
+				testWrap(pst_tester_id_ret_types_instan);
 			}
-			else if (id_type == DataType::DOUBLE)
+			else
 			{
-				typename PSTTesterDataTreeTypesNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, double> pst_tester_id_instan(pst_tester);
+				// Must have <> to use default template parameter
+				typename PSTTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, char>::RetTypeWrapper<> pst_tester_id_ret_types_instan(pst_tester_id_instan)
 
-#ifdef DEBUG_WRAP
-				std::cout << "Instantiated IDType = double wrapper\n";
-#endif
-
-				testWrap(pst_tester_id_instan);
+				testWrap(pst_tester_id_ret_types_instan(pst_tester_id_ret_types_instan);
 			}
-			else if (id_type == DataType::FLOAT)
-			{
-				typename PSTTesterDataTreeTypesNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, float> pst_tester_id_instan(pst_tester);
+		}
+		else if (id_type == DataType::DOUBLE)
+		{
+			typename PSTTesterDataTreeTypesNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, double> pst_tester_id_instan(pst_tester);
 
 #ifdef DEBUG_WRAP
-				std::cout << "Instantiated IDType = float wrapper\n";
+			std::cout << "Instantiated IDType = double wrapper\n";
 #endif
 
-				testWrap(pst_tester_id_instan);
+			if (report_IDs)
+			{
+				typename PSTTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, double>::RetTypeWrapper<double> pst_tester_id_ret_types_instan(pst_tester_id_instan);
+
+				testWrap(pst_tester_id_ret_types_instan);
 			}
-			else if (id_type == DataType::INT)
+			else
 			{
-				typename PSTTesterDataTreeTypesNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, int> pst_tester_id_instan(pst_tester);
-
-#ifdef DEBUG_WRAP
-				std::cout << "Instantiated IDType = int wrapper\n";
-#endif
-
-				testWrap(pst_tester_id_instan);
+				typename PSTTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, double>::RetTypeWrapper<> pst_tester_id_ret_types_instan(pst_tester_id_instan);
+				testWrap(pst_tester_id_ret_types_instan);
 			}
-			else if (id_type == DataType::LONG)
-			{
-				typename PSTTesterDataTreeTypesNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, long> pst_tester_id_instan(pst_tester);
+
+		}
+		else if (id_type == DataType::FLOAT)
+		{
+			typename PSTTesterDataTreeTypesNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, float> pst_tester_id_instan(pst_tester);
 
 #ifdef DEBUG_WRAP
-				std::cout << "Instantiated IDType = long wrapper\n";
+			std::cout << "Instantiated IDType = float wrapper\n";
 #endif
 
-				testWrap(pst_tester_id_instan);
+			if (report_IDs)
+			{
+				typename PSTTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, float>::RetTypeWrapper<float> pst_tester_id_ret_types_instan(pst_tester_id_instan);
+
+				testWrap(pst_tester_id_ret_types_instan);
+			}
+			else
+			{
+				typename PSTTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, float>::RetTypeWrapper<> pst_tester_id_ret_types_instan(pst_tester_id_instan);
+				testWrap(pst_tester_id_ret_types_instan);
+			}
+		}
+		else if (id_type == DataType::INT)
+		{
+			typename PSTTesterDataTreeTypesNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, int> pst_tester_id_instan(pst_tester);
+
+#ifdef DEBUG_WRAP
+			std::cout << "Instantiated IDType = int wrapper\n";
+#endif
+
+			if (report_IDs)
+			{
+				typename PSTTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, int>::RetTypeWrapper<int> pst_tester_id_ret_types_instan(pst_tester_id_instan);
+
+				testWrap(pst_tester_id_ret_types_instan);
+			}
+			else
+			{
+				typename PSTTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, int>::RetTypeWrapper<> pst_tester_id_ret_types_instan(pst_tester_id_instan);
+				testWrap(pst_tester_id_ret_types_instan);
+			}
+		}
+		else if (id_type == DataType::LONG)
+		{
+			typename PSTTesterDataTreeTypesNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, long> pst_tester_id_instan(pst_tester);
+
+#ifdef DEBUG_WRAP
+			std::cout << "Instantiated IDType = long wrapper\n";
+#endif
+
+			if (report_IDs)
+			{
+				typename PSTTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, long>::RetTypeWrapper<long> pst_tester_id_ret_types_instan(pst_tester_id_instan);
+
+				testWrap(pst_tester_id_ret_types_instan);
+			}
+			else
+			{
+				typename PSTTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, long>::RetTypeWrapper<> pst_tester_id_ret_types_instan(pst_tester_id_instan);
+				testWrap(pst_tester_id_ret_types_instan);
 			}
 		}
 	};
