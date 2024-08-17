@@ -22,8 +22,7 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 			typename IDType, size_t num_IDs>
 PointStructTemplate<T, IDType, num_IDs>* intervalParallelSearchPt(PointStructTemplate<T, IDType, num_IDs>* pt_arr_d, const size_t num_elems, size_t &num_res_elems, T search_val, const int dev_ind, const int num_devs, const int warp_size, const unsigned num_thread_blocks, const unsigned threads_per_block)
 {
-	// Allocate space on GPU for output metacell tag array
-	PointStructTemplate<T, IDType, num_IDs>* res_pt_arr_d;
+	PointStructTemplate<T, IDType, num_IDs>* res_pt_arr_d;	// Output metacell tag array pointer
 
 	return intervalParallelSearchWrapper(pt_arr_d, num_elems, res_pt_arr_d, num_res_elems, search_val, dev_ind, num_devs, warp_size, num_thread_blocks, threads_per_block);
 };
@@ -33,8 +32,7 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 			typename IDType>
 IDType* intervalParallelSearchID(PointStructTemplate<T, IDType, 1>* pt_arr_d, const size_t num_elems, size_t &num_res_elems, T search_val, const int dev_ind, const int num_devs, const int warp_size, const unsigned num_thread_blocks, const unsigned threads_per_block)
 {
-	// Allocate space on GPU for output metacell IDs
-	IDType* res_id_arr_d;
+	IDType* res_id_arr_d;	// Output metacell ID array pointer
 
 	return intervalParallelSearchWrapper(pt_arr_d, num_elems, res_id_arr_d, num_res_elems, search_val, dev_ind, num_devs, warp_size, num_thread_blocks, threads_per_block);
 };
@@ -48,7 +46,8 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 			>::value
 RetType* intervalParallelSearchWrapper(PointStructTemplate<T, IDType, num_IDs>* pt_arr_d, const size_t num_elems, RetType *&res_arr_d, size_t &num_res_elems, T search_val, const int dev_ind, const int num_devs, const int warp_size, const unsigned num_thread_blocks, const unsigned threads_per_block)
 {
-	gpuErrorCheck(cudaMalloc(&res_arr_d, num_elems * sizeof(RetType),
+	// Allocate space on GPU for output array, whether metacell tags or IDs
+	gpuErrorCheck(cudaMalloc(&res_arr_d, num_elems * sizeof(RetType)),
 					"Error in allocating array to store PointStruct search result on device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs) + ": ");
 
