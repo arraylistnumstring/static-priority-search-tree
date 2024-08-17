@@ -186,7 +186,7 @@ struct InterParaSearchTester
 							res_arr = intervalParallelSearchID(pt_arr_d, num_elems, num_res_elems, id_type_wrapper.num_ids_wrapper.para_search_tester.search_val, id_type_wrapper.num_ids_wrapper.dev_ind, id_type_wrapper.num_ids_wrapper.num_devs, id_type_wrapper.num_ids_wrapper.dev_props.warpSize, num_thread_blocks, threads_per_block);
 						else	// Guaranteed to be of type PointStructTemplate<T, IDType, num_IDs>
 							// Do search that returns PointStructTemplate
-							res_arr = intervalParallelSearch(pt_arr_d, num_elems, num_res_elems, id_type_wrapper.num_ids_wrapper.para_search_tester.search_val, id_type_wrapper.num_ids_wrapper.dev_ind, id_type_wrapper.num_ids_wrapper.num_devs, id_type_wrapper.num_ids_wrapper.dev_props.warpSize, num_thread_blocks, threads_per_block);
+							res_arr = intervalParallelSearchPt(pt_arr_d, num_elems, num_res_elems, id_type_wrapper.num_ids_wrapper.para_search_tester.search_val, id_type_wrapper.num_ids_wrapper.dev_ind, id_type_wrapper.num_ids_wrapper.num_devs, id_type_wrapper.num_ids_wrapper.dev_props.warpSize, num_thread_blocks, threads_per_block);
 
 						if constexpr (timed_CUDA)
 						{
@@ -357,7 +357,7 @@ struct InterParaSearchTester
 					}
 
 					// Do search and report that returns PointStructTemplate
-					res_pt_arr = intervalParallelSearch(pt_arr_d, num_elems, num_res_elems, num_ids_wrapper.para_search_tester.search_val, num_ids_wrapper.dev_ind, num_ids_wrapper.num_devs, num_ids_wrapper.dev_props.warpSize, num_thread_blocks, threads_per_block);
+					res_pt_arr = intervalParallelSearchPt(pt_arr_d, num_elems, num_res_elems, num_ids_wrapper.para_search_tester.search_val, num_ids_wrapper.dev_ind, num_ids_wrapper.num_devs, num_ids_wrapper.dev_props.warpSize, num_thread_blocks, threads_per_block);
 
 					if constexpr (timed_CUDA)
 					{
