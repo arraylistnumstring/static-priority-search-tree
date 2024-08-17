@@ -116,7 +116,8 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 		if (i + threadIdx.x < num_elems)	// Intrawarp condition
 		{
 			// Evaluate if current metacell is active; if active, set corresponding flags and integers to signal to warp-scan (prefix sum)
-			if (pt_arr_d[i].dim1_val <= search_val && search_val <= pt_arr_d[i].dim2_val)
+			if (pt_arr_d[i + threadIdx.x].dim1_val <= search_val
+					&& search_val <= pt_arr_d[i + threadIdx.x].dim2_val)
 			{
 				thread_level_num_elems = 1;
 				cell_active = true;
@@ -247,11 +248,11 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 			if constexpr (std::is_same<RetType, IDType>::value)
 				// Add ID to array
 				res_arr_d[block_level_start_ind + warp_level_offset + thread_level_offset]
-					= pt_arr_d[i].id;
+					= pt_arr_d[i + threadIdx.x].id;
 			else
 				// Add PtStructTemplate<T, IDType, num_IDs> to array
 				res_arr_d[block_level_start_ind + warp_level_offset + thread_level_offset]
-					= pt_arr_d[i];
+					= pt_arr_d[i + threadIdx.x];
 		}
 	}
 };
