@@ -17,34 +17,14 @@ __forceinline__ __device__ T fls(T val)	// Equivalent to truncate(log_2(val))
 	return bit_ind;
 };
 
-// Given an array of PointStructTemplate<T, IDType, num_IDs>, return an on-device array of PointStructTemplate<T, IDType, num_IDs> where each point pt satisfies search_val \in [pt.dim1_val, pt.dim2_val])
-template <typename T, template<typename, typename, size_t> class PointStructTemplate,
-			typename IDType, size_t num_IDs>
-PointStructTemplate<T, IDType, num_IDs>* intervalParallelSearchPt(PointStructTemplate<T, IDType, num_IDs>* pt_arr_d, const size_t num_elems, size_t &num_res_elems, T search_val, const int dev_ind, const int num_devs, const int warp_size, const unsigned num_thread_blocks, const unsigned threads_per_block)
-{
-	PointStructTemplate<T, IDType, num_IDs>* res_pt_arr_d;	// Output metacell tag array pointer
-
-	return intervalParallelSearchWrapper(pt_arr_d, num_elems, res_pt_arr_d, num_res_elems, search_val, dev_ind, num_devs, warp_size, num_thread_blocks, threads_per_block);
-};
-
-// Given an array of PointStructTemplate<T, IDType, 1>, return an on-device array of indices where each index i satisfies search_val \in [pt_arr_d[i].dim1_val, pt_arr_d[i].dim2_val])
-template <typename T, template<typename, typename, size_t> class PointStructTemplate,
-			typename IDType>
-IDType* intervalParallelSearchID(PointStructTemplate<T, IDType, 1>* pt_arr_d, const size_t num_elems, size_t &num_res_elems, T search_val, const int dev_ind, const int num_devs, const int warp_size, const unsigned num_thread_blocks, const unsigned threads_per_block)
-{
-	IDType* res_id_arr_d;	// Output metacell ID array pointer
-
-	return intervalParallelSearchWrapper(pt_arr_d, num_elems, res_id_arr_d, num_res_elems, search_val, dev_ind, num_devs, warp_size, num_thread_blocks, threads_per_block);
-};
-
-// Code is identical between Pt and ID search types, except for specific typename, so bulk of code goes here
+// Given an array of PointStructTemplate<T, IDType, num_IDs>, return an on-device array of either points or IDs, each point pt or ID for point pt satisfies search_val \in [pt.dim1_val, pt.dim2_val])
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs, typename RetType>
 			requires std::disjunction<
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 			>::value
-RetType* intervalParallelSearchWrapper(PointStructTemplate<T, IDType, num_IDs>* pt_arr_d, const size_t num_elems, RetType *&res_arr_d, size_t &num_res_elems, T search_val, const int dev_ind, const int num_devs, const int warp_size, const unsigned num_thread_blocks, const unsigned threads_per_block)
+void intervalParallelSearch(PointStructTemplate<T, IDType, num_IDs>* pt_arr_d, const size_t num_elems, RetType *&res_arr_d, size_t &num_res_elems, T search_val, const int dev_ind, const int num_devs, const int warp_size, const unsigned num_thread_blocks, const unsigned threads_per_block)
 {
 	// Allocate space on GPU for output array, whether metacell tags or IDs
 	gpuErrorCheck(cudaMalloc(&res_arr_d, num_elems * sizeof(RetType)),
@@ -74,9 +54,6 @@ RetType* intervalParallelSearchWrapper(PointStructTemplate<T, IDType, num_IDs>* 
 										sizeof(unsigned long long), 0, cudaMemcpyDefault),
 					"Error in copying global result array final index from device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs) + ": ");
-
-	// Return device pointer in case more on-device computations need to be done, e.g. Marching Cubes
-	return res_arr_d;
 };
 
 // Search in parallel for all points pt satisfying search_val \in [pt.dim1_val, pt.dim2_val]; output array is of type IDType if decltype(res_arr_d) = IDType and of type PointStructTemplate<T, IDType, num_IDs> if decltype(res_arr_d) = PointStructTemplate<T, IDType, num_IDs>
@@ -95,14 +72,6 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 	unsigned long long &block_level_start_ind = *s;
 	unsigned long long *warp_level_num_elems_arr = s + 1;
 
-	unsigned long long thread_level_num_elems;	// Calculated with inclusive prefix sum
-	unsigned long long thread_level_offset;		// Calculated with exclusive prefix sum	(i.e. preceding element of inclusive prefix sum result)
-
-	unsigned long long warp_level_offset;		// Calculated with exclusive prefix sum
-
-	// Needs a separate flag, as thread_level_num_elems will not be 0 as long as there is at least one preceding thread with an active cell assigned
-	bool cell_active;
-
 	// Liu et al. kernel; iterate over all PointStructTemplate<T, IDType, num_IDs> elements in pt_arr_d
 	// Due to presence of __syncthreads() calls within for loop, whole block must iterate if at least one thread has an element to process
 	// Loop unrolling, as number of loops is known explicitly when kernel is called
@@ -110,6 +79,12 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 	for (unsigned long long i = blockIdx.x * blockDim.x;
 			i < num_elems; i += gridDim.x * blockDim.x)
 	{
+		unsigned long long thread_level_num_elems = 0;	// Calculated with inclusive prefix sum
+		unsigned long long thread_level_offset;		// Calculated with exclusive prefix sum	(i.e. preceding element of inclusive prefix sum result)
+
+		// Needs a separate flag, as thread_level_num_elems will not be 0 as long as there is at least one preceding thread with an active cell assigned
+		bool cell_active = false;
+
 		// Generate mask for threads active during intrawarp phase
 		unsigned intrawarp_mask = __ballot_sync(0xffffffff, i + threadIdx.x < num_elems);
 
@@ -121,11 +96,6 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 			{
 				thread_level_num_elems = 1;
 				cell_active = true;
-			}
-			else
-			{
-				thread_level_num_elems = 0;
-				cell_active = false;
 			}
 
 			// Warp-shuffle procedure to calculate inclusive prefix sum, i.e. so current thread knows offset with respect to start index in res_arr_d at which to output result
@@ -232,6 +202,8 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 			const unsigned long long block_level_num_elems = warp_level_num_elems_arr[warps_per_block_curr_iter - 1];
 			block_level_start_ind = atomicAdd(&res_arr_ind_d, block_level_num_elems);
 		}
+
+		unsigned long long warp_level_offset;		// Calculated with exclusive prefix sum
 
 		// All warps acquire their warp-level offset, which is the element of index (warp ID - 1) in warp_level_num_elems_arr
 		// Acquisition of warp-level offset is independent of memory allocation, so can occur anytime after the warp-level __syncthreads() call and before writing results to global memory; placed here for optimisation purposes, as all threads other than thread 0 would otherwise be idle between these __syncthreads() calls
