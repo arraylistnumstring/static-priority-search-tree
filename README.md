@@ -15,13 +15,13 @@ According to HPC support staff, CUDA Singularity image version 12.3.2 may still 
 
 To compile testers, run:
 
-	nvcc testers/pst-tester-driver.cu -ICommon -Ihelpers -Ipst -rdc -std=c++20 -o testers/pst-tester-driver.out
+	nvcc testers/pst-tester-driver.cu -ICommon -Ihelpers -Ipst -rdc true -std=c++20 -o testers/pst-tester-driver.out
 
 - `-I<filepath>` adds the given filepath to the list of paths to search for headers.
 	- `Common`: NVIDIA CUDA sample headers
 	- `helpers`: helper functions for priority search trees and related data structures
 	- `pst`: PST templates
-- `-rdc` allows for dynamic parallelism
+- `-rdc true` allows for dynamic parallelism
 
 For debugging options, use:
 - `-DDEBUG` to toggle DEBUG preprocessor flag and corresponding print output to aid with debugging variables that are inaccessible via gdb

@@ -9,6 +9,7 @@
 
 #include "err-chk.h"
 #include "gpu-err-chk.h"
+#include "helper-cuda--modified.h"
 #include "print-array.h"
 
 enum DataType {CHAR, DOUBLE, FLOAT, INT, LONG};
@@ -30,8 +31,7 @@ struct PSTTester
 	template <typename T,
 				template<typename> typename Distrib,
 				// Default random number engine: Mersenne Twister 19937; takes its constructor parameter as its seed
-				typename RandNumEng=std::mt19937,
-				bool timed_CUDA=false>
+				typename RandNumEng=std::mt19937>
 		requires std::is_arithmetic<T>::value
 	struct DataTypeWrapper
 	{
@@ -225,21 +225,21 @@ struct PSTTester
 							if (test_type == LEFT_SEARCH)
 							{
 								res_arr = tree->twoSidedLeftSearch(num_res_elems,
-																	num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound1,
-																	num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val);
+																	id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound1,
+																	id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val);
 							}
 							else if (test_type == RIGHT_SEARCH)
 							{
 								res_arr = tree->twoSidedRightSearch(num_res_elems,
-																	num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound1,
-																	num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val);
+																	id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound1,
+																	id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val);
 							}
 							else if (test_type == THREE_SEARCH)
 							{
 								res_arr = tree->threeSidedSearch(num_res_elems,
-																	num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound1,
-																	num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound2,
-																	num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val);
+																	id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound1,
+																	id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound2,
+																	id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val);
 							}
 							// If test_type == CONSTRUCT, do nothing for the search/report phase
 							

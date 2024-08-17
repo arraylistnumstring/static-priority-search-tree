@@ -39,9 +39,10 @@ struct PSTTestInfoStruct
 	PSTType tree_type;
 	DataType id_type;
 
-	bool pts_with_ids = false;
-	bool timed_CUDA = false;
 	bool ordered_vals = false;
+	bool pts_with_ids = false;
+	bool report_IDs = false;
+	bool timed_CUDA = false;
 
 	// Instantiate outermost PSTTester type with respect to CUDA timing
 	void test()
@@ -197,16 +198,16 @@ struct PSTTestInfoStruct
 
 			if (report_IDs)
 			{
-				typename PSTTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, char>::RetTypeWrapper<char> pst_tester_id_ret_types_instan(pst_tester_id_instan);
+				typename PSTTesterDataTreeTypesNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, char>::RetTypeWrapper<char> pst_tester_id_ret_types_instan(pst_tester_id_instan);
 
 				testWrap(pst_tester_id_ret_types_instan);
 			}
 			else
 			{
 				// Must have <> to use default template parameter
-				typename PSTTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, char>::RetTypeWrapper<> pst_tester_id_ret_types_instan(pst_tester_id_instan)
+				typename PSTTesterDataTreeTypesNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, char>::RetTypeWrapper<> pst_tester_id_ret_types_instan(pst_tester_id_instan);
 
-				testWrap(pst_tester_id_ret_types_instan(pst_tester_id_ret_types_instan);
+				testWrap(pst_tester_id_ret_types_instan(pst_tester_id_ret_types_instan));
 			}
 		}
 		else if (id_type == DataType::DOUBLE)
@@ -219,13 +220,13 @@ struct PSTTestInfoStruct
 
 			if (report_IDs)
 			{
-				typename PSTTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, double>::RetTypeWrapper<double> pst_tester_id_ret_types_instan(pst_tester_id_instan);
+				typename PSTTesterDataTreeTypesNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, double>::RetTypeWrapper<double> pst_tester_id_ret_types_instan(pst_tester_id_instan);
 
 				testWrap(pst_tester_id_ret_types_instan);
 			}
 			else
 			{
-				typename PSTTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, double>::RetTypeWrapper<> pst_tester_id_ret_types_instan(pst_tester_id_instan);
+				typename PSTTesterDataTreeTypesNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, double>::RetTypeWrapper<> pst_tester_id_ret_types_instan(pst_tester_id_instan);
 				testWrap(pst_tester_id_ret_types_instan);
 			}
 
@@ -240,13 +241,13 @@ struct PSTTestInfoStruct
 
 			if (report_IDs)
 			{
-				typename PSTTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, float>::RetTypeWrapper<float> pst_tester_id_ret_types_instan(pst_tester_id_instan);
+				typename PSTTesterDataTreeTypesNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, float>::RetTypeWrapper<float> pst_tester_id_ret_types_instan(pst_tester_id_instan);
 
 				testWrap(pst_tester_id_ret_types_instan);
 			}
 			else
 			{
-				typename PSTTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, float>::RetTypeWrapper<> pst_tester_id_ret_types_instan(pst_tester_id_instan);
+				typename PSTTesterDataTreeTypesNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, float>::RetTypeWrapper<> pst_tester_id_ret_types_instan(pst_tester_id_instan);
 				testWrap(pst_tester_id_ret_types_instan);
 			}
 		}
@@ -260,13 +261,13 @@ struct PSTTestInfoStruct
 
 			if (report_IDs)
 			{
-				typename PSTTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, int>::RetTypeWrapper<int> pst_tester_id_ret_types_instan(pst_tester_id_instan);
+				typename PSTTesterDataTreeTypesNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, int>::RetTypeWrapper<int> pst_tester_id_ret_types_instan(pst_tester_id_instan);
 
 				testWrap(pst_tester_id_ret_types_instan);
 			}
 			else
 			{
-				typename PSTTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, int>::RetTypeWrapper<> pst_tester_id_ret_types_instan(pst_tester_id_instan);
+				typename PSTTesterDataTreeTypesNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, int>::RetTypeWrapper<> pst_tester_id_ret_types_instan(pst_tester_id_instan);
 				testWrap(pst_tester_id_ret_types_instan);
 			}
 		}
@@ -280,13 +281,13 @@ struct PSTTestInfoStruct
 
 			if (report_IDs)
 			{
-				typename PSTTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, long>::RetTypeWrapper<long> pst_tester_id_ret_types_instan(pst_tester_id_instan);
+				typename PSTTesterDataTreeTypesNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, long>::RetTypeWrapper<long> pst_tester_id_ret_types_instan(pst_tester_id_instan);
 
 				testWrap(pst_tester_id_ret_types_instan);
 			}
 			else
 			{
-				typename PSTTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, long>::RetTypeWrapper<> pst_tester_id_ret_types_instan(pst_tester_id_instan);
+				typename PSTTesterDataTreeTypesNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, long>::RetTypeWrapper<> pst_tester_id_ret_types_instan(pst_tester_id_instan);
 				testWrap(pst_tester_id_ret_types_instan);
 			}
 		}
