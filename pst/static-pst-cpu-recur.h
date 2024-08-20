@@ -114,25 +114,25 @@ class StaticPSTCPURecur : public StaticPrioritySearchTree<T, PointStructTemplate
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 			>::value
-		void threeSidedSearchRecur(RetType *&res_arr, size_t &num_res_elems, size_t &pt_arr_size, TreeNode &subtree_root, T min_dim1_val, T max_dim1_val, T min_dim2_val);
+		void threeSidedSearchRecur(RetType *&res_arr, size_t &num_res_elems, size_t &res_arr_size, TreeNode &subtree_root, T min_dim1_val, T max_dim1_val, T min_dim2_val);
 		template <typename RetType>
 			requires std::disjunction<
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 			>::value
-		void twoSidedLeftSearchRecur(RetType *&res_arr, size_t &num_res_elems, size_t &pt_arr_size, TreeNode &subtree_root, T max_dim1_val, T min_dim2_val);
+		void twoSidedLeftSearchRecur(RetType *&res_arr, size_t &num_res_elems, size_t &res_arr_size, TreeNode &subtree_root, T max_dim1_val, T min_dim2_val);
 		template <typename RetType>
 			requires std::disjunction<
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 			>::value
-		void twoSidedRightSearchRecur(RetType *&res_arr, size_t &num_res_elems, size_t &pt_arr_size, TreeNode &subtree_root, T min_dim1_val, T min_dim2_val);
+		void twoSidedRightSearchRecur(RetType *&res_arr, size_t &num_res_elems, size_t &res_arr_size, TreeNode &subtree_root, T min_dim1_val, T min_dim2_val);
 		template <typename RetType>
 			requires std::disjunction<
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 			>::value
-		void reportAllNodes(RetType *&res_arr, size_t &num_res_elems, size_t &pt_arr_size, TreeNode &subtree_root, T min_dim2_val);
+		void reportAllNodes(RetType *&res_arr, size_t &num_res_elems, size_t &res_arr_size, TreeNode &subtree_root, T min_dim2_val);
 
 	// Allow printing operator << to be declared for TreeNode
 	// For friend functions of template classes, for the compiler to recognise the function as a template function, it is necessary to either pre-declare each template friend function before the template class and modify the class-internal function declaration with an additional <> between the operator and the parameter list; or to simply define the friend function when it is declared
