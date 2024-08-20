@@ -20,10 +20,10 @@ __forceinline__ __device__ T fls(T val)	// Equivalent to truncate(log_2(val))
 // Given an array of PointStructTemplate<T, IDType, num_IDs>, return an on-device array of either points or IDs, each point pt or ID for point pt satisfies search_val \in [pt.dim1_val, pt.dim2_val])
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs, typename RetType>
-			requires std::disjunction<
-								std::is_same<RetType, IDType>,
-								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-			>::value
+	requires std::disjunction<
+						std::is_same<RetType, IDType>,
+						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+	>::value
 void intervalParallelSearch(PointStructTemplate<T, IDType, num_IDs>* pt_arr_d, const size_t num_elems, RetType *&res_arr_d, size_t &num_res_elems, T search_val, const int dev_ind, const int num_devs, const int warp_size, const unsigned num_thread_blocks, const unsigned threads_per_block)
 {
 	// Allocate space on GPU for output array, whether metacell tags or IDs
@@ -60,10 +60,10 @@ void intervalParallelSearch(PointStructTemplate<T, IDType, num_IDs>* pt_arr_d, c
 // Shared memory must be at least of size (1 + number of warps) * sizeof(unsigned long long), where the 1 stores the block-level offset index of res_arr_d starting at which results are stored (is updated in each iteration)
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs, typename RetType>
-			requires std::disjunction<
-								std::is_same<RetType, IDType>,
-								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-			>::value
+	requires std::disjunction<
+						std::is_same<RetType, IDType>,
+						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+	>::value
 __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_IDs> *pt_arr_d,
 												const size_t num_elems, RetType *const res_arr_d,
 												const unsigned warps_per_block, const T search_val)
