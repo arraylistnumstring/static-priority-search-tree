@@ -133,7 +133,8 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::threeSidedSearch
 	{
 		std::cout << "Tree is empty; nothing to search\n";
 		num_res_elems = 0;
-		return nullptr;
+		res_arr = nullptr;
+		return;
 	}
 
 	size_t res_arr_size = num_elems;
@@ -230,13 +231,19 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::threeSidedSearch
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
+template <typename RetType>
+	requires std::disjunction<
+						std::is_same<RetType, IDType>,
+						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+	>::value
 void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSearch(size_t &num_res_elems, RetType *&res_arr, T max_dim1_val, T min_dim2_val)
 {
 	if (num_elems == 0)
 	{
 		std::cout << "Tree is empty; nothing to search\n";
 		num_res_elems = 0;
-		return nullptr;
+		res_arr = nullptr;
+		return;
 	}
 
 	size_t res_arr_size = num_elems;
@@ -316,13 +323,19 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSear
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
+template <typename RetType>
+	requires std::disjunction<
+						std::is_same<RetType, IDType>,
+						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+	>::value
 void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::twoSidedRightSearch(size_t &num_res_elems, RetType *&res_arr, T min_dim1_val, T min_dim2_val)
 {
 	if (num_elems == 0)
 	{
 		std::cout << "Tree is empty; nothing to search\n";
 		num_res_elems = 0;
-		return nullptr;
+		res_arr = nullptr;
+		return;
 	}
 
 	size_t res_arr_size = num_elems;

@@ -59,7 +59,7 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 	>::value
-__global__ void twoSidedRightSearchGlobal (T *const root_d, const size_t num_elem_slots,
+__global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem_slots,
 											const size_t start_node_ind,
 											RetType *const res_arr_d,
 											const T min_dim1_val, const T min_dim2_val);
@@ -113,7 +113,8 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 			{
 				std::cout << "Tree is empty; nothing to search\n";
 				num_res_elems = 0;
-				return nullptr;
+				res_arr_d = nullptr;
+				return;
 			}
 
 			gpuErrorCheck(cudaMalloc(&res_arr_d, num_elems * sizeof(RetType)),
@@ -155,7 +156,8 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 			{
 				std::cout << "Tree is empty; nothing to search\n";
 				num_res_elems = 0;
-				return nullptr;
+				res_arr_d = nullptr;
+				return;
 			}
 
 			gpuErrorCheck(cudaMalloc(&res_arr_d, num_elems * sizeof(RetType)),
@@ -197,7 +199,8 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 			{
 				std::cout << "Tree is empty; nothing to search\n";
 				num_res_elems = 0;
-				return nullptr;
+				res_arr_d = nullptr;
+				return;
 			}
 
 			gpuErrorCheck(cudaMalloc(&res_arr_d, num_elems * sizeof(RetType)),

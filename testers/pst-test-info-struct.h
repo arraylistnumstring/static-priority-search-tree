@@ -207,7 +207,7 @@ struct PSTTestInfoStruct
 				// Must have <> to use default template parameter
 				typename PSTTesterDataTreeTypesNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, char>::RetTypeWrapper<> pst_tester_id_ret_types_instan(pst_tester_id_instan);
 
-				testWrap(pst_tester_id_ret_types_instan(pst_tester_id_ret_types_instan));
+				testWrap(pst_tester_id_ret_types_instan);
 			}
 		}
 		else if (id_type == DataType::DOUBLE)
@@ -227,6 +227,7 @@ struct PSTTestInfoStruct
 			else
 			{
 				typename PSTTesterDataTreeTypesNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, double>::RetTypeWrapper<> pst_tester_id_ret_types_instan(pst_tester_id_instan);
+
 				testWrap(pst_tester_id_ret_types_instan);
 			}
 
@@ -248,6 +249,7 @@ struct PSTTestInfoStruct
 			else
 			{
 				typename PSTTesterDataTreeTypesNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, float>::RetTypeWrapper<> pst_tester_id_ret_types_instan(pst_tester_id_instan);
+
 				testWrap(pst_tester_id_ret_types_instan);
 			}
 		}
@@ -268,6 +270,7 @@ struct PSTTestInfoStruct
 			else
 			{
 				typename PSTTesterDataTreeTypesNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, int>::RetTypeWrapper<> pst_tester_id_ret_types_instan(pst_tester_id_instan);
+
 				testWrap(pst_tester_id_ret_types_instan);
 			}
 		}
@@ -288,6 +291,7 @@ struct PSTTestInfoStruct
 			else
 			{
 				typename PSTTesterDataTreeTypesNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, long>::RetTypeWrapper<> pst_tester_id_ret_types_instan(pst_tester_id_instan);
+
 				testWrap(pst_tester_id_ret_types_instan);
 			}
 		}

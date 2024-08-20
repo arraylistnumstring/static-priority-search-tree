@@ -22,12 +22,18 @@ class StaticPSTCPURecur : public StaticPrioritySearchTree<T, PointStructTemplate
 		virtual void print(std::ostream &os) const;
 
 		// Initial input value for num_res_elems is the array initialisation size
+		template <typename RetType>
+			requires std::disjunction<
+								std::is_same<RetType, IDType>,
+								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+			>::value
 		void threeSidedSearch(size_t &num_res_elems, RetType *&res_arr, T min_dim1_val, T max_dim1_val, T min_dim2_val)
 		{
 			if (root == nullptr)
 			{
 				std::cout << "Tree is empty; nothing to search\n";
-				return nullptr;
+				res_arr = nullptr;
+				return;
 			}
 			size_t res_arr_size = num_res_elems == 0 ? 10 : num_res_elems;
 			res_arr = new RetType[res_arr_size];
@@ -37,15 +43,19 @@ class StaticPSTCPURecur : public StaticPrioritySearchTree<T, PointStructTemplate
 			// Ensure that no more memory is taken up than needed
 			if (res_arr_size > num_res_elems)
 				resizeArray(res_arr, res_arr_size, num_res_elems);
-
-			return res_arr;
 		};
+		template <typename RetType>
+			requires std::disjunction<
+								std::is_same<RetType, IDType>,
+								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+			>::value
 		void twoSidedLeftSearch(size_t &num_res_elems, RetType *&res_arr, T max_dim1_val, T min_dim2_val)
 		{
 			if (root == nullptr)
 			{
 				std::cout << "Tree is empty; nothing to search\n";
-				return nullptr;
+				res_arr = nullptr;
+				return;
 			}
 			size_t res_arr_size = num_res_elems == 0 ? 10 : num_res_elems;
 			res_arr = new RetType[res_arr_size];
@@ -55,15 +65,19 @@ class StaticPSTCPURecur : public StaticPrioritySearchTree<T, PointStructTemplate
 			// Ensure that no more memory is taken up than needed
 			if (res_arr_size > num_res_elems)
 				resizeArray(res_arr, res_arr_size, num_res_elems);
-
-			return res_arr;
 		};
+		template <typename RetType>
+			requires std::disjunction<
+								std::is_same<RetType, IDType>,
+								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+			>::value
 		void twoSidedRightSearch(size_t &num_res_elems, RetType *&res_arr, T min_dim1_val, T min_dim2_val)
 		{
 			if (root == nullptr)
 			{
 				std::cout << "Tree is empty; nothing to search\n";
-				return nullptr;
+				res_arr = nullptr;
+				return;
 			}
 			size_t res_arr_size = num_res_elems == 0 ? 10 : num_res_elems;
 			res_arr = new RetType[res_arr_size];
@@ -73,8 +87,6 @@ class StaticPSTCPURecur : public StaticPrioritySearchTree<T, PointStructTemplate
 			// Ensure that no more memory is taken up than needed
 			if (res_arr_size > num_res_elems)
 				resizeArray(res_arr, res_arr_size, num_res_elems);
-
-			return res_arr;
 		};
 
 	private:
@@ -97,10 +109,30 @@ class StaticPSTCPURecur : public StaticPrioritySearchTree<T, PointStructTemplate
 		void printRecur(std::ostream &os, const TreeNode &subtree_root, std::string prefix, std::string child_prefix) const;
 
 		// Search-related helper functions
-		void threeSidedSearchRecur(PointStructTemplate<T, IDType, num_IDs> *&pt_arr, size_t &num_res_elems, size_t &pt_arr_size, TreeNode &subtree_root, T min_dim1_val, T max_dim1_val, T min_dim2_val);
-		void twoSidedLeftSearchRecur(PointStructTemplate<T, IDType, num_IDs> *&pt_arr, size_t &num_res_elems, size_t &pt_arr_size, TreeNode &subtree_root, T max_dim1_val, T min_dim2_val);
-		void twoSidedRightSearchRecur(PointStructTemplate<T, IDType, num_IDs> *&pt_arr, size_t &num_res_elems, size_t &pt_arr_size, TreeNode &subtree_root, T min_dim1_val, T min_dim2_val);
-		void reportAllNodes(PointStructTemplate<T, IDType, num_IDs> *&pt_arr, size_t &num_res_elems, size_t &pt_arr_size, TreeNode &subtree_root, T min_dim2_val);
+		template <typename RetType>
+			requires std::disjunction<
+								std::is_same<RetType, IDType>,
+								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+			>::value
+		void threeSidedSearchRecur(RetType *&res_arr, size_t &num_res_elems, size_t &pt_arr_size, TreeNode &subtree_root, T min_dim1_val, T max_dim1_val, T min_dim2_val);
+		template <typename RetType>
+			requires std::disjunction<
+								std::is_same<RetType, IDType>,
+								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+			>::value
+		void twoSidedLeftSearchRecur(RetType *&res_arr, size_t &num_res_elems, size_t &pt_arr_size, TreeNode &subtree_root, T max_dim1_val, T min_dim2_val);
+		template <typename RetType>
+			requires std::disjunction<
+								std::is_same<RetType, IDType>,
+								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+			>::value
+		void twoSidedRightSearchRecur(RetType *&res_arr, size_t &num_res_elems, size_t &pt_arr_size, TreeNode &subtree_root, T min_dim1_val, T min_dim2_val);
+		template <typename RetType>
+			requires std::disjunction<
+								std::is_same<RetType, IDType>,
+								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+			>::value
+		void reportAllNodes(RetType *&res_arr, size_t &num_res_elems, size_t &pt_arr_size, TreeNode &subtree_root, T min_dim2_val);
 
 	// Allow printing operator << to be declared for TreeNode
 	// For friend functions of template classes, for the compiler to recognise the function as a template function, it is necessary to either pre-declare each template friend function before the template class and modify the class-internal function declaration with an additional <> between the operator and the parameter list; or to simply define the friend function when it is declared

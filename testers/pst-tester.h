@@ -429,22 +429,22 @@ struct PSTTester
 						// Search/report test phase
 						if (test_type == LEFT_SEARCH)
 						{
-							res_pt_arr = tree->twoSidedLeftSearch(num_res_elems,
-																	num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound1,
-																	num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val);
+							tree->twoSidedLeftSearch(num_res_elems, res_pt_arr,
+														num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound1,
+														num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val);
 						}
 						else if (test_type == RIGHT_SEARCH)
 						{
-							res_pt_arr = tree->twoSidedRightSearch(num_res_elems,
-																	num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound1,
-																	num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val);
+							tree->twoSidedRightSearch(num_res_elems, res_pt_arr,
+														num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound1,
+														num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val);
 						}
 						else if (test_type == THREE_SEARCH)
 						{
-							res_pt_arr = tree->threeSidedSearch(num_res_elems,
-																num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound1,
-																num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound2,
-																num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val);
+							tree->threeSidedSearch(num_res_elems, res_pt_arr,
+													num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound1,
+													num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound2,
+													num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val);
 						}
 						// If test_type == CONSTRUCT, do nothing for the search/report phase
 
