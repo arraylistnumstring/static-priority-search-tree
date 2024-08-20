@@ -1,11 +1,17 @@
 // Utilises dynamic parallelism
 // Shared memory must be at least as large as (number of threads) * (sizeof(long long) + sizeof(signed char))
 // Correctness only guaranteed for grids with one active block
+// Non-member functions can only use at most one template clause
+// Can only have default template argument(s) listed once overall
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
-			typename IDType, size_t num_IDs>
+			typename IDType, size_t num_IDs, typename RetType>
+	requires std::disjunction<
+						std::is_same<RetType, IDType>,
+						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+	>::value
 __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_slots,
 										const size_t start_node_ind,
-										PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d,
+										RetType *const res_arr_d,
 										const T min_dim1_val, const T max_dim1_val,
 										const T min_dim2_val)
 {
@@ -62,13 +68,20 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 						&& curr_node_dim1_val <= max_dim1_val)
 				{
 					unsigned long long res_ind_to_access = atomicAdd(&res_arr_ind_d, 1);
-					res_pt_arr_d[res_ind_to_access].dim1_val = curr_node_dim1_val;
-					res_pt_arr_d[res_ind_to_access].dim2_val = curr_node_dim2_val;
-					// As IDs are only accessed if the node is to be reported and if IDs exist, don't waste a register on it (and avoid compilation failures from attempting to instantiate a potential void variable)
-					if constexpr (num_IDs == 1)
-						res_pt_arr_d[res_ind_to_access].id
+					if constexpr (std::is_same<RetType, IDType>::value)
+					{
+						res_arr_d[res_ind_to_access]
 							= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(root_d, num_elem_slots)[search_ind];
-
+					}
+					else
+					{
+						res_arr_d[res_ind_to_access].dim1_val = curr_node_dim1_val;
+						res_arr_d[res_ind_to_access].dim2_val = curr_node_dim2_val;
+						// As IDs are only accessed if the node is to be reported and if IDs exist, don't waste a register on it (and avoid compilation failures from attempting to instantiate a potential void variable)
+						if constexpr (num_IDs == 1)
+							res_arr_d[res_ind_to_access].id
+								= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(root_d, num_elem_slots)[search_ind];
+					}
 				}
 
 				// If node has no children or the subtree satisfying the search range has no children, the thread becomes inactive; inactivity must occur on this side of the following syncthreads() call to avoid race conditions
@@ -97,7 +110,7 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 				// Do 3-sided search delegation
 				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::do3SidedSearchDelegation(curr_node_bitcode,
 															root_d, num_elem_slots,
-															res_pt_arr_d,
+															res_arr_d,
 															min_dim1_val, max_dim1_val,
 															curr_node_med_dim1_val, min_dim2_val,
 															search_ind, search_inds_arr,
@@ -109,7 +122,7 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doLeftSearchDelegation(curr_node_med_dim1_val <= max_dim1_val,
 															curr_node_bitcode,
 															root_d, num_elem_slots,
-															res_pt_arr_d, min_dim2_val,
+															res_arr_d, min_dim2_val,
 															search_ind, search_inds_arr,
 															search_code, search_codes_arr);
 			}
@@ -118,7 +131,7 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doRightSearchDelegation(curr_node_med_dim1_val >= min_dim1_val,
 															curr_node_bitcode,
 															root_d, num_elem_slots,
-															res_pt_arr_d, min_dim2_val,
+															res_arr_d, min_dim2_val,
 															search_ind, search_inds_arr,
 															search_code, search_codes_arr);
 			}
@@ -126,7 +139,7 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 			{
 				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodesDelegation(curr_node_bitcode,
 																root_d, num_elem_slots,
-																res_pt_arr_d, min_dim2_val,
+																res_arr_d, min_dim2_val,
 																search_ind, search_inds_arr,
 																search_codes_arr);
 			}
@@ -145,10 +158,14 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 // Shared memory must be at least as large as (number of threads) * (sizeof(long long) + sizeof(signed char))
 // Correctness only guaranteed for grids with one active block
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
-			typename IDType, size_t num_IDs>
+			typename IDType, size_t num_IDs, typename RetType>
+	requires std::disjunction<
+						std::is_same<RetType, IDType>,
+						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+	>::value
 __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_slots,
 											const size_t start_node_ind,
-											PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d,
+											RetType *const res_arr_d,
 											const T max_dim1_val, const T min_dim2_val)
 {
 	// For correctness, only 1 block can ever be active, as synchronisation across blocks (i.e. global synchronisation) is not possible without exiting the kernel entirely
@@ -203,11 +220,19 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 				if (curr_node_dim1_val <= max_dim1_val)
 				{
 					unsigned long long res_ind_to_access = atomicAdd(&res_arr_ind_d, 1);
-					res_pt_arr_d[res_ind_to_access].dim1_val = curr_node_dim1_val;
-					res_pt_arr_d[res_ind_to_access].dim2_val = curr_node_dim2_val;
-					if constexpr (num_IDs == 1)
-						res_pt_arr_d[res_ind_to_access].id
+					if constexpr (std::is_same<RetType, IDType>::value)
+					{
+						res_arr_d[res_ind_to_access]
 							= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(root_d, num_elem_slots)[search_ind];
+					}
+					else
+					{
+						res_arr_d[res_ind_to_access].dim1_val = curr_node_dim1_val;
+						res_arr_d[res_ind_to_access].dim2_val = curr_node_dim2_val;
+						if constexpr (num_IDs == 1)
+							res_arr_d[res_ind_to_access].id
+								= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(root_d, num_elem_slots)[search_ind];
+					}
 				}
 
 				// Check if thread becomes inactive because current node has no children
@@ -232,7 +257,7 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doLeftSearchDelegation(curr_node_med_dim1_val <= max_dim1_val,
 															curr_node_bitcode,
 															root_d, num_elem_slots,
-															res_pt_arr_d, min_dim2_val,
+															res_arr_d, min_dim2_val,
 															search_ind, search_inds_arr,
 															search_code, search_codes_arr);
 			}
@@ -240,7 +265,7 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 			{
 				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodesDelegation(curr_node_bitcode,
 																root_d, num_elem_slots,
-																res_pt_arr_d, min_dim2_val,
+																res_arr_d, min_dim2_val,
 																search_ind, search_inds_arr,
 																search_codes_arr);
 			}
@@ -258,10 +283,14 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 // Shared memory must be at least as large as (number of threads) * (sizeof(long long) + sizeof(signed char))
 // Correctness only guaranteed for grids with one active block
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
-			typename IDType, size_t num_IDs>
+			typename IDType, size_t num_IDs, typename RetType>
+	requires std::disjunction<
+						std::is_same<RetType, IDType>,
+						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+	>::value
 __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem_slots,
 											const size_t start_node_ind,
-											PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d,
+											RetType *const res_arr_d,
 											const T min_dim1_val, const T min_dim2_val)
 {
 	// For correctness, only 1 block can ever be active, as synchronisation across blocks (i.e. global synchronisation) is not possible without exiting the kernel entirely
@@ -316,11 +345,19 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 				if (curr_node_dim1_val >= min_dim1_val)
 				{
 					unsigned long long res_ind_to_access = atomicAdd(&res_arr_ind_d, 1);
-					res_pt_arr_d[res_ind_to_access].dim1_val = curr_node_dim1_val;
-					res_pt_arr_d[res_ind_to_access].dim2_val = curr_node_dim2_val;
-					if constexpr (num_IDs == 1)
-						res_pt_arr_d[res_ind_to_access].id
+					if constexpr (std::is_same<RetType, IDType>::value)
+					{
+						res_arr_d[res_ind_to_access]
 							= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(root_d, num_elem_slots)[search_ind];
+					}
+					else
+					{
+						res_arr_d[res_ind_to_access].dim1_val = curr_node_dim1_val;
+						res_arr_d[res_ind_to_access].dim2_val = curr_node_dim2_val;
+						if constexpr (num_IDs == 1)
+							res_arr_d[res_ind_to_access].id
+								= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(root_d, num_elem_slots)[search_ind];
+					}
 				}
 
 				// Check if thread becomes inactive because current node has no children
@@ -345,7 +382,7 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doRightSearchDelegation(curr_node_med_dim1_val >= min_dim1_val,
 															curr_node_bitcode,
 															root_d, num_elem_slots,
-															res_pt_arr_d, min_dim2_val,
+															res_arr_d, min_dim2_val,
 															search_ind, search_inds_arr,
 															search_code, search_codes_arr);
 			}
@@ -353,7 +390,7 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 			{
 				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodesDelegation(curr_node_bitcode,
 																root_d, num_elem_slots,
-																res_pt_arr_d, min_dim2_val,
+																res_arr_d, min_dim2_val,
 																search_ind, search_inds_arr,
 																search_codes_arr);
 			}
@@ -372,10 +409,14 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 // Shared memory must be at least as large as (number of threads) * sizeof(long long)
 // Correctness only guaranteed for grids with one active block
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
-			typename IDType, size_t num_IDs>
+			typename IDType, size_t num_IDs, typename RetType>
+	requires std::disjunction<
+						std::is_same<RetType, IDType>,
+						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+	>::value
 __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slots,
 										const size_t start_node_ind,
-										PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d,
+										RetType *const res_arr_d,
 										const T min_dim2_val)
 {
 	// For correctness, only 1 block can ever be active, as synchronisation across blocks (i.e. global synchronisation) is not possible without exiting the kernel entirely
@@ -421,12 +462,20 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 			else	// min_dim2_val <= curr_node_dim2_val; report node
 			{
 				unsigned long long res_ind_to_access = atomicAdd(&res_arr_ind_d, 1);
-				res_pt_arr_d[res_ind_to_access].dim1_val
-						= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getDim1ValsRoot(root_d, num_elem_slots)[search_ind];
-				res_pt_arr_d[res_ind_to_access].dim2_val = curr_node_dim2_val;
-				if constexpr (num_IDs == 1)
-					res_pt_arr_d[res_ind_to_access].id
+				if constexpr (std::is_same<RetType, IDType>::value)
+				{
+					res_arr_d[res_ind_to_access]
 						= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(root_d, num_elem_slots)[search_ind];
+				}
+				else
+				{
+					res_arr_d[res_ind_to_access].dim1_val
+							= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getDim1ValsRoot(root_d, num_elem_slots)[search_ind];
+					res_arr_d[res_ind_to_access].dim2_val = curr_node_dim2_val;
+					if constexpr (num_IDs == 1)
+						res_arr_d[res_ind_to_access].id
+							= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(root_d, num_elem_slots)[search_ind];
+				}
 
 				// Check if thread becomes inactive because current node has no children
 				if (!StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::hasChildren(curr_node_bitcode))
@@ -452,7 +501,7 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 				// Delegate reporting of all nodes in right child to another thread and/or block
 				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::splitReportAllNodesWork(root_d, num_elem_slots,
 															StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::getRightChild(search_ind),
-															res_pt_arr_d, min_dim2_val,
+															res_arr_d, min_dim2_val,
 															search_inds_arr);
 
 				// Prepare to report all nodes in the next iteration

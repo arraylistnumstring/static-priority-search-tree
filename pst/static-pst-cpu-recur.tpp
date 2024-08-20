@@ -255,55 +255,73 @@ void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::printRecur(std:
 	}
 }
 
+// Separate template clauses are necessary when the enclosing template class has different template types from the member function
+// Default template argument for a class template's member function can only be specified within the class template
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::threeSidedSearchRecur(PointStructTemplate<T, IDType, num_IDs> *&pt_arr, size_t &num_res_elems, size_t &pt_arr_size, TreeNode &subtree_root, T min_dim1_val, T max_dim1_val, T min_dim2_val)
+template <typename RetType>
+	requires std::disjunction<
+						std::is_same<RetType, IDType>,
+						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+	>::value
+void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::threeSidedSearchRecur(RetType *&res_arr, size_t &num_res_elems, size_t &res_arr_size, TreeNode &subtree_root, T min_dim1_val, T max_dim1_val, T min_dim2_val)
 {
 	if (min_dim2_val > subtree_root.pt.dim2_val) return;	// No more nodes to report
 
 	// Check if this node satisfies the search criteria
 	else if (min_dim1_val <= subtree_root.pt.dim1_val && subtree_root.pt.dim1_val <= max_dim1_val)
 	{
-		// Allow polymorphism to determine which type of PointStruct needs to be instantiated to capture all relevant information
-		pt_arr[num_res_elems++] = subtree_root.pt;
+		// Allow template instantiation to determine which type of PointStruct needs to be instantiated to capture all relevant information
+		if constexpr (std::is_same<RetType, IDType>::value)
+			res_arr[num_res_elems++] = subtree_root.pt.id;
+		else
+			res_arr[num_res_elems++] = subtree_root.pt;
 		// Dynamically resize array
-		if (num_res_elems == pt_arr_size)
-			resizeArray(pt_arr, pt_arr_size, pt_arr_size << 1);
+		if (num_res_elems == res_arr_size)
+			resizeArray(res_arr, res_arr_size, res_arr_size << 1);
 	}
 
 	// Continue search
 
 	// Search interval is fully to the right of median_dim1_val
 	if (subtree_root.median_dim1_val < min_dim1_val && subtree_root.hasRightChild())
-		threeSidedSearchRecur(pt_arr, num_res_elems, pt_arr_size, subtree_root.getRightChild(root), min_dim1_val, max_dim1_val, min_dim2_val);
+		threeSidedSearchRecur(res_arr, num_res_elems, res_arr_size, subtree_root.getRightChild(root), min_dim1_val, max_dim1_val, min_dim2_val);
 	// Search interval is fully to the left of median_dim1_val
 	else if (subtree_root.median_dim1_val > max_dim1_val && subtree_root.hasLeftChild())
-		threeSidedSearchRecur(pt_arr, num_res_elems, pt_arr_size, subtree_root.getLeftChild(root), min_dim1_val, max_dim1_val, min_dim2_val);
+		threeSidedSearchRecur(res_arr, num_res_elems, res_arr_size, subtree_root.getLeftChild(root), min_dim1_val, max_dim1_val, min_dim2_val);
 	// Max value of search interval is bounded by median_dim1_val, so can do a two-sided search on left subtree
 	else
 	{
 		// median_dim1_val is in the boundary of the dimension-1 value interval [min_dim1_val, max_dim1_val]; split into 2 two-sided searches; the upper bound is typically open, but if there are duplicates and one copy of a median point happens to fall into either subtree, both trees must be traversed for correctness
 		if (subtree_root.hasLeftChild())
-			twoSidedRightSearchRecur(pt_arr, num_res_elems, pt_arr_size, subtree_root.getLeftChild(root), min_dim1_val, min_dim2_val);
+			twoSidedRightSearchRecur(res_arr, num_res_elems, res_arr_size, subtree_root.getLeftChild(root), min_dim1_val, min_dim2_val);
 		if (subtree_root.hasRightChild())
-			twoSidedLeftSearchRecur(pt_arr, num_res_elems, pt_arr_size, subtree_root.getRightChild(root), max_dim1_val, min_dim2_val);
+			twoSidedLeftSearchRecur(res_arr, num_res_elems, res_arr_size, subtree_root.getRightChild(root), max_dim1_val, min_dim2_val);
 	}
 }
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSearchRecur(PointStructTemplate<T, IDType, num_IDs> *&pt_arr, size_t &num_res_elems, size_t &pt_arr_size, TreeNode &subtree_root, T max_dim1_val, T min_dim2_val)
+template <typename RetType>
+	requires std::disjunction<
+						std::is_same<RetType, IDType>,
+						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+	>::value
+void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSearchRecur(RetType *&res_arr, size_t &num_res_elems, size_t &res_arr_size, TreeNode &subtree_root, T max_dim1_val, T min_dim2_val)
 {
 	if (min_dim2_val > subtree_root.pt.dim2_val) return;	// No more nodes to report
 
 	// Check if this node satisfies the search criteria
 	if (subtree_root.pt.dim1_val <= max_dim1_val)
 	{
-		// Allow polymorphism to determine which type of PointStruct needs to be instantiated to capture all relevant information
-		pt_arr[num_res_elems++] = subtree_root.pt;
+		// Allow template instantiation to determine which type of PointStruct needs to be instantiated to capture all relevant information
+		if constexpr (std::is_same<RetType, IDType>::value)
+			res_arr[num_res_elems++] = subtree_root.pt.id;
+		else
+			res_arr[num_res_elems++] = subtree_root.pt;
 		// Dynamically resize array
-		if (num_res_elems == pt_arr_size)
-			resizeArray(pt_arr, pt_arr_size, pt_arr_size << 1);
+		if (num_res_elems == res_arr_size)
+			resizeArray(res_arr, res_arr_size, res_arr_size << 1);
 	}
 
 	// Continue search
@@ -313,29 +331,37 @@ void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSea
 	{
 		if (subtree_root.hasLeftChild())
 			// Report all nodes in left subtree with dim2_val higher than min_dim2_val
-			reportAllNodes(pt_arr, num_res_elems, pt_arr_size, subtree_root.getLeftChild(root), min_dim2_val);
+			reportAllNodes(res_arr, num_res_elems, res_arr_size, subtree_root.getLeftChild(root), min_dim2_val);
 		if (subtree_root.hasRightChild())
-			twoSidedLeftSearchRecur(pt_arr, num_res_elems, pt_arr_size, subtree_root.getRightChild(root), max_dim1_val, min_dim2_val);
+			twoSidedLeftSearchRecur(res_arr, num_res_elems, res_arr_size, subtree_root.getRightChild(root), max_dim1_val, min_dim2_val);
 	}
 	// Only left subtree dimension-1 values can be valid
 	else if (subtree_root.hasLeftChild())
-		twoSidedLeftSearchRecur(pt_arr, num_res_elems, pt_arr_size, subtree_root.getLeftChild(root), max_dim1_val, min_dim2_val);
+		twoSidedLeftSearchRecur(res_arr, num_res_elems, res_arr_size, subtree_root.getLeftChild(root), max_dim1_val, min_dim2_val);
 }
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::twoSidedRightSearchRecur(PointStructTemplate<T, IDType, num_IDs> *&pt_arr, size_t &num_res_elems, size_t &pt_arr_size, TreeNode &subtree_root, T min_dim1_val, T min_dim2_val)
+template <typename RetType>
+	requires std::disjunction<
+						std::is_same<RetType, IDType>,
+						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+	>::value
+void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::twoSidedRightSearchRecur(RetType *&res_arr, size_t &num_res_elems, size_t &res_arr_size, TreeNode &subtree_root, T min_dim1_val, T min_dim2_val)
 {
 	if (min_dim2_val > subtree_root.pt.dim2_val) return;	// No more nodes to report
 
 	// Check if this node satisfies the search criteria
 	if (subtree_root.pt.dim1_val >= min_dim1_val)
 	{
-		// Allow polymorphism to determine which type of PointStruct needs to be instantiated to capture all relevant information
-		pt_arr[num_res_elems++] = subtree_root.pt;
+		// Allow template instantiation to determine which type of PointStruct needs to be instantiated to capture all relevant information
+		if constexpr (std::is_same<RetType, IDType>::value)
+			res_arr[num_res_elems++] = subtree_root.pt.id;
+		else
+			res_arr[num_res_elems++] = subtree_root.pt;
 		// Dynamically resize array
-		if (num_res_elems == pt_arr_size)
-			resizeArray(pt_arr, pt_arr_size, pt_arr_size << 1);
+		if (num_res_elems == res_arr_size)
+			resizeArray(res_arr, res_arr_size, res_arr_size << 1);
 	}
 
 	// Continue search
@@ -345,29 +371,37 @@ void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::twoSidedRightSe
 	{
 		if (subtree_root.hasRightChild())
 			// Report all nodes in right subtree with dim2_val higher than min_dim2_val
-			reportAllNodes(pt_arr, num_res_elems, pt_arr_size, subtree_root.getRightChild(root), min_dim2_val);
+			reportAllNodes(res_arr, num_res_elems, res_arr_size, subtree_root.getRightChild(root), min_dim2_val);
 		if (subtree_root.hasLeftChild())
-			twoSidedRightSearchRecur(pt_arr, num_res_elems, pt_arr_size, subtree_root.getLeftChild(root), min_dim1_val, min_dim2_val);
+			twoSidedRightSearchRecur(res_arr, num_res_elems, res_arr_size, subtree_root.getLeftChild(root), min_dim1_val, min_dim2_val);
 	}
 	// Only right subtree dimension-1 values can be valid
 	else if (subtree_root.hasRightChild())
-		twoSidedRightSearchRecur(pt_arr, num_res_elems, pt_arr_size, subtree_root.getRightChild(root), min_dim1_val, min_dim2_val);
+		twoSidedRightSearchRecur(res_arr, num_res_elems, res_arr_size, subtree_root.getRightChild(root), min_dim1_val, min_dim2_val);
 }
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::reportAllNodes(PointStructTemplate<T, IDType, num_IDs> *&pt_arr, size_t &num_res_elems, size_t &pt_arr_size, TreeNode &subtree_root, T min_dim2_val)
+template <typename RetType>
+	requires std::disjunction<
+						std::is_same<RetType, IDType>,
+						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+	>::value
+void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::reportAllNodes(RetType *&res_arr, size_t &num_res_elems, size_t &res_arr_size, TreeNode &subtree_root, T min_dim2_val)
 {
 	if (min_dim2_val > subtree_root.pt.dim2_val) return;	// No more nodes to report
 
-	// Allow polymorphism to determine which type of PointStruct needs to be instantiated to capture all relevant information
-	pt_arr[num_res_elems++] = subtree_root.pt;
+	// Allow template instantiation to determine which type of PointStruct needs to be instantiated to capture all relevant information
+	if constexpr (std::is_same<RetType, IDType>::value)
+		res_arr[num_res_elems++] = subtree_root.pt.id;
+	else
+		res_arr[num_res_elems++] = subtree_root.pt;
 	// Dynamically resize array
-	if (num_res_elems == pt_arr_size)
-		resizeArray(pt_arr, pt_arr_size, pt_arr_size << 1);
+	if (num_res_elems == res_arr_size)
+		resizeArray(res_arr, res_arr_size, res_arr_size << 1);
 
 	if (subtree_root.hasLeftChild())
-		reportAllNodes(pt_arr, num_res_elems, pt_arr_size, subtree_root.getLeftChild(root), min_dim2_val);
+		reportAllNodes(res_arr, num_res_elems, res_arr_size, subtree_root.getLeftChild(root), min_dim2_val);
 	if (subtree_root.hasRightChild())
-		reportAllNodes(pt_arr, num_res_elems, pt_arr_size, subtree_root.getRightChild(root), min_dim2_val);
+		reportAllNodes(res_arr, num_res_elems, res_arr_size, subtree_root.getRightChild(root), min_dim2_val);
 }

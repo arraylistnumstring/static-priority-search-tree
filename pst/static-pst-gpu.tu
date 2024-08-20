@@ -488,12 +488,19 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 	}
 }
 
+// Separate template clauses are necessary when the enclosing template class has different template types from the member function
+// Default template argument for a class template's member function can only be specified within the class template
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
+template <typename RetType>
+	requires std::disjunction<
+						std::is_same<RetType, IDType>,
+						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+	>::value
 __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::do3SidedSearchDelegation(const unsigned char &curr_node_bitcode,
 																T *const &root_d,
 																const size_t &num_elem_slots,
-																PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d,
+																RetType *const res_arr_d,
 																const T &min_dim1_val,
 																const T &max_dim1_val,
 																const T &curr_node_med_dim1_val,
@@ -513,7 +520,7 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 		{
 			// Delegate work of searching right subtree to another thread and/or block
 			splitLeftSearchWork(root_d, num_elem_slots, TreeNode::getRightChild(search_ind),
-									res_pt_arr_d, max_dim1_val, min_dim2_val,
+									res_arr_d, max_dim1_val, min_dim2_val,
 									search_inds_arr, search_codes_arr);
 
 			// Prepare to search left subtree with a two-sided right search in the next iteration
@@ -552,11 +559,16 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
+template <typename RetType>
+	requires std::disjunction<
+						std::is_same<RetType, IDType>,
+						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+	>::value
 __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doLeftSearchDelegation(const bool range_split_poss,
 																const unsigned char &curr_node_bitcode,
 																T *const &root_d,
 																const size_t &num_elem_slots,
-																PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d,
+																RetType *const res_arr_d,
 																const T &min_dim2_val,
 																long long &search_ind,
 																long long *const &search_inds_arr,
@@ -574,7 +586,7 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 		{
 			// Delegate work of reporting all nodes in left child to another thread and/or block
 			splitReportAllNodesWork(root_d, num_elem_slots, TreeNode::getLeftChild(search_ind),
-										res_pt_arr_d, min_dim2_val,
+										res_arr_d, min_dim2_val,
 										search_inds_arr, search_codes_arr);
 
 
@@ -603,11 +615,16 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
+template <typename RetType>
+	requires std::disjunction<
+						std::is_same<RetType, IDType>,
+						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+	>::value
 __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doRightSearchDelegation(const bool range_split_poss,
 																const unsigned char &curr_node_bitcode,
 																T *const &root_d,
 																const size_t &num_elem_slots,
-																PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d,
+																RetType *const res_arr_d,
 																const T &min_dim2_val,
 																long long &search_ind,
 																long long *const &search_inds_arr,
@@ -624,7 +641,7 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 		{
 			// Delegate work of reporting all nodes in right child to another thread and/or block
 			splitReportAllNodesWork(root_d, num_elem_slots, TreeNode::getRightChild(search_ind),
-										res_pt_arr_d, min_dim2_val,
+										res_arr_d, min_dim2_val,
 										search_inds_arr, search_codes_arr);
 
 			// Continue search in the next iteration
@@ -653,10 +670,15 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 // C++ allows trailing arguments to have default values; need not specify the default arguments after their initial declaration
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
+template <typename RetType>
+	requires std::disjunction<
+						std::is_same<RetType, IDType>,
+						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+	>::value
 __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodesDelegation(const unsigned char &curr_node_bitcode,
 																T *const &root_d,
 																const size_t &num_elem_slots,
-																PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d,
+																RetType *const res_arr_d,
 																const T &min_dim2_val,
 																long long &search_ind,
 																long long *const &search_inds_arr,
@@ -667,7 +689,7 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 	{
 		// Delegate reporting of all nodes in right child to another thread and/or block
 		splitReportAllNodesWork(root_d, num_elem_slots, TreeNode::getRightChild(search_ind),
-									res_pt_arr_d, min_dim2_val,
+									res_arr_d, min_dim2_val,
 									search_inds_arr, search_codes_arr);
 
 		// Prepare for next iteration; because execution is already in this branch, search_codes_arr[threadIdx.x] == REPORT_ALL already
@@ -687,10 +709,15 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
+template <typename RetType>
+	requires std::disjunction<
+						std::is_same<RetType, IDType>,
+						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+	>::value
 __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::splitLeftSearchWork(T *const &root_d,
 																const size_t &num_elem_slots,
 																const size_t &target_node_ind,
-																PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d,
+																RetType *const res_arr_d,
 																const T &max_dim1_val,
 																const T &min_dim2_val,
 																long long *const &search_inds_arr,
@@ -714,7 +741,7 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 	{
 		// report-all searches never become normal searches again, so do not need shared memory for a search_codes_arr, just a search_inds_arr
 		twoSidedLeftSearchGlobal<<<1, blockDim.x, blockDim.x * (sizeof(long long) + sizeof(unsigned char)), cudaStreamFireAndForget>>>
-			(root_d, num_elem_slots, target_node_ind, res_pt_arr_d, max_dim1_val, min_dim2_val);
+			(root_d, num_elem_slots, target_node_ind, res_arr_d, max_dim1_val, min_dim2_val);
 	}
 	else	// Inactive thread has ID i
 	{
@@ -725,10 +752,15 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
+template <typename RetType>
+	requires std::disjunction<
+						std::is_same<RetType, IDType>,
+						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+	>::value
 __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::splitReportAllNodesWork(T *const &root_d,
 																const size_t &num_elem_slots,
 																const size_t &target_node_ind,
-																PointStructTemplate<T, IDType, num_IDs> *const res_pt_arr_d,
+																RetType *const res_arr_d,
 																const T &min_dim2_val,
 																long long *const &search_inds_arr,
 																unsigned char *const &search_codes_arr)
@@ -751,7 +783,7 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 	{
 		// report-all searches never become normal searches again, so do not need shared memory for a search_codes_arr, just a search_inds_arr
 		reportAllNodesGlobal<<<1, blockDim.x, blockDim.x * sizeof(long long), cudaStreamFireAndForget>>>
-			(root_d, num_elem_slots, target_node_ind, res_pt_arr_d, min_dim2_val);
+			(root_d, num_elem_slots, target_node_ind, res_arr_d, min_dim2_val);
 	}
 	else	// Inactive thread has ID i
 	{
@@ -819,8 +851,8 @@ __forceinline__ __host__ __device__ size_t StaticPSTGPU<T, PointStructTemplate, 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
 template <typename U, size_t num_U_subarrs, typename V, size_t num_V_subarrs>
-__forceinline__ __host__ __device__ size_t StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSizeNumUs<U, num_U_subarrs, V, num_V_subarrs>(const size_t num_elem_slots)
 	requires SizeOfUAtLeastSizeOfV<U, V>
+__forceinline__ __host__ __device__ size_t StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSizeNumUs<U, num_U_subarrs, V, num_V_subarrs>(const size_t num_elem_slots)
 {
 	/*
 		tot_arr_size_num_Us = ceil(1/sizeof(U) * num_elem_slots * (sizeof(U) * num_U_subarrs + sizeof(V) * num_V_subarrs + 1 B/bitcode * 1 bitcode))

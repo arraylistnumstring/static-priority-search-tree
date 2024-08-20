@@ -118,9 +118,16 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::print(std::ostre
 	printRecur(os, root, 0, num_elem_slots, prefix, child_prefix);
 }
 
+// Separate template clauses are necessary when the enclosing template class has different template types from the member function
+// Default template argument for a class template's member function can only be specified within the class template
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-PointStructTemplate<T, IDType, num_IDs>* StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::threeSidedSearch(size_t &num_res_elems, T min_dim1_val, T max_dim1_val, T min_dim2_val)
+template <typename RetType>
+	requires std::disjunction<
+						std::is_same<RetType, IDType>,
+						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+	>::value
+void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::threeSidedSearch(size_t &num_res_elems, RetType *&res_arr, T min_dim1_val, T max_dim1_val, T min_dim2_val)
 {
 	if (num_elems == 0)
 	{
@@ -129,8 +136,8 @@ PointStructTemplate<T, IDType, num_IDs>* StaticPSTCPUIter<T, PointStructTemplate
 		return nullptr;
 	}
 
-	size_t res_pt_arr_size = num_elems;
-	PointStructTemplate<T, IDType, num_IDs>* res_pt_arr = new PointStructTemplate<T, IDType, num_IDs>[res_pt_arr_size];
+	size_t res_arr_size = num_elems;
+	res_arr = new RetType[res_arr_size];
 	num_res_elems = 0;
 
 	std::stack<long long> search_inds_stack;
@@ -168,11 +175,16 @@ PointStructTemplate<T, IDType, num_IDs>* StaticPSTCPUIter<T, PointStructTemplate
 			if (min_dim1_val <= curr_node_dim1_val
 					&& curr_node_dim1_val <= max_dim1_val)
 			{
-				res_pt_arr[num_res_elems].dim1_val = curr_node_dim1_val;
-				res_pt_arr[num_res_elems].dim2_val = curr_node_dim2_val;
-				// As IDs are only accessed if the node is to be reported and if IDs exist, don't waste a register on it (and avoid compilation failures from attempting to instantiate a potential void variable)
-				if constexpr (num_IDs == 1)
-					res_pt_arr[num_res_elems].id = getIDsRoot(root, num_elem_slots)[search_ind];
+				if constexpr (std::is_same<RetType, IDType>::value)
+					res_arr[num_res_elems] = getIDsRoot(root, num_elem_slots)[search_ind];
+				else
+				{
+					res_arr[num_res_elems].dim1_val = curr_node_dim1_val;
+					res_arr[num_res_elems].dim2_val = curr_node_dim2_val;
+					// As IDs are only accessed if the node is to be reported and if IDs exist, don't waste a register on it (and avoid compilation failures from attempting to instantiate a potential void variable)
+					if constexpr (num_IDs == 1)
+						res_arr[num_res_elems].id = getIDsRoot(root, num_elem_slots)[search_ind];
+				}
 				num_res_elems++;
 			}
 
@@ -212,15 +224,13 @@ PointStructTemplate<T, IDType, num_IDs>* StaticPSTCPUIter<T, PointStructTemplate
 	}
 
 	// Ensure that no more memory is taken up than needed
-	if (res_pt_arr_size > num_res_elems)
-		resizeArray(res_pt_arr, res_pt_arr_size, num_res_elems);
-
-	return res_pt_arr;
+	if (res_arr_size > num_res_elems)
+		resizeArray(res_arr, res_arr_size, num_res_elems);
 }
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-PointStructTemplate<T, IDType, num_IDs>* StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSearch(size_t &num_res_elems, T max_dim1_val, T min_dim2_val)
+void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSearch(size_t &num_res_elems, RetType *&res_arr, T max_dim1_val, T min_dim2_val)
 {
 	if (num_elems == 0)
 	{
@@ -229,8 +239,8 @@ PointStructTemplate<T, IDType, num_IDs>* StaticPSTCPUIter<T, PointStructTemplate
 		return nullptr;
 	}
 
-	size_t res_pt_arr_size = num_elems;
-	PointStructTemplate<T, IDType, num_IDs>* res_pt_arr = new PointStructTemplate<T, IDType, num_IDs>[res_pt_arr_size];
+	size_t res_arr_size = num_elems;
+	res_arr = new RetType[res_arr_size];
 	num_res_elems = 0;
 
 	std::stack<long long> search_inds_stack;
@@ -267,10 +277,15 @@ PointStructTemplate<T, IDType, num_IDs>* StaticPSTCPUIter<T, PointStructTemplate
 			// Check if current node staisfies query and should be reported
 			if (curr_node_dim1_val <= max_dim1_val)
 			{
-				res_pt_arr[num_res_elems].dim1_val = curr_node_dim1_val;
-				res_pt_arr[num_res_elems].dim2_val = curr_node_dim2_val;
-				if constexpr (num_IDs == 1)
-					res_pt_arr[num_res_elems].id = getIDsRoot(root, num_elem_slots)[search_ind];
+				if constexpr (std::is_same<RetType, IDType>::value)
+					res_arr[num_res_elems] = getIDsRoot(root, num_elem_slots)[search_ind];
+				else
+				{
+					res_arr[num_res_elems].dim1_val = curr_node_dim1_val;
+					res_arr[num_res_elems].dim2_val = curr_node_dim2_val;
+					if constexpr (num_IDs == 1)
+						res_arr[num_res_elems].id = getIDsRoot(root, num_elem_slots)[search_ind];
+				}
 				num_res_elems++;
 			}
 
@@ -295,15 +310,13 @@ PointStructTemplate<T, IDType, num_IDs>* StaticPSTCPUIter<T, PointStructTemplate
 	}
 
 	// Ensure that no more memory is taken up than needed
-	if (res_pt_arr_size > num_res_elems)
-		resizeArray(res_pt_arr, res_pt_arr_size, num_res_elems);
-
-	return res_pt_arr;
+	if (res_arr_size > num_res_elems)
+		resizeArray(res_arr, res_arr_size, num_res_elems);
 }
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-PointStructTemplate<T, IDType, num_IDs>* StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::twoSidedRightSearch(size_t &num_res_elems, T min_dim1_val, T min_dim2_val)
+void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::twoSidedRightSearch(size_t &num_res_elems, RetType *&res_arr, T min_dim1_val, T min_dim2_val)
 {
 	if (num_elems == 0)
 	{
@@ -312,8 +325,8 @@ PointStructTemplate<T, IDType, num_IDs>* StaticPSTCPUIter<T, PointStructTemplate
 		return nullptr;
 	}
 
-	size_t res_pt_arr_size = num_elems;
-	PointStructTemplate<T, IDType, num_IDs>* res_pt_arr = new PointStructTemplate<T, IDType, num_IDs>[res_pt_arr_size];
+	size_t res_arr_size = num_elems;
+	res_arr = new RetType[res_arr_size];
 	num_res_elems = 0;
 
 	std::stack<long long> search_inds_stack;
@@ -350,10 +363,15 @@ PointStructTemplate<T, IDType, num_IDs>* StaticPSTCPUIter<T, PointStructTemplate
 			// Check if current node satisfies query and should be reported
 			if (curr_node_dim1_val >= min_dim1_val)
 			{
-				res_pt_arr[num_res_elems].dim1_val = curr_node_dim1_val;
-				res_pt_arr[num_res_elems].dim2_val = curr_node_dim2_val;
-				if constexpr (num_IDs == 1)
-					res_pt_arr[num_res_elems].id = getIDsRoot(root, num_elem_slots)[search_ind];
+				if constexpr (std::is_same<RetType, IDType>::value)
+					res_arr[num_res_elems] = getIDsRoot(root, num_elem_slots)[search_ind];
+				else
+				{
+					res_arr[num_res_elems].dim1_val = curr_node_dim1_val;
+					res_arr[num_res_elems].dim2_val = curr_node_dim2_val;
+					if constexpr (num_IDs == 1)
+						res_arr[num_res_elems].id = getIDsRoot(root, num_elem_slots)[search_ind];
+				}
 				num_res_elems++;
 			}
 
@@ -378,10 +396,8 @@ PointStructTemplate<T, IDType, num_IDs>* StaticPSTCPUIter<T, PointStructTemplate
 	}
 
 	// Ensure that no more memory is taken up than needed
-	if (res_pt_arr_size > num_res_elems)
-		resizeArray(res_pt_arr, res_pt_arr_size, num_res_elems);
-
-	return res_pt_arr;
+	if (res_arr_size > num_res_elems)
+		resizeArray(res_arr, res_arr_size, num_res_elems);
 }
 
 // static keyword should only be used when declaring a function in the header file

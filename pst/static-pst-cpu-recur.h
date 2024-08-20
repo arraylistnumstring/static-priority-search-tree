@@ -22,59 +22,59 @@ class StaticPSTCPURecur : public StaticPrioritySearchTree<T, PointStructTemplate
 		virtual void print(std::ostream &os) const;
 
 		// Initial input value for num_res_elems is the array initialisation size
-		virtual PointStructTemplate<T, IDType, num_IDs>* threeSidedSearch(size_t &num_res_elems, T min_dim1_val, T max_dim1_val, T min_dim2_val)
+		void threeSidedSearch(size_t &num_res_elems, RetType *&res_arr, T min_dim1_val, T max_dim1_val, T min_dim2_val)
 		{
 			if (root == nullptr)
 			{
 				std::cout << "Tree is empty; nothing to search\n";
 				return nullptr;
 			}
-			size_t pt_arr_size = num_res_elems == 0 ? 10 : num_res_elems;
-			PointStructTemplate<T, IDType, num_IDs>* pt_arr = new PointStructTemplate<T, IDType, num_IDs>[pt_arr_size];
+			size_t res_arr_size = num_res_elems == 0 ? 10 : num_res_elems;
+			res_arr = new RetType[res_arr_size];
 			num_res_elems = 0;
-			threeSidedSearchRecur(pt_arr, num_res_elems, pt_arr_size, *root, min_dim1_val, max_dim1_val, min_dim2_val);
+			threeSidedSearchRecur(res_arr, num_res_elems, res_arr_size, *root, min_dim1_val, max_dim1_val, min_dim2_val);
 
 			// Ensure that no more memory is taken up than needed
-			if (pt_arr_size > num_res_elems)
-				resizeArray(pt_arr, pt_arr_size, num_res_elems);
+			if (res_arr_size > num_res_elems)
+				resizeArray(res_arr, res_arr_size, num_res_elems);
 
-			return pt_arr;
+			return res_arr;
 		};
-		virtual PointStructTemplate<T, IDType, num_IDs>* twoSidedLeftSearch(size_t &num_res_elems, T max_dim1_val, T min_dim2_val)
+		void twoSidedLeftSearch(size_t &num_res_elems, RetType *&res_arr, T max_dim1_val, T min_dim2_val)
 		{
 			if (root == nullptr)
 			{
 				std::cout << "Tree is empty; nothing to search\n";
 				return nullptr;
 			}
-			size_t pt_arr_size = num_res_elems == 0 ? 10 : num_res_elems;
-			PointStructTemplate<T, IDType, num_IDs>* pt_arr = new PointStructTemplate<T, IDType, num_IDs>[pt_arr_size];
+			size_t res_arr_size = num_res_elems == 0 ? 10 : num_res_elems;
+			res_arr = new RetType[res_arr_size];
 			num_res_elems = 0;
-			twoSidedLeftSearchRecur(pt_arr, num_res_elems, pt_arr_size, *root, max_dim1_val, min_dim2_val);
+			twoSidedLeftSearchRecur(res_arr, num_res_elems, res_arr_size, *root, max_dim1_val, min_dim2_val);
 
 			// Ensure that no more memory is taken up than needed
-			if (pt_arr_size > num_res_elems)
-				resizeArray(pt_arr, pt_arr_size, num_res_elems);
+			if (res_arr_size > num_res_elems)
+				resizeArray(res_arr, res_arr_size, num_res_elems);
 
-			return pt_arr;
+			return res_arr;
 		};
-		virtual PointStructTemplate<T, IDType, num_IDs>* twoSidedRightSearch(size_t &num_res_elems, T min_dim1_val, T min_dim2_val)
+		void twoSidedRightSearch(size_t &num_res_elems, RetType *&res_arr, T min_dim1_val, T min_dim2_val)
 		{
 			if (root == nullptr)
 			{
 				std::cout << "Tree is empty; nothing to search\n";
 				return nullptr;
 			}
-			size_t pt_arr_size = num_res_elems == 0 ? 10 : num_res_elems;
-			PointStructTemplate<T, IDType, num_IDs>* pt_arr = new PointStructTemplate<T, IDType, num_IDs>[pt_arr_size];
+			size_t res_arr_size = num_res_elems == 0 ? 10 : num_res_elems;
+			res_arr = new RetType[res_arr_size];
 			num_res_elems = 0;
-			twoSidedRightSearchRecur(pt_arr, num_res_elems, pt_arr_size, *root, min_dim1_val, min_dim2_val);
+			twoSidedRightSearchRecur(res_arr, num_res_elems, res_arr_size, *root, min_dim1_val, min_dim2_val);
 
 			// Ensure that no more memory is taken up than needed
-			if (pt_arr_size > num_res_elems)
-				resizeArray(pt_arr, pt_arr_size, num_res_elems);
+			if (res_arr_size > num_res_elems)
+				resizeArray(res_arr, res_arr_size, num_res_elems);
 
-			return pt_arr;
+			return res_arr;
 		};
 
 	private:
