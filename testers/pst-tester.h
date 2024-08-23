@@ -25,7 +25,7 @@ enum PSTTestCodes
 enum PSTType {CPU_ITER, CPU_RECUR, GPU};
 
 
-template <bool timed_CUDA>
+template <bool timed>
 struct PSTTester
 {
 	template <typename T,
@@ -170,7 +170,7 @@ struct PSTTester
 							// Variables must be outside of conditionals to be accessible in later conditionals
 							cudaEvent_t construct_start, construct_stop, search_start, search_stop;
 
-							if constexpr (timed_CUDA)
+							if constexpr (timed)
 							{
 								gpuErrorCheck(cudaEventCreate(&construct_start),
 												"Error in creating start event for timing CUDA PST construction code");
@@ -190,7 +190,7 @@ struct PSTTester
 							StaticPSTTemplate<T, PointStructTemplate, IDType, num_IDs> *tree =
 								new StaticPSTTemplate<T, PointStructTemplate, IDType, num_IDs>(pt_arr, num_elems);
 
-							if constexpr (timed_CUDA)
+							if constexpr (timed)
 							{
 								// End CUDA construction timer
 								gpuErrorCheck(cudaEventRecord(construct_stop),
@@ -214,7 +214,7 @@ struct PSTTester
 							size_t num_res_elems = 0;
 							RetType *res_arr;
 
-							if constexpr (timed_CUDA)
+							if constexpr (timed)
 							{
 								// Start CUDA search timer (i.e. place this event in default stream)
 								gpuErrorCheck(cudaEventRecord(search_start),
@@ -243,7 +243,7 @@ struct PSTTester
 							}
 							// If test_type == CONSTRUCT, do nothing for the search/report phase
 							
-							if constexpr (timed_CUDA)
+							if constexpr (timed)
 							{
 								// End CUDA search timer
 								gpuErrorCheck(cudaEventRecord(search_stop),
@@ -375,7 +375,7 @@ struct PSTTester
 						// Variables must be outside of conditionals to be accessible in later conditionals
 						cudaEvent_t construct_start, construct_stop, search_start, search_stop;
 
-						if constexpr (timed_CUDA)
+						if constexpr (timed)
 						{
 							gpuErrorCheck(cudaEventCreate(&construct_start),
 											"Error in creating start event for timing CUDA PST construction code");
@@ -395,7 +395,7 @@ struct PSTTester
 						StaticPSTTemplate<T, PointStructTemplate, void, num_IDs> *tree =
 							new StaticPSTTemplate<T, PointStructTemplate, void, num_IDs>(pt_arr, num_elems);
 
-						if constexpr (timed_CUDA)
+						if constexpr (timed)
 						{
 							// End CUDA construction timer
 							gpuErrorCheck(cudaEventRecord(construct_stop),
@@ -419,7 +419,7 @@ struct PSTTester
 						size_t num_res_elems = 0;
 						PointStructTemplate<T, void, num_IDs> *res_pt_arr;
 
-						if constexpr (timed_CUDA)
+						if constexpr (timed)
 						{
 							// Start CUDA search timer (i.e. place this event in default stream)
 							gpuErrorCheck(cudaEventRecord(search_start),
@@ -448,7 +448,7 @@ struct PSTTester
 						}
 						// If test_type == CONSTRUCT, do nothing for the search/report phase
 
-						if constexpr (timed_CUDA)
+						if constexpr (timed)
 						{
 								// End CUDA search timer
 								gpuErrorCheck(cudaEventRecord(search_stop),

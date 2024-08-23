@@ -42,13 +42,13 @@ struct PSTTestInfoStruct
 	bool ordered_vals = false;
 	bool pts_with_ids = false;
 	bool report_IDs = false;
-	bool timed_CUDA = false;
+	bool timed = false;
 
 	// Instantiate outermost PSTTester type with respect to CUDA timing
 	void test()
 	{
 		// Must explicitly set class instantiation variables to true and false in each branch in order for code to be compile-time determinable
-		if (timed_CUDA)
+		if (timed)
 		{
 			PSTTester<true> pst_tester;
 

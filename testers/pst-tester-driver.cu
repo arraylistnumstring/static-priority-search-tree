@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
 
 			std::cerr << "\t-r, --rand-seed RAND_SEED\tRandom seed to use when generating data for tree; defaults to 0\n\n";
 
-			std::cerr << "\t-t, --timed-CUDA\tToggles timing of the CUDA portion of the code using on-device functions; defaults to false\n\n";
+			std::cerr << "\t-t, --timed\tToggles timing of the construction and search portion of the code; uses on-device functions for GPU PST; defaults to false\n\n";
 
 			std::cerr << "\t-w, --warps-per-block WARPS_PER_BLOCK\tNumber of warps to use in a thread block; defaults to 1\n\n";
 
@@ -197,8 +197,8 @@ int main(int argc, char *argv[])
 		}
 
 		// CUDA code timing flag
-		else if (arg == "-t" || arg == "--timed-CUDA")
-			test_info.timed_CUDA = true;
+		else if (arg == "-t" || arg == "--timed")
+			test_info.timed = true;
 
 		// Warps per block parsing
 		else if (arg == "-w" || arg == "--warps-per-block")
