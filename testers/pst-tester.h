@@ -197,13 +197,7 @@ struct PSTTester
 												"Error in recording stop event for timing CUDA PST construction code");
 							}
 
-							if (num_elems == 0)
-							{
-								std::cout << "Tree is size 0; nothing to do\n";
-
-								return;
-							}
-							else if (tree == nullptr)
+							if (tree == nullptr)
 							{
 								throwErr("Error: Could not allocate memory for priority search tree");
 								return;
@@ -402,13 +396,7 @@ struct PSTTester
 											"Error in recording stop event for timing CUDA PST construction code");
 						}
 
-						if (num_elems == 0)
-						{
-							std::cout << "Tree is size 0; nothing to do\n";
-
-							return;
-						}
-						else if (tree == nullptr)
+						if (tree == nullptr)
 						{
 							throwErr("Error: Could not allocate memory for priority search tree");
 							return;
