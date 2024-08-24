@@ -263,7 +263,7 @@ template <typename RetType>
 	requires std::disjunction<
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-	>::value
+		>::value
 void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::threeSidedSearchRecur(RetType *&res_arr, size_t &num_res_elems, size_t &res_arr_size, TreeNode &subtree_root, T min_dim1_val, T max_dim1_val, T min_dim2_val)
 {
 	if (min_dim2_val > subtree_root.pt.dim2_val) return;	// No more nodes to report
@@ -306,7 +306,7 @@ template <typename RetType>
 	requires std::disjunction<
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-	>::value
+		>::value
 void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSearchRecur(RetType *&res_arr, size_t &num_res_elems, size_t &res_arr_size, TreeNode &subtree_root, T max_dim1_val, T min_dim2_val)
 {
 	if (min_dim2_val > subtree_root.pt.dim2_val) return;	// No more nodes to report
@@ -346,7 +346,7 @@ template <typename RetType>
 	requires std::disjunction<
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-	>::value
+		>::value
 void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::twoSidedRightSearchRecur(RetType *&res_arr, size_t &num_res_elems, size_t &res_arr_size, TreeNode &subtree_root, T min_dim1_val, T min_dim2_val)
 {
 	if (min_dim2_val > subtree_root.pt.dim2_val) return;	// No more nodes to report
@@ -386,7 +386,7 @@ template <typename RetType>
 	requires std::disjunction<
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-	>::value
+		>::value
 void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::reportAllNodes(RetType *&res_arr, size_t &num_res_elems, size_t &res_arr_size, TreeNode &subtree_root, T min_dim2_val)
 {
 	if (min_dim2_val > subtree_root.pt.dim2_val) return;	// No more nodes to report

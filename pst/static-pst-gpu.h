@@ -31,7 +31,7 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 	requires std::disjunction<
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-	>::value
+		>::value
 __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_slots,
 										const size_t start_node_ind,
 										RetType *const res_arr_d,
@@ -45,7 +45,7 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 	requires std::disjunction<
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-	>::value
+		>::value
 __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_slots,
 											const size_t start_node_ind,
 											RetType *const res_arr_d,
@@ -58,7 +58,7 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 	requires std::disjunction<
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-	>::value
+		>::value
 __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem_slots,
 											const size_t start_node_ind,
 											RetType *const res_arr_d,
@@ -71,7 +71,7 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 	requires std::disjunction<
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-	>::value
+		>::value
 __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slots,
 										const size_t start_node_ind,
 										RetType *const res_arr_d,
@@ -106,7 +106,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 			requires std::disjunction<
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-			>::value
+				>::value
 		void threeSidedSearch(size_t &num_res_elems, RetType *&res_arr_d, T min_dim1_val, T max_dim1_val, T min_dim2_val)
 		{
 			if (num_elems == 0)
@@ -149,7 +149,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 			requires std::disjunction<
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-			>::value
+				>::value
 		void twoSidedLeftSearch(size_t &num_res_elems, RetType *&res_arr_d, T max_dim1_val, T min_dim2_val)
 		{
 			if (num_elems == 0)
@@ -192,7 +192,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 			requires std::disjunction<
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-			>::value
+				>::value
 		void twoSidedRightSearch(size_t &num_res_elems, RetType *&res_arr_d, T min_dim1_val, T min_dim2_val)
 		{
 			if (num_elems == 0)
@@ -294,7 +294,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 			requires std::disjunction<
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-			>::value
+				>::value
 		__forceinline__ __device__ static void do3SidedSearchDelegation(const unsigned char &curr_node_bitcode,
 																T *const &root_d,
 																const size_t &num_elem_slots,
@@ -311,7 +311,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 			requires std::disjunction<
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-			>::value
+				>::value
 		__forceinline__ __device__ static void doLeftSearchDelegation(const bool range_split_poss,
 																const unsigned char &curr_node_bitcode,
 																T *const &root_d,
@@ -326,7 +326,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 			requires std::disjunction<
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-			>::value
+				>::value
 		__forceinline__ __device__ static void doRightSearchDelegation(const bool range_split_poss,
 																const unsigned char &curr_node_bitcode,
 																T *const &root_d,
@@ -341,7 +341,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 			requires std::disjunction<
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-			>::value
+				>::value
 		__forceinline__ __device__ static void doReportAllNodesDelegation(const unsigned char &curr_node_bitcode,
 																T *const &root_d,
 																const size_t &num_elem_slots,
@@ -356,7 +356,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 			requires std::disjunction<
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-			>::value
+				>::value
 		__forceinline__ __device__ static void splitLeftSearchWork(T *const &root_d,
 																	const size_t &num_elem_slots,
 																	const size_t &target_node_ind,
@@ -369,7 +369,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 			requires std::disjunction<
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-			>::value
+				>::value
 		__forceinline__ __device__ static void splitReportAllNodesWork(T *const &root_d,
 																		const size_t &num_elem_slots,
 																		const size_t &target_node_ind,
@@ -487,7 +487,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		requires std::disjunction<
 							std::is_same<RetType, IDType>,
 							std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-		>::value
+			>::value
 	friend __global__ void threeSidedSearchGlobal <> (T *const root_d,
 														const size_t num_elem_slots,
 														const size_t start_node_ind,
@@ -499,7 +499,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		requires std::disjunction<
 							std::is_same<RetType, IDType>,
 							std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-		>::value
+			>::value
 	friend __global__ void twoSidedLeftSearchGlobal <> (T *const root_d,
 														const size_t num_elem_slots,
 														const size_t start_node_ind,
@@ -510,7 +510,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		requires std::disjunction<
 							std::is_same<RetType, IDType>,
 							std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-		>::value
+			>::value
 	friend __global__ void twoSidedRightSearchGlobal <> (T *const root_d,
 															const size_t num_elem_slots,
 															const size_t start_node_ind,
@@ -521,7 +521,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		requires std::disjunction<
 							std::is_same<RetType, IDType>,
 							std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-		>::value
+			>::value
 	friend __global__ void reportAllNodesGlobal <> (T *const root_d,
 													const size_t num_elem_slots,
 													const size_t start_node_ind,

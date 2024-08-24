@@ -126,7 +126,7 @@ template <typename RetType>
 	requires std::disjunction<
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-	>::value
+		>::value
 void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::threeSidedSearch(size_t &num_res_elems, RetType *&res_arr, T min_dim1_val, T max_dim1_val, T min_dim2_val)
 {
 	if (num_elems == 0)
@@ -235,7 +235,7 @@ template <typename RetType>
 	requires std::disjunction<
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-	>::value
+		>::value
 void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSearch(size_t &num_res_elems, RetType *&res_arr, T max_dim1_val, T min_dim2_val)
 {
 	if (num_elems == 0)
@@ -327,7 +327,7 @@ template <typename RetType>
 	requires std::disjunction<
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-	>::value
+		>::value
 void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::twoSidedRightSearch(size_t &num_res_elems, RetType *&res_arr, T min_dim1_val, T min_dim2_val)
 {
 	if (num_elems == 0)

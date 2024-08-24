@@ -8,7 +8,7 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 	requires std::disjunction<
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-	>::value
+		>::value
 __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_slots,
 										const size_t start_node_ind,
 										RetType *const res_arr_d,
@@ -162,7 +162,7 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 	requires std::disjunction<
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-	>::value
+		>::value
 __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_slots,
 											const size_t start_node_ind,
 											RetType *const res_arr_d,
@@ -287,7 +287,7 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 	requires std::disjunction<
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-	>::value
+		>::value
 __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem_slots,
 											const size_t start_node_ind,
 											RetType *const res_arr_d,
@@ -413,7 +413,7 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 	requires std::disjunction<
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-	>::value
+		>::value
 __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slots,
 										const size_t start_node_ind,
 										RetType *const res_arr_d,

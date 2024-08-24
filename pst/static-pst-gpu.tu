@@ -496,7 +496,7 @@ template <typename RetType>
 	requires std::disjunction<
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-	>::value
+		>::value
 __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::do3SidedSearchDelegation(const unsigned char &curr_node_bitcode,
 																T *const &root_d,
 																const size_t &num_elem_slots,
@@ -563,7 +563,7 @@ template <typename RetType>
 	requires std::disjunction<
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-	>::value
+		>::value
 __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doLeftSearchDelegation(const bool range_split_poss,
 																const unsigned char &curr_node_bitcode,
 																T *const &root_d,
@@ -619,7 +619,7 @@ template <typename RetType>
 	requires std::disjunction<
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-	>::value
+		>::value
 __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doRightSearchDelegation(const bool range_split_poss,
 																const unsigned char &curr_node_bitcode,
 																T *const &root_d,
@@ -674,7 +674,7 @@ template <typename RetType>
 	requires std::disjunction<
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-	>::value
+		>::value
 __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodesDelegation(const unsigned char &curr_node_bitcode,
 																T *const &root_d,
 																const size_t &num_elem_slots,
@@ -713,7 +713,7 @@ template <typename RetType>
 	requires std::disjunction<
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-	>::value
+		>::value
 __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::splitLeftSearchWork(T *const &root_d,
 																const size_t &num_elem_slots,
 																const size_t &target_node_ind,
@@ -756,7 +756,7 @@ template <typename RetType>
 	requires std::disjunction<
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-	>::value
+		>::value
 __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::splitReportAllNodesWork(T *const &root_d,
 																const size_t &num_elem_slots,
 																const size_t &target_node_ind,

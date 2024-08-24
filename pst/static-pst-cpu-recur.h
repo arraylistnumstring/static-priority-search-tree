@@ -26,7 +26,7 @@ class StaticPSTCPURecur : public StaticPrioritySearchTree<T, PointStructTemplate
 			requires std::disjunction<
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-			>::value
+				>::value
 		void threeSidedSearch(size_t &num_res_elems, RetType *&res_arr, T min_dim1_val, T max_dim1_val, T min_dim2_val)
 		{
 			if (root == nullptr)
@@ -48,7 +48,7 @@ class StaticPSTCPURecur : public StaticPrioritySearchTree<T, PointStructTemplate
 			requires std::disjunction<
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-			>::value
+				>::value
 		void twoSidedLeftSearch(size_t &num_res_elems, RetType *&res_arr, T max_dim1_val, T min_dim2_val)
 		{
 			if (root == nullptr)
@@ -70,7 +70,7 @@ class StaticPSTCPURecur : public StaticPrioritySearchTree<T, PointStructTemplate
 			requires std::disjunction<
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-			>::value
+				>::value
 		void twoSidedRightSearch(size_t &num_res_elems, RetType *&res_arr, T min_dim1_val, T min_dim2_val)
 		{
 			if (root == nullptr)
@@ -113,25 +113,25 @@ class StaticPSTCPURecur : public StaticPrioritySearchTree<T, PointStructTemplate
 			requires std::disjunction<
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-			>::value
+				>::value
 		void threeSidedSearchRecur(RetType *&res_arr, size_t &num_res_elems, size_t &res_arr_size, TreeNode &subtree_root, T min_dim1_val, T max_dim1_val, T min_dim2_val);
 		template <typename RetType>
 			requires std::disjunction<
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-			>::value
+				>::value
 		void twoSidedLeftSearchRecur(RetType *&res_arr, size_t &num_res_elems, size_t &res_arr_size, TreeNode &subtree_root, T max_dim1_val, T min_dim2_val);
 		template <typename RetType>
 			requires std::disjunction<
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-			>::value
+				>::value
 		void twoSidedRightSearchRecur(RetType *&res_arr, size_t &num_res_elems, size_t &res_arr_size, TreeNode &subtree_root, T min_dim1_val, T min_dim2_val);
 		template <typename RetType>
 			requires std::disjunction<
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-			>::value
+				>::value
 		void reportAllNodes(RetType *&res_arr, size_t &num_res_elems, size_t &res_arr_size, TreeNode &subtree_root, T min_dim2_val);
 
 	// Allow printing operator << to be declared for TreeNode
