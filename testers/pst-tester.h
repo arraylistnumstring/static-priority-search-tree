@@ -136,7 +136,7 @@ struct PSTTester
 							: id_type_wrapper(id_type_wrapper)
 						{};
 
-						void operator()(size_t num_elems, const unsigned warps_per_block, PSTTestCodes test_type=CONSTRUCT)
+						void operator()(size_t num_elems, const unsigned warps_per_block, PSTTestCodes test_type=CONSTRUCT, PSTType=GPU)
 						{
 							PointStructTemplate<T, IDType, num_IDs> *pt_arr = new PointStructTemplate<T, IDType, num_IDs>[num_elems];
 
@@ -338,7 +338,7 @@ struct PSTTester
 						: num_ids_wrapper(num_ids_wrapper)
 					{};
 
-					void operator()(size_t num_elems, PSTTestCodes test_type=CONSTRUCT)
+					void operator()(size_t num_elems, const unsigned warps_per_block, PSTTestCodes test_type=CONSTRUCT)
 					{
 						PointStructTemplate<T, void, num_IDs> *pt_arr = new PointStructTemplate<T, void, num_IDs>[num_elems];
 

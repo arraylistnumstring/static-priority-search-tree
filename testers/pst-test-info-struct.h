@@ -305,7 +305,7 @@ struct PSTTestInfoStruct
 		std::cout << "Beginning test\n";
 #endif
 
-		pst_tester(num_elems, test_type);
+		pst_tester(num_elems, warps_per_block, test_type);
 	};
 };
 
