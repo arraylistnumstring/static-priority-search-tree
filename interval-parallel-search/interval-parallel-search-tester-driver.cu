@@ -20,8 +20,8 @@ int main(int argc, char *argv[])
 		{
 			std::cerr << "Usage: ./interval-parallel-search-tester-driver <datatype-flag> ";
 			std::cerr << "[-I ID_TYPE] ";
-			std::cerr << "[-R] ";
-			std::cerr << "[-r RAND_SEED] ";
+			std::cerr << "[-r] ";
+			std::cerr << "[-S RAND_SEED] ";
 			std::cerr << "[-t] ";
 			std::cerr << "-B NUM_BLOCKS";
 			std::cerr << "-b MIN_VAL MAX_VAL ";
@@ -40,13 +40,13 @@ int main(int argc, char *argv[])
 
 			std::cerr << "\t-b, --val-bounds MIN_VAL MAX_VAL\tBounds of values (inclusive) to use when generating random values for PST; must be castable to chosen datatype\n\n";
 
-			std::cerr << "\t-I, --ids DATA_TYPE\tToggles assignment of IDs of data type DATA_TYPE to input points; defaults to false; valid arguments for DATA_TYPE are char, double, float, int, long; if false, flags -R, --report-IDs have no effect\n\n";
+			std::cerr << "\t-I, --ids DATA_TYPE\tToggles assignment of IDs of data type DATA_TYPE to input points; defaults to false; valid arguments for DATA_TYPE are char, double, float, int, long; if false, flags -r, --report-IDs have no effect\n\n";
 
 			std::cerr << "\t-n, --num-elems NUM_ELEMS\tNumber of elements to put in tree\n\n";
 
-			std::cerr << "\t-R, --report-IDs\tWhether to report point IDs or full info of a point; defaults to full info; if no ID type is specified, always reports full info\n\n";
+			std::cerr << "\t-r, --report-IDs\tWhether to report point IDs or full info of a point; defaults to full info; if no ID type is specified, always reports full info\n\n";
 
-			std::cerr << "\t-r, --rand-seed RAND_SEED\tRandom seed to use when generating data for tree; defaults to 0\n\n";
+			std::cerr << "\t-S, --rand-seed RAND_SEED\tRandom seed to use when generating data for tree; defaults to 0\n\n";
 
 			std::cerr << "\t-s, --search-val SEARCH_VAL\tValue to search for in all intervals; interval bounds are treated as inclusive\n\n";
 
@@ -106,11 +106,11 @@ int main(int argc, char *argv[])
 		}
 		
 		// Report ID flag parsing
-		else if (arg == "-R" || arg == "--report-IDs")
+		else if (arg == "-r" || arg == "--report-IDs")
 			test_info.report_IDs = true;
 
 		// Random seed parsing
-		else if (arg == "-r" || arg == "--rand-seed")
+		else if (arg == "-S" || arg == "--rand-seed")
 		{
 			i++;
 			if (i >= argc)

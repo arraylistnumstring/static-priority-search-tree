@@ -22,7 +22,8 @@ int main(int argc, char *argv[])
 			std::cerr << "<tree-type-flag> ";
 			std::cerr << "[-I ID_TYPE] ";
 			std::cerr << "[-O] ";
-			std::cerr << "[-r RAND_SEED] ";
+			std::cerr << "[-r] ";
+			std::cerr << "[-S RAND_SEED] ";
 			std::cerr << "[-t] ";
 			std::cerr << "[-w WARPS_PER_BLOCK] ";
 			std::cerr << "-b MIN_VAL MAX_VAL ";
@@ -57,7 +58,9 @@ int main(int argc, char *argv[])
 
 			std::cerr << "\t-O, --ordered-vals\tWhether to order values such that dimension-1 values are always less than or equal to their paired dimension-2 values; defaults to false\n\n";
 
-			std::cerr << "\t-r, --rand-seed RAND_SEED\tRandom seed to use when generating data for tree; defaults to 0\n\n";
+			std::cerr << "\t-r, --report-IDs\tWhether to report point IDs or full info of a point; defaults to full info; if no ID type is specified, always reports full info\n\n";
+
+			std::cerr << "\t-S, --rand-seed RAND_SEED\tRandom seed to use when generating data for tree; defaults to 0\n\n";
 
 			std::cerr << "\t-t, --timed\tToggles timing of the construction and search portion of the code; uses on-device functions for GPU PST; defaults to false\n\n";
 
@@ -175,8 +178,12 @@ int main(int argc, char *argv[])
 		else if (arg == "-O" || arg == "--ordered-vals")
 			test_info.ordered_vals = true;
 
+		// Report ID flag parsing
+		else if (arg == "-r" || arg == "--report-IDs")
+			test_info.report_IDs = true;
+
 		// Random seed parsing
-		else if (arg == "-r" || arg == "--rand-seed")
+		else if (arg == "-S" || arg == "--rand-seed")
 		{
 			i++;
 			if (i >= argc)
