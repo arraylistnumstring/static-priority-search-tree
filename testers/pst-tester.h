@@ -12,6 +12,7 @@
 #include "helper-cuda--modified.h"
 #include "print-array.h"
 
+
 enum DataType {CHAR, DOUBLE, FLOAT, INT, LONG};
 
 enum PSTTestCodes

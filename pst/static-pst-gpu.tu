@@ -740,7 +740,9 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 	if (i >= blockDim.x)	// No inactive threads; use dynamic parallelism
 	{
 		// report-all searches never become normal searches again, so do not need shared memory for a search_codes_arr, just a search_inds_arr
-		twoSidedLeftSearchGlobal<<<1, blockDim.x, blockDim.x * (sizeof(long long) + sizeof(unsigned char)), cudaStreamFireAndForget>>>
+		// For sufficiently complicated code (such as this one), the compiler cannot deduce types on its own, so supply the (template) types explicitly here
+		twoSidedLeftSearchGlobal<T, PointStructTemplate, IDType, num_IDs, RetType>
+								<<<1, blockDim.x, blockDim.x * (sizeof(long long) + sizeof(unsigned char)), cudaStreamFireAndForget>>>
 			(root_d, num_elem_slots, target_node_ind, res_arr_d, max_dim1_val, min_dim2_val);
 	}
 	else	// Inactive thread has ID i
@@ -782,7 +784,9 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 	if (i >= blockDim.x)	// No inactive threads; use dynamic parallelism
 	{
 		// report-all searches never become normal searches again, so do not need shared memory for a search_codes_arr, just a search_inds_arr
-		reportAllNodesGlobal<<<1, blockDim.x, blockDim.x * sizeof(long long), cudaStreamFireAndForget>>>
+		// For sufficiently complicated code (such as this one), the compiler cannot deduce types on its own, so supply the (template) types explicitly here
+		reportAllNodesGlobal<T, PointStructTemplate, IDType, num_IDs, RetType>
+							<<<1, blockDim.x, blockDim.x * sizeof(long long), cudaStreamFireAndForget>>>
 			(root_d, num_elem_slots, target_node_ind, res_arr_d, min_dim2_val);
 	}
 	else	// Inactive thread has ID i

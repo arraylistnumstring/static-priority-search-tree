@@ -28,10 +28,6 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 			typename IDType, size_t num_IDs,
 			typename RetType=PointStructTemplate<T, IDType, num_IDs>
 		 >
-	requires std::disjunction<
-						std::is_same<RetType, IDType>,
-						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-		>::value
 __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_slots,
 										const size_t start_node_ind,
 										RetType *const res_arr_d,
@@ -42,10 +38,6 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 			typename IDType, size_t num_IDs,
 			typename RetType=PointStructTemplate<T, IDType, num_IDs>
 		 >
-	requires std::disjunction<
-						std::is_same<RetType, IDType>,
-						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-		>::value
 __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_slots,
 											const size_t start_node_ind,
 											RetType *const res_arr_d,
@@ -55,10 +47,6 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 			typename IDType, size_t num_IDs,
 			typename RetType=PointStructTemplate<T, IDType, num_IDs>
 		 >
-	requires std::disjunction<
-						std::is_same<RetType, IDType>,
-						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-		>::value
 __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem_slots,
 											const size_t start_node_ind,
 											RetType *const res_arr_d,
@@ -68,10 +56,6 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 			typename IDType, size_t num_IDs,
 			typename RetType=PointStructTemplate<T, IDType, num_IDs>
 		 >
-	requires std::disjunction<
-						std::is_same<RetType, IDType>,
-						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-		>::value
 __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slots,
 										const size_t start_node_ind,
 										RetType *const res_arr_d,
@@ -131,7 +115,8 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 							+ ": ");
 
 			// Call global function for on-device search
-			threeSidedSearchGlobal<<<1, warp_multiplier * dev_props.warpSize,
+			threeSidedSearchGlobal<T, PointStructTemplate, IDType, num_IDs, RetType>
+								  <<<1, warp_multiplier * dev_props.warpSize,
 										warp_multiplier * dev_props.warpSize
 											* (sizeof(long long) + sizeof(unsigned char))>>>
 				(root_d, num_elem_slots, 0, res_arr_d, min_dim1_val, max_dim1_val, min_dim2_val);
@@ -152,6 +137,11 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 				>::value
 		void twoSidedLeftSearch(size_t &num_res_elems, RetType *&res_arr_d, T max_dim1_val, T min_dim2_val)
 		{
+			static_assert(std::disjunction<
+								std::is_same<RetType, IDType>,
+								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+				>::value,
+							"RetType not of type PointStructTemplate<T, IDType, num_IDs> nor of type IDType");
 			if (num_elems == 0)
 			{
 				std::cout << "Tree is empty; nothing to search\n";
@@ -174,7 +164,9 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 							+ ": ");
 
 			// Call global function for on-device search
-			twoSidedLeftSearchGlobal<<<1, warp_multiplier * dev_props.warpSize,
+			// For sufficiently complicated code (such as this one), the compiler cannot deduce types on its own, so supply the (template) types explicitly here
+			twoSidedLeftSearchGlobal<T, PointStructTemplate, IDType, num_IDs, RetType>
+									<<<1, warp_multiplier * dev_props.warpSize,
 										warp_multiplier * dev_props.warpSize
 											* (sizeof(long long) + sizeof(unsigned char))>>>
 				(root_d, num_elem_slots, 0, res_arr_d, max_dim1_val, min_dim2_val);
@@ -217,7 +209,8 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 							+ ": ");
 
 			// Call global function for on-device search
-			twoSidedRightSearchGlobal<<<1, warp_multiplier * dev_props.warpSize,
+			twoSidedRightSearchGlobal<T, PointStructTemplate, IDType, num_IDs, RetType>
+									 <<<1, warp_multiplier * dev_props.warpSize,
 										warp_multiplier * dev_props.warpSize
 											* (sizeof(long long) + sizeof(unsigned char))>>>
 				(root_d, num_elem_slots, 0, res_arr_d, min_dim1_val, min_dim2_val);
@@ -472,7 +465,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		For friend functions of template classes, for the compiler to recognise the function as a template function, it is necessary to either pre-declare each template friend function before the template class and modify the class-internal function declaration with an additional <> between the operator and the parameter list; or to simply define the friend function when it is declared
 		https://isocpp.org/wiki/faq/templates#template-friends
 
-		Note that <> means a specialisation with the default arguments, which in this case are the template parameters of the enclosing class
+		Note that <> means a (full) specialisation with default arguments, which in this case are the template parameters of the enclosing class
 	*/
 	friend __global__ void populateTree <> (T *const root_d, const size_t num_elem_slots,
 											PointStructTemplate<T, IDType, num_IDs> *const pt_arr_d,
@@ -484,51 +477,46 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 	// Non-template friend
 	friend __global__ void indexAssignment (size_t *const ind_arr, const size_t num_elems);
 
-	// Default template argument omitted due to requirement that only definitions of friend functions can have them
-	template <typename RetType>
-		requires std::disjunction<
-							std::is_same<RetType, IDType>,
-							std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-			>::value
-	friend __global__ void threeSidedSearchGlobal <> (T *const root_d,
-														const size_t num_elem_slots,
-														const size_t start_node_ind,
-														RetType *const res_arr_d,
-														const T min_dim1_val,
-														const T max_dim1_val,
-														const T min_dim2_val);
-	template <typename RetType>
-		requires std::disjunction<
-							std::is_same<RetType, IDType>,
-							std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-			>::value
-	friend __global__ void twoSidedLeftSearchGlobal <> (T *const root_d,
-														const size_t num_elem_slots,
-														const size_t start_node_ind,
-														RetType *const res_arr_d,
-														const T max_dim1_val,
-														const T min_dim2_val);
-	template <typename RetType>
-		requires std::disjunction<
-							std::is_same<RetType, IDType>,
-							std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-			>::value
-	friend __global__ void twoSidedRightSearchGlobal <> (T *const root_d,
-															const size_t num_elem_slots,
-															const size_t start_node_ind,
-															RetType *const res_arr_d,
-															const T min_dim1_val,
-															const T min_dim2_val);
-	template <typename RetType>
-		requires std::disjunction<
-							std::is_same<RetType, IDType>,
-							std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-			>::value
-	friend __global__ void reportAllNodesGlobal <> (T *const root_d,
+	/*
+		As partial specialisation is not allowed (i.e. mixing the (already-instantiated) template types of the enclosing class and the still-generic template type RetType); either replace already-declared types with generic type placeholders (to not overshadow the enclosing template types) and without requires clauses (due to the constraint imposed by C++ specification 13.7.5, point 9); or opt for full specialisation, i.e. replacing RetType with the explicit desired return types.
+
+		Note that as generic type placeholders are used here, no <> specialisation notation is used.
+
+		Cited: C++ specification 13.7.5 (Templates > Template declarations > Friends):
+	   		Example in point 1.4: allowing for template friend functions to template classes
+			Point 9: template friend declaration with a constraint depending on a template parameter from an enclosing template shall be a definition that does not declare the same function template as any function template in any other scope
+	*/
+	template <typename U, template<typename, typename, size_t> class PtStructTempl, typename IDT, size_t NIDs, typename RetType>
+	friend __global__ void threeSidedSearchGlobal(U *const root_d,
 													const size_t num_elem_slots,
 													const size_t start_node_ind,
 													RetType *const res_arr_d,
-													const T min_dim2_val);
+													const U min_dim1_val,
+													const U max_dim1_val,
+													const U min_dim2_val);
+
+	template <typename U, template<typename, typename, size_t> class PtStructTempl, typename IDT, size_t NIDs, typename RetType>
+	friend __global__ void twoSidedLeftSearchGlobal(U *const root_d,
+													const size_t num_elem_slots,
+													const size_t start_node_ind,
+													RetType *const res_arr_d,
+													const U max_dim1_val,
+													const U min_dim2_val);
+
+	template <typename U, template<typename, typename, size_t> class PtStructTempl, typename IDT, size_t NIDs, typename RetType>
+	friend __global__ void twoSidedRightSearchGlobal(U *const root_d,
+														const size_t num_elem_slots,
+														const size_t start_node_ind,
+														RetType *const res_arr_d,
+														const U min_dim1_val,
+														const U min_dim2_val);
+
+	template <typename U, template<typename, typename, size_t> class PtStructTempl, typename IDT, size_t NIDs, typename RetType>
+	friend __global__ void reportAllNodesGlobal(U *const root_d,
+												const size_t num_elem_slots,
+												const size_t start_node_ind,
+												RetType *const res_arr_d,
+												const U min_dim2_val);
 };
 
 // Implementation file; for class templates, implementations must be in the same file as the declaration so that the compiler can access them

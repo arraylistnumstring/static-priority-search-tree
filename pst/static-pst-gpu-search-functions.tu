@@ -5,16 +5,25 @@
 // Can only have default template argument(s) listed once overall
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs, typename RetType>
-	requires std::disjunction<
-						std::is_same<RetType, IDType>,
-						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-		>::value
 __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_slots,
 										const size_t start_node_ind,
 										RetType *const res_arr_d,
 										const T min_dim1_val, const T max_dim1_val,
 										const T min_dim2_val)
 {
+	/*
+		By C++ specification 13.7.5 (Templates > Template declarations > Friends), point 9, "a friend function template with a constraint that depends on a template parameter from an enclosing template [is] a definition[...and] does not declare the same[...]function template as a declaration in any other scope."
+
+		Moreover, a requires clause is part of a function's signature, such that the presence or lack of a requires clause changes the function which is called or referenced, so all requires clauses must be removed from the corresponding friend function.
+
+		Hence, the static_assert here takes the place of the equivalent requires clause.
+	*/
+	static_assert(std::disjunction<
+						std::is_same<RetType, IDType>,
+						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+					>::value,
+					"RetType is not of type PointStructTemplate<T, IDType, num_IDs>, nor of type IDType");
+
 	// For correctness, only 1 block can ever be active, as synchronisation across blocks (i.e. global synchronisation) is not possible without exiting the kernel entirely
 	if (blockIdx.x != 0)
 		return;
@@ -159,15 +168,24 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 // Correctness only guaranteed for grids with one active block
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs, typename RetType>
-	requires std::disjunction<
-						std::is_same<RetType, IDType>,
-						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-		>::value
 __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_slots,
 											const size_t start_node_ind,
 											RetType *const res_arr_d,
 											const T max_dim1_val, const T min_dim2_val)
 {
+	/*
+		By C++ specification 13.7.5 (Templates > Template declarations > Friends), point 9, "a friend function template with a constraint that depends on a template parameter from an enclosing template [is] a definition[...and] does not declare the same[...]function template as a declaration in any other scope."
+
+		Moreover, a requires clause is part of a function's signature, such that the presence or lack of a requires clause changes the function which is called or referenced, so all requires clauses must be removed from the corresponding friend function.
+
+		Hence, the static_assert here takes the place of the equivalent requires clause.
+	*/
+	static_assert(std::disjunction<
+						std::is_same<RetType, IDType>,
+						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+					>::value,
+					"RetType is not of type PointStructTemplate<T, IDType, num_IDs>, nor of type IDType");
+
 	// For correctness, only 1 block can ever be active, as synchronisation across blocks (i.e. global synchronisation) is not possible without exiting the kernel entirely
 	if (blockIdx.x != 0)
 		return;
@@ -284,15 +302,24 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 // Correctness only guaranteed for grids with one active block
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs, typename RetType>
-	requires std::disjunction<
-						std::is_same<RetType, IDType>,
-						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-		>::value
 __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem_slots,
 											const size_t start_node_ind,
 											RetType *const res_arr_d,
 											const T min_dim1_val, const T min_dim2_val)
 {
+	/*
+		By C++ specification 13.7.5 (Templates > Template declarations > Friends), point 9, "a friend function template with a constraint that depends on a template parameter from an enclosing template [is] a definition[...and] does not declare the same[...]function template as a declaration in any other scope."
+
+		Moreover, a requires clause is part of a function's signature, such that the presence or lack of a requires clause changes the function which is called or referenced, so all requires clauses must be removed from the corresponding friend function.
+
+		Hence, the static_assert here takes the place of the equivalent requires clause.
+	*/
+	static_assert(std::disjunction<
+						std::is_same<RetType, IDType>,
+						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+					>::value,
+					"RetType is not of type PointStructTemplate<T, IDType, num_IDs>, nor of type IDType");
+
 	// For correctness, only 1 block can ever be active, as synchronisation across blocks (i.e. global synchronisation) is not possible without exiting the kernel entirely
 	if (blockIdx.x != 0)
 		return;
@@ -410,15 +437,24 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 // Correctness only guaranteed for grids with one active block
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs, typename RetType>
-	requires std::disjunction<
-						std::is_same<RetType, IDType>,
-						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-		>::value
 __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slots,
 										const size_t start_node_ind,
 										RetType *const res_arr_d,
 										const T min_dim2_val)
 {
+	/*
+		By C++ specification 13.7.5 (Templates > Template declarations > Friends), point 9, "a friend function template with a constraint that depends on a template parameter from an enclosing template [is] a definition[...and] does not declare the same[...]function template as a declaration in any other scope."
+
+		Moreover, a requires clause is part of a function's signature, such that the presence or lack of a requires clause changes the function which is called or referenced, so all requires clauses must be removed from the corresponding friend function.
+
+		Hence, the static_assert here takes the place of the equivalent requires clause.
+	*/
+	static_assert(std::disjunction<
+						std::is_same<RetType, IDType>,
+						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+					>::value,
+					"RetType is not of type PointStructTemplate<T, IDType, num_IDs>, nor of type IDType");
+
 	// For correctness, only 1 block can ever be active, as synchronisation across blocks (i.e. global synchronisation) is not possible without exiting the kernel entirely
 	if (blockIdx.x != 0)
 		return;
