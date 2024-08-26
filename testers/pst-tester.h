@@ -2,6 +2,8 @@
 #define PST_TESTER_H
 
 #include <algorithm>	// To use sort()
+#include <chrono>		// To use std::chrono::steady_clock (a monotonic clock suitable for interval measurements) and related functions
+#include <ctime>		// To use std::clock_t (CPU timer; pauses when CPU pauses, etc.)
 #include <iostream>
 #include <limits>		// To get numeric limits of each datatype
 #include <random>		// To use std::mt19937
@@ -67,7 +69,8 @@ struct PSTTester
 
 		// Nested structs to allow for the metaprogramming equivalent of currying, but with type parameters
 		template <template<typename, typename, size_t> class PointStructTemplate,
-					template<typename, template<typename, typename, size_t> class, typename, size_t> class StaticPSTTemplate>
+					template<typename, template<typename, typename, size_t> class, typename, size_t> class StaticPSTTemplate,
+					PSTType pst_type>
 		struct TreeTypeWrapper
 		{
 			// Nested class have access to all levels of access of their enclosing scope; however, as nested classes are not associated with any enclosing class instance in particular, so must keep track of the desired "parent" instance, if any
@@ -80,7 +83,7 @@ struct PSTTester
 			template <size_t num_IDs>
 			struct NumIDsWrapper
 			{
-				TreeTypeWrapper<PointStructTemplate, StaticPSTTemplate> tree_type_wrapper;
+				TreeTypeWrapper<PointStructTemplate, StaticPSTTemplate, pst_type> tree_type_wrapper;
 				
 				// Track CUDA device properties; placed in this struct to reduce code redundancy, as this is the only struct that is unspecialised and has a single constructor
 				// Data types chosen because they are the ones respectively returned by CUDA
@@ -88,7 +91,7 @@ struct PSTTester
 				int dev_ind;
 				cudaDeviceProp dev_props;
 
-				NumIDsWrapper(TreeTypeWrapper<PointStructTemplate, StaticPSTTemplate> tree_type_wrapper)
+				NumIDsWrapper(TreeTypeWrapper<PointStructTemplate, StaticPSTTemplate, pst_type> tree_type_wrapper)
 					: tree_type_wrapper(tree_type_wrapper)
 				{
 					// Check and save number of GPUs attached to machine
@@ -136,7 +139,7 @@ struct PSTTester
 							: id_type_wrapper(id_type_wrapper)
 						{};
 
-						void operator()(size_t num_elems, const unsigned warps_per_block, PSTTestCodes test_type=CONSTRUCT, PSTType=GPU)
+						void operator()(size_t num_elems, const unsigned warps_per_block, PSTTestCodes test_type=CONSTRUCT)
 						{
 							PointStructTemplate<T, IDType, num_IDs> *pt_arr = new PointStructTemplate<T, IDType, num_IDs>[num_elems];
 
@@ -169,23 +172,33 @@ struct PSTTester
 #endif
 
 							// Variables must be outside of conditionals to be accessible in later conditionals
-							cudaEvent_t construct_start, construct_stop, search_start, search_stop;
+							cudaEvent_t construct_start_CUDA, construct_stop_CUDA, search_start_CUDA, search_stop_CUDA;
+							std::clock_t construct_start_CPU, construct_stop_CPU, search_start_CPU, search_stop_CPU;
+							std::chrono::time_point<std::chrono::steady_clock> construct_start_wall, construct_stop_wall, search_start_wall, search_stop_wall;
 
 							if constexpr (timed)
 							{
-								gpuErrorCheck(cudaEventCreate(&construct_start),
-												"Error in creating start event for timing CUDA PST construction code");
-								gpuErrorCheck(cudaEventCreate(&construct_stop),
-												"Error in creating stop event for timing CUDA PST construction code");
-								// For accuracy of measurement of search speeds, create and place search events in stream, even if this is a construction-only test
-								gpuErrorCheck(cudaEventCreate(&search_start),
-												"Error in creating start event for timing CUDA search code");
-								gpuErrorCheck(cudaEventCreate(&search_stop),
-												"Error in creating stop event for timing CUDA search code");
+								if constexpr (pst_type == GPU)
+								{
+									gpuErrorCheck(cudaEventCreate(&construct_start_CUDA),
+													"Error in creating start event for timing CUDA PST construction code");
+									gpuErrorCheck(cudaEventCreate(&construct_stop_CUDA),
+													"Error in creating stop event for timing CUDA PST construction code");
+									// For accuracy of measurement of search speeds, create and place search events in stream, even if this is a construction-only test
+									gpuErrorCheck(cudaEventCreate(&search_start_CUDA),
+													"Error in creating start event for timing CUDA search code");
+									gpuErrorCheck(cudaEventCreate(&search_stop_CUDA),
+													"Error in creating stop event for timing CUDA search code");
 
-								// Start CUDA construction timer (i.e. place this event into default stream)
-								gpuErrorCheck(cudaEventRecord(construct_start),
-											"Error in recording start event for timing CUDA PST construction code");
+									// Start CUDA construction timer (i.e. place this event into default stream)
+									gpuErrorCheck(cudaEventRecord(construct_start_CUDA),
+												"Error in recording start event for timing CUDA PST construction code");
+								}
+								else
+								{
+									construct_start_CPU = std::clock();
+									construct_start_wall = std::chrono::steady_clock::now();
+								}
 							}
 
 							StaticPSTTemplate<T, PointStructTemplate, IDType, num_IDs> *tree =
@@ -193,9 +206,17 @@ struct PSTTester
 
 							if constexpr (timed)
 							{
-								// End CUDA construction timer
-								gpuErrorCheck(cudaEventRecord(construct_stop),
-												"Error in recording stop event for timing CUDA PST construction code");
+								if constexpr (pst_type == GPU)
+								{
+									// End CUDA construction timer
+									gpuErrorCheck(cudaEventRecord(construct_stop_CUDA),
+													"Error in recording stop event for timing CUDA PST construction code");
+								}
+								else
+								{
+									construct_stop_CPU = std::clock();
+									construct_stop_wall = std::chrono::steady_clock::now();
+								}
 							}
 
 							if (tree == nullptr)
@@ -211,9 +232,17 @@ struct PSTTester
 
 							if constexpr (timed)
 							{
-								// Start CUDA search timer (i.e. place this event in default stream)
-								gpuErrorCheck(cudaEventRecord(search_start),
-												"Error in recording start event for timing CUDA search code");
+								if constexpr (pst_type == GPU)
+								{
+									// Start CUDA search timer (i.e. place this event in default stream)
+									gpuErrorCheck(cudaEventRecord(search_start_CUDA),
+													"Error in recording start event for timing CUDA search code");
+								}
+								else
+								{
+									search_start_CPU = std::clock();
+									search_start_wall = std::chrono::steady_clock::now();
+								}
 							}
 
 							// Search/report test phase
@@ -240,35 +269,63 @@ struct PSTTester
 							
 							if constexpr (timed)
 							{
-								// End CUDA search timer
-								gpuErrorCheck(cudaEventRecord(search_stop),
-												"Error in recording stop event for timing CUDA search code");
+								if constexpr (pst_type == GPU)
+								{
+									// End CUDA search timer
+									gpuErrorCheck(cudaEventRecord(search_stop_CUDA),
+													"Error in recording stop event for timing CUDA search code");
 
-								// Block CPU execution until search stop event has been recorded
-								gpuErrorCheck(cudaEventSynchronize(search_stop),
+									// Block CPU execution until search stop event has been recorded
+									gpuErrorCheck(cudaEventSynchronize(search_stop_CUDA),
 												"Error in blocking CPU execution until completion of stop event for timing CUDA search code");
 
-								// Report construction and search timing
-								float ms = 0;	// milliseconds
-								gpuErrorCheck(cudaEventElapsedTime(&ms, construct_start, construct_stop),
-												"Error in calculating time elapsed for CUDA PST construction code");
-								std::cout << "CUDA PST construction time: " << ms << " ms\n";
+									// Report construction and search timing
+									// Type chosen because of parameter type of cudaEventElapsedTime
+									float ms = 0;	// milliseconds
 
-								if (test_type != CONSTRUCT)
-								{
-									gpuErrorCheck(cudaEventElapsedTime(&ms, search_start, search_stop),
-													"Error in calculating time elapsed for CUDA search code");
-									std::cout << "CUDA PST search time: " << ms << " ms\n";
+									gpuErrorCheck(cudaEventElapsedTime(&ms, construct_start_CUDA, construct_stop_CUDA),
+													"Error in calculating time elapsed for CUDA PST construction code");
+									std::cout << "CUDA PST construction time: " << ms << " ms\n";
+
+									if (test_type != CONSTRUCT)
+									{
+										gpuErrorCheck(cudaEventElapsedTime(&ms, search_start_CUDA, search_stop_CUDA),
+														"Error in calculating time elapsed for CUDA search code");
+										std::cout << "CUDA PST search time: " << ms << " ms\n";
+									}
+
+									gpuErrorCheck(cudaEventDestroy(construct_start_CUDA),
+													"Error in destroying start event for timing CUDA PST construction code");
+									gpuErrorCheck(cudaEventDestroy(construct_stop_CUDA),
+													"Error in destroying stop event for timing CUDA PST construction code");
+									gpuErrorCheck(cudaEventDestroy(search_start_CUDA),
+													"Error in destroying start event for timing CUDA search code");
+									gpuErrorCheck(cudaEventDestroy(search_stop_CUDA),
+													"Error in destroying stop event for timing CUDA search code");
 								}
+								else
+								{
+									search_stop_CPU = std::clock();
+									search_stop_wall = std::chrono::steady_clock::now();
 
-								gpuErrorCheck(cudaEventDestroy(construct_start),
-												"Error in destroying start event for timing CUDA PST construction code");
-								gpuErrorCheck(cudaEventDestroy(construct_stop),
-												"Error in destroying stop event for timing CUDA PST construction code");
-								gpuErrorCheck(cudaEventDestroy(search_start),
-												"Error in destroying start event for timing CUDA search code");
-								gpuErrorCheck(cudaEventDestroy(search_stop),
-												"Error in destroying stop event for timing CUDA search code");
+									std::cout << "CPU PST construction time:"
+											  << "\tCPU clock time used:\t"
+											  << 1000.0 * (construct_stop_CPU - construct_start_CPU) / CLOCKS_PER_SEC << " ms\n"
+											  << "\tWall clock time passed:\t"
+											  << std::chrono::duration<double, std::milli>(construct_stop_wall - construct_start_wall).count()
+											  << " ms\n";
+
+
+									if (test_type != CONSTRUCT)
+									{
+										std::cout << "CPU PST search time:"
+												  << "\tCPU clock time used:\t"
+												  << 1000.0 * (search_stop_CPU - search_start_CPU) / CLOCKS_PER_SEC << " ms\n"
+												  << "\tWall clock time passed:\t"
+												  << std::chrono::duration<double, std::milli>(search_stop_wall - search_start_wall).count()
+												  << " ms\n";
+									}
+								}
 							}
 
 							// If result pointer array is on GPU, copy it to CPU and print
@@ -368,23 +425,33 @@ struct PSTTester
 #endif
 
 						// Variables must be outside of conditionals to be accessible in later conditionals
-						cudaEvent_t construct_start, construct_stop, search_start, search_stop;
+						cudaEvent_t construct_start_CUDA, construct_stop_CUDA, search_start_CUDA, search_stop_CUDA;
+						std::clock_t construct_start_CPU, construct_stop_CPU, search_start_CPU, search_stop_CPU;
+						std::chrono::time_point<std::chrono::steady_clock> construct_start_wall, construct_stop_wall, search_start_wall, search_stop_wall;
 
 						if constexpr (timed)
 						{
-							gpuErrorCheck(cudaEventCreate(&construct_start),
-											"Error in creating start event for timing CUDA PST construction code");
-							gpuErrorCheck(cudaEventCreate(&construct_stop),
-											"Error in creating stop event for timing CUDA PST construction code");
-							// For accuracy of measurement of search speeds, create and place search events in stream, even if this is a construction-only test
-							gpuErrorCheck(cudaEventCreate(&search_start),
-											"Error in creating start event for timing CUDA search code");
-							gpuErrorCheck(cudaEventCreate(&search_stop),
-											"Error in creating stop event for timing CUDA search code");
+							if constexpr (pst_type == GPU)
+							{
+								gpuErrorCheck(cudaEventCreate(&construct_start_CUDA),
+												"Error in creating start event for timing CUDA PST construction code");
+								gpuErrorCheck(cudaEventCreate(&construct_stop_CUDA),
+												"Error in creating stop event for timing CUDA PST construction code");
+								// For accuracy of measurement of search speeds, create and place search events in stream, even if this is a construction-only test
+								gpuErrorCheck(cudaEventCreate(&search_start_CUDA),
+												"Error in creating start event for timing CUDA search code");
+								gpuErrorCheck(cudaEventCreate(&search_stop_CUDA),
+												"Error in creating stop event for timing CUDA search code");
 
-							// Start CUDA construction timer (i.e. place this event into default stream)
-							gpuErrorCheck(cudaEventRecord(construct_start),
-										"Error in recording start event for timing CUDA PST construction code");
+								// Start CUDA construction timer (i.e. place this event into default stream)
+								gpuErrorCheck(cudaEventRecord(construct_start_CUDA),
+											"Error in recording start event for timing CUDA PST construction code");
+							}
+							else
+							{
+								construct_start_CPU = std::clock();
+								construct_start_wall = std::chrono::steady_clock::now();
+							}
 						}
 
 						StaticPSTTemplate<T, PointStructTemplate, void, num_IDs> *tree =
@@ -392,9 +459,17 @@ struct PSTTester
 
 						if constexpr (timed)
 						{
-							// End CUDA construction timer
-							gpuErrorCheck(cudaEventRecord(construct_stop),
-											"Error in recording stop event for timing CUDA PST construction code");
+							if constexpr (pst_type == GPU)
+							{
+								// End CUDA construction timer
+								gpuErrorCheck(cudaEventRecord(construct_stop_CUDA),
+												"Error in recording stop event for timing CUDA PST construction code");
+							}
+							else
+							{
+								construct_stop_CPU = std::clock();
+								construct_stop_wall = std::chrono::steady_clock::now();
+							}
 						}
 
 						if (tree == nullptr)
@@ -410,9 +485,17 @@ struct PSTTester
 
 						if constexpr (timed)
 						{
-							// Start CUDA search timer (i.e. place this event in default stream)
-							gpuErrorCheck(cudaEventRecord(search_start),
-											"Error in recording start event for timing CUDA search code");
+							if constexpr (pst_type == GPU)
+							{
+								// Start CUDA search timer (i.e. place this event in default stream)
+								gpuErrorCheck(cudaEventRecord(search_start_CUDA),
+												"Error in recording start event for timing CUDA search code");
+							}
+							else
+							{
+								search_start_CPU = std::clock();
+								search_start_wall = std::chrono::steady_clock::now();
+							}
 						}
 
 						// Search/report test phase
@@ -439,35 +522,63 @@ struct PSTTester
 
 						if constexpr (timed)
 						{
+							if constexpr (pst_type == GPU)
+							{
 								// End CUDA search timer
-								gpuErrorCheck(cudaEventRecord(search_stop),
+								gpuErrorCheck(cudaEventRecord(search_stop_CUDA),
 												"Error in recording stop event for timing CUDA search code");
 
 								// Block CPU execution until search stop event has been recorded
-								gpuErrorCheck(cudaEventSynchronize(search_stop),
+								gpuErrorCheck(cudaEventSynchronize(search_stop_CUDA),
 												"Error in blocking CPU execution until completion of stop event for timing CUDA search code");
 
 								// Report construction and search timing
+								// Type chosen because of parameter type of cudaEventElapsedTime
 								float ms = 0;	// milliseconds
-								gpuErrorCheck(cudaEventElapsedTime(&ms, construct_start, construct_stop),
+
+								gpuErrorCheck(cudaEventElapsedTime(&ms, construct_start_CUDA, construct_stop_CUDA),
 												"Error in calculating time elapsed for CUDA PST construction code");
 								std::cout << "CUDA PST construction time: " << ms << " ms\n";
 
 								if (test_type != CONSTRUCT)
 								{
-									gpuErrorCheck(cudaEventElapsedTime(&ms, search_start, search_stop),
+									gpuErrorCheck(cudaEventElapsedTime(&ms, search_start_CUDA, search_stop_CUDA),
 												"Error in calculating time elapsed for CUDA search code");
 									std::cout << "CUDA PST search time: " << ms << " ms\n";
 								}
 
-								gpuErrorCheck(cudaEventDestroy(construct_start),
+								gpuErrorCheck(cudaEventDestroy(construct_start_CUDA),
 												"Error in destroying start event for timing CUDA PST construction code");
-								gpuErrorCheck(cudaEventDestroy(construct_stop),
+								gpuErrorCheck(cudaEventDestroy(construct_stop_CUDA),
 												"Error in destroying stop event for timing CUDA PST construction code");
-								gpuErrorCheck(cudaEventDestroy(search_start),
+								gpuErrorCheck(cudaEventDestroy(search_start_CUDA),
 												"Error in destroying start event for timing CUDA search code");
-								gpuErrorCheck(cudaEventDestroy(search_stop),
+								gpuErrorCheck(cudaEventDestroy(search_stop_CUDA),
 												"Error in destroying stop event for timing CUDA search code");
+							}
+							else
+							{
+								search_stop_CPU = std::clock();
+								search_stop_wall = std::chrono::steady_clock::now();
+
+								std::cout << "CPU PST construction time:"
+										  << "\tCPU clock time used:\t"
+										  << 1000.0 * (construct_stop_CPU - construct_start_CPU) / CLOCKS_PER_SEC << " ms\n"
+										  << "\tWall clock time passed:\t"
+										  << std::chrono::duration<double, std::milli>(construct_stop_wall - construct_start_wall).count()
+										  << " ms\n";
+
+
+								if (test_type != CONSTRUCT)
+								{
+									std::cout << "CPU PST search time:"
+											  << "\tCPU clock time used:\t"
+											  << 1000.0 * (search_stop_CPU - search_start_CPU) / CLOCKS_PER_SEC << " ms\n"
+											  << "\tWall clock time passed:\t"
+											  << std::chrono::duration<double, std::milli>(search_stop_wall - search_start_wall).count()
+											  << " ms\n";
+								}
+							}
 						}
 
 						// If result pointer array is on GPU, copy it to CPU and print

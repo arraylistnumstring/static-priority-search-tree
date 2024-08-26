@@ -121,7 +121,7 @@ struct PSTTestInfoStruct
 	{
 		if (tree_type == PSTType::CPU_ITER)
 		{
-			typename PSTTesterDataTypeInstantiated::TreeTypeWrapper<PointStruct, StaticPSTCPUIter> pst_tester_tree_instan(pst_tester);
+			typename PSTTesterDataTypeInstantiated::TreeTypeWrapper<PointStruct, StaticPSTCPUIter, PSTType::CPU_ITER> pst_tester_tree_instan(pst_tester);
 
 #ifdef DEBUG_WRAP
 			std::cout << "Instantiated StaticPSTCPUIter wrapper\n";
@@ -131,7 +131,7 @@ struct PSTTestInfoStruct
 		}
 		else if (tree_type == PSTType::CPU_RECUR)
 		{
-			typename PSTTesterDataTypeInstantiated::TreeTypeWrapper<PointStruct, StaticPSTCPURecur> pst_tester_tree_instan(pst_tester);
+			typename PSTTesterDataTypeInstantiated::TreeTypeWrapper<PointStruct, StaticPSTCPURecur, PSTType::CPU_RECUR> pst_tester_tree_instan(pst_tester);
 
 #ifdef DEBUG_WRAP
 			std::cout << "Instantiated StaticPSTCPURecur wrapper\n";
@@ -141,7 +141,7 @@ struct PSTTestInfoStruct
 		}
 		else	// tree_type == PSTType::GPU
 		{
-			typename PSTTesterDataTypeInstantiated::TreeTypeWrapper<PointStruct, StaticPSTGPU> pst_tester_tree_instan(pst_tester);
+			typename PSTTesterDataTypeInstantiated::TreeTypeWrapper<PointStruct, StaticPSTGPU, PSTType::GPU> pst_tester_tree_instan(pst_tester);
 
 #ifdef DEBUG_WRAP
 			std::cout << "Instantiated StaticPSTGPU wrapper\n";
