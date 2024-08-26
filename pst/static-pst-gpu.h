@@ -471,6 +471,8 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 	/*
 		For friend functions of template classes, for the compiler to recognise the function as a template function, it is necessary to either pre-declare each template friend function before the template class and modify the class-internal function declaration with an additional <> between the operator and the parameter list; or to simply define the friend function when it is declared
 		https://isocpp.org/wiki/faq/templates#template-friends
+
+		Note that <> means a specialisation with the default arguments, which in this case are the template parameters of the enclosing class
 	*/
 	friend __global__ void populateTree <> (T *const root_d, const size_t num_elem_slots,
 											PointStructTemplate<T, IDType, num_IDs> *const pt_arr_d,
