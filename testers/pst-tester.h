@@ -280,7 +280,7 @@ struct PSTTester
 												"Error in blocking CPU execution until completion of stop event for timing CUDA search code");
 
 									// Report construction and search timing
-									// Type chosen because of parameter type of cudaEventElapsedTime
+									// Type chosen because of type of parameter of cudaEventElapsedTime
 									float ms = 0;	// milliseconds
 
 									gpuErrorCheck(cudaEventElapsedTime(&ms, construct_start_CUDA, construct_stop_CUDA),
@@ -533,7 +533,7 @@ struct PSTTester
 												"Error in blocking CPU execution until completion of stop event for timing CUDA search code");
 
 								// Report construction and search timing
-								// Type chosen because of parameter type of cudaEventElapsedTime
+								// Type chosen because of type of parameter of cudaEventElapsedTime
 								float ms = 0;	// milliseconds
 
 								gpuErrorCheck(cudaEventElapsedTime(&ms, construct_start_CUDA, construct_stop_CUDA),
