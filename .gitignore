@@ -10,10 +10,11 @@
 *.swo
 *.swp
 
-archival/*
-compilation-testing/*
-cuda-debugger/*
-cuda-dbg/*
+archival/
+compilation-testing/
+cuda-debugger/
+cuda-dbg/
+slurm-output/
 
 # Symbolic links
 Common
