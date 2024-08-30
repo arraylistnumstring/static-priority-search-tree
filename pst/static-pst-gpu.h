@@ -23,6 +23,8 @@ __global__ void populateTree(T *const root_d, const size_t num_elem_slots,
 // Assigning elements of an array on device such that array[i] = i
 __global__ void indexAssignment(size_t *const ind_arr, const size_t num_elems);
 
+// C++ allows trailing template type arguments and function parameters to have default values; for template type arguments, it is forbidden for default arguments to be specified for a class template member outside of the class template; for function parameters, one must not declare the default arguments again (as it is regarded as a redefinition, even if the values are the same)
+
 // Cannot overload a global function over a host function, even if the number of arguments differs
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs,
@@ -67,7 +69,7 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDType, num_IDs>
 {
 	public:
-		StaticPSTGPU(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr, size_t num_elems);
+		StaticPSTGPU(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr, size_t num_elems, const int warp_multiplier=1);
 		// Since arrays were allocated continguously, only need to free one of the array pointers
 		virtual ~StaticPSTGPU()
 		{
@@ -91,7 +93,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 				>::value
-		void threeSidedSearch(size_t &num_res_elems, RetType *&res_arr_d, T min_dim1_val, T max_dim1_val, T min_dim2_val)
+		void threeSidedSearch(size_t &num_res_elems, RetType *&res_arr_d, T min_dim1_val, T max_dim1_val, T min_dim2_val, const int warp_multiplier=1)
 		{
 			if (num_elems == 0)
 			{
@@ -135,7 +137,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 				>::value
-		void twoSidedLeftSearch(size_t &num_res_elems, RetType *&res_arr_d, T max_dim1_val, T min_dim2_val)
+		void twoSidedLeftSearch(size_t &num_res_elems, RetType *&res_arr_d, T max_dim1_val, T min_dim2_val, const int warp_multiplier=1)
 		{
 			static_assert(std::disjunction<
 								std::is_same<RetType, IDType>,
@@ -185,7 +187,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 				>::value
-		void twoSidedRightSearch(size_t &num_res_elems, RetType *&res_arr_d, T min_dim1_val, T min_dim2_val)
+		void twoSidedRightSearch(size_t &num_res_elems, RetType *&res_arr_d, T min_dim1_val, T min_dim2_val, const int warp_multiplier=1)
 		{
 			if (num_elems == 0)
 			{
@@ -435,8 +437,6 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		// Save GPU info for later usage
 		int dev_ind;
 		cudaDeviceProp dev_props;
-		// Number by which to multiply the number of warps in a thread block
-		const static int warp_multiplier = 1;
 		int num_devs;
 
 		// Number of working arrays necessary to construct the tree: 1 array of dim1_val indices, 2 arrays for dim2_val indices (one that is the input, one that is the output after dividing up the indices between the current node's two children; this switches at every level of the tree)

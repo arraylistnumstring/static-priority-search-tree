@@ -201,8 +201,11 @@ struct PSTTester
 								}
 							}
 
-							StaticPSTTemplate<T, PointStructTemplate, IDType, num_IDs> *tree =
-								new StaticPSTTemplate<T, PointStructTemplate, IDType, num_IDs>(pt_arr, num_elems);
+							StaticPSTTemplate<T, PointStructTemplate, IDType, num_IDs> *tree;
+							if constexpr (pst_type == GPU)
+								tree = new StaticPSTTemplate<T, PointStructTemplate, IDType, num_IDs>(pt_arr, num_elems, warps_per_block);
+							else
+								tree = new StaticPSTTemplate<T, PointStructTemplate, IDType, num_IDs>(pt_arr, num_elems);
 
 							if constexpr (timed)
 							{
@@ -246,24 +249,52 @@ struct PSTTester
 							}
 
 							// Search/report test phase
-							if (test_type == LEFT_SEARCH)
+							if constexpr (pst_type == GPU)
 							{
-								tree->twoSidedLeftSearch(num_res_elems, res_arr,
+								if (test_type == LEFT_SEARCH)
+								{
+									tree->twoSidedLeftSearch(num_res_elems, res_arr,
+																id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound1,
+																id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val,
+																warps_per_block);
+								}
+								else if (test_type == RIGHT_SEARCH)
+								{
+									tree->twoSidedRightSearch(num_res_elems, res_arr,
+																id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound1,
+																id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val,
+																warps_per_block);
+								}
+								else if (test_type == THREE_SEARCH)
+								{
+									tree->threeSidedSearch(num_res_elems, res_arr,
 															id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound1,
-															id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val);
+															id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound2,
+															id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val,
+															warps_per_block);
+								}
 							}
-							else if (test_type == RIGHT_SEARCH)
+							else
 							{
-								tree->twoSidedRightSearch(num_res_elems, res_arr,
+								if (test_type == LEFT_SEARCH)
+								{
+									tree->twoSidedLeftSearch(num_res_elems, res_arr,
+																id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound1,
+																id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val);
+								}
+								else if (test_type == RIGHT_SEARCH)
+								{
+									tree->twoSidedRightSearch(num_res_elems, res_arr,
+																id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound1,
+																id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val);
+								}
+								else if (test_type == THREE_SEARCH)
+								{
+									tree->threeSidedSearch(num_res_elems, res_arr,
 															id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound1,
+															id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound2,
 															id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val);
-							}
-							else if (test_type == THREE_SEARCH)
-							{
-								tree->threeSidedSearch(num_res_elems, res_arr,
-														id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound1,
-														id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound2,
-														id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val);
+								}
 							}
 							// If test_type == CONSTRUCT, do nothing for the search/report phase
 							
@@ -454,8 +485,11 @@ struct PSTTester
 							}
 						}
 
-						StaticPSTTemplate<T, PointStructTemplate, void, num_IDs> *tree =
-							new StaticPSTTemplate<T, PointStructTemplate, void, num_IDs>(pt_arr, num_elems);
+						StaticPSTTemplate<T, PointStructTemplate, void, num_IDs> *tree;
+						if constexpr (pst_type == GPU)
+							tree = new StaticPSTTemplate<T, PointStructTemplate, void, num_IDs>(pt_arr, num_elems, warps_per_block);
+						else
+							tree = new StaticPSTTemplate<T, PointStructTemplate, void, num_IDs>(pt_arr, num_elems);
 
 						if constexpr (timed)
 						{
@@ -499,24 +533,52 @@ struct PSTTester
 						}
 
 						// Search/report test phase
-						if (test_type == LEFT_SEARCH)
+						if constexpr (pst_type == GPU)
 						{
-							tree->twoSidedLeftSearch(num_res_elems, res_pt_arr,
+							if (test_type == LEFT_SEARCH)
+							{
+								tree->twoSidedLeftSearch(num_res_elems, res_pt_arr,
+															num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound1,
+															num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val,
+															warps_per_block);
+							}
+							else if (test_type == RIGHT_SEARCH)
+							{
+								tree->twoSidedRightSearch(num_res_elems, res_pt_arr,
+															num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound1,
+															num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val,
+															warps_per_block);
+							}
+							else if (test_type == THREE_SEARCH)
+							{
+								tree->threeSidedSearch(num_res_elems, res_pt_arr,
 														num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound1,
-														num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val);
+														num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound2,
+														num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val,
+														warps_per_block);
+							}
 						}
-						else if (test_type == RIGHT_SEARCH)
+						else
 						{
-							tree->twoSidedRightSearch(num_res_elems, res_pt_arr,
+							if (test_type == LEFT_SEARCH)
+							{
+								tree->twoSidedLeftSearch(num_res_elems, res_pt_arr,
+															num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound1,
+															num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val);
+							}
+							else if (test_type == RIGHT_SEARCH)
+							{
+								tree->twoSidedRightSearch(num_res_elems, res_pt_arr,
+															num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound1,
+															num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val);
+							}
+							else if (test_type == THREE_SEARCH)
+							{
+								tree->threeSidedSearch(num_res_elems, res_pt_arr,
 														num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound1,
+														num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound2,
 														num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val);
-						}
-						else if (test_type == THREE_SEARCH)
-						{
-							tree->threeSidedSearch(num_res_elems, res_pt_arr,
-													num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound1,
-													num_ids_wrapper.tree_type_wrapper.pst_tester.dim1_val_bound2,
-													num_ids_wrapper.tree_type_wrapper.pst_tester.min_dim2_val);
+							}
 						}
 						// If test_type == CONSTRUCT, do nothing for the search/report phase
 
