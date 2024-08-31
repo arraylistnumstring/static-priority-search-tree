@@ -363,34 +363,37 @@ struct PSTTester
 							}
 
 							// If result pointer array is on GPU, copy it to CPU and print
-							cudaPointerAttributes ptr_info;
-							gpuErrorCheck(cudaPointerGetAttributes(&ptr_info, res_arr),
-											"Error in determining location type of memory address of result RetType array (i.e. whether on host or device)");
-
-							// res_arr is on device; copy to CPU
-							if (ptr_info.type == cudaMemoryTypeDevice)
+							if constexpr (pst_type == GPU)
 							{
-								// Differentiate on-device and on-host pointers
-								RetType *res_arr_d = res_arr;
+								cudaPointerAttributes ptr_info;
+								gpuErrorCheck(cudaPointerGetAttributes(&ptr_info, res_arr),
+												"Error in determining location type of memory address of result RetType array (i.e. whether on host or device)");
 
-								res_arr = nullptr;
+								// res_arr is on device; copy to CPU
+								if (ptr_info.type == cudaMemoryTypeDevice)
+								{
+									// Differentiate on-device and on-host pointers
+									RetType *res_arr_d = res_arr;
 
-								// Allocate space on host for data
-								res_arr = new RetType[num_res_elems];
+									res_arr = nullptr;
 
-								if (res_arr == nullptr)
-									throwErr("Error: could not allocate RetType array of size "
-												+ std::to_string(num_res_elems) + " on host");
+									// Allocate space on host for data
+									res_arr = new RetType[num_res_elems];
 
-								// Copy data from res_arr_d to res_arr
-								gpuErrorCheck(cudaMemcpy(res_arr, res_arr_d, num_res_elems * sizeof(RetType),
-													cudaMemcpyDefault), 
-												"Error in copying array of RetType objects from device "
-												+ std::to_string(ptr_info.device) + ": ");
+									if (res_arr == nullptr)
+										throwErr("Error: could not allocate RetType array of size "
+													+ std::to_string(num_res_elems) + " on host");
 
-								// Free on-device array of PointStructTemplates
-								gpuErrorCheck(cudaFree(res_arr_d), "Error in freeing on-device array of result RetType objects on device "
-												+ std::to_string(ptr_info.device) + ": ");
+									// Copy data from res_arr_d to res_arr
+									gpuErrorCheck(cudaMemcpy(res_arr, res_arr_d, num_res_elems * sizeof(RetType),
+														cudaMemcpyDefault), 
+													"Error in copying array of RetType objects from device "
+													+ std::to_string(ptr_info.device) + ": ");
+
+									// Free on-device array of PointStructTemplates
+									gpuErrorCheck(cudaFree(res_arr_d), "Error in freeing on-device array of result RetType objects on device "
+													+ std::to_string(ptr_info.device) + ": ");
+								}
 							}
 
 							// Sort output for consistency (specifically compared to GPU-reported outputs, which may be randomly ordered and must therefore be sorted for easy comparisons)
