@@ -126,6 +126,11 @@ int main(int argc, char *argv[])
 					return 3;
 				}
 			}
+
+			// For non-three-sided searches, move dimension-2 value to third slot of test_info.search_range_strings
+			if (num_search_vals == PSTTestInfoStruct::NumSearchVals::NUM_VALS_TWO_SEARCH)
+				test_info.search_range_strings[num_search_vals]
+					= test_info.search_range_strings[num_search_vals - 1];
 		}
 
 		// Tree type parsing
