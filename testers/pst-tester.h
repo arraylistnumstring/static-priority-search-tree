@@ -48,7 +48,8 @@ struct PSTTester
 
 		bool vals_inc_ordered;
 
-		DataTypeWrapper(T min_val, T max_val, T dim1_val_bound1, T dim1_val_bound2, T min_dim2_val, bool vals_inc_ordered)
+		DataTypeWrapper(T min_val, T max_val, T dim1_val_bound1, T dim1_val_bound2,
+						T min_dim2_val, bool vals_inc_ordered)
 			: rand_num_eng(0),
 			distr(min_val, max_val),
 			dim1_val_bound1(dim1_val_bound1),
@@ -57,8 +58,8 @@ struct PSTTester
 			vals_inc_ordered(vals_inc_ordered)
 		{};
 
-		DataTypeWrapper(size_t rand_seed, T min_val, T max_val, T dim1_val_bound1, T dim1_val_bound2,
-					T min_dim2_val, bool vals_inc_ordered)
+		DataTypeWrapper(size_t rand_seed, T min_val, T max_val, T dim1_val_bound1,
+						T dim1_val_bound2, T min_dim2_val, bool vals_inc_ordered)
 			: rand_num_eng(rand_seed),
 			distr(min_val, max_val),
 			dim1_val_bound1(dim1_val_bound1),
