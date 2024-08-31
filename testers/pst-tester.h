@@ -94,21 +94,24 @@ struct PSTTester
 				NumIDsWrapper(TreeTypeWrapper<PointStructTemplate, StaticPSTTemplate, pst_type> tree_type_wrapper)
 					: tree_type_wrapper(tree_type_wrapper)
 				{
-					// Check and save number of GPUs attached to machine
-					gpuErrorCheck(cudaGetDeviceCount(&num_devs), "Error in getting number of devices: ");
-					if (num_devs < 1)       // No GPUs attached
-						throwErr("Error: " + std::to_string(num_devs) + " GPUs attached to host");
+					if constexpr (pst_type ==GPU)
+					{
+						// Check and save number of GPUs attached to machine
+						gpuErrorCheck(cudaGetDeviceCount(&num_devs), "Error in getting number of devices: ");
+						if (num_devs < 1)       // No GPUs attached
+							throwErr("Error: " + std::to_string(num_devs) + " GPUs attached to host");
 
-					// Use modified version of CUDA's gpuGetMaxGflopsDeviceId() to get top-performing GPU capable of unified virtual addressing; also used so that device in use is the same as that for marching cubes
-					dev_ind = gpuGetMaxGflopsDeviceId();
-					gpuErrorCheck(cudaGetDeviceProperties(&dev_props, dev_ind),
-									"Error in getting device properties of device "
-									+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-									+ " total devices: ");
+						// Use modified version of CUDA's gpuGetMaxGflopsDeviceId() to get top-performing GPU capable of unified virtual addressing; also used so that device in use is the same as that for marching cubes
+						dev_ind = gpuGetMaxGflopsDeviceId();
+						gpuErrorCheck(cudaGetDeviceProperties(&dev_props, dev_ind),
+										"Error in getting device properties of device "
+										+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+										+ " total devices: ");
 
-					gpuErrorCheck(cudaSetDevice(dev_ind), "Error setting default device to device "
-									+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-									+ " total devices: ");
+						gpuErrorCheck(cudaSetDevice(dev_ind), "Error setting default device to device "
+										+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+										+ " total devices: ");
+					}
 				};
 
 				template <template <typename> typename IDDistrib, typename IDType>
