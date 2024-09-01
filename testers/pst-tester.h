@@ -343,7 +343,7 @@ struct PSTTester
 									search_stop_CPU = std::clock();
 									search_stop_wall = std::chrono::steady_clock::now();
 
-									std::cout << "CPU PST construction time:"
+									std::cout << "CPU PST construction time:\n"
 											  << "\tCPU clock time used:\t"
 											  << 1000.0 * (construct_stop_CPU - construct_start_CPU) / CLOCKS_PER_SEC << " ms\n"
 											  << "\tWall clock time passed:\t"
@@ -353,7 +353,7 @@ struct PSTTester
 
 									if (test_type != CONSTRUCT)
 									{
-										std::cout << "CPU PST search time:"
+										std::cout << "CPU PST search time:\n"
 												  << "\tCPU clock time used:\t"
 												  << 1000.0 * (search_stop_CPU - search_start_CPU) / CLOCKS_PER_SEC << " ms\n"
 												  << "\tWall clock time passed:\t"
@@ -630,7 +630,7 @@ struct PSTTester
 								search_stop_CPU = std::clock();
 								search_stop_wall = std::chrono::steady_clock::now();
 
-								std::cout << "CPU PST construction time:"
+								std::cout << "CPU PST construction time:\n"
 										  << "\tCPU clock time used:\t"
 										  << 1000.0 * (construct_stop_CPU - construct_start_CPU) / CLOCKS_PER_SEC << " ms\n"
 										  << "\tWall clock time passed:\t"
@@ -640,7 +640,7 @@ struct PSTTester
 
 								if (test_type != CONSTRUCT)
 								{
-									std::cout << "CPU PST search time:"
+									std::cout << "CPU PST search time:\n"
 											  << "\tCPU clock time used:\t"
 											  << 1000.0 * (search_stop_CPU - search_start_CPU) / CLOCKS_PER_SEC << " ms\n"
 											  << "\tWall clock time passed:\t"
