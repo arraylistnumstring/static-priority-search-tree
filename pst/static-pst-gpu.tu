@@ -724,20 +724,19 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 																unsigned char *const &search_codes_arr)
 {
 	// Find next inactive thread by iterating through search_inds_arr atomically
-	// i < blockDim.x check comes before atomicCAS() operation because short-circuit evaluation will ensure atomicCAS() does not write to a point beyond the end of search_inds_arr
+	// offset < blockDim.x check comes before atomicCAS() operation because short-circuit evaluation and wrapping of result will ensure atomicCAS() does not activate after all potential target indices have been checked (of which none were empty)
 	// atomicCAS(addr, cmp, val) takes the value old := *addr, sets *addr = (old == cmp ? val : old) and returns old; the swap took place iff the return value old == cmp; all calculations are done as one atomic operation
 	// Casting necessary to satisfy atomicCAS()'s signature of unsigned long long
-	// Offset is (threadIdx.x + i) % blockDim.x so that no thread starts on the same array element (minimising likelihood of collisions when doing atomic operations), while all potential candidate threads are still checked (self not included, as it will never be inactive)
-	size_t i;
-	for (i = 1; i < blockDim.x
-			&& static_cast<long long>(atomicCAS(reinterpret_cast<unsigned long long *>(search_inds_arr + (threadIdx.x + i) % blockDim.x),
+	// Target thread ID is (threadIdx.x + offset) % blockDim.x so that no thread starts on the same array element (minimising likelihood of collisions when doing atomic operations), while all potential candidate threads are still checked (self not included, as it will never be inactive)
+	size_t offset = 1;
+	while (offset < blockDim.x
+			&& static_cast<long long>(atomicCAS(reinterpret_cast<unsigned long long *>(search_inds_arr + (threadIdx.x + offset) % blockDim.x),
 												static_cast<unsigned long long>(INACTIVE_IND),
 												target_node_ind))
-										!= INACTIVE_IND;
-			i++)
-	{}
-	// Upon exit, i either contains the index of the thread that will report all nodes in the corresponding subtree; or i >= blockDim.x
-	if (i >= blockDim.x)	// No inactive threads; use dynamic parallelism
+										!= INACTIVE_IND)
+	{offset++;}
+	// Upon exit, offset either contains the index of the thread that will report all nodes in the corresponding subtree; or offset >= blockDim.x
+	if (offset >= blockDim.x)	// No inactive threads; use dynamic parallelism
 	{
 		// report-all searches never become normal searches again, so do not need shared memory for a search_codes_arr, just a search_inds_arr
 		// For sufficiently complicated code (such as this one), the compiler cannot deduce types on its own, so supply the (template) types explicitly here
@@ -745,10 +744,10 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 								<<<1, blockDim.x, blockDim.x * (sizeof(long long) + sizeof(unsigned char)), cudaStreamFireAndForget>>>
 			(root_d, num_elem_slots, target_node_ind, res_arr_d, max_dim1_val, min_dim2_val);
 	}
-	else	// Inactive thread has ID i
+	else	// Inactive thread has ID (threadIdx.x + offset) % blockDim.x
 	{
-		search_inds_arr[i] = target_node_ind;
-		search_codes_arr[i] = LEFT_SEARCH;
+		search_inds_arr[(threadIdx.x + offset) % blockDim.x] = target_node_ind;
+		search_codes_arr[(threadIdx.x + offset) % blockDim.x] = LEFT_SEARCH;
 	}
 }
 
@@ -768,20 +767,19 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 																unsigned char *const &search_codes_arr)
 {
 	// Find next inactive thread by iterating through search_inds_arr atomically
-	// i < blockDim.x check comes before atomicCAS() operation because short-circuit evaluation will ensure atomicCAS() does not write to a point beyond the end of search_inds_arr
+	// offset < blockDim.x check comes before atomicCAS() operation because short-circuit evaluation and wrapping of result will ensure atomicCAS() does not activate after all potential target indices have been checked (of which none were empty)
 	// atomicCAS(addr, cmp, val) takes the value old := *addr, sets *addr = (old == cmp ? val : old) and returns old; the swap took place iff the return value old == cmp; all calculations are done as one atomic operation
 	// Casting necessary to satisfy atomicCAS()'s signature of unsigned long long
-	// Offset is (threadIdx.x + i) % blockDim.x so that no thread starts on the same array element (minimising likelihood of collisions when doing atomic operations), while all potential candidate threads are still checked (self not included, as it will never be inactive)
-	size_t i;
-	for (i = 1; i < blockDim.x
-			&& static_cast<long long>(atomicCAS(reinterpret_cast<unsigned long long *>(search_inds_arr + (threadIdx.x + i) % blockDim.x),
+	// Target thread ID is (threadIdx.x + offset) % blockDim.x so that no thread starts on the same array element (minimising likelihood of collisions when doing atomic operations), while all potential candidate threads are still checked (self not included, as it will never be inactive)
+	size_t offset = 1;
+	while (offset < blockDim.x
+			&& static_cast<long long>(atomicCAS(reinterpret_cast<unsigned long long *>(search_inds_arr + (threadIdx.x + offset) % blockDim.x),
 												static_cast<unsigned long long>(INACTIVE_IND),
 												target_node_ind))
-										!= INACTIVE_IND;
-			i++)
-	{}
-	// Upon exit, i either contains the index of the thread that will report all nodes in the corresponding subtree; or i >= blockDim.x
-	if (i >= blockDim.x)	// No inactive threads; use dynamic parallelism
+										!= INACTIVE_IND)
+	{offset++;}
+	// Upon exit, offset either contains the index of the thread that will report all nodes in the corresponding subtree; or offset >= blockDim.x
+	if (offset >= blockDim.x)	// No inactive threads; use dynamic parallelism
 	{
 		// report-all searches never become normal searches again, so do not need shared memory for a search_codes_arr, just a search_inds_arr
 		// For sufficiently complicated code (such as this one), the compiler cannot deduce types on its own, so supply the (template) types explicitly here
@@ -789,13 +787,13 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 							<<<1, blockDim.x, blockDim.x * sizeof(long long), cudaStreamFireAndForget>>>
 			(root_d, num_elem_slots, target_node_ind, res_arr_d, min_dim2_val);
 	}
-	else	// Inactive thread has ID i
+	else	// Inactive thread has ID (threadIdx.x + offset) % blockDim.x
 	{
-		search_inds_arr[i] = target_node_ind;
+		search_inds_arr[(threadIdx.x + offset) % blockDim.x] = target_node_ind;
 
-		// For applicability to splitting of work when called from reportAllNodesGlobal()
+		// For splitting of work when not called from reportAllNodesGlobal()
 		if (search_codes_arr != nullptr)
-			search_codes_arr[i] = REPORT_ALL;
+			search_codes_arr[(threadIdx.x + offset) % blockDim.x] = REPORT_ALL;
 	}
 }
 
@@ -814,7 +812,7 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 			&& search_inds_arr[threadIdx.x] != INACTIVE_IND)
 	{
 		search_ind = search_inds_arr[threadIdx.x];
-		// These two should always have or not have nullptr value at the same time, but add this safeguard just in case
+		// These two should always have or not have values of nullptr at the same time, but check both just in case
 		if (search_code_ptr != nullptr && search_codes_arr != nullptr)
 			*search_code_ptr = search_codes_arr[threadIdx.x];
 	}
