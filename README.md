@@ -31,6 +31,8 @@ For debugging options, use:
 - `-G` to get debugging info about device code (turns off all optimisations; is incompatible with and overrides `-lineinfo`)
 - `-g` to get debugging info about host code
 - `-lineinfo` to get info on which lines are causing errors
+- `-DCUDA_FORCE_CDP1_IF_SUPPORTED` allows for debugging of dynamic parallelism even with legacy debugger backend; note: `cudaStreamFireAndForget` inside of the program is not compatible with this option
+- `-Xptxas -v` passes the verbose option (`-v`) to the PTX optimising assembler (`-Xptxas <options>`) to get information about compiler-determined register usage and other related data
 
 Standard is set to C++20 because Thrust has deprecated versions of C++ older than C++14 (which also allows use of simpler auto return types), constexpr if (compile-time-evaluated conditionals that may optimise away unused code) are a C++17 language feature, and requires is a C++20 language feature.
 
