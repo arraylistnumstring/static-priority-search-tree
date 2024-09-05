@@ -210,7 +210,7 @@ struct PSTTester
 								tree = new StaticPSTTemplate<T, PointStructTemplate, IDType, num_IDs>(pt_arr, num_elems, warps_per_block,
 											id_type_wrapper.num_ids_wrapper.dev_ind,
 											id_type_wrapper.num_ids_wrapper.num_devs,
-											&(id_type_wrapper.num_ids_wrapper.dev_props));
+											id_type_wrapper.num_ids_wrapper.dev_props);
 							else
 								tree = new StaticPSTTemplate<T, PointStructTemplate, IDType, num_IDs>(pt_arr, num_elems);
 

@@ -69,7 +69,8 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDType, num_IDs>
 {
 	public:
-		StaticPSTGPU(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr, size_t num_elems, const int warp_multiplier=1, int dev_ind=0, int num_devs=1, cudaDeviceProp *dev_props_ptr=nullptr);
+		// {} is value-initialisation; for structs, this is zero-initialisation
+		StaticPSTGPU(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr, size_t num_elems, const int warp_multiplier=1, int dev_ind=0, int num_devs=1, cudaDeviceProp dev_props={});
 		// Since arrays were allocated continguously, only need to free one of the array pointers
 		virtual ~StaticPSTGPU()
 		{
@@ -85,7 +86,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		virtual void print(std::ostream &os) const;
 
 		int getDevInd() const {return dev_ind;};
-		cudaDeviceProp getDevProps() const {return *dev_props_ptr;};
+		cudaDeviceProp getDevProps() const {return dev_props;};
 		int getNumDevs() const {return num_devs;};
 
 		template <typename RetType=PointStructTemplate<T, IDType, num_IDs>>
@@ -118,8 +119,8 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 
 			// Call global function for on-device search
 			threeSidedSearchGlobal<T, PointStructTemplate, IDType, num_IDs, RetType>
-								  <<<1, warp_multiplier * dev_props_ptr->warpSize,
-										warp_multiplier * dev_props_ptr->warpSize
+								  <<<1, warp_multiplier * dev_props.warpSize,
+										warp_multiplier * dev_props.warpSize
 											* (sizeof(long long) + sizeof(unsigned char))>>>
 				(root_d, num_elem_slots, 0, res_arr_d, min_dim1_val, max_dim1_val, min_dim2_val);
 
@@ -168,8 +169,8 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 			// Call global function for on-device search
 			// For sufficiently complicated code (such as this one), the compiler cannot deduce types on its own, so supply the (template) types explicitly here
 			twoSidedLeftSearchGlobal<T, PointStructTemplate, IDType, num_IDs, RetType>
-									<<<1, warp_multiplier * dev_props_ptr->warpSize,
-										warp_multiplier * dev_props_ptr->warpSize
+									<<<1, warp_multiplier * dev_props.warpSize,
+										warp_multiplier * dev_props.warpSize
 											* (sizeof(long long) + sizeof(unsigned char))>>>
 				(root_d, num_elem_slots, 0, res_arr_d, max_dim1_val, min_dim2_val);
 
@@ -212,8 +213,8 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 
 			// Call global function for on-device search
 			twoSidedRightSearchGlobal<T, PointStructTemplate, IDType, num_IDs, RetType>
-									 <<<1, warp_multiplier * dev_props_ptr->warpSize,
-										warp_multiplier * dev_props_ptr->warpSize
+									 <<<1, warp_multiplier * dev_props.warpSize,
+										warp_multiplier * dev_props.warpSize
 											* (sizeof(long long) + sizeof(unsigned char))>>>
 				(root_d, num_elem_slots, 0, res_arr_d, min_dim1_val, min_dim2_val);
 
@@ -436,7 +437,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 
 		// Save GPU info for later usage
 		int dev_ind;
-		cudaDeviceProp *dev_props_ptr;
+		cudaDeviceProp dev_props;
 		int num_devs;
 
 		// Number of working arrays necessary to construct the tree: 1 array of dim1_val indices, 2 arrays for dim2_val indices (one that is the input, one that is the output after dividing up the indices between the current node's two children; this switches at every level of the tree)
