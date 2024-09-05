@@ -28,33 +28,36 @@ __global__ void populateTree (T *const root_d, const size_t num_elem_slots,
 
 	__syncthreads();
 
-
-	size_t left_subarr_num_elems;
-	size_t right_subarr_start_ind;
-	size_t right_subarr_num_elems;
-
-	// At any given level of the tree, each thread creates one node; as depth h of a tree has 2^h nodes, the number of active threads at level h is 2^h
-	// num_subelems_arr[threadIdx.x] > 0 condition not written here, as almost all threads except for thread 0 start out with the value num_subelems_arr[threadIdx.x] == 0
-#pragma unroll
-	for (size_t nodes_per_level = 1; nodes_per_level <= blockDim.x; nodes_per_level <<= 1)
+	// To minimise the total number of dynamic parallelism kernel launches, after the threads fully branch out into a subtree (with each thread constructing one node), for the next iteration, have the threads recongregate at thread ID 0's new node in the tree and repeat the process
+	while (*num_subelems_arr > 0)
 	{
-		// Only active threads process a node
-		if (threadIdx.x < nodes_per_level && num_subelems_arr[threadIdx.x] > 0)
+		// At any given level of the tree, each thread creates one node; as depth h of a tree has 2^h nodes, the number of active threads at level h is 2^h
+		// num_subelems_arr[threadIdx.x] > 0 condition not written here, as almost all threads except for thread 0 start out with the value num_subelems_arr[threadIdx.x] == 0
+#pragma unroll
+		for (size_t nodes_per_level = 1; nodes_per_level <= blockDim.x; nodes_per_level <<= 1)
 		{
-			// Find index in dim1_val_ind_arr_d of PointStructGPU with maximal dim2_val 
-			long long array_search_res_ind = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::binarySearch(pt_arr_d, dim1_val_ind_arr_d,
-																			pt_arr_d[dim2_val_ind_arr_d[subelems_start_inds_arr[threadIdx.x]]],
-																			subelems_start_inds_arr[threadIdx.x],
-																			num_subelems_arr[threadIdx.x]);
+			// Only active threads process a node
+			if (threadIdx.x < nodes_per_level && num_subelems_arr[threadIdx.x] > 0)
+			{
+				// Location of these declarations and presence of pragma unroll don't affect register usage (with CUDA version 12.2), so place closer to semantically relevant location
+				size_t left_subarr_num_elems;
+				size_t right_subarr_start_ind;
+				size_t right_subarr_num_elems;
 
-			if (array_search_res_ind == -1)
-				// Something has gone very wrong; exit
-				return;
+				// Find index in dim1_val_ind_arr_d of PointStructGPU with maximal dim2_val 
+				long long array_search_res_ind = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::binarySearch(pt_arr_d, dim1_val_ind_arr_d,
+													pt_arr_d[dim2_val_ind_arr_d[subelems_start_inds_arr[threadIdx.x]]],
+													subelems_start_inds_arr[threadIdx.x],
+													num_subelems_arr[threadIdx.x]);
 
-			// Note: potential sign conversion issue when computer memory becomes of size 2^64
-			const size_t max_dim2_val_dim1_array_ind = array_search_res_ind;
+				if (array_search_res_ind == -1)
+					// Something has gone very wrong; exit
+					return;
 
-			StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::constructNode(root_d, num_elem_slots,
+				// Note: potential sign conversion issue when computer memory becomes of size 2^64
+				const size_t max_dim2_val_dim1_array_ind = array_search_res_ind;
+
+				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::constructNode(root_d, num_elem_slots,
 											pt_arr_d, target_node_inds_arr[threadIdx.x], num_elems,
 											dim1_val_ind_arr_d, dim2_val_ind_arr_d,
 												dim2_val_ind_arr_secondary_d,
@@ -63,92 +66,71 @@ __global__ void populateTree (T *const root_d, const size_t num_elem_slots,
 											left_subarr_num_elems, right_subarr_start_ind,
 											right_subarr_num_elems);
 
-			// Update information for next iteration; as memory accesses are coalesced no matter the relative order as long as they are from the same source location, (and nodes are consecutive except possibly at the leaf levels), pick an inactive thread to instantiate the right child
-			if (threadIdx.x + nodes_per_level < blockDim.x)
-			{
-				subelems_start_inds_arr[threadIdx.x + nodes_per_level] = right_subarr_start_ind;
-				num_subelems_arr[threadIdx.x + nodes_per_level] = right_subarr_num_elems;
-				target_node_inds_arr[threadIdx.x + nodes_per_level] =
-					StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::getRightChild(target_node_inds_arr[threadIdx.x]);
-			}
-			// Dynamic parallelism; use cudaStreamFireAndForget to allow children grids to be independent of each other
-			else
-			{
-				// Primary and secondary arrays must be swapped at the next level
-				populateTree<<<1, blockDim.x, blockDim.x * sizeof(size_t)
-									* StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::num_constr_working_arrs
-// To allow for debugging of dynamic parallelism with legacy CUDA debugger backend, where cudaStreamFireAndForget is not defined
-// Note also that using the default device stream allows for correct execution of larger numbers of elements of any thread block size (up to SM resource usage limits, such as register occupation) at the expense of execution speed. At those same large sizes, cudaStreamFireAndForget ends up requiring too many resources, thereby failing to launch and leaving those branches of the tree uninitialised, with only 0 or otherwise garbage values (the oversubscription of resources presents itself as throwing errors in compute-sanitizer relating to memory writes beyond allocated space).
+				// Update information for next iteration; as memory accesses are coalesced no matter the relative order as long as they are from the same source location, (and nodes are consecutive except possibly at the leaf levels), pick an inactive thread to instantiate the right child
+				// If there exist inactive threads in the block, assign the right child to an inactive thread and the left child to oneself
+				if (threadIdx.x + nodes_per_level < blockDim.x)
+				{
+					subelems_start_inds_arr[threadIdx.x + nodes_per_level] = right_subarr_start_ind;
+					num_subelems_arr[threadIdx.x + nodes_per_level] = right_subarr_num_elems;
+					target_node_inds_arr[threadIdx.x + nodes_per_level] =
+						StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::getRightChild(target_node_inds_arr[threadIdx.x]);
+
+					num_subelems_arr[threadIdx.x] = left_subarr_num_elems;
+					target_node_inds_arr[threadIdx.x] =
+						StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::getLeftChild(target_node_inds_arr[threadIdx.x]);
+				}
+				// Dynamic parallelism on the children of the level of the tree where all threads are active; use cudaStreamFireAndForget to allow children grids to be independent of each other
+				else
+				{
+					// Primary and secondary arrays must be swapped at the next level
+					populateTree<<<1, blockDim.x, blockDim.x * sizeof(size_t)
+										* StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::num_constr_working_arrs
+					// To allow for debugging of dynamic parallelism with legacy CUDA debugger backend, where cudaStreamFireAndForget is not defined
+					// Note also that using the default device stream allows for correct execution of larger numbers of elements of any thread block size (up to SM resource usage limits, such as register occupation) at the expense of execution speed. At those same large sizes, cudaStreamFireAndForget ends up requiring too many resources, thereby failing to launch and leaving those branches of the tree uninitialised, with only 0 or otherwise garbage values (the oversubscription of resources presents itself as throwing errors in compute-sanitizer relating to memory writes beyond allocated space).
 #ifdef CUDA_FORCE_CDP1_IF_SUPPORTED
-									>>>
+										>>>
 #else
-								, cudaStreamFireAndForget>>>
+									, cudaStreamFireAndForget>>>
 #endif
-					(root_d, num_elem_slots, pt_arr_d, dim1_val_ind_arr_d,
-						dim2_val_ind_arr_secondary_d, dim2_val_ind_arr_d,
-						right_subarr_start_ind, right_subarr_num_elems,
-						StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::getRightChild(target_node_inds_arr[threadIdx.x]));
+						(root_d, num_elem_slots, pt_arr_d, dim1_val_ind_arr_d,
+							dim2_val_ind_arr_secondary_d, dim2_val_ind_arr_d,
+							right_subarr_start_ind, right_subarr_num_elems,
+							StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::getRightChild(target_node_inds_arr[threadIdx.x]));
+
+					if (threadIdx.x != 0)
+					{
+						populateTree<<<1, blockDim.x, blockDim.x * sizeof(size_t)
+											* StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::num_constr_working_arrs
+#ifdef CUDA_FORCE_CDP1_IF_SUPPORTED
+											>>>
+#else
+										, cudaStreamFireAndForget>>>
+#endif
+							(root_d, num_elem_slots, pt_arr_d, dim1_val_ind_arr_d,
+								dim2_val_ind_arr_secondary_d, dim2_val_ind_arr_d,
+								subelems_start_inds_arr[threadIdx.x],
+								left_subarr_num_elems,
+								StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::getLeftChild(target_node_inds_arr[threadIdx.x]));
+
+						// Reset to 0 in preparation for next iteration of branching construction
+						num_subelems_arr[threadIdx.x] = 0;
+					}
+					else
+					{
+						num_subelems_arr[threadIdx.x] = left_subarr_num_elems;
+						target_node_inds_arr[threadIdx.x] =
+							StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::getLeftChild(target_node_inds_arr[threadIdx.x]);
+					}
+				}
 			}
 
-			num_subelems_arr[threadIdx.x] = left_subarr_num_elems;
-			target_node_inds_arr[threadIdx.x] =
-				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::getLeftChild(target_node_inds_arr[threadIdx.x]);
+			// Every thread must swap its primary and secondary dim2_val_ind_arr pointers in order to have the correct subordering of indices at a given node
+			size_t *temp = dim2_val_ind_arr_d;
+			dim2_val_ind_arr_d = dim2_val_ind_arr_secondary_d;
+			dim2_val_ind_arr_secondary_d = temp;
+
+			__syncthreads();	// Synchronise before starting the next iteration
 		}
-
-		// Every thread must swap its primary and secondary dim2_val_ind_arr pointers in order to have the correct subordering of indices at a given node
-		size_t *temp = dim2_val_ind_arr_d;
-		dim2_val_ind_arr_d = dim2_val_ind_arr_secondary_d;
-		dim2_val_ind_arr_secondary_d = temp;
-
-		__syncthreads();	// Synchronise before starting the next iteration
-	}
-
-	// Each thread is now active and independent of each other
-	while (num_subelems_arr[threadIdx.x] > 0)
-	{
-		// Find index in dim1_val_ind_arr_d of PointStructGPU with maximal dim2_val 
-		long long array_search_res_ind = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::binarySearch(pt_arr_d, dim1_val_ind_arr_d,
-																		pt_arr_d[dim2_val_ind_arr_d[subelems_start_inds_arr[threadIdx.x]]],
-																		subelems_start_inds_arr[threadIdx.x],
-																		num_subelems_arr[threadIdx.x]);
-
-		if (array_search_res_ind == -1)
-			// Something has gone very wrong; exit
-			return;
-
-		// Note: potential sign conversion issue when computer memory becomes of size 2^64
-		const size_t max_dim2_val_dim1_array_ind = array_search_res_ind;
-
-		StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::constructNode(root_d, num_elem_slots,
-										pt_arr_d, target_node_inds_arr[threadIdx.x], num_elems,
-										dim1_val_ind_arr_d, dim2_val_ind_arr_d,
-											dim2_val_ind_arr_secondary_d,
-											max_dim2_val_dim1_array_ind,
-										subelems_start_inds_arr, num_subelems_arr,
-										left_subarr_num_elems, right_subarr_start_ind,
-										right_subarr_num_elems);
-
-		// Update information for next iteration; primary and secondary arrays must be swapped at the next level
-		populateTree<<<1, blockDim.x, blockDim.x * sizeof(size_t)
-							* StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::num_constr_working_arrs
-// To allow for debugging of dynamic parallelism with legacy CUDA debugger backend, where cudaStreamFireAndForget is not defined
-#ifdef CUDA_FORCE_CDP1_IF_SUPPORTED
-									>>>
-#else
-								, cudaStreamFireAndForget>>>
-#endif
-			(root_d, num_elem_slots, pt_arr_d, dim1_val_ind_arr_d,
-				dim2_val_ind_arr_secondary_d, dim2_val_ind_arr_d,
-				right_subarr_start_ind, right_subarr_num_elems,
-				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::getRightChild(target_node_inds_arr[threadIdx.x]));
-
-		num_subelems_arr[threadIdx.x] = left_subarr_num_elems;
-		target_node_inds_arr[threadIdx.x] =
-			StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::getLeftChild(target_node_inds_arr[threadIdx.x]);
-
-		size_t *temp = dim2_val_ind_arr_d;
-		dim2_val_ind_arr_d = dim2_val_ind_arr_secondary_d;
-		dim2_val_ind_arr_secondary_d = temp;
 	}
 }
 
