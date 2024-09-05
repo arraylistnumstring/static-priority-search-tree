@@ -3,12 +3,15 @@
 #include <thrust/sort.h>		// To use parallel sorting algorithm
 
 #include "err-chk.h"
-#include "helper-cuda--modified.h"
 
 // C++ allows trailing template type arguments and function parameters to have default values; for template type arguments, it is forbidden for default arguments to be specified for a class template member outside of the class template; for function parameters, one must not declare the default arguments again (as it is regarded as a redefinition, even if the values are the same)
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr, size_t num_elems, const int warp_multiplier)
+StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr, size_t num_elems, const int warp_multiplier, int dev_ind, int num_devs, cudaDeviceProp *dev_props_ptr)
+	// Member initialiser list must be followed by definition
+	: dev_ind(dev_ind),
+	num_devs(num_devs),
+	dev_props_ptr(dev_props_ptr)
 {
 #ifdef DEBUG_CONSTR
 	std::cout << "Began constructor\n";
@@ -20,22 +23,6 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 		num_elem_slots = 0;
 		return;
 	}
-
-	// Check and save number of GPUs attached to machine
-	gpuErrorCheck(cudaGetDeviceCount(&num_devs), "Error in getting number of devices: ");
-	if (num_devs < 1)	// No GPUs attached
-		throwErr("Error: " + std::to_string(num_devs) + " GPUs attached to host");
-
-	// Use modified version of CUDA's gpuGetMaxGflopsDeviceId() to get top-performing GPU capable of unified virtual addressing; also used so that device in use is the same as that for marching cubes
-	dev_ind = gpuGetMaxGflopsDeviceId();
-	gpuErrorCheck(cudaGetDeviceProperties(&dev_props, dev_ind),
-					"Error in getting device properties of device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-					+ " total devices: ");
-
-	gpuErrorCheck(cudaSetDevice(dev_ind), "Error setting default device to device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-					+ " total devices: ");
 
 	this->num_elems = num_elems;
 	/*
@@ -80,14 +67,14 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 	*/
 	const size_t num_working_ind_arrays = 3;
 	global_mem_needed += num_elems * (sizeof(PointStructTemplate<T, IDType, num_IDs>) + num_working_ind_arrays * sizeof(size_t));
-	if (global_mem_needed > dev_props.totalGlobalMem)
+	if (global_mem_needed > dev_props_ptr->totalGlobalMem)
 		throwErr("Error: needed global memory space of " + std::to_string(global_mem_needed)
 					+ " B required for data structure and processing exceeds limit of global memory = "
-					+ std::to_string(dev_props.totalGlobalMem) + " B on device "
+					+ std::to_string(dev_props_ptr->totalGlobalMem) + " B on device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs));
 
 #ifdef DEBUG_CONSTR
-	std::cout << "Ready to allocate memory (around line 84)\n";
+	std::cout << "Ready to allocate memory (around line 73)\n";
 #endif
 
 	// Memory transfer only permitted for on-host pinned (page-locked) memory, so do such operations in the default stream
@@ -140,7 +127,7 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 					+ ": ");
 
 #ifdef DEBUG_CONSTR
-	std::cout << "Allocated index arrays (around line 138)\n";
+	std::cout << "Allocated index arrays (around line 126)\n";
 #endif
 
 	// Create GPU-side array of PointStructTemplate<T, IDType, num_IDs> objects for the index arrays to reference
@@ -193,7 +180,7 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 	}
 
 #ifdef DEBUG_CONSTR
-	std::cout << "Got PointStructs on target device (around line 186)\n";
+	std::cout << "Got PointStructs on target device (around line 179)\n";
 #endif
 
 	// Synchronous allocations and blocking memory copies complete; do asynchronous initialisations
@@ -214,7 +201,7 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 		if constexpr (sizeof(T) >= sizeof(IDType))
 		{
 #ifdef DEBUG_CONSTR
-			std::cout << "About to do an async memory assignment (around line 206)\n";
+			std::cout << "About to do an async memory assignment (around line 200)\n";
 #endif
 			gpuErrorCheck(cudaMemsetAsync(root_d, 0, tot_arr_size_num_datatype * sizeof(T), stream_root_init),
 							"Error in zero-intialising on-device priority search tree storage array via cudaMemset() on device "
@@ -235,15 +222,15 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs) + ": ");
 
 #ifdef DEBUG_CONSTR
-	std::cout << "About to assign index as values to index arrays (around line 209)\n";
+	std::cout << "About to assign index as values to index arrays (around line 221)\n";
 #endif
 
-	const size_t index_assign_threads_per_block = warp_multiplier * dev_props.warpSize;
+	const size_t index_assign_threads_per_block = warp_multiplier * dev_props_ptr->warpSize;
 	const size_t index_assign_num_blocks = std::min(num_elems % index_assign_threads_per_block == 0 ?
 													num_elems/index_assign_threads_per_block
 													: num_elems/index_assign_threads_per_block + 1,
-													// static_cast to size_t necessary as dev_props.warpSize is of type int, and std::min fails to compile on arguments of different types
-													static_cast<size_t>(dev_props.warpSize * dev_props.warpSize));
+													// static_cast to size_t necessary as dev_props_ptr->warpSize is of type int, and std::min fails to compile on arguments of different types
+													static_cast<size_t>(dev_props_ptr->warpSize * dev_props_ptr->warpSize));
 
 	// Create concurrent streams for index-initialising and sorting the dimension-1 and dimension-2 index arrays
 	cudaStream_t stream_dim1;
@@ -282,12 +269,12 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 					+ " after tree pre-construction pre-processing: ");
 
 #ifdef DEBUG_CONSTR
-	std::cout << "About to assign index as values to index arrays (around line 254)\n";
+	std::cout << "About to assign index as values to index arrays (around line 268)\n";
 #endif
 
 	// Populate tree with a one-block grid and a number of threads per block that is a multiple of the warp size
-	populateTree<<<1, warp_multiplier * dev_props.warpSize,
-					warp_multiplier * dev_props.warpSize * sizeof(size_t) * num_constr_working_arrs>>>
+	populateTree<<<1, warp_multiplier * dev_props_ptr->warpSize,
+					warp_multiplier * dev_props_ptr->warpSize * sizeof(size_t) * num_constr_working_arrs>>>
 				(root_d, num_elem_slots, pt_arr_d, dim1_val_ind_arr_d, dim2_val_ind_arr_d, dim2_val_ind_arr_secondary_d, 0, num_elems, 0);
 
 

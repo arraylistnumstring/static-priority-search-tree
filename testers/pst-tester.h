@@ -95,7 +95,7 @@ struct PSTTester
 				NumIDsWrapper(TreeTypeWrapper<PointStructTemplate, StaticPSTTemplate, pst_type> tree_type_wrapper)
 					: tree_type_wrapper(tree_type_wrapper)
 				{
-					if constexpr (pst_type ==GPU)
+					if constexpr (pst_type == GPU)
 					{
 						// Check and save number of GPUs attached to machine
 						gpuErrorCheck(cudaGetDeviceCount(&num_devs), "Error in getting number of devices: ");
@@ -207,7 +207,10 @@ struct PSTTester
 
 							StaticPSTTemplate<T, PointStructTemplate, IDType, num_IDs> *tree;
 							if constexpr (pst_type == GPU)
-								tree = new StaticPSTTemplate<T, PointStructTemplate, IDType, num_IDs>(pt_arr, num_elems, warps_per_block);
+								tree = new StaticPSTTemplate<T, PointStructTemplate, IDType, num_IDs>(pt_arr, num_elems, warps_per_block,
+											id_type_wrapper.num_ids_wrapper.dev_ind,
+											id_type_wrapper.num_ids_wrapper.num_devs,
+											&(id_type_wrapper.num_ids_wrapper.dev_props));
 							else
 								tree = new StaticPSTTemplate<T, PointStructTemplate, IDType, num_IDs>(pt_arr, num_elems);
 
