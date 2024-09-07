@@ -497,7 +497,10 @@ struct PSTTester
 
 						StaticPSTTemplate<T, PointStructTemplate, void, num_IDs> *tree;
 						if constexpr (pst_type == GPU)
-							tree = new StaticPSTTemplate<T, PointStructTemplate, void, num_IDs>(pt_arr, num_elems, warps_per_block);
+							tree = new StaticPSTTemplate<T, PointStructTemplate, void, num_IDs>(pt_arr, num_elems, warps_per_block,
+											num_ids_wrapper.dev_ind,
+											num_ids_wrapper.num_devs,
+											num_ids_wrapper.dev_props);
 						else
 							tree = new StaticPSTTemplate<T, PointStructTemplate, void, num_IDs>(pt_arr, num_elems);
 
