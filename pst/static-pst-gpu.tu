@@ -730,11 +730,8 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 		twoSidedLeftSearchGlobal<T, PointStructTemplate, IDType, num_IDs, RetType>
 								<<<1, blockDim.x, blockDim.x * (sizeof(long long) + sizeof(unsigned char))
 // To allow for debugging of dynamic parallelism with legacy CUDA debugger backend, where cudaStreamFireAndForget is not defined
-#ifdef CUDA_FORCE_CDP1_IF_SUPPORTED
-									>>>
-#else
+								//	>>>
 								, cudaStreamFireAndForget>>>
-#endif
 			(root_d, num_elem_slots, target_node_ind, res_arr_d, max_dim1_val, min_dim2_val);
 	}
 	else	// Inactive thread has ID (threadIdx.x + offset) % blockDim.x
@@ -779,11 +776,8 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 		reportAllNodesGlobal<T, PointStructTemplate, IDType, num_IDs, RetType>
 							<<<1, blockDim.x, blockDim.x * sizeof(long long)
 // To allow for debugging of dynamic parallelism with legacy CUDA debugger backend, where cudaStreamFireAndForget is not defined
-#ifdef CUDA_FORCE_CDP1_IF_SUPPORTED
-									>>>
-#else
+								//	>>>
 								, cudaStreamFireAndForget>>>
-#endif
 			(root_d, num_elem_slots, target_node_ind, res_arr_d, min_dim2_val);
 	}
 	else	// Inactive thread has ID (threadIdx.x + offset) % blockDim.x

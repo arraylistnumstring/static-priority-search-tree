@@ -79,7 +79,8 @@ __global__ void populateTree (T *const root_d, const size_t num_elem_slots,
 					target_node_inds_arr[threadIdx.x] =
 						StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::getLeftChild(target_node_inds_arr[threadIdx.x]);
 				}
-				// Dynamic parallelism on the children of the level of the tree where all threads are active; use cudaStreamFireAndForget to allow children grids to be independent of each other
+				// Dynamic parallelism on the children of the level of the tree where all threads are active, or the one above, if blockDim.x is not a power of 2, and some threads have no existing threads to which to assign the children of its current node
+				// Use cudaStreamFireAndForget to allow children grids to be independent of each other
 				else
 				{
 					// Primary and secondary arrays must be swapped at the next level
@@ -87,25 +88,20 @@ __global__ void populateTree (T *const root_d, const size_t num_elem_slots,
 										* StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::num_constr_working_arrs
 					// To allow for debugging of dynamic parallelism with legacy CUDA debugger backend, where cudaStreamFireAndForget is not defined
 					// Note also that using the default device stream allows for correct execution of larger numbers of elements of any thread block size (up to SM resource usage limits, such as register occupation) at the expense of execution speed. At those same large sizes, cudaStreamFireAndForget ends up requiring too many resources, thereby failing to launch and leaving those branches of the tree uninitialised, with only 0 or otherwise garbage values (the oversubscription of resources presents itself as throwing errors in compute-sanitizer relating to memory writes beyond allocated space).
-#ifdef CUDA_FORCE_CDP1_IF_SUPPORTED
-										>>>
-#else
+								//		>>>
 									, cudaStreamFireAndForget>>>
-#endif
 						(root_d, num_elem_slots, pt_arr_d, dim1_val_ind_arr_d,
 							dim2_val_ind_arr_secondary_d, dim2_val_ind_arr_d,
 							right_subarr_start_ind, right_subarr_num_elems,
 							StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::getRightChild(target_node_inds_arr[threadIdx.x]));
 
-					if (threadIdx.x != 0)
+					// If all threads were active, have all threads with ID other than 0 delegate their left child to a new grid
+					if (threadIdx.x != 0 && nodes_per_level >= blockDim.x)
 					{
 						populateTree<<<1, blockDim.x, blockDim.x * sizeof(size_t)
 											* StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::num_constr_working_arrs
-#ifdef CUDA_FORCE_CDP1_IF_SUPPORTED
-											>>>
-#else
+									//		>>>
 										, cudaStreamFireAndForget>>>
-#endif
 							(root_d, num_elem_slots, pt_arr_d, dim1_val_ind_arr_d,
 								dim2_val_ind_arr_secondary_d, dim2_val_ind_arr_d,
 								subelems_start_inds_arr[threadIdx.x],
@@ -115,6 +111,7 @@ __global__ void populateTree (T *const root_d, const size_t num_elem_slots,
 						// Reset to 0 in preparation for next iteration of branching construction
 						num_subelems_arr[threadIdx.x] = 0;
 					}
+					// If not all threads were active (because blockDim.x is not a power of 2, but there were no more threads for this thread to delegate to), or if thread has ID 0, move to left child of current node
 					else
 					{
 						num_subelems_arr[threadIdx.x] = left_subarr_num_elems;
