@@ -24,14 +24,15 @@ To compile testers, run:
 - `-rdc true` allows for dynamic parallelism
 
 For debugging options, use:
-- `-DDEBUG` to toggle DEBUG preprocessor flag and corresponding print output to aid with debugging variables that are inaccessible via gdb
+- `-D<flag>` to toggle various preprocessor flags:
+	- `-DDEBUG` to toggle DEBUG preprocessor flag and corresponding print output to aid with debugging variables that are inaccessible via gdb
 	- `-DDEBUG_CONSTR` to toggle constructor-internal debugging print statements
 	- `-DDEBUG_TEST` to toggle pst-tester-driver.h debugging print statements
 	- `-DDEBUG_WRAP` to toggle pst-test-info.h debugging print statements
+	- `-DCUDA_FORCE_CDP1_IF_SUPPORTED` allows for debugging of dynamic parallelism even with legacy debugger backend; note: `cudaStreamFireAndForget` inside of the program is not compatible with this option; not supported on devices of compute capability 9.0 or greater
 - `-G` to get debugging info about device code (turns off all optimisations; is incompatible with and overrides `-lineinfo`)
 - `-g` to get debugging info about host code
 - `-lineinfo` to get info on which lines are causing errors
-- `-DCUDA_FORCE_CDP1_IF_SUPPORTED` allows for debugging of dynamic parallelism even with legacy debugger backend; note: `cudaStreamFireAndForget` inside of the program is not compatible with this option
 - `-Xptxas -v` passes the verbose option (`-v`) to the PTX optimising assembler (`-Xptxas <options>`) to get information about compiler-determined register usage and other related data
 
 Standard is set to C++20 because Thrust has deprecated versions of C++ older than C++14 (which also allows use of simpler auto return types), constexpr if (compile-time-evaluated conditionals that may optimise away unused code) are a C++17 language feature, and requires is a C++20 language feature.
