@@ -23,7 +23,7 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T, PointStructTemplate,
 	public:
 		StaticPSTCPUIter(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr, size_t num_elems);
 		// Since arrays were allocated continguously, only need to free one of the array pointers
-		virtual ~StaticPSTCPUIter() {if (num_elem_slots != 0) free(root);};
+		virtual ~StaticPSTCPUIter() {if (num_elem_slots != 0) delete[] root;};
 
 		// Printing function for printing operator << to use, as private data members must be accessed in the process
 		// const keyword after method name indicates that the method does not modify any data members of the associated class
