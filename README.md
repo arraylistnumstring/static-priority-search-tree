@@ -4,9 +4,13 @@ Runs on CUDA 12.2.2; requires GCC version 7.4 or higher
 
 Tested on NYU's Greene HPC, where accessing nvcc version 12.2.2 requires running
 
-	singularity shell --nv /scratch/work/public/singularity/cuda12.2.2-cudnn8.9.4-devel-ubuntu22.04.3.sif
+	singularity shell --nv --overlay $SCRATCH/Isosurface-singularity-overlay-25GB-500K-files.ext3:r /scratch/work/public/singularity/cuda12.2.2-cudnn8.9.4-devel-ubuntu22.04.3.sif
 
 and running commmands within the Singularity interface (alternatively, if only one command needs to be run within singularity, substitute `shell` with `exec` and append the desired command).
+Note:
+	- `--nv` uses NVIDIA drivers where applicable on the system
+	- `--overlay <overlay.ext3 file>:rw` uses `<overlay.ext3 file>` as the filesystem once inside of the Singularity container to create the illusion of a readable and writable filesystem within a typically read-only container
+		- Note that in `rw` mode, one process has a lock on the `<overlay.ext3 file>` and no other process can use it; for shared access when running production code, open the file in read-only mode
 
 According to HPC support staff, CUDA Singularity image version 12.3.2 may still be buggy as of 2024-07-19, so stick with version 12.2.2. Also, as of this date, compiling with 12.3.2 causes the following error:
 	Error in initialising global result array index to 0 on device 0 of 1: the provided PTX was compiled with an unsupported toolchain
