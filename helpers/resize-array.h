@@ -17,6 +17,6 @@ void resizeArray(T *&pt_arr, size_t &pt_arr_size, const size_t new_pt_arr_size)
 
 	pt_arr = new_pt_arr;
 	pt_arr_size = new_pt_arr_size;
-}
+};
 
 #endif
