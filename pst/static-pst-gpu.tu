@@ -141,7 +141,7 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 	if (ptr_info.type == cudaMemoryTypeDevice && ptr_info.device == dev_ind)
 	{
 		pt_arr_d = pt_arr;
-		// No implicit synchronization call as with cudaMemcpy, so instead all cudaDeviceSynchornize() explicitly
+		// No implicit synchronization call as with cudaMemcpy, so instead call cudaDeviceSynchornize() explicitly
 		gpuErrorCheck(cudaDeviceSynchronize(),
 						"Error in synchronizing with GPU after allocating data on device "
 						+ std::to_string(dev_ind) + " of "
@@ -295,10 +295,13 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 					"Error in freeing secondary array of PointStructTemplate<T, IDType, num_IDs> indices ordered by dimension 2 on device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 					+ ": ");
-	gpuErrorCheck(cudaFree(pt_arr_d),
-					"Error in freeing array of PointStructTemplate<T, IDType, num_IDs> objects on device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-					+ ": ");
+
+	// Free GPU-allocated memory if not originally on the target device
+	if (ptr_info.type != cudaMemoryTypeDevice || ptr_info.device != dev_ind)
+		gpuErrorCheck(cudaFree(pt_arr_d),
+						"Error in freeing array of PointStructTemplate<T, IDType, num_IDs> objects on device "
+						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+						+ ": ");
 }
 
 // const keyword after method name indicates that the method does not modify any data members of the associated class
