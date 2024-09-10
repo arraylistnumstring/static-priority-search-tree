@@ -10,6 +10,10 @@ __global__ void populateTree (T *const root_d, const size_t num_elem_slots,
 								const size_t val_ind_arr_start_ind, const size_t num_elems,
 								const size_t target_node_start_ind)
 {
+	// Update global number of currently active grids; placed as first line to avoid any delay in "manually" maintained knowledge of number of active grids
+	if (blockIdx.x == 0 && threadIdx.x == 0)
+		atomicAdd(&num_active_grids_d, 1);
+
 	// For correctness, only 1 block can ever be active, as synchronisation across blocks (i.e. global synchronisation) is not possible without exiting the kernel entirely
 	if (blockIdx.x != 0)
 		return;
@@ -85,11 +89,12 @@ __global__ void populateTree (T *const root_d, const size_t num_elem_slots,
 				{
 					// Primary and secondary arrays must be swapped at the next level
 					populateTree<<<1, blockDim.x, blockDim.x * sizeof(size_t)
-										* StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::num_constr_working_arrs
+										* StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::num_constr_working_arrs,
 					// To allow for debugging of dynamic parallelism with legacy CUDA debugger backend, where cudaStreamFireAndForget is not defined
 					// Note also that using the default device stream allows for correct execution of larger numbers of elements of any thread block size (up to SM resource usage limits, such as register occupation) at the expense of execution speed. At those same large sizes, cudaStreamFireAndForget ends up requiring too many resources, thereby failing to launch and leaving those branches of the tree uninitialised, with only 0 or otherwise garbage values (the oversubscription of resources presents itself as throwing errors in compute-sanitizer relating to memory writes beyond allocated space).
-								//		>>>
-									, cudaStreamFireAndForget>>>
+					// Choose target stream based on number of currently active grids; NULL is the device default stream, as cudaStreamDefault is not defined on the device
+										(num_active_grids_d < MAX_NUM_ACTIVE_GRIDS) ?
+											cudaStreamFireAndForget : NULL>>>
 						(root_d, num_elem_slots, pt_arr_d, dim1_val_ind_arr_d,
 							dim2_val_ind_arr_secondary_d, dim2_val_ind_arr_d,
 							right_subarr_start_ind, right_subarr_num_elems,
@@ -99,9 +104,9 @@ __global__ void populateTree (T *const root_d, const size_t num_elem_slots,
 					if (threadIdx.x != 0 && nodes_per_level >= blockDim.x)
 					{
 						populateTree<<<1, blockDim.x, blockDim.x * sizeof(size_t)
-											* StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::num_constr_working_arrs
-									//		>>>
-										, cudaStreamFireAndForget>>>
+											* StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::num_constr_working_arrs,
+											(num_active_grids_d < MAX_NUM_ACTIVE_GRIDS) ?
+												cudaStreamFireAndForget : NULL>>>
 							(root_d, num_elem_slots, pt_arr_d, dim1_val_ind_arr_d,
 								dim2_val_ind_arr_secondary_d, dim2_val_ind_arr_d,
 								subelems_start_inds_arr[threadIdx.x],
@@ -129,6 +134,9 @@ __global__ void populateTree (T *const root_d, const size_t num_elem_slots,
 			__syncthreads();	// Synchronise before starting the next iteration
 		}
 	}
+
+	if (threadIdx.x == 0)
+		atomicSub(&num_active_grids_d, 1);
 }
 
 // No shared memory usage

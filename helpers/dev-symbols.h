@@ -6,7 +6,7 @@
 __device__ unsigned long long res_arr_ind_d;
 
 // To track number of active resident grids for purpose of determining whether to call dynamic parallel functions with cudaStreamFireAndForget or to simply use the default device stream (as an excessive number of the former causes resource allocation failures and therefore correctness issues)
-__device__ unsigned char num_active_grids_d;
+__device__ unsigned int num_active_grids_d;
 
 // __CUDA_ARCH__ is a preprocessor variable defined only on device that evaluates to XY0 for a device of compute capability X.Y
 // To save memory (especially duplication of value across host and device), simply declare MAX_NUM_ACTIVE_GRIDS a preprocessor variable

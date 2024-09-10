@@ -262,15 +262,17 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 					"Error in destroying asynchronous stream for assignment and sorting of indices by dimension 2 on device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs) + ": ");
 
+	// Place before cudaDeviceSynchronize() to take advantage of overlapping computation
+	const unsigned int num_active_grids_init_val = 0;
+	gpuErrorCheck(cudaMemcpyToSymbol(num_active_grids_d, &num_active_grids_init_val,
+					sizeof(unsigned int), 0, cudaMemcpyDefault),
+					"Error in initialising global number of active grids to 0 on device "
+					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs) + ": ");
 
 	// For correctness, must wait for all streams doing pre-construction pre-processing work to complete before continuing
 	gpuErrorCheck(cudaDeviceSynchronize(), "Error in synchronizing with device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 					+ " after tree pre-construction pre-processing: ");
-
-#ifdef DEBUG_CONSTR
-	std::cout << "About to assign index as values to index arrays (around line 268)\n";
-#endif
 
 	// Populate tree with a one-block grid and a number of threads per block that is a multiple of the warp size
 	populateTree<<<1, warp_multiplier * dev_props.warpSize,
