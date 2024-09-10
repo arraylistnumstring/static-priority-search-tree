@@ -5,4 +5,17 @@
 // To match a valid atomicAdd function signature, res_arr_ind_d must be declared as an unsigned long long (unsigned long long is the same as an unsigned long long int)
 __device__ unsigned long long res_arr_ind_d;
 
+// To track number of active resident grids for purpose of determining whether to call dynamic parallel functions with cudaStreamFireAndForget or to simply use the default device stream (as an excessive number of the former causes resource allocation failures and therefore correctness issues)
+__device__ unsigned char num_active_grids_d;
+
+// __CUDA_ARCH__ is a preprocessor variable defined only on device that evaluates to XY0 for a device of compute capability X.Y
+#if __CUDA_ARCH__ == 600 || __CUDA_ARCH__ == 700 || __CUDA_ARCH__ >= 750
+const unsigned char MAX_NUM_ACTIVE_GRIDS = 128;
+#elif __CUDA_ARCH__ <= 520 || __CUDA_ARCH__ == 610
+const unsigned char MAX_NUM_ACTIVE_GRIDS = 32;
+// Put the lowest number of maximum active grids allowed as the default for architectures not listed here (which follow the list found in the CUDA C++ Programming Guide
+#else // __CUDA_ARCH__ == 530 || __CUDA_ARCH__ == 620 || __CUDA_ARCH__ = 720
+const unsigned char MAX_NUM_ACTIVE_GRIDS = 16;
+#endif
+
 #endif
