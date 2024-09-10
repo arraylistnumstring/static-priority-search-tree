@@ -100,6 +100,7 @@ StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::StaticPSTCPUIter(Poin
 
 	delete[] dim1_val_ind_arr;
 	delete[] dim2_val_ind_arr;
+	delete[] dim2_val_ind_arr_secondary;
 }
 
 // const keyword after method name indicates that the method does not modify any data members of the associated class
