@@ -228,6 +228,57 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 							+ ": ");
 		};
 
+		// Calculate minimum amount of global memory that must be available for allocation on the GPU for construction and search to run correctly
+		static size_t calcGlobalMemNeeded(const size_t num_elems)
+		{
+			const size_t tot_arr_size_num_datatype = calcTotArrSizeNumDatatype(num_elems);
+
+			size_t global_mem_needed;
+			if constexpr (num_IDs == 0)
+				// No IDs present
+				global_mem_needed = tot_arr_size_num_datatype * sizeof(T);
+			else
+			{
+				// Separate size-comparison condition from the num_IDs==0 condition so that sizeof(IDType) is well-defined here, as often only one branch of a constexpr if is compiled
+				if constexpr (sizeof(T) >= sizeof(IDType))
+					global_mem_needed = tot_arr_size_num_datatype * sizeof(T);
+				else
+					global_mem_needed = tot_arr_size_num_datatype * sizeof(IDType);
+			}
+
+			/*
+				Space needed for instantiation = tree size + num_elems * (size of PointStructTemplate<T, IDType, num_IDs> + 3 * size of PointStructTemplate indices)
+					Enough space to contain 3 size_t indices for every node is needed because the splitting of pointers in the dim2_val array at each node creates a need for the dim2_val arrays to be duplicated
+				Space requirement is greater than that needed for reporting nodes, which is simply at most tree_size + num_elems * size of PointStructTemplate
+			*/
+			const size_t num_working_ind_arrays = 3;
+			global_mem_needed += num_elems * (sizeof(PointStructTemplate<T, IDType, num_IDs>) + num_working_ind_arrays * sizeof(size_t));
+
+			return global_mem_needed;
+		};
+
+		// Calculate size of array allocated for the tree in units of number of elements of type T or IDType, whichever is larger
+		static size_t calcTotArrSizeNumDatatype(const size_t num_elems)
+		{
+			// Number of element slots in each container subarray is nextGreaterPowerOf2(num_elems) - 1
+			const size_t num_elem_slots = calcNumElemSlots(num_elems);
+
+			// constexpr if is a C++17 feature that only compiles the branch of code that evaluates to true at compile-time, saving executable space and execution runtime
+			if constexpr (num_IDs == 0)
+				// No IDs present
+				return calcTotArrSizeNumTs(num_elem_slots, num_val_subarrs);
+			else
+			{
+				// Separate size-comparison condition from the num_IDs==0 condition so that sizeof(IDType) is well-defined here, as often only one branch of a constexpr if is compiled
+				if constexpr (sizeof(T) >= sizeof(IDType))
+					// sizeof(T) >= sizeof(IDType), so calculate total array size in units of sizeof(T) so that datatype T's alignment requirements will be satisfied
+					return calcTotArrSizeNumUs<T, num_val_subarrs, IDType, num_IDs>(num_elem_slots);
+				else
+					// sizeof(IDType) > sizeof(T), so calculate total array size in units of sizeof(IDType) so that datatype IDType's alignment requirements will be satisfied
+					return calcTotArrSizeNumUs<IDType, num_IDs, T, num_val_subarrs>(num_elem_slots);
+			}
+		};
+
 		// Functor (callable object) used instead of nested __host__ __device__ lambdas, as such lambdas are not permitted within other __host__ __device__ lambdas
 		// Must be public to be accessible in __global__ functions
 		struct Dim1ValIndCompIncOrd
@@ -413,6 +464,17 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		__forceinline__ __host__ __device__ static size_t nextGreaterPowerOf2(const size_t num)
 			{return 1 << expOfNextGreaterPowerOf2(num);};
 		__forceinline__ __host__ __device__ static size_t expOfNextGreaterPowerOf2(const size_t num);
+
+		// Helper function for calculating minimum number of array slots necessary to construct a complete tree with num_elems elements
+		__forceinline__ __host__ __device__ static size_t calcNumElemSlots(const size_t num_elems)
+		{
+			/*
+				Minimum number of array slots necessary to construct any complete tree with num_elems elements is 1 less than the smallest power of 2 greater than num_elems
+				Tree is fully balanced by construction, with the placement of nodes in the partially empty last row being unknown
+			*/
+			// Number of element slots in each container subarray is nextGreaterPowerOf2(num_elems) - 1
+			return nextGreaterPowerOf2(num_elems) - 1;
+		};
 
 
 		// From the specification of C, pointers are const if the const qualifier appears to the right of the corresponding *

@@ -175,6 +175,23 @@ struct PSTTester
 							std::cout << '\n';
 #endif
 
+							// Check that GPU memory is sufficiently big for the necessary calculations
+							if constexpr (pst_type == GPU)
+							{
+								const size_t global_mem_needed = calcGlobalMemNeeded(num_elems);
+
+								if (global_mem_needed > dev_props.totalGlobalMem)
+								{
+									throwErr("Error: needed global memory space of " + std::to_string(global_mem_needed)
+												+ " B required for data structure and processing exceeds limit of global memory = "
+												+ std::to_string(dev_props.totalGlobalMem) + " B on device "
+												+ std::to_string(dev_ind) + " of " + std::to_string(num_devs));
+								}
+							}
+
+
+							// Set GPU limits
+
 							// Variables must be outside of conditionals to be accessible in later conditionals
 							cudaEvent_t construct_start_CUDA, construct_stop_CUDA, search_start_CUDA, search_stop_CUDA;
 							std::clock_t construct_start_CPU, construct_stop_CPU, search_start_CPU, search_stop_CPU;

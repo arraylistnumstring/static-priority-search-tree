@@ -30,48 +30,9 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 		Tree is fully balanced by construction, with the placement of nodes in the partially empty last row being unknown
 	*/
 	// Number of element slots in each container subarray is nextGreaterPowerOf2(num_elems) - 1
-	num_elem_slots = nextGreaterPowerOf2(num_elems) - 1;
+	num_elem_slots = calcNumElemSlots(num_elems);
 
-	// Allocate as a T array so that alignment requirements for larger data types are obeyed
-	// Use of () after new and new[] causes value-initialisation (to 0) starting in C++03; needed for any nodes that technically contain no data
-	// constexpr if is a C++17 feature that only compiles the branch of code that evaluates to true at compile-time, saving executable space and execution runtime
-	size_t tot_arr_size_num_datatype;
-	size_t global_mem_needed;
-	if constexpr (num_IDs == 0)
-	{
-		// No IDs present
-		tot_arr_size_num_datatype = calcTotArrSizeNumTs(num_elem_slots, num_val_subarrs);
-		global_mem_needed = tot_arr_size_num_datatype * sizeof(T);
-	}
-	else
-	{
-		// Separate size-comparison condition from the num_IDs==0 condition so that sizeof(IDType) is well-defined here, as often only one branch of a constexpr if is compiled
-		if constexpr (sizeof(T) >= sizeof(IDType))
-		{
-			// sizeof(T) >= sizeof(IDType), so calculate total array size in units of sizeof(T) so that datatype T's alignment requirements will be satisfied
-			tot_arr_size_num_datatype = calcTotArrSizeNumUs<T, num_val_subarrs, IDType, num_IDs>(num_elem_slots);
-			global_mem_needed = tot_arr_size_num_datatype * sizeof(T);
-		}
-		else
-		{
-			// sizeof(IDType) > sizeof(T), so calculate total array size in units of sizeof(IDType) so that datatype IDType's alignment requirements will be satisfied
-			tot_arr_size_num_datatype = calcTotArrSizeNumUs<IDType, num_IDs, T, num_val_subarrs>(num_elem_slots);
-			global_mem_needed = tot_arr_size_num_datatype * sizeof(IDType);
-		}
-	}
-
-	/*
-		Space needed for instantiation = tree size + num_elems * (size of PointStructTemplate<T, IDType, num_IDs> + 3 * size of PointStructTemplate indices)
-			Enough space to contain 3 size_t indices for every node is needed because the splitting of pointers in the dim2_val array at each node creates a need for the dim2_val arrays to be duplicated
-		Space requirement is greater than that needed for reporting nodes, which is simply at most tree_size + num_elems * size of PointStructTemplate
-	*/
-	const size_t num_working_ind_arrays = 3;
-	global_mem_needed += num_elems * (sizeof(PointStructTemplate<T, IDType, num_IDs>) + num_working_ind_arrays * sizeof(size_t));
-	if (global_mem_needed > dev_props.totalGlobalMem)
-		throwErr("Error: needed global memory space of " + std::to_string(global_mem_needed)
-					+ " B required for data structure and processing exceeds limit of global memory = "
-					+ std::to_string(dev_props.totalGlobalMem) + " B on device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs));
+	const size_t tot_arr_size_num_datatype = calcTotArrNumDatatype(num_elems);
 
 #ifdef DEBUG_CONSTR
 	std::cout << "Ready to allocate memory (around line 73)\n";
@@ -262,13 +223,6 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 					"Error in destroying asynchronous stream for assignment and sorting of indices by dimension 2 on device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs) + ": ");
 
-	// Place before cudaDeviceSynchronize() to take advantage of overlapping computation
-	const unsigned int num_active_grids_init_val = 0;
-	gpuErrorCheck(cudaMemcpyToSymbol(num_active_grids_d, &num_active_grids_init_val,
-					sizeof(unsigned int), 0, cudaMemcpyDefault),
-					"Error in initialising global number of active grids to 0 on device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs) + ": ");
-
 	// For correctness, must wait for all streams doing pre-construction pre-processing work to complete before continuing
 	gpuErrorCheck(cudaDeviceSynchronize(), "Error in synchronizing with device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
@@ -317,28 +271,20 @@ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::print(std::ostream &
 		return;
 	}
 
-	size_t tot_arr_size_num_datatype;
+	const size_t tot_arr_size_num_datatype = calcTotArrSizeNumDatatype(num_elems);
 	T *temp_root;
+	// Use of () after new and new[] causes value-initialisation (to 0) starting in C++03; needed for any nodes that technically contain no data
 	if constexpr (num_IDs == 0)
-	{
 		// No IDs present
-		tot_arr_size_num_datatype = calcTotArrSizeNumTs(num_elem_slots, num_val_subarrs);
 		temp_root = new T[tot_arr_size_num_datatype]();
-	}
 	else
 	{
 		if constexpr(sizeof(T) >= sizeof(IDType))
-		{
 			// sizeof(T) >= sizeof(IDType), so calculate total array size in units of sizeof(T) so that datatype T's alignment requirements will be satisfied
-			tot_arr_size_num_datatype = calcTotArrSizeNumUs<T, num_val_subarrs, IDType, num_IDs>(num_elem_slots);
 			temp_root = new T[tot_arr_size_num_datatype]();
-		}
 		else
-		{
 			// sizeof(IDType) > sizeof(T), so calculate total array size in units of sizeof(IDType) so that datatype IDType's alignment requirements will be satisfied
-			tot_arr_size_num_datatype = calcTotArrSizeNumUs<IDType, num_IDs, T, num_val_subarrs>(num_elem_slots);
 			temp_root = reinterpret_cast<T *>(new IDType[tot_arr_size_num_datatype]());
-		}
 	}
 	
 	if (temp_root == nullptr)

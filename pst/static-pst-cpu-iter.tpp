@@ -21,7 +21,6 @@ StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::StaticPSTCPUIter(Poin
 	num_elem_slots = nextGreaterPowerOf2(num_elems) - 1;
 
 
-	// Allocate as a T array so that alignment requirements for larger data types are obeyed
 	// Use of () after new and new[] causes value-initialisation (to 0) starting in C++03; needed for any nodes that technically contain no data
 	// constexpr if is a C++17 feature that only compiles the branch of code that evaluates to true at compile-time, saving executable space and execution runtime
 	if constexpr (num_IDs == 0)
