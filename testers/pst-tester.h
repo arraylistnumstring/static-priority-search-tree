@@ -178,19 +178,32 @@ struct PSTTester
 							// Check that GPU memory is sufficiently big for the necessary calculations
 							if constexpr (pst_type == GPU)
 							{
-								const size_t global_mem_needed = calcGlobalMemNeeded(num_elems);
+								const size_t global_mem_needed = StaticPSTTemplate<T, PointStructTemplate, IDType, num_IDs>::calcGlobalMemNeeded(num_elems);
 
-								if (global_mem_needed > dev_props.totalGlobalMem)
+								if (global_mem_needed > id_type_wrapper.num_ids_wrapper.dev_props.totalGlobalMem)
 								{
-									throwErr("Error: needed global memory space of " + std::to_string(global_mem_needed)
+									throwErr("Error: needed global memory space of "
+												+ std::to_string(global_mem_needed)
 												+ " B required for data structure and processing exceeds limit of global memory = "
-												+ std::to_string(dev_props.totalGlobalMem) + " B on device "
-												+ std::to_string(dev_ind) + " of " + std::to_string(num_devs));
+												+ std::to_string(id_type_wrapper.num_ids_wrapper.dev_props.totalGlobalMem)
+												+ " B on device "
+												+ std::to_string(id_type_wrapper.num_ids_wrapper.dev_ind)
+												+ " of "
+												+ std::to_string(id_type_wrapper.num_ids_wrapper.num_devs));
 								}
 							}
 
 
-							// Set GPU limits
+							// Set GPU pending kernel queue size limit; note that the queue takes up global memory, hence why a kernel launch that exceeds the queue's capacity may cause an "Invalid __global__ write of n bytes" error message in compute-sanitizer that points to the line of one of its function parameters
+							if constexpr (pst_type == GPU)
+							{
+								if (num_elems/2 > 2048)		// Default value: 2048
+									gpuErrorCheck(cudaDeviceSetLimit(cudaLimitDevRuntimePendingLaunchCount, num_elems/2),
+													"Error in increasing pending kernel queue size to "
+													+ std::to_string(num_elems/2) + " on device "
+													+ std::to_string(id_type_wrapper.num_ids_wrapper.dev_ind)
+													+ " of " + std::to_string(id_type_wrapper.num_ids_wrapper.num_devs));
+							}
 
 							// Variables must be outside of conditionals to be accessible in later conditionals
 							cudaEvent_t construct_start_CUDA, construct_stop_CUDA, search_start_CUDA, search_stop_CUDA;
@@ -481,6 +494,34 @@ struct PSTTester
 						printArray(std::cout, pt_arr, 0, num_elems);
 						std::cout << '\n';
 #endif
+
+						// Check that GPU memory is sufficiently big for the necessary calculations
+						if constexpr (pst_type == GPU)
+						{
+							const size_t global_mem_needed = StaticPSTTemplate<T, PointStructTemplate, void, num_IDs>::calcGlobalMemNeeded(num_elems);
+
+							if (global_mem_needed > num_ids_wrapper.dev_props.totalGlobalMem)
+							{
+								throwErr("Error: needed global memory space of "
+											+ std::to_string(global_mem_needed)
+											+ " B required for data structure and processing exceeds limit of global memory = "
+											+ std::to_string(num_ids_wrapper.dev_props.totalGlobalMem)
+											+ " B on device " + std::to_string(num_ids_wrapper.dev_ind)
+											+ " of " + std::to_string(num_ids_wrapper.num_devs));
+							}
+						}
+
+						// Set GPU pending kernel queue size limit; note that the queue takes up global memory, hence why a kernel launch that exceeds the queue's capacity may cause an "Invalid __global__ write of n bytes" error message in compute-sanitizer that points to the line of one of its function parameters
+						if constexpr (pst_type == GPU)
+						{
+							if (num_elems/2 > 2048)		// Default value: 2048
+								gpuErrorCheck(cudaDeviceSetLimit(cudaLimitDevRuntimePendingLaunchCount, num_elems/2),
+												"Error in increasing pending kernel queue size to "
+												+ std::to_string(num_elems/2) + " on device "
+												+ std::to_string(num_ids_wrapper.dev_ind)
+												+ " of " + std::to_string(num_ids_wrapper.num_devs));
+						}
+
 
 						// Variables must be outside of conditionals to be accessible in later conditionals
 						cudaEvent_t construct_start_CUDA, construct_stop_CUDA, search_start_CUDA, search_stop_CUDA;
