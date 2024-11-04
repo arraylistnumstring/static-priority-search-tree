@@ -60,7 +60,7 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 {
 	extern __shared__ unsigned long long s[];
 	unsigned long long &block_level_start_ind = *s;
-	unsigned long long *warp_level_num_elems_arr = s + 1;
+	unsigned long long *warp_level_offset_arr = s + 1;
 
 	// Liu et al. kernel; iterate over all PointStructTemplate<T, IDType, num_IDs> elements in pt_arr_d
 	// Due to presence of __syncthreads() calls within for loop, whole block must iterate if at least one thread has an element to process
@@ -101,10 +101,10 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 			if (threadIdx.x % warpSize == 0)
 				thread_level_offset = 0;
 
-			// Last active thread in warp puts total number of slots necessary for all active cells in the warp_level_num_elems_arr shared memory array
+			// Last active thread in warp puts total number of slots necessary for all active cells in the warp_level_offset_arr shared memory array
 			if (threadIdx.x % warpSize == fls(intrawarp_mask))
-				// Place total number of elements in this warp at the slot assigned to this warp in shared memory array warp_level_num_elems_arr
-				warp_level_num_elems_arr[threadIdx.x / warpSize] = thread_level_num_elems;
+				// Place total number of elements in this warp at the slot assigned to this warp in shared memory array warp_level_offset_arr
+				warp_level_offset_arr[threadIdx.x / warpSize] = thread_level_num_elems;
 		}
 
 		__syncthreads();	// Warp-level info must be ready to use at the block level
@@ -139,16 +139,16 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 				{
 					// If this is not the first set of warps being processed, set the warp group's offset to be the largest result of the previous iteration's interwarp prefix sum
 					unsigned long long warp_gp_offset = (j == 0) ? 0 :
-																warp_level_num_elems_arr[j - 1];
+																warp_level_offset_arr[j - 1];
 
-					unsigned long long warp_level_num_elems = warp_level_num_elems_arr[j + threadIdx.x];
+					unsigned long long warp_level_num_elems = warp_level_offset_arr[j + threadIdx.x];
 
 					// Do inclusive prefix sum on warp-level values
 					// Interwarp prefix sum
 					warpPrefixSum(interwarp_mask, warp_level_num_elems);
 
 					// Store result in shared memory, including the effect of the offset
-					warp_level_num_elems_arr[j + threadIdx.x] = warp_gp_offset + warp_level_num_elems;
+					warp_level_offset_arr[j + threadIdx.x] = warp_gp_offset + warp_level_num_elems;
 				}
 			}
 		}
@@ -159,18 +159,18 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 		// Single thread in block allocates space in res_arr_d with atomic operation
 		if (threadIdx.x == 0)
 		{
-			const unsigned long long block_level_num_elems = warp_level_num_elems_arr[warps_per_block_curr_iter - 1];
+			const unsigned long long block_level_num_elems = warp_level_offset_arr[warps_per_block_curr_iter - 1];
 			block_level_start_ind = atomicAdd(&res_arr_ind_d, block_level_num_elems);
 		}
 
 		unsigned long long warp_level_offset;		// Calculated with exclusive prefix sum
 
-		// All warps acquire their warp-level offset, which is the element of index (warp ID - 1) in warp_level_num_elems_arr
+		// All warps acquire their warp-level offset, which is the element of index (warp ID - 1) in warp_level_offset_arr
 		// Acquisition of warp-level offset is independent of memory allocation, so can occur anytime after the warp-level __syncthreads() call and before writing results to global memory; placed here for optimisation purposes, as all threads other than thread 0 would otherwise be idle between these __syncthreads() calls
 		if (threadIdx.x / warpSize == 0)
 			warp_level_offset = 0;
 		else
-			warp_level_offset = warp_level_num_elems_arr[threadIdx.x / warpSize - 1];
+			warp_level_offset = warp_level_offset_arr[threadIdx.x / warpSize - 1];
 
 		__syncthreads();	// Block-level offset now known
 
