@@ -237,6 +237,7 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 				// Check if current node satisfies query and should be reported
 				if (curr_node_dim1_val <= max_dim1_val)
 				{
+					// Report step
 					unsigned long long res_ind_to_access = atomicAdd(&res_arr_ind_d, 1);
 					if constexpr (std::is_same<RetType, IDType>::value)
 					{

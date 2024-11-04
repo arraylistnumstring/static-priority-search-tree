@@ -3,19 +3,9 @@
 
 #include "dev-symbols.h"	// For global memory-scoped variable res_arr_ind_d
 #include "gpu-err-chk.h"
+#include "warp-shuffles.h"
 
 // Method of Liu et al. (2016): embarrassingly parallel search for active metacells, superficially modified for parity with PST search method
-
-// Helper function fls() for "find last (bit) set", where bits are indexed from least to most significant place value
-template <typename T>
-	requires std::unsigned_integral<T>
-__forceinline__ __device__ T fls(T val)	// Equivalent to truncate(log_2(val))
-{
-	T bit_ind = 0;
-	while (val >>= 1)	// Unsigned right shifts are logical, i.e. zero-filling; loop exits when val evaluates to 0 after the right shift
-		bit_ind++;
-	return bit_ind;
-};
 
 // Given an array of PointStructTemplate<T, IDType, num_IDs>, return an on-device array of either points or IDs, each point pt or ID for point pt satisfies search_val \in [pt.dim1_val, pt.dim2_val])
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
@@ -82,7 +72,7 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 		unsigned long long thread_level_num_elems = 0;	// Calculated with inclusive prefix sum
 		unsigned long long thread_level_offset;		// Calculated with exclusive prefix sum	(i.e. preceding element of inclusive prefix sum result)
 
-		// Needs a separate flag, as thread_level_num_elems will not be 0 as long as there is at least one preceding thread with an active cell assigned
+		// Needs a separate flag, as thread_level_num_elems will not ultimately be 0 as long as there is at least one preceding thread with an active cell assigned
 		bool cell_active = false;
 
 		// Generate mask for threads active during intrawarp phase
@@ -101,23 +91,7 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 			// Warp-shuffle procedure to calculate inclusive prefix sum, i.e. so current thread knows offset with respect to start index in res_arr_d at which to output result
 
 			// Intrawarp prefix sum
-			// fls will always be at most warp size, so will evaluate to warp size if the entire warp is active
-			// Parallel prefix sum returns accurate values as long as the shift size runs up to the least power of 2 that is at least as large as shfl_offset
-#pragma unroll
-			for (unsigned intra_shfl_offset = 1, intra_shfl_offset_lim = fls(intrawarp_mask) + 1;
-					intra_shfl_offset < intra_shfl_offset_lim; intra_shfl_offset <<= 1)
-			{
-				// Copies value of variable thread_level_num_elems from thread with lane ID that is intra_shfl_offset less than current thread's lane ID
-				// Threads can only receive data from other threads participating in the __shfl_*sync() call
-				// Attempting to read from an invalid lane ID or non-participating lane causes a thread to read from its own variable
-				unsigned long long thread_level_num_elems_addend = __shfl_up_sync(intrawarp_mask,
-																					thread_level_num_elems,
-																					intra_shfl_offset);
-
-				// Only modify thread_level_num_elems if data came from another thread
-				if (threadIdx.x % warpSize >= intra_shfl_offset)
-					thread_level_num_elems += thread_level_num_elems_addend;
-			}
+			warpPrefixSum(intrawarp_mask, thread_level_num_elems);
 
 			// Exclusive prefix sum result is simply the element in the preceding index of the result of the inclusive prefix sum; note that as each thread is responsible for at most 1 output element, this is effectively thread_level_num_elems - 1_{cell_active}, where 1_{cell_active} is the indicator function for whether the thread's own value of cell_active is true
 			// Use of __shfl_up_sync() in this instance is for generality and for ease of calculation
@@ -170,22 +144,8 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 					unsigned long long warp_level_num_elems = warp_level_num_elems_arr[j + threadIdx.x];
 
 					// Do inclusive prefix sum on warp-level values
-#pragma unroll
-					for (unsigned inter_shfl_offset = 1,
-								inter_shfl_offset_lim = fls(interwarp_mask) + 1;
-							inter_shfl_offset < inter_shfl_offset_lim; inter_shfl_offset <<= 1)
-					{
-						// Copies value of variable warp_level_num_elems from thread with lane ID that is inter_shfl_offset less than current thread's lane ID
-						// Threads can only receive data from other threads participating in the __shfl_*sync() call; behavior is undefined when getting data from an inactive thread
-						// Attempting to read from an invalid lane ID or non-participating lane causes a thread to read from its own variable
-						unsigned long long warp_level_num_elems_addend = __shfl_up_sync(interwarp_mask,
-																							warp_level_num_elems,
-																							inter_shfl_offset);
-
-						// Only modify warp_level_num_elems if data came from another thread
-						if (threadIdx.x % warpSize >= inter_shfl_offset)
-							warp_level_num_elems += warp_level_num_elems_addend;
-					}
+					// Interwarp prefix sum
+					warpPrefixSum(interwarp_mask, warp_level_num_elems);
 
 					// Store result in shared memory, including the effect of the offset
 					warp_level_num_elems_arr[j + threadIdx.x] = warp_gp_offset + warp_level_num_elems;
