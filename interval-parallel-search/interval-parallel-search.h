@@ -73,12 +73,18 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 		unsigned long long thread_level_offset;		// Calculated with exclusive prefix sum	(i.e. preceding element of inclusive prefix sum result)
 
 		// Needs a separate flag, as thread_level_num_elems will not ultimately be 0 as long as there is at least one preceding thread with an active cell assigned
-		bool cell_active = false;
+		bool cell_active = i + threadIdx.x < num_elems
+							&& pt_arr_d[i + threadIdx.x].dim1_val <= search_val
+							&& search_val <= pt_arr_d[i + threadIdx.x].dim2_val;
+
+		unsigned long long block_level_offset = calcReportIndOffset<unsigned long long>(cell_active, num_elems);
+
+		// TODO: Abstract the following in such a way that it's applicable to both PST AND IPS
 
 		// Generate mask for threads active during intrawarp phase
 		unsigned intrawarp_mask = __ballot_sync(0xffffffff, i + threadIdx.x < num_elems);
 
-		if (i + threadIdx.x < num_elems)	// Intrawarp condition
+		if (i + threadIdx.x < num_elems)        // Intrawarp condition
 		{
 			// Evaluate if current metacell is active; if active, set corresponding flags and integers to signal to warp-scan (prefix sum)
 			if (pt_arr_d[i + threadIdx.x].dim1_val <= search_val
@@ -107,7 +113,7 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 				warp_level_num_elems_arr[threadIdx.x / warpSize] = thread_level_num_elems;
 		}
 
-		__syncthreads();	// Warp-level info must be ready to use at the block level
+		__syncthreads();        // Warp-level info must be ready to use at the block level
 
 		// Interwarp prefix sum (block-level)
 		// Being a prefix sum, only one warp should be active in this process for speed and correctness; use the first warp, which is guaranteed to exist

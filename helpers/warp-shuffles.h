@@ -1,6 +1,15 @@
 #ifndef WARP_SHUFFLES_H
 #define WARP_SHUFFLES_H
 
+template <typename T>
+	requires std::unsigned_integral<T>
+__forceinline__ __device__ T calcReportIndOffset(const bool cell_active, const size_t num_elems)
+{
+	T thread_level_num_elems = cell_active ? 1 : 0;
+
+	// TODO: remainder of function such that is viable for both IPS and PST
+};
+
 // Helper function fls() for "find last (bit) set", where bits are indexed from least to most significant place value
 template <typename T>
 	requires std::unsigned_integral<T>
