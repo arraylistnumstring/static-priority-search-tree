@@ -36,7 +36,7 @@ void intervalParallelSearch(PointStructTemplate<T, IDType, num_IDs>* pt_arr_d, c
 #endif
 
 	// Call global function for on-device search
-	intervalParallelSearchGlobal<<<num_thread_blocks, threads_per_block, (warps_per_block + 1) * sizeof(unsigned long long)>>>(pt_arr_d, num_elems, res_arr_d, warps_per_block, search_val);
+	intervalParallelSearchGlobal<<<num_thread_blocks, threads_per_block, (warps_per_block + 1) * sizeof(unsigned long long)>>>(pt_arr_d, num_elems, res_arr_d, search_val);
 	
 	// Because all calls to the device are placed in the same stream (queue) and because cudaMemcpy() is (host-)blocking, this code will not return before the computation has completed
 	// res_arr_ind_d points to the next index to write to, meaning that it actually contains the number of elements returned
@@ -56,141 +56,34 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 	>::value
 __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_IDs> *pt_arr_d,
 												const size_t num_elems, RetType *const res_arr_d,
-												const unsigned warps_per_block, const T search_val)
+												const T search_val)
 {
 	extern __shared__ unsigned long long s[];
 	unsigned long long &block_level_start_ind = *s;
 	unsigned long long *warp_level_num_elems_arr = s + 1;
 
 	// Liu et al. kernel; iterate over all PointStructTemplate<T, IDType, num_IDs> elements in pt_arr_d
-	// Due to presence of __syncthreads() calls within for loop, whole block must iterate if at least one thread has an element to process
+	// Due to presence of __syncthreads() calls within for loop (specifically, in calcAllocReportIndOffset()), whole block must iterate if at least one thread has an element to process
 	// Loop unrolling, as number of loops is known explicitly when kernel is called
 #pragma unroll
 	for (unsigned long long i = blockIdx.x * blockDim.x;
 			i < num_elems; i += gridDim.x * blockDim.x)
 	{
-		unsigned long long thread_level_num_elems = 0;	// Calculated with inclusive prefix sum
-		unsigned long long thread_level_offset;		// Calculated with exclusive prefix sum	(i.e. preceding element of inclusive prefix sum result)
-
-		// Needs a separate flag, as thread_level_num_elems will not ultimately be 0 as long as there is at least one preceding thread with an active cell assigned
 		bool cell_active = i + threadIdx.x < num_elems
 							&& pt_arr_d[i + threadIdx.x].dim1_val <= search_val
 							&& search_val <= pt_arr_d[i + threadIdx.x].dim2_val;
 
-		unsigned long long block_level_offset = calcReportIndOffset<unsigned long long>(cell_active, num_elems);
-
-		// TODO: Abstract the following in such a way that it's applicable to both PST AND IPS
-
-		// Generate mask for threads active during intrawarp phase
-		unsigned intrawarp_mask = __ballot_sync(0xffffffff, i + threadIdx.x < num_elems);
-
-		if (i + threadIdx.x < num_elems)        // Intrawarp condition
-		{
-			// Evaluate if current metacell is active; if active, set corresponding flags and integers to signal to warp-scan (prefix sum)
-			if (pt_arr_d[i + threadIdx.x].dim1_val <= search_val
-					&& search_val <= pt_arr_d[i + threadIdx.x].dim2_val)
-			{
-				thread_level_num_elems = 1;
-				cell_active = true;
-			}
-
-			// Warp-shuffle procedure to calculate inclusive prefix sum, i.e. so current thread knows offset with respect to start index in res_arr_d at which to output result
-
-			// Intrawarp prefix sum
-			warpPrefixSum(intrawarp_mask, thread_level_num_elems);
-
-			// Exclusive prefix sum result is simply the element in the preceding index of the result of the inclusive prefix sum; note that as each thread is responsible for at most 1 output element, this is effectively thread_level_num_elems - 1_{cell_active}, where 1_{cell_active} is the indicator function for whether the thread's own value of cell_active is true
-			// Use of __shfl_up_sync() in this instance is for generality and for ease of calculation
-			thread_level_offset = __shfl_up_sync(intrawarp_mask, thread_level_num_elems, 1);
-
-			// First thread in each warp read from its own value, so reset the offset
-			if (threadIdx.x % warpSize == 0)
-				thread_level_offset = 0;
-
-			// Last active thread in warp puts total number of slots necessary for all active cells in the warp_level_num_elems_arr shared memory array
-			if (threadIdx.x % warpSize == fls(intrawarp_mask))
-				// Place total number of elements in this warp at the slot assigned to this warp in shared memory array warp_level_num_elems_arr
-				warp_level_num_elems_arr[threadIdx.x / warpSize] = thread_level_num_elems;
-		}
-
-		__syncthreads();        // Warp-level info must be ready to use at the block level
-
-		// Interwarp prefix sum (block-level)
-		// Being a prefix sum, only one warp should be active in this process for speed and correctness; use the first warp, which is guaranteed to exist
-
-		// Calculate the number of active warps in this iteration of the grid; type of dim3 is a 4-byte triple
-		unsigned warps_per_block_curr_iter;
-
-		// Check if all warps in block were active during intrawarp prefix sum
-		// As all numbers here are cardinal, there is no off-by-1 error to compensate for here
-		if (i + blockDim.x <= num_elems)
-			warps_per_block_curr_iter = warps_per_block;
-		else
-			warps_per_block_curr_iter = (num_elems - i) / warpSize
-											+ ( ( (num_elems - i) % warpSize == 0 ) ? 0 : 1);
-
-		// Boundary condition: if only one warp's worth of data needs to be processed in this interation, only one warp is currently active anyway, so no interwarp prefix sum is necessary; however, as the interwarp __shfl_*sync() loop is hence automatically skipped over because of its own enclosing boundary condition, there is no need to explicitly do anything about it here
-		if (threadIdx.x / warpSize == 0)
-		{
-			// If necessary, repeat interwarp prefix sum with base offset of previous iteration until all warps have had their prefix sum calculated
-			// Though would be fine to put __ballot_sync() call in loop initialiser here, as there are currently no __syncwarp() calls within the loop that could cause hang, put within loop anyway in case __syncwarp() calls turn out to be necessary
-#pragma unroll
-			for (unsigned j = 0; j < warps_per_block_curr_iter; j += warpSize)
-			{
-				// Simultaneously serves as a syncwarp call to ensure that writes and reads are separated, as well as a mask generator for interwarp prefix sum
-				unsigned interwarp_mask = __ballot_sync(0xffffffff, threadIdx.x < warps_per_block_curr_iter);
-
-				// Inter-warp condition
-				if (threadIdx.x < warps_per_block_curr_iter)
-				{
-					// If this is not the first set of warps being processed, set the warp group's offset to be the largest result of the previous iteration's interwarp prefix sum
-					unsigned long long warp_gp_offset = (j == 0) ? 0 :
-																warp_level_num_elems_arr[j - 1];
-
-					unsigned long long warp_level_num_elems = warp_level_num_elems_arr[j + threadIdx.x];
-
-					// Do inclusive prefix sum on warp-level values
-					// Interwarp prefix sum
-					warpPrefixSum(interwarp_mask, warp_level_num_elems);
-
-					// Store result in shared memory, including the effect of the offset
-					warp_level_num_elems_arr[j + threadIdx.x] = warp_gp_offset + warp_level_num_elems;
-				}
-			}
-		}
-
-		// Total number of slots needed to store all active metacells processed by block in current iteration is now known
-		__syncthreads();
-
-		// Single thread in block allocates space in res_arr_d with atomic operation
-		if (threadIdx.x == 0)
-		{
-			const unsigned long long block_level_num_elems = warp_level_num_elems_arr[warps_per_block_curr_iter - 1];
-			block_level_start_ind = atomicAdd(&res_arr_ind_d, block_level_num_elems);
-		}
-
-		unsigned long long warp_level_offset;		// Calculated with exclusive prefix sum
-
-		// All warps acquire their warp-level offset, which is the element of index (warp ID - 1) in warp_level_num_elems_arr
-		// Acquisition of warp-level offset is independent of memory allocation, so can occur anytime after the warp-level __syncthreads() call and before writing results to global memory; placed here for optimisation purposes, as all threads other than thread 0 would otherwise be idle between these __syncthreads() calls
-		if (threadIdx.x / warpSize == 0)
-			warp_level_offset = 0;
-		else
-			warp_level_offset = warp_level_num_elems_arr[threadIdx.x / warpSize - 1];
-
-		__syncthreads();	// Block-level offset now known
+		unsigned long long block_level_offset = calcAllocReportIndOffset(cell_active, warp_level_num_elems_arr, &block_level_start_ind, true);
 
 		// Output to result array
 		if (cell_active)
 		{
 			if constexpr (std::is_same<RetType, IDType>::value)
 				// Add ID to array
-				res_arr_d[block_level_start_ind + warp_level_offset + thread_level_offset]
-					= pt_arr_d[i + threadIdx.x].id;
+				res_arr_d[block_level_start_ind + block_level_offset] = pt_arr_d[i + threadIdx.x].id;
 			else
 				// Add PtStructTemplate<T, IDType, num_IDs> to array
-				res_arr_d[block_level_start_ind + warp_level_offset + thread_level_offset]
-					= pt_arr_d[i + threadIdx.x];
+				res_arr_d[block_level_start_ind + block_level_offset] = pt_arr_d[i + threadIdx.x];
 		}
 	}
 };
