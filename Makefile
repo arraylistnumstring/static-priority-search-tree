@@ -27,12 +27,12 @@ all: interval-parallel-search-tester-driver pst-tester-driver
 # $^ : all prerequisites
 # $@ : file name of target of rule
 %.o: $(wildcard %.c*)
-	echo $(wildcard %.c*)
-	$(NVCC) $(COMPILE_FLAGS) $^ -o $@
+	echo $(NVCC) $(COMPILE_FLAGS) $^ -o $@
+	#$(NVCC) $(COMPILE_FLAGS) $^ -o $@
 
-interval-parallel-search-tester-driver: interval-parallel-search-tester-driver.o
-
-pst-tester-driver: pst-tester-driver.o
+%: %.o
+	echo $(NVCC) $(LINK_FLAGS) $^ -o $@
+	#$(NVCC) $(LINK_FLAGS) $^ -o $@
 
 clean:
 	rm -f 
