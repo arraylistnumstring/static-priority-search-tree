@@ -7,8 +7,7 @@
 *.nfs*
 *.o
 *.out
-*.swo
-*.swp
+*.sw[a-z]
 
 archival/
 compilation-testing/
