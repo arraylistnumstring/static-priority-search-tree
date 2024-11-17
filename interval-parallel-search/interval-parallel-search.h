@@ -73,7 +73,7 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 							&& pt_arr_d[i + threadIdx.x].dim1_val <= search_val
 							&& search_val <= pt_arr_d[i + threadIdx.x].dim2_val;
 
-		unsigned long long block_level_offset = calcAllocReportIndOffset(cell_active, warp_level_num_elems_arr, &block_level_start_ind, true);
+		unsigned long long block_level_offset = calcAllocReportIndOffset<true>(cell_active, warp_level_num_elems_arr, &block_level_start_ind);
 
 		// Output to result array
 		if (cell_active)

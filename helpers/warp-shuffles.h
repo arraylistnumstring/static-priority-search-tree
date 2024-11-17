@@ -1,6 +1,21 @@
 #ifndef WARP_SHUFFLES_H
 #define WARP_SHUFFLES_H
 
+// Forward declarations
+template <typename T>
+	requires std::unsigned_integral<T>
+__forceinline__ __device__ T fls(T val);
+
+template <typename T, typename U>
+	requires std::conjunction<
+						std::conjunction<
+								std::is_integral<T>,
+								std::is_unsigned<T>
+							>,
+						std::is_arithmetic<U>
+			>::value
+__forceinline__ __device__ void warpPrefixSum(const T mask, U &num);
+
 // To be applicable to both IPS and PST, logic that is based on number-of-elements boundary conditions has been removed; instead, the entire block does all calculations, with each thread deciding (in the scope that calls calcAllocReportIndOffset()) whether or not to report a result based on its value of cell_active
 /*
 	When only doing intrawarp shuffles, calcAllocReportIndOffset():
@@ -16,9 +31,9 @@
 		Value of interwarp_shfl must be compile-time determinable
 		warp_level_num_elems_arr == nullptr iff block_level_start_ind_ptr == nullptr iff interwarp_shfl == false
 */
-template <typename T>
+template <bool interwarp_shfl, typename T>
 	requires std::unsigned_integral<T>
-__forceinline__ __device__ T calcAllocReportIndOffset(const bool cell_active, T *const warp_level_num_elems_arr = nullptr, T *const block_level_start_ind_ptr = nullptr, const bool interwarp_shfl = false)
+__forceinline__ __device__ T calcAllocReportIndOffset(const bool cell_active, T *const warp_level_num_elems_arr = nullptr, T *const block_level_start_ind_ptr = nullptr)
 {
 	T thread_level_num_elems = cell_active ? 1 : 0;
 
@@ -31,7 +46,7 @@ __forceinline__ __device__ T calcAllocReportIndOffset(const bool cell_active, T 
 
 	// Exclusive prefix sum result is simply the element in the preceding index of the result of the inclusive prefix sum; note that as each thread is responsible for at most 1 output element, this is effectively thread_level_num_elems - 1_{cell_active}, where 1_{cell_active} is the indicator function for whether the thread's own value of cell_active is true
 	// Use of __shfl_up_sync() in this instance is for generality and for ease of calculation
-	thread_level_offset = __shfl_up_sync(intrawarp_mask, thread_level_num_elems, 1);
+	T thread_level_offset = __shfl_up_sync(intrawarp_mask, thread_level_num_elems, 1);
 
 	// First thread in each warp read from its own value, so reset that offset
 	if (threadIdx.x % warpSize == 0)
@@ -65,12 +80,12 @@ __forceinline__ __device__ T calcAllocReportIndOffset(const bool cell_active, T 
 		__syncthreads();	// Warp-level info must be ready to use at the block level
 
 		// Interwarp prefix sum (block-level)
+		const auto warps_per_block = blockDim.x * blockDim.y * blockDim.z / warpSize
+										+ ((blockDim.x * blockDim.y * blockDim.z % warpSize == 0) ? 0 : 1);
+
 		// Being a prefix sum, only one warp should be active in this process for speed and correctness; use the first warp, which is guaranteed to exist
 		if (threadIdx.x / warpSize == 0)
 		{
-			const auto warps_per_block = blockDim.x * blockDim.y * blockDim.z / warpSize
-											+ ((blockDim.x * blockDim.y * blockDim.z % warpSize == 0) ? 0 : 1);
-
 			// If necessary, repeat interwarp prefix sum with base offset of previous iteration until all warps have had their prefix sum calculated
 			// Though would be fine to put __ballot_sync() call in loop initialiser here, as there are currently no __syncwarp() calls within the loop that could cause hang, put within loop anyway in case __syncwarp() calls turn out to be necessary in later design
 #pragma unroll
@@ -133,19 +148,23 @@ __forceinline__ __device__ T fls(T val)	// Equivalent to truncate(log_2(val))
 	while (val >>= 1)	// Unsigned right shifts are logical, i.e. zero-filling; loop exits when val evaluates to 0 after the right shift
 		bit_ind++;
 	return bit_ind;
-};
+}
 
 // Calculates inclusive prefix sum using thread-local variables and intra-warp shuffle; returns result in reference variable num
 template <typename T, typename U>
 	requires std::conjunction<
-						std::unsigned_integral<T>,
+						// As std::unsigned_integral<T> evaluates to true/false instead of a type name, instead use its constituent parts separately to achieve the same effect
+						std::conjunction<
+								std::is_integral<T>,
+								std::is_unsigned<T>
+							>,
 						std::is_arithmetic<U>
 			>::value
 __forceinline__ __device__ void warpPrefixSum(const T mask, U &num)
 {
 	// As a comma-delimited declaration does not allow declarations of different types, create the const-valued shfl_offset_lim before the loop instead
 	// At time of writing (compute capability 9.0), warp size is 32; hence, fls() will always be at most warpSize - 1 (32 bits, with the leftmost 0-indexed as bit 31), so shfl_offset_lim will evaluate to warpSize if the entire warp is active
-	const T shfl_offset_lim = fls(intrawarp_mask) + 1;
+	const T shfl_offset_lim = fls(mask) + 1;
 
 	// Parallel prefix sum returns accurate values as long as the loop runs for every shift size (shfl_offset) that is a power of 2 (with nonnegative exponent) up to the largest power of 2 less than shfl_offset_lim (the latter is at most warpSize)
 #pragma unroll
