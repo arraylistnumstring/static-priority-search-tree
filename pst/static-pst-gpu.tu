@@ -749,7 +749,7 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 																unsigned char *const search_code_ptr,
 																unsigned char *const &search_codes_arr)
 {
-	// INACTIVE threads check wehther they should be active in the next iteration; if not, and all threads are inactive, set iteration toggle to false
+	// INACTIVE threads check whether they should be active in the next iteration; if not, and all threads are inactive, set iteration toggle to false
 
 	// Thread has been assigned work; update local variables accordingly
 	if (search_ind == INACTIVE_IND
