@@ -53,9 +53,12 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 	T curr_node_dim2_val;
 	T curr_node_med_dim1_val;
 	unsigned char curr_node_bitcode;
+	bool cell_active;
 
 	while (cont_iter)
 	{
+		cell_active = false;
+
 		// active threads -> INACTIVE (if current node goes below the dim2_val threshold or has no children)
 		// Before the next __syncthreads() call, which denotes the end of this section, active threads are the only threads who will modify their own search_inds_arr entry, so it is fine to do so non-atomically; also, this location is outside of the section where threads update each other's indices (which is blocked off by __syncthreads() calls), so it is extra safe
 		if (search_ind != StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND)
@@ -73,25 +76,8 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 			else	// Thread stays active with respect to this node
 			{
 				// Check if current node satisfies query and should be reported
-				if (min_dim1_val <= curr_node_dim1_val
-						&& curr_node_dim1_val <= max_dim1_val)
-				{
-					unsigned long long res_ind_to_access = atomicAdd(&res_arr_ind_d, 1);
-					if constexpr (std::is_same<RetType, IDType>::value)
-					{
-						res_arr_d[res_ind_to_access]
-							= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(root_d, num_elem_slots)[search_ind];
-					}
-					else
-					{
-						res_arr_d[res_ind_to_access].dim1_val = curr_node_dim1_val;
-						res_arr_d[res_ind_to_access].dim2_val = curr_node_dim2_val;
-						// As IDs are only accessed if the node is to be reported and if IDs exist, don't waste a register on it (and avoid compilation failures from attempting to instantiate a potential void variable)
-						if constexpr (num_IDs == 1)
-							res_arr_d[res_ind_to_access].id
-								= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(root_d, num_elem_slots)[search_ind];
-					}
-				}
+				cell_active = min_dim1_val <= curr_node_dim1_val
+								&& curr_node_dim1_val <= max_dim1_val;
 
 				// If node has no children or the subtree satisfying the search range has no children, the thread becomes inactive; inactivity must occur on this side of the following syncthreads() call to avoid race conditions
 				if (!StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::hasChildren(curr_node_bitcode)
@@ -103,6 +89,28 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 					search_inds_arr[threadIdx.x] = search_ind
 						= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
 				}
+			}
+		}
+
+		// Intrawarp shuffle; must be executed by all threads regardless of in/activity and search type
+		unsigned long long res_ind_to_access = calcAllocReportIndOffset<false, unsigned long long>(cell_active);
+
+		// Report step
+		if (cell_active)
+		{
+			if constexpr (std::is_same<RetType, IDType>::value)
+			{
+				res_arr_d[res_ind_to_access]
+					= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(root_d, num_elem_slots)[search_ind];
+			}
+			else
+			{
+				res_arr_d[res_ind_to_access].dim1_val = curr_node_dim1_val;
+				res_arr_d[res_ind_to_access].dim2_val = curr_node_dim2_val;
+				// As IDs are only accessed if the node is to be reported and if IDs exist, don't waste a register on it (and avoid compilation failures from attempting to instantiate a potential void variable)
+				if constexpr (num_IDs == 1)
+					res_arr_d[res_ind_to_access].id
+						= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(root_d, num_elem_slots)[search_ind];
 			}
 		}
 
@@ -215,9 +223,12 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 	T curr_node_dim2_val;
 	T curr_node_med_dim1_val;
 	unsigned char curr_node_bitcode;
+	bool cell_active;
 
 	while (cont_iter)
 	{
+		cell_active = false;
+
 		// active threads -> INACTIVE (if current node goes below the dim2_val threshold or has no children)
 		// Before the next __syncthreads() call, which denotes the end of this section, active threads are the only threads who will modify their own search_inds_arr entry, so it is fine to do so non-atomically; also, this location is outside of the section where threads update each other's indices (which is blocked off by __syncthreads() calls), so it is extra safe
 		if (search_ind != StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND)
@@ -235,24 +246,7 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 			else	// Thread stays active with respect to this node
 			{
 				// Check if current node satisfies query and should be reported
-				if (curr_node_dim1_val <= max_dim1_val)
-				{
-					// Report step
-					unsigned long long res_ind_to_access = atomicAdd(&res_arr_ind_d, 1);
-					if constexpr (std::is_same<RetType, IDType>::value)
-					{
-						res_arr_d[res_ind_to_access]
-							= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(root_d, num_elem_slots)[search_ind];
-					}
-					else
-					{
-						res_arr_d[res_ind_to_access].dim1_val = curr_node_dim1_val;
-						res_arr_d[res_ind_to_access].dim2_val = curr_node_dim2_val;
-						if constexpr (num_IDs == 1)
-							res_arr_d[res_ind_to_access].id
-								= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(root_d, num_elem_slots)[search_ind];
-					}
-				}
+				cell_active = curr_node_dim1_val <= max_dim1_val;
 
 				// Check if thread becomes inactive because current node has no children
 				if (!StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::hasChildren(curr_node_bitcode))
@@ -260,6 +254,27 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 					search_inds_arr[threadIdx.x] = search_ind
 						= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
 				}
+			}
+		}
+
+		// Intrawarp shuffle; must be executed by all threads regardless of in/activity and search type
+		unsigned long long res_ind_to_access = calcAllocReportIndOffset<false, unsigned long long>(cell_active);
+		
+		// Report step
+		if (cell_active)
+		{
+			if constexpr (std::is_same<RetType, IDType>::value)
+			{
+				res_arr_d[res_ind_to_access]
+					= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(root_d, num_elem_slots)[search_ind];
+			}
+			else
+			{
+				res_arr_d[res_ind_to_access].dim1_val = curr_node_dim1_val;
+				res_arr_d[res_ind_to_access].dim2_val = curr_node_dim2_val;
+				if constexpr (num_IDs == 1)
+					res_arr_d[res_ind_to_access].id
+						= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(root_d, num_elem_slots)[search_ind];
 			}
 		}
 
@@ -350,9 +365,12 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 	T curr_node_dim2_val;
 	T curr_node_med_dim1_val;
 	unsigned char curr_node_bitcode;
+	bool cell_active;
 
 	while (cont_iter)
 	{
+		cell_active = false;
+
 		// active threads -> INACTIVE (if current node goes below the dim2_val threshold or has no children)
 		// Before the next __syncthreads() call, which denotes the end of this section, active threads are the only threads who will modify their own search_inds_arr entry, so it is fine to do so non-atomically; also, this location is outside of the section where threads update each other's indices (which is blocked off by __syncthreads() calls), so it is extra safe
 		if (search_ind != StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND)
@@ -370,23 +388,7 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 			else	// Thread stays active with respect to this node
 			{
 				// Check if current node satisfies query and should be reported
-				if (curr_node_dim1_val >= min_dim1_val)
-				{
-					unsigned long long res_ind_to_access = atomicAdd(&res_arr_ind_d, 1);
-					if constexpr (std::is_same<RetType, IDType>::value)
-					{
-						res_arr_d[res_ind_to_access]
-							= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(root_d, num_elem_slots)[search_ind];
-					}
-					else
-					{
-						res_arr_d[res_ind_to_access].dim1_val = curr_node_dim1_val;
-						res_arr_d[res_ind_to_access].dim2_val = curr_node_dim2_val;
-						if constexpr (num_IDs == 1)
-							res_arr_d[res_ind_to_access].id
-								= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(root_d, num_elem_slots)[search_ind];
-					}
-				}
+				cell_active = curr_node_dim1_val >= min_dim1_val;
 
 				// Check if thread becomes inactive because current node has no children
 				if (!StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::hasChildren(curr_node_bitcode))
@@ -394,6 +396,27 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 					search_inds_arr[threadIdx.x] = search_ind
 						= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
 				}
+			}
+		}
+
+		// Intrawarp shuffle; must be executed by all threads regardless of in/activity and search type
+		unsigned long long res_ind_to_access = calcAllocReportIndOffset<false, unsigned long long>(cell_active);
+
+		// Report step
+		if (cell_active)
+		{
+			if constexpr (std::is_same<RetType, IDType>::value)
+			{
+				res_arr_d[res_ind_to_access]
+					= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(root_d, num_elem_slots)[search_ind];
+			}
+			else
+			{
+				res_arr_d[res_ind_to_access].dim1_val = curr_node_dim1_val;
+				res_arr_d[res_ind_to_access].dim2_val = curr_node_dim2_val;
+				if constexpr (num_IDs == 1)
+					res_arr_d[res_ind_to_access].id
+						= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(root_d, num_elem_slots)[search_ind];
 			}
 		}
 
@@ -480,9 +503,12 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 	// curr_node_dim1_val will only be accessed once, so no need to create an automatic variable for it
 	T curr_node_dim2_val;
 	unsigned char curr_node_bitcode;
+	bool cell_active;
 
 	while (cont_iter)
 	{
+		cell_active = false;
+
 		// active threads -> INACTIVE (if current node goes below the dim2_val threshold or has no children)
 		// Before the next __syncthreads() call, which denotes the end of this section, active threads are the only threads who will modify their own search_inds_arr entry, so it is fine to do so non-atomically; also, this location is outside of the section where threads update each other's indices (which is blocked off by __syncthreads() calls), so it is extra safe
 		if (search_ind != StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND)
@@ -498,21 +524,7 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 			// Thread stays active with respect to this node
 			else	// min_dim2_val <= curr_node_dim2_val; report node
 			{
-				unsigned long long res_ind_to_access = atomicAdd(&res_arr_ind_d, 1);
-				if constexpr (std::is_same<RetType, IDType>::value)
-				{
-					res_arr_d[res_ind_to_access]
-						= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(root_d, num_elem_slots)[search_ind];
-				}
-				else
-				{
-					res_arr_d[res_ind_to_access].dim1_val
-							= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getDim1ValsRoot(root_d, num_elem_slots)[search_ind];
-					res_arr_d[res_ind_to_access].dim2_val = curr_node_dim2_val;
-					if constexpr (num_IDs == 1)
-						res_arr_d[res_ind_to_access].id
-							= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(root_d, num_elem_slots)[search_ind];
-				}
+				cell_active = true;
 
 				// Check if thread becomes inactive because current node has no children
 				if (!StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::hasChildren(curr_node_bitcode))
@@ -520,6 +532,27 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 					search_inds_arr[threadIdx.x] = search_ind
 						= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
 				}
+			}
+		}
+
+		// Intrawarp shuffle; must be executed by all threads regardless of in/activity and search type
+		unsigned long long res_ind_to_access = calcAllocReportIndOffset<false, unsigned long long>(cell_active);
+
+		if (cell_active)
+		{
+			if constexpr (std::is_same<RetType, IDType>::value)
+			{
+				res_arr_d[res_ind_to_access]
+					= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(root_d, num_elem_slots)[search_ind];
+			}
+			else
+			{
+				res_arr_d[res_ind_to_access].dim1_val
+						= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getDim1ValsRoot(root_d, num_elem_slots)[search_ind];
+				res_arr_d[res_ind_to_access].dim2_val = curr_node_dim2_val;
+				if constexpr (num_IDs == 1)
+					res_arr_d[res_ind_to_access].id
+						= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(root_d, num_elem_slots)[search_ind];
 			}
 		}
 
