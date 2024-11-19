@@ -5,6 +5,7 @@
 #include "gpu-err-chk.h"
 #include "static-priority-search-tree.h"
 #include "static-pst-concepts.h"
+#include "warp-shuffles.h"
 
 
 // To use __global__ function as a friend, must not define it at the same time as it is declared
