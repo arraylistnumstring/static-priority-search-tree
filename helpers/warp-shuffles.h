@@ -1,6 +1,8 @@
 #ifndef WARP_SHUFFLES_H
 #define WARP_SHUFFLES_H
 
+#include "dev-symbols.h"	// Need access to __device__ (global memory) variable res_arr_ind_d
+
 // Forward declarations
 template <typename T>
 	requires std::unsigned_integral<T>
