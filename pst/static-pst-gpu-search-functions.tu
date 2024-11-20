@@ -78,17 +78,6 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 				// Check if current node satisfies query and should be reported
 				cell_active = min_dim1_val <= curr_node_dim1_val
 								&& curr_node_dim1_val <= max_dim1_val;
-
-				// If node has no children or the subtree satisfying the search range has no children, the thread becomes inactive; inactivity must occur on this side of the following syncthreads() call to avoid race conditions
-				if (!StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::hasChildren(curr_node_bitcode)
-						|| (max_dim1_val < curr_node_med_dim1_val
-								&& !StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::hasLeftChild(curr_node_bitcode))
-						|| (curr_node_med_dim1_val < min_dim1_val
-								&& !StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::hasRightChild(curr_node_bitcode)))
-				{
-					search_inds_arr[threadIdx.x] = search_ind
-						= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
-				}
 			}
 		}
 
@@ -112,6 +101,22 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 					res_arr_d[res_ind_to_access].id
 						= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(root_d, num_elem_slots)[search_ind];
 			}
+		}
+
+		// Check if a currently active node will become inactive because current node: a) has no children; or b) the subtree satisfying the search range has no children
+		// Entails an update to search_ind, so must come after report step, which uses search_ind to retrieve IDs to report
+		// Deactivation must occur on this side of the following syncthreads() call to avoid race conditions
+		if (search_ind != StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND
+				&& (!StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::hasChildren(curr_node_bitcode)
+					|| (max_dim1_val < curr_node_med_dim1_val
+							&& !StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::hasLeftChild(curr_node_bitcode))
+					|| (curr_node_med_dim1_val < min_dim1_val
+							&& !StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::hasRightChild(curr_node_bitcode))
+					)
+			)
+		{
+			search_inds_arr[threadIdx.x] = search_ind
+				= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
 		}
 
 		// All threads who would become inactive in this iteration have finished; synchronisation is utilised because one must be certain that INACTIVE -> active writes (by other threads) are not inadvertently overwritten by active -> INACTIVE writes in lines of code above this one
@@ -247,13 +252,6 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 			{
 				// Check if current node satisfies query and should be reported
 				cell_active = curr_node_dim1_val <= max_dim1_val;
-
-				// Check if thread becomes inactive because current node has no children
-				if (!StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::hasChildren(curr_node_bitcode))
-				{
-					search_inds_arr[threadIdx.x] = search_ind
-						= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
-				}
 			}
 		}
 
@@ -276,6 +274,14 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 					res_arr_d[res_ind_to_access].id
 						= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(root_d, num_elem_slots)[search_ind];
 			}
+		}
+
+		// Check if a currently active thread will become inactive because current node has no children
+		if (search_ind != StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND
+				&& !StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::hasChildren(curr_node_bitcode))
+		{
+			search_inds_arr[threadIdx.x] = search_ind
+				= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
 		}
 
 		// All threads who would become inactive in this iteration have finished; synchronisation is utilised because one must be certain that INACTIVE -> active writes (by other threads) are not inadvertently overwritten by active -> INACTIVE writes in lines of code above this one
@@ -389,13 +395,6 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 			{
 				// Check if current node satisfies query and should be reported
 				cell_active = curr_node_dim1_val >= min_dim1_val;
-
-				// Check if thread becomes inactive because current node has no children
-				if (!StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::hasChildren(curr_node_bitcode))
-				{
-					search_inds_arr[threadIdx.x] = search_ind
-						= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
-				}
 			}
 		}
 
@@ -418,6 +417,14 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 					res_arr_d[res_ind_to_access].id
 						= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(root_d, num_elem_slots)[search_ind];
 			}
+		}
+
+		// Check if a currently active thread becomes inactive because current node has no children
+		if (search_ind != StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND
+				&& !StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::hasChildren(curr_node_bitcode))
+		{
+			search_inds_arr[threadIdx.x] = search_ind
+				= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
 		}
 
 		// All threads who would become inactive in this iteration have finished; synchronisation is utilised because one must be certain that INACTIVE -> active writes (by other threads) are not inadvertently overwritten by active -> INACTIVE writes in lines of code above this one
@@ -525,13 +532,6 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 			else	// min_dim2_val <= curr_node_dim2_val; report node
 			{
 				cell_active = true;
-
-				// Check if thread becomes inactive because current node has no children
-				if (!StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::hasChildren(curr_node_bitcode))
-				{
-					search_inds_arr[threadIdx.x] = search_ind
-						= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
-				}
 			}
 		}
 
@@ -554,6 +554,14 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 					res_arr_d[res_ind_to_access].id
 						= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(root_d, num_elem_slots)[search_ind];
 			}
+		}
+
+		// Check if thread becomes inactive because current node has no children
+		if (search_ind != StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND
+				&& !StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::hasChildren(curr_node_bitcode))
+		{
+			search_inds_arr[threadIdx.x] = search_ind
+				= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
 		}
 
 		// All threads who would become inactive in this iteration have finished; synchronisation is utilised because one must be certain that INACTIVE -> active writes (by other threads) are not inadvertently overwritten by active -> INACTIVE writes in lines of code above this one
