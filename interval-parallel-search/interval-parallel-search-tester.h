@@ -34,7 +34,7 @@ struct InterParaSearchTester
 		// Search value to use
 		T search_val;
 
-		bool inter_size_disr_active;
+		bool inter_size_distr_active;
 
 		DataTypeWrapper(T min_val, T max_val, T inter_size_val1, T inter_size_val2,
 						T search_val)
@@ -126,7 +126,7 @@ struct InterParaSearchTester
 
 							T val2;
 							if (id_type_wrapper.num_ids_wrapper.para_search_tester.inter_size_distr_active)
-								val2 = val1 + id_type_wrapper.num_ids_wrapper.para_search_tester.inter_size_distr(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
+								val2 = val1 + id_type_wrapper.num_ids_wrapper.para_search_tester.inter_size_distr(id_type_wrapper.num_ids_wrapper.para_search_tester.rand_num_eng);
 							else
 								val2 = id_type_wrapper.num_ids_wrapper.para_search_tester.distr(id_type_wrapper.num_ids_wrapper.para_search_tester.rand_num_eng);
 

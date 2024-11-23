@@ -18,7 +18,7 @@ struct InterParaSearchTestInfoStruct
 	// Number of values necessary to define the bounds of an interval
 	const static size_t MIN_NUM_VALS_INT_BOUNDS = 2;
 	const static size_t MAX_NUM_VALS_INT_BOUNDS = 4;
-	std::string val_range_strings[NUM_VALS_INT_BOUNDS] = {"0", "0", "-1", "-1"};
+	std::string val_range_strings[MAX_NUM_VALS_INT_BOUNDS] = {"0", "0", "-1", "-1"};
 
 	std::string search_val_string;
 
