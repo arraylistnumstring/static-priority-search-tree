@@ -55,40 +55,26 @@ struct PSTTester
 						T min_dim2_val, bool vals_inc_ordered)
 			: rand_num_eng(0),
 			distr(min_val, max_val),
+			inter_size_distr(inter_size_val2 < 0 ? 0 : inter_size_val1, inter_size_val2 < 0 ? inter_size_val1 : inter_size_val2),
 			dim1_val_bound1(dim1_val_bound1),
 			dim1_val_bound2(dim1_val_bound2),
 			min_dim2_val(min_dim2_val),
-			vals_inc_ordered(vals_inc_ordered)
-		{
-			if (inter_size_val1 >= 0)
-			{
-				inter_size_distr_active = true;
-				if (inter_size_val2 >= 0)
-					inter_size_distr(inter_size_val1, inter_size_val2);
-				else
-					inter_size_distr(0, inter_size_val1);
-			}
-		};
+			vals_inc_ordered(vals_inc_ordered),
+			inter_size_distr_active(inter_size_val1 >= 0)
+		{};
 
 		DataTypeWrapper(size_t rand_seed, T min_val, T max_val,
 						T inter_size_val1, T inter_size_val2, T dim1_val_bound1,
 						T dim1_val_bound2, T min_dim2_val, bool vals_inc_ordered)
 			: rand_num_eng(rand_seed),
 			distr(min_val, max_val),
+			inter_size_distr(inter_size_val2 < 0 ? 0 : inter_size_val1, inter_size_val2 < 0 ? inter_size_val1 : inter_size_val2),
 			dim1_val_bound1(dim1_val_bound1),
 			dim1_val_bound2(dim1_val_bound2),
 			min_dim2_val(min_dim2_val),
-			vals_inc_ordered(vals_inc_ordered)
-		{
-			if (inter_size_val1 >= 0)
-			{
-				inter_size_distr_active = true;
-				if (inter_size_val2 >= 0)
-					inter_size_distr(inter_size_val1, inter_size_val2);
-				else
-					inter_size_distr(0, inter_size_val1);
-			}
-		};
+			vals_inc_ordered(vals_inc_ordered),
+			inter_size_distr_active(inter_size_val1 >= 0)
+		{};
 
 		// Nested structs to allow for the metaprogramming equivalent of currying, but with type parameters
 		template <template<typename, typename, size_t> class PointStructTemplate,
