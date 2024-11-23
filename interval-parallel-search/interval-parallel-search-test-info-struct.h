@@ -16,8 +16,9 @@ struct InterParaSearchTestInfoStruct
 	// Ordering of fields chosen to minimise size of struct; std::string type appears to take 32 bytes
 
 	// Number of values necessary to define the bounds of an interval
-	const static size_t NUM_VALS_INT_BOUNDS = 2;
-	std::string val_range_strings[NUM_VALS_INT_BOUNDS] = {"0", "0"};
+	const static size_t MIN_NUM_VALS_INT_BOUNDS = 2;
+	const static size_t MAX_NUM_VALS_INT_BOUNDS = 4;
+	std::string val_range_strings[NUM_VALS_INT_BOUNDS] = {"0", "0", "-1", "-1"};
 
 	std::string search_val_string;
 
@@ -62,6 +63,8 @@ struct InterParaSearchTestInfoStruct
 			typename InterParaSearchTesterTimingDet::DataTypeWrapper<double, std::uniform_real_distribution>
 						ips_tester_data_type_instan(rand_seed, std::stod(val_range_strings[0]),
 													std::stod(val_range_strings[1]),
+													std::stod(val_range_strings[2]),
+													std::stod(val_range_strings[3]),
 													std::stod(search_val_string));
 			
 			numIDsWrap(ips_tester_data_type_instan);
@@ -71,6 +74,8 @@ struct InterParaSearchTestInfoStruct
 			typename InterParaSearchTesterTimingDet::DataTypeWrapper<float, std::uniform_real_distribution>
 						ips_tester_data_type_instan(rand_seed, std::stod(val_range_strings[0]),
 													std::stod(val_range_strings[1]),
+													std::stod(val_range_strings[2]),
+													std::stod(val_range_strings[3]),
 													std::stod(search_val_string));
 			
 			numIDsWrap(ips_tester_data_type_instan);
@@ -80,6 +85,8 @@ struct InterParaSearchTestInfoStruct
 			typename InterParaSearchTesterTimingDet::DataTypeWrapper<int, std::uniform_int_distribution>
 						ips_tester_data_type_instan(rand_seed, std::stod(val_range_strings[0]),
 													std::stod(val_range_strings[1]),
+													std::stod(val_range_strings[2]),
+													std::stod(val_range_strings[3]),
 													std::stod(search_val_string));
 			
 			numIDsWrap(ips_tester_data_type_instan);
@@ -89,6 +96,8 @@ struct InterParaSearchTestInfoStruct
 			typename InterParaSearchTesterTimingDet::DataTypeWrapper<long, std::uniform_int_distribution>
 						ips_tester_data_type_instan(rand_seed, std::stod(val_range_strings[0]),
 													std::stod(val_range_strings[1]),
+													std::stod(val_range_strings[2]),
+													std::stod(val_range_strings[3]),
 													std::stod(search_val_string));
 			
 			numIDsWrap(ips_tester_data_type_instan);

@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
 			std::cerr << "[-S RAND_SEED] ";
 			std::cerr << "[-t] ";
 			std::cerr << "-B NUM_BLOCKS";
-			std::cerr << "-b MIN_VAL MAX_VAL ";
+			std::cerr << "-b MIN_VAL MAX_VAL [SIZE_BOUND_1] [SIZE_BOUND_2] ";
 			std::cerr << "-n NUM_ELEMS ";
 			std::cerr << "-s SEARCH_VAL ";
 			std::cerr << "-T THREADS_PER_BLOCK";
@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
 
 			std::cerr << "\t-B, --num-blocks NUM_BLOCKS\tNumber of blocks to use in grid for CUDA kernel\n\n";
 
-			std::cerr << "\t-b, --val-bounds MIN_VAL MAX_VAL\tBounds of values (inclusive) to use when generating random values for PST; must be castable to chosen datatype\n\n";
+			std::cerr << "\t-b, --val-bounds MIN_VAL MAX_VAL [SIZE_BOUND_1] [SIZE_BOUND_2]\tBounds of values (inclusive) to use when generating random values to search on; must be castable to chosen datatype; when non-negative values SIZE_BOUND_1 and SIZE_BOUND_2 are specified, the lower bound of the interval is drawn from the range [MIN_VAL, MAX_VAL], and the upper bound is equal to the lower bound plus a value drawn from the range [SIZE_BOUND_1, SIZE_BOUND_2]; when only SIZE_BOUND_1 is specified, the added value is drawn from the range [0, SIZE_BOUND_1]\n\n";
 
 			std::cerr << "\t-I, --ids DATA_TYPE\tToggles assignment of IDs of data type DATA_TYPE to input points; defaults to false; valid arguments for DATA_TYPE are char, double, float, int, long; if false, flags -r, --report-IDs have no effect\n\n";
 
@@ -159,23 +159,46 @@ int main(int argc, char *argv[])
 		// Interval value bound parsing
 		else if (arg == "-b" || arg == "--val-bounds")
 		{
-			for (int j = 0; j < InterParaSearchTestInfoStruct::NUM_VALS_INT_BOUNDS; j++)
+			for (int j = 0; j < InterParaSearchTestInfoStruct::MAX_NUM_VALS_INT_BOUNDS; j++)
 			{
-				i++;
-				if (i >= argc)
+				if (j < InterParaSearchTestInfoStruct::MIN_NUM_VALS_INT_BOUNDS)
 				{
-					std::cerr << "Insufficient number of arguments provided for interval value bounds\n";
-					return 2;
-				}
+					i++;
+					if (i >= argc)
+					{
+						std::cerr << "Insufficient number of arguments provided for interval value bounds\n";
+						return 2;
+					}
 
-				try
-				{
-					test_info.val_range_strings[j] = std::string(argv[i]);
+					try
+					{
+						test_info.val_range_strings[j] = std::string(argv[i]);
+					}
+					catch (std::invalid_argument const &ex)
+					{
+						std::cerr << "Invalid argument for interval value bound: " << argv[i] << '\n';
+						return 3;
+					}
 				}
-				catch (std::invalid_argument const &ex)
+				// Test for optional presence of third and fourth arguments
+				else	// j >= InterParaSearchTestInfoStruct::MIN_NUM_VALS_INT_BOUNDS)
 				{
-					std::cerr << "Invalid argument for interval value bound: " << argv[i] << '\n';
-					return 3;
+					// If no more arguments can be parsed, or next argument is a new flag, avoid incrementing i and end loop over j
+					if (i + 1 >= argc || argv[i + 1][0] == '-')
+						break;
+					else
+					{
+						i++;
+						try
+						{
+							test_info.val_range_strings[j] = std::string(argv[i]);
+						}
+						catch (std::invalid_argument const &ex)
+						{
+							std::cerr << "Invalid argument for interval size: " << argv[i] << '\n';
+							return 3;
+						}
+					}
 				}
 			}
 		}

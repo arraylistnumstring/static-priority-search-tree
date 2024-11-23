@@ -29,20 +29,29 @@ struct InterParaSearchTester
 	{
 		RandNumEng rand_num_eng;
 		Distrib<T> distr;
+		Distrib<T> inter_size_distr;
 
 		// Search value to use
 		T search_val;
 
-		DataTypeWrapper(T min_val, T max_val, T search_val)
+		bool inter_size_disr_active;
+
+		DataTypeWrapper(T min_val, T max_val, T inter_size_val1, T inter_size_val2,
+						T search_val)
 			: rand_num_eng(0),
 			distr(min_val, max_val),
-			search_val(search_val)
+			inter_size_distr(inter_size_val2 < 0 ? 0 : inter_size_val1, inter_size_val2 < 0 ? inter_size_val1 : inter_size_val2),
+			search_val(search_val),
+			inter_size_distr_active(inter_size_val1 >= 0)
 		{};
 
-		DataTypeWrapper(size_t rand_seed, T min_val, T max_val, T search_val)
+		DataTypeWrapper(size_t rand_seed, T min_val, T max_val,
+						T inter_size_val1, T inter_size_val2, T search_val)
 			: rand_num_eng(rand_seed),
 			distr(min_val, max_val),
-			search_val(search_val)
+			inter_size_distr(inter_size_val2 < 0 ? 0 : inter_size_val1, inter_size_val2 < 0 ? inter_size_val1 : inter_size_val2),
+			search_val(search_val),
+			inter_size_distr_active(inter_size_val1 >= 0)
 		{};
 
 		// Nested structs to allow for the metaprogramming equivalent of currying, but with type parameters
@@ -114,7 +123,12 @@ struct InterParaSearchTester
 						{
 							// Distribution takes random number engine as parameter with which to generate its next value
 							T val1 = id_type_wrapper.num_ids_wrapper.para_search_tester.distr(id_type_wrapper.num_ids_wrapper.para_search_tester.rand_num_eng);
-							T val2 = id_type_wrapper.num_ids_wrapper.para_search_tester.distr(id_type_wrapper.num_ids_wrapper.para_search_tester.rand_num_eng);
+
+							T val2;
+							if (id_type_wrapper.num_ids_wrapper.para_search_tester.inter_size_distr_active)
+								val2 = val1 + id_type_wrapper.num_ids_wrapper.para_search_tester.inter_size_distr(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
+							else
+								val2 = id_type_wrapper.num_ids_wrapper.para_search_tester.distr(id_type_wrapper.num_ids_wrapper.para_search_tester.rand_num_eng);
 
 							// Interval parallel search requires that first value of PointStruct is no more than the second; written in this order for obvious parity with PSTTester
 							if (val1 > val2)
@@ -287,7 +301,12 @@ struct InterParaSearchTester
 					{
 						// Distribution takes random number engine as parameter with which to generate its next value
 						T val1 = num_ids_wrapper.para_search_tester.distr(num_ids_wrapper.para_search_tester.rand_num_eng);
-						T val2 = num_ids_wrapper.para_search_tester.distr(num_ids_wrapper.para_search_tester.rand_num_eng);
+
+						T val2;
+						if (num_ids_wrapper.para_search_tester.inter_size_distr_active)
+							val2 = val1 + num_ids_wrapper.para_search_tester.inter_size_distr(num_ids_wrapper.para_search_tester.rand_num_eng);
+						else
+							val2 = num_ids_wrapper.para_search_tester.distr(num_ids_wrapper.para_search_tester.rand_num_eng);
 
 						// Interval parallel search requires that first value of PointStruct is no more than the second; written in this order for obvious parity with PSTTester
 						if (val1 > val2)
