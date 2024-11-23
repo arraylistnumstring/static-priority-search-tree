@@ -161,7 +161,7 @@ struct PSTTester
 								T val1 = id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.distr(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
 
 								T val2;
-								if (inter_size_distr_active)
+								if (id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr_active)
 									val2 = val1 + id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
 								else
 									val2 = id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.distr(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
@@ -489,7 +489,7 @@ struct PSTTester
 							T val1 = num_ids_wrapper.tree_type_wrapper.pst_tester.distr(num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
 
 							T val2;
-							if (inter_size_distr_active)
+							if (num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr_active)
 								val2 = val1 + num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr(num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
 							else
 								val2 = num_ids_wrapper.tree_type_wrapper.pst_tester.distr(num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
