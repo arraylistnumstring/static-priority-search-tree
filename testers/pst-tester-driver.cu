@@ -238,7 +238,7 @@ int main(int argc, char *argv[])
 		{
 			for (int j = 0; j < PSTTestInfoStruct::MAX_NUM_VALS_INT_BOUNDS; j++)
 			{
-				if (j < PSTTestInfoStruct::NUM_VALS_INT_BOUNDS)
+				if (j < PSTTestInfoStruct::MIN_NUM_VALS_INT_BOUNDS)
 				{
 					i++;
 					if (i >= argc)
@@ -258,7 +258,7 @@ int main(int argc, char *argv[])
 					}
 				}
 				// Test for optional presence of third and fourth arguments
-				else	// j >= PSTTestInfoStruct::NUM_VALS_INT_BOUNDS
+				else	// j >= PSTTestInfoStruct::MIN_NUM_VALS_INT_BOUNDS
 				{
 					// If no more arguments can be parsed, or next argument is a new flag, avoid incrementing i and end loop over j
 					if (i + 1 >= argc || argv[i + 1][0] == '-')

@@ -24,9 +24,9 @@ struct PSTTestInfoStruct
 	std::string search_range_strings[NumSearchVals::NUM_VALS_THREE_SEARCH] = {"0", "0", "0"};
 
 	// Number of values necessary to define the bounds of an interval
-	const static size_t NUM_VALS_INT_BOUNDS = 2;
+	const static size_t MIN_NUM_VALS_INT_BOUNDS = 2;
 	const static size_t MAX_NUM_VALS_INT_BOUNDS = 4;
-	std::string tree_val_range_strings[NUM_VALS_INT_BOUNDS] = {"0", "0", "-1", "-1"};
+	std::string tree_val_range_strings[MAX_NUM_VALS_INT_BOUNDS] = {"0", "0", "-1", "-1"};
 
 	size_t rand_seed = 0;
 	size_t num_elems;
