@@ -40,6 +40,7 @@ struct PSTTester
 	{
 		RandNumEng rand_num_eng;
 		Distrib<T> distr;
+		Distrib<T> inter_size_distr;
 
 		// Search values to use; may not be used if test is not of search type
 		T dim1_val_bound1;
@@ -47,8 +48,10 @@ struct PSTTester
 		T min_dim2_val;
 
 		bool vals_inc_ordered;
+		bool inter_size_distr_active;
 
-		DataTypeWrapper(T min_val, T max_val, T dim1_val_bound1, T dim1_val_bound2,
+		DataTypeWrapper(T min_val, T max_val, T inter_size_val1, T inter_size_val2,
+						T dim1_val_bound1, T dim1_val_bound2,
 						T min_dim2_val, bool vals_inc_ordered)
 			: rand_num_eng(0),
 			distr(min_val, max_val),
@@ -56,9 +59,19 @@ struct PSTTester
 			dim1_val_bound2(dim1_val_bound2),
 			min_dim2_val(min_dim2_val),
 			vals_inc_ordered(vals_inc_ordered)
-		{};
+		{
+			if (inter_size_val1 >= 0)
+			{
+				inter_size_distr_active = true;
+				if (inter_size_val2 >= 0)
+					inter_size_distr(inter_size_val1, inter_size_val2);
+				else
+					inter_size_distr(0, inter_size_val1);
+			}
+		};
 
-		DataTypeWrapper(size_t rand_seed, T min_val, T max_val, T dim1_val_bound1,
+		DataTypeWrapper(size_t rand_seed, T min_val, T max_val,
+						T inter_size_val1, T inter_size_val2, T dim1_val_bound1,
 						T dim1_val_bound2, T min_dim2_val, bool vals_inc_ordered)
 			: rand_num_eng(rand_seed),
 			distr(min_val, max_val),
@@ -66,7 +79,16 @@ struct PSTTester
 			dim1_val_bound2(dim1_val_bound2),
 			min_dim2_val(min_dim2_val),
 			vals_inc_ordered(vals_inc_ordered)
-		{};
+		{
+			if (inter_size_val1 >= 0)
+			{
+				inter_size_distr_active = true;
+				if (inter_size_val2 >= 0)
+					inter_size_distr(inter_size_val1, inter_size_val2);
+				else
+					inter_size_distr(0, inter_size_val1);
+			}
+		};
 
 		// Nested structs to allow for the metaprogramming equivalent of currying, but with type parameters
 		template <template<typename, typename, size_t> class PointStructTemplate,
@@ -151,7 +173,12 @@ struct PSTTester
 							{
 								// Distribution takes random number engine as parameter with which to generate its next value
 								T val1 = id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.distr(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
-								T val2 = id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.distr(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
+
+								T val2;
+								if (inter_size_distr_active)
+									val2 = val1 + id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
+								else
+									val2 = id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.distr(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
 
 								// Swap generated values only if val1 > val2 and monotonically increasing order is required
 								if (id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.vals_inc_ordered
@@ -474,7 +501,12 @@ struct PSTTester
 						{
 							// Distribution takes random number engine as parameter with which to generate its next value
 							T val1 = num_ids_wrapper.tree_type_wrapper.pst_tester.distr(num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
-							T val2 = num_ids_wrapper.tree_type_wrapper.pst_tester.distr(num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
+
+							T val2;
+							if (inter_size_distr_active)
+								val2 = val1 + num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr(num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
+							else
+								val2 = num_ids_wrapper.tree_type_wrapper.pst_tester.distr(num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
 
 							// Swap generated values only if val1 > val2 and monotonically increasing order is required
 							if (num_ids_wrapper.tree_type_wrapper.pst_tester.vals_inc_ordered

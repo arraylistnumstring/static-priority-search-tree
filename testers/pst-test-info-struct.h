@@ -25,7 +25,8 @@ struct PSTTestInfoStruct
 
 	// Number of values necessary to define the bounds of an interval
 	const static size_t NUM_VALS_INT_BOUNDS = 2;
-	std::string tree_val_range_strings[NUM_VALS_INT_BOUNDS] = {"0", "0"};
+	const static size_t MAX_NUM_VALS_INT_BOUNDS = 4;
+	std::string tree_val_range_strings[NUM_VALS_INT_BOUNDS] = {"0", "0", "-1", "-1"};
 
 	size_t rand_seed = 0;
 	size_t num_elems;
@@ -70,6 +71,8 @@ struct PSTTestInfoStruct
 			typename PSTTesterTimingDet::DataTypeWrapper<double, std::uniform_real_distribution>
 						pst_tester(rand_seed, std::stod(tree_val_range_strings[0]),
 									std::stod(tree_val_range_strings[1]),
+									std::stod(tree_val_range_strings[2]),
+									std::stod(tree_val_range_strings[3]),
 									std::stod(search_range_strings[0]),
 									std::stod(search_range_strings[1]),
 									std::stod(search_range_strings[2]),
@@ -82,6 +85,8 @@ struct PSTTestInfoStruct
 			typename PSTTesterTimingDet::DataTypeWrapper<float, std::uniform_real_distribution>
 						pst_tester(rand_seed, std::stof(tree_val_range_strings[0]),
 									std::stof(tree_val_range_strings[1]),
+									std::stof(tree_val_range_strings[2]),
+									std::stof(tree_val_range_strings[3]),
 									std::stof(search_range_strings[0]),
 									std::stof(search_range_strings[1]),
 									std::stof(search_range_strings[2]),
@@ -94,6 +99,8 @@ struct PSTTestInfoStruct
 			typename PSTTesterTimingDet::DataTypeWrapper<int, std::uniform_int_distribution>
 						pst_tester(rand_seed, std::stoi(tree_val_range_strings[0]),
 									std::stoi(tree_val_range_strings[1]),
+									std::stoi(tree_val_range_strings[2]),
+									std::stoi(tree_val_range_strings[3]),
 									std::stoi(search_range_strings[0]),
 									std::stoi(search_range_strings[1]),
 									std::stoi(search_range_strings[2]),
@@ -106,6 +113,8 @@ struct PSTTestInfoStruct
 			typename PSTTesterTimingDet::DataTypeWrapper<long, std::uniform_int_distribution>
 						pst_tester(rand_seed, std::stol(tree_val_range_strings[0]),
 									std::stol(tree_val_range_strings[1]),
+									std::stol(tree_val_range_strings[2]),
+									std::stol(tree_val_range_strings[3]),
 									std::stol(search_range_strings[0]),
 									std::stol(search_range_strings[1]),
 									std::stol(search_range_strings[2]),

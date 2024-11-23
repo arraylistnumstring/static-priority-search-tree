@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
 			std::cerr << "[-S RAND_SEED] ";
 			std::cerr << "[-t] ";
 			std::cerr << "[-w WARPS_PER_BLOCK] ";
-			std::cerr << "-b MIN_VAL MAX_VAL ";
+			std::cerr << "-b MIN_VAL MAX_VAL [SIZE_BOUND_1] [SIZE_BOUND_2]";
 			std::cerr << "-n NUM_ELEMS";
 			std::cerr << "\n\n";
 
@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
 			std::cerr << "\t\t--recur\tUse StaticPSTCPURecur\n";
 			std::cerr << '\n';
 
-			std::cerr << "\t-b, --val-bounds MIN_VAL MAX_VAL\tBounds of values (inclusive) to use when generating random values for PST; must be castable to chosen datatype\n\n";
+			std::cerr << "\t-b, --val-bounds MIN_VAL MAX_VAL [SIZE_BOUND_1] [SIZE_BOUND_2]\tBounds of values (inclusive) to use when generating random values for PST; must be castable to chosen datatype; when non-negative values SIZE_BOUND_1 and SIZE_BOUND_2 are specified, the lower bound of the interval is drawn from the range [MIN_VAL, MAX_VAL], and the upper bound is equal to the lower bound plus a value drawn from the range [SIZE_BOUND_1, SIZE_BOUND_2]; when only SIZE_BOUND_1 is specified, the added value is drawn from the range [0, SIZE_BOUND_1]\n\n";
 
 			std::cerr << "\t-I, --ids DATA_TYPE\tToggles assignment of IDs to the nodes of the tree with data type DATA_TYPE; defaults to false; valid data types are char, double, float, int, long\n\n";
 
@@ -236,23 +236,46 @@ int main(int argc, char *argv[])
 		// Tree value parsing
 		else if (arg == "-b" || arg == "--val-bounds")
 		{
-			for (int j = 0; j < PSTTestInfoStruct::NUM_VALS_INT_BOUNDS; j++)
+			for (int j = 0; j < PSTTestInfoStruct::MAX_NUM_VALS_INT_BOUNDS; j++)
 			{
-				i++;
-				if (i >= argc)
+				if (j < PSTTestInfoStruct::NUM_VALS_INT_BOUNDS)
 				{
-					std::cerr << "Insufficient number of arguments provided for tree value bounds\n";
-					return 2;
-				}
+					i++;
+					if (i >= argc)
+					{
+						std::cerr << "Insufficient number of arguments provided for tree value bounds\n";
+						return 2;
+					}
 
-				try
-				{
-					test_info.tree_val_range_strings[j] = std::string(argv[i]);
+					try
+					{
+						test_info.tree_val_range_strings[j] = std::string(argv[i]);
+					}
+					catch (std::invalid_argument const &ex)
+					{
+						std::cerr << "Invalid argument for tree value bound: " << argv[i] << '\n';
+						return 3;
+					}
 				}
-				catch (std::invalid_argument const &ex)
+				// Test for optional presence of third and fourth arguments
+				else	// j >= PSTTestInfoStruct::NUM_VALS_INT_BOUNDS
 				{
-					std::cerr << "Invalid argument for tree value bound: " << argv[i] << '\n';
-					return 3;
+					// If no more arguments can be parsed, or next argument is a new flag, avoid incrementing i and end loop over j
+					if (i + 1 >= argc || argv[i + 1][0] == '-')
+						break;
+					else
+					{
+						i++;
+						try
+						{
+							test_info.tree_val_range_strings[j] = std::string(argv[i]);
+						}
+						catch (std::invalid_argument const &ex)
+						{
+							std::cerr << "Invalid argument for tree value interval size: " << argv[i] << '\n';
+							return 3;
+						}
+					}
 				}
 			}
 		}
