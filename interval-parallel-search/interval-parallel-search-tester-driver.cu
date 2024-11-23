@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
 			std::cerr << "-B NUM_BLOCKS";
 			std::cerr << "-b MIN_VAL MAX_VAL ";
 			std::cerr << "-n NUM_ELEMS ";
-			std::cerr << "-s SEARCH_VAL";
+			std::cerr << "-s SEARCH_VAL ";
 			std::cerr << "-T THREADS_PER_BLOCK";
 			std::cerr << "\n\n";
 

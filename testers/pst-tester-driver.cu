@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
 			std::cerr << "[-S RAND_SEED] ";
 			std::cerr << "[-t] ";
 			std::cerr << "[-w WARPS_PER_BLOCK] ";
-			std::cerr << "-b MIN_VAL MAX_VAL [SIZE_BOUND_1] [SIZE_BOUND_2]";
+			std::cerr << "-b MIN_VAL MAX_VAL [SIZE_BOUND_1] [SIZE_BOUND_2] ";
 			std::cerr << "-n NUM_ELEMS";
 			std::cerr << "\n\n";
 
