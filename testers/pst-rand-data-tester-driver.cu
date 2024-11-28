@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
 		// Help message
 		if (arg == "-h" || arg == "--help")
 		{
-			std::cerr << "Usage: ./pst-tester-driver <datatype-flag> <test-type-flag> ";
+			std::cerr << "Usage: ./pst-rand-data-tester-driver <datatype-flag> <test-type-flag> ";
 			std::cerr << "<tree-type-flag> ";
 			std::cerr << "[-I ID_TYPE] ";
 			std::cerr << "[-O] ";
