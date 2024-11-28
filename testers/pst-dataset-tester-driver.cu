@@ -2,8 +2,8 @@
 #include <random>		// To use uniform_int_distribution and uniform_real_distribution
 #include <string>		// To use stoi() and string operators for command-line argument parsing
 
-#include "pst-test-info-struct.h"
 #include "exit-status-codes.h"		// For consistent exit status codes
+#include "pst-test-info-struct.h"
 
 int main(int argc, char *argv[])
 {
@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
 			std::cerr << "-n NUM_ELEMS";
 			std::cerr << "\n\n";
 
-			std::cerr << "\tdata-file:\tBinary volume data input file";
+			std::cerr << "\tdata-file:\tBinary volume data input file\n\n";
 
 			std::cerr << "\tdatatype-flag:\n";
 			std::cerr << "\t\t-d, --double\tUse doubles as values\n\n";
