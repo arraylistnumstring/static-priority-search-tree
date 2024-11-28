@@ -1,6 +1,7 @@
 #include <random>	// To use uniform_int_distribution and uniform_real_distribution
 #include <string>	// To use stoi() and string operators for command-line argument parsing
 
+#include "exit-status-codes.h"		// For consistent exit status codes
 #include "ips-test-info-struct.h"
 
 int main(int argc, char *argv[])
@@ -40,7 +41,7 @@ int main(int argc, char *argv[])
 
 			std::cerr << "\t-b, --val-bounds MIN_VAL MAX_VAL [SIZE_BOUND_1] [SIZE_BOUND_2]\tBounds of values (inclusive) to use when generating random values to search on; must be castable to chosen datatype; when non-negative values SIZE_BOUND_1 and SIZE_BOUND_2 are specified, the lower bound of the interval is drawn from the range [MIN_VAL, MAX_VAL], and the upper bound is equal to the lower bound plus a value drawn from the range [SIZE_BOUND_1, SIZE_BOUND_2]; when only SIZE_BOUND_1 is specified, the added value is drawn from the range [0, SIZE_BOUND_1]\n\n";
 
-			std::cerr << "\t-I, --ids DATA_TYPE\tToggles assignment of IDs of data type DATA_TYPE to input points; defaults to false; valid arguments for DATA_TYPE are char, double, float, int, long; if false, flags -r, --report-IDs have no effect\n\n";
+			std::cerr << "\t-I, --ids DATA_TYPE\tToggles assignment of IDs of data type DATA_TYPE to input points; defaults to false; valid arguments for DATA_TYPE are char, double, float, int, long, unsigned (equivalent to unsigned-int), unsigned-int, unsigned-long\n\n";
 
 			std::cerr << "\t-n, --num-elems NUM_ELEMS\tNumber of elements to put in tree\n\n";
 
@@ -54,7 +55,7 @@ int main(int argc, char *argv[])
 
 			std::cerr << "\t-t, --timed-CUDA\tToggles timing of the CUDA portion of the code using on-device functions; defaults to false\n\n";
 
-			return 1;
+			return ExitStatusCodes::SUCCESS;
 		}
 
 		// Data-type parsing
@@ -76,7 +77,7 @@ int main(int argc, char *argv[])
 			if (i >= argc)
 			{
 				std::cerr << "Insufficient number of arguments provided for ID data type\n";
-				return 2;
+				return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
 			}
 
 			try
@@ -97,11 +98,15 @@ int main(int argc, char *argv[])
 					test_info.id_type = DataType::INT;
 				else if (id_type_string == "long")
 					test_info.id_type = DataType::LONG;
+				else if (id_type_string == "unsigned" || id_type_string == "unsigned-int")
+					test_info.id_type = DataType::UNSIGNED_INT;
+				else if (id_type_string == "unsigned-long")
+					test_info.id_type = DataType::UNSIGNED_LONG;
 			}
 			catch (std::invalid_argument const &ex)
 			{
 				std::cerr << "Invalid argument for ID data type: " << argv[i] << '\n';
-				return 3;
+				return ExitStatusCodes::INVALID_ARG_ERR;
 			}
 		}
 		
@@ -116,7 +121,7 @@ int main(int argc, char *argv[])
 			if (i >= argc)
 			{
 				std::cerr << "Insufficient number of arguments provided for random seed\n";
-				return 2;
+				return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
 			}
 
 			try
@@ -126,7 +131,7 @@ int main(int argc, char *argv[])
 			catch (std::invalid_argument const &ex)
 			{
 				std::cerr << "Invalid argument for random seed: " << argv[i] << '\n';
-				return 3;
+				return ExitStatusCodes::INVALID_ARG_ERR;
 			}
 		}
 
@@ -142,7 +147,7 @@ int main(int argc, char *argv[])
 			{
 				std::cerr << "Insufficient number of arguments provided for number of thread blocks\n";
 
-				return 2;
+				return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
 			}
 
 			try
@@ -152,7 +157,7 @@ int main(int argc, char *argv[])
 			catch (std::invalid_argument const &ex)
 			{
 				std::cerr << "Invalid argument for number of thread blocks: " << argv[i] << '\n';
-				return 3;
+				return ExitStatusCodes::INVALID_ARG_ERR;
 			}
 		}
 
@@ -167,7 +172,7 @@ int main(int argc, char *argv[])
 					if (i >= argc)
 					{
 						std::cerr << "Insufficient number of arguments provided for interval value bounds\n";
-						return 2;
+						return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
 					}
 
 					try
@@ -177,7 +182,7 @@ int main(int argc, char *argv[])
 					catch (std::invalid_argument const &ex)
 					{
 						std::cerr << "Invalid argument for interval value bound: " << argv[i] << '\n';
-						return 3;
+						return ExitStatusCodes::INVALID_ARG_ERR;
 					}
 				}
 				// Test for optional presence of third and fourth arguments
@@ -196,7 +201,7 @@ int main(int argc, char *argv[])
 						catch (std::invalid_argument const &ex)
 						{
 							std::cerr << "Invalid argument for interval size: " << argv[i] << '\n';
-							return 3;
+							return ExitStatusCodes::INVALID_ARG_ERR;
 						}
 					}
 				}
@@ -210,7 +215,7 @@ int main(int argc, char *argv[])
 			if (i >= argc)
 			{
 				std::cerr << "Insufficient number of arguments provided for number of elements\n";
-				return 2;
+				return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
 			}
 
 			try
@@ -220,7 +225,7 @@ int main(int argc, char *argv[])
 			catch (std::invalid_argument const &ex)
 			{
 				std::cerr << "Invalid argument for number of elements: " << argv[i] << '\n';
-				return 3;
+				return ExitStatusCodes::INVALID_ARG_ERR;
 			}
 
 		}
@@ -232,7 +237,7 @@ int main(int argc, char *argv[])
 			if (i >= argc)
 			{
 				std::cerr << "Insufficient number of arguments provided for search value\n";
-				return 2;
+				return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
 			}
 
 			try
@@ -243,7 +248,7 @@ int main(int argc, char *argv[])
 			catch (std::invalid_argument const &ex)
 			{
 				std::cerr << "Invalid argument for search value: " << argv[i] << '\n';
-				return 3;
+				return ExitStatusCodes::INVALID_ARG_ERR;
 			}
 		}
 
@@ -254,7 +259,7 @@ int main(int argc, char *argv[])
 			if (i >= argc)
 			{
 				std::cerr << "Insufficient number of arguments provided for number of threads per block\n";
-				return 2;
+				return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
 			}
 
 			try
@@ -264,7 +269,7 @@ int main(int argc, char *argv[])
 			catch (std::invalid_argument const &ex)
 			{
 				std::cerr << "Invalid argument for number of threads per block: " << argv[i] << '\n';
-				return 3;
+				return ExitStatusCodes::INVALID_ARG_ERR;
 			}
 		}
 }
@@ -276,5 +281,5 @@ int main(int argc, char *argv[])
 	// Run test
 	test_info.test();
 
-	return 0;
+	return ExitStatusCodes::SUCCESS;
 }
