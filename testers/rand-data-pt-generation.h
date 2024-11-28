@@ -2,8 +2,6 @@
 #define RAND_DATA_PT_GENERATION_H
 
 #include "class-member-checkers.h"
-#include "pst-test-info-struct.h"
-
 
 // Pre-condition: HasID<PointStruct>::value <=> id_distr_ptr != nullptr
 template <class PointStruct, typename T, typename IDDistrib, typename Distrib, typename RandNumEng>
