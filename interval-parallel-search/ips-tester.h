@@ -10,9 +10,8 @@
 #include "err-chk.h"
 #include "gpu-err-chk.h"
 #include "helper-cuda--modified.h"
-#include "print-array.h"
-
 #include "interval-parallel-search.h"
+#include "print-array.h"
 
 enum DataType {CHAR, DOUBLE, FLOAT, INT, LONG};
 

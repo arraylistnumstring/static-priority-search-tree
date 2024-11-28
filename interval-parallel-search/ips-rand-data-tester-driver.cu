@@ -1,7 +1,7 @@
 #include <random>	// To use uniform_int_distribution and uniform_real_distribution
 #include <string>	// To use stoi() and string operators for command-line argument parsing
 
-#include "interval-parallel-search-test-info-struct.h"
+#include "ips-test-info-struct.h"
 
 int main(int argc, char *argv[])
 {

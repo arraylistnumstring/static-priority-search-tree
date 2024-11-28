@@ -5,9 +5,8 @@
 #include <random>
 #include <string>
 
+#include "ips-tester.h"
 #include "point-struct.h"
-
-#include "interval-parallel-search-tester.h"
 
 
 // Struct for information necessary to instantiate InterParaSearchTester

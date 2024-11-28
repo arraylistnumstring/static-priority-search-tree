@@ -43,7 +43,7 @@ Standard is set to C++20 because Thrust has deprecated versions of C++ older tha
 
 Similarly, to compile interval parallel search comparison code, run
 
-	nvcc interval-parallel-search/interval-parallel-search-tester-driver.cu -ICommon -Ihelpers -Iinterval-parallel-search -std=c++20 -o interval-parallel-search/interval-parallel-search-tester-driver.out
+	nvcc interval-parallel-search/ips-rand-data-tester-driver.cu -ICommon -Ihelpers -Iinterval-parallel-search -std=c++20 -o interval-parallel-search/ips-rand-data-tester-driver.out
 - `interval-parallel-search` option for `-I` flag: interval parallel search testers and code
 - `-D<preprocessor-variable-name>` valid options for `<preprocessor-variable-name>` (same listed effects as above for identical names):
 	- `DEBUG`
