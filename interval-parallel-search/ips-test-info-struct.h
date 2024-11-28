@@ -14,6 +14,8 @@ struct InterParaSearchTestInfoStruct
 {
 	// Ordering of fields chosen to minimise size of struct; std::string type appears to take 32 bytes
 
+	std::string input_file = "";
+
 	// Number of values necessary to define the bounds of an interval
 	const static size_t MIN_NUM_VALS_INT_BOUNDS = 2;
 	const static size_t MAX_NUM_VALS_INT_BOUNDS = 4;
@@ -238,6 +240,46 @@ struct InterParaSearchTestInfoStruct
 			else
 			{
 				typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, long>::RetTypeWrapper<> ips_tester_id_ret_types_instan(ips_tester_id_instan);
+				testWrap(ips_tester_id_ret_types_instan);
+			}
+		}
+		else if (id_type == DataType::UNSIGNED_INT)
+		{
+			typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, unsigned> ips_tester_id_instan(ips_tester);
+
+#ifdef DEBUG_WRAP
+			std::cout << "Instantiated IDType = unsigned int wrapper\n";
+#endif
+
+			if (report_IDs)
+			{
+				typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, unsigned>::RetTypeWrapper<unsigned> ips_tester_id_ret_types_instan(ips_tester_id_instan);
+
+				testWrap(ips_tester_id_ret_types_instan);
+			}
+			else
+			{
+				typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, unsigned>::RetTypeWrapper<> ips_tester_id_ret_types_instan(ips_tester_id_instan);
+				testWrap(ips_tester_id_ret_types_instan);
+			}
+		}
+		else if (id_type == DataType::UNSIGNED_LONG)
+		{
+			typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, unsigned long> ips_tester_id_instan(ips_tester);
+
+#ifdef DEBUG_WRAP
+			std::cout << "Instantiated IDType = unsigned long wrapper\n";
+#endif
+
+			if (report_IDs)
+			{
+				typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, unsigned long>::RetTypeWrapper<unsigned long> ips_tester_id_ret_types_instan(ips_tester_id_instan);
+
+				testWrap(ips_tester_id_ret_types_instan);
+			}
+			else
+			{
+				typename InterParaSearchTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, unsigned long>::RetTypeWrapper<> ips_tester_id_ret_types_instan(ips_tester_id_instan);
 				testWrap(ips_tester_id_ret_types_instan);
 			}
 		}

@@ -13,7 +13,7 @@
 #include "interval-parallel-search.h"
 #include "print-array.h"
 
-enum DataType {CHAR, DOUBLE, FLOAT, INT, LONG};
+enum DataType {CHAR, DOUBLE, FLOAT, INT, LONG, UNSIGNED_INT, UNSIGNED_LONG};
 
 
 template <bool timed_CUDA>
