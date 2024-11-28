@@ -154,57 +154,17 @@ struct PSTTester
 
 						void operator()(size_t num_elems, const unsigned warps_per_block, PSTTestCodes test_type=CONSTRUCT)
 						{
-							PointStructTemplate<T, IDType, num_IDs> *pt_arr = new PointStructTemplate<T, IDType, num_IDs>[num_elems];
-
-							for (size_t i = 0; i < num_elems; i++)
-							{
-								// Distribution takes random number engine as parameter with which to generate its next value
-								T val1 = id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.distr(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
-
-								T val2;
-								if (id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr_active)
-									val2 = val1 + id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
-								else
-									val2 = id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.distr(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
-
-								// Swap generated values only if val1 > val2 and monotonically increasing order is required
-								if (id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.vals_inc_ordered
-										&& val1 > val2)
-								{
-									pt_arr[i].dim1_val = val2;
-									pt_arr[i].dim2_val = val1;
-								}
-								else
-								{
-									pt_arr[i].dim1_val = val1;
-									pt_arr[i].dim2_val = val2;
-								}
+							PointStructTemplate<T, IDType, num_IDs> *pt_arr
+								= generateRandPts<PointStructTemplate, T, IDType, num_IDs, Distrib, RandNumEng>(num_elems,
+													id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.distr,
+													id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng,
+													id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.vals_inc_ordered,
+													id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr_active ? &(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr) : nullptr);
+/*
 								// Instantiation of value of type IDType
 								if constexpr (num_IDs == 1)
 									pt_arr[i].id = id_type_wrapper.id_distr(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
-							}
-
-							/*
-							PointStructTemplate<T, IDType, num_IDs> *pt_arr;
-							if (id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.vals_inc_ordered)
-							{
-								pt_arr = generateRandPts<PointStructTemplate, T, IDType, num_IDs, true, Distrib, IDDistrib, RandNumEng>(
-															num_elems,
-															id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.distr,
-															id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng,
-															id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr_active ? &(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr) : nullptr,
-															id_type_wrapper.id_distr);
-							}
-							else
-							{
-								pt_arr = generateRandPts<PointStructTemplate, T, IDType, num_IDs, false, Distrib, IDDistrib, RandNumEng>(
-															num_elems,
-															id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.distr,
-															id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng,
-															id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr_active ? &(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr) : nullptr,
-															id_type_wrapper.id_distr);
-							}
-							*/
+									*/
 
 #ifdef DEBUG
 							printArray(std::cout, pt_arr, 0, num_elems);

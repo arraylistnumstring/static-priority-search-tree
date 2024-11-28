@@ -9,9 +9,9 @@
 
 // Struct to prevent instantiation of base, unspecialised version of PointStruct; templating necessary in order to defer failure of static_assert() until attempt to instantiate primary template of PointStruct
 // Source:
-//	https://stackoverflow.com/questions/49315890/disable-construction-of-non-fully-specialized-template-class
+//	https://stackoverflow.com/a/49315953
 template <typename...>
-struct deferred_false: std::false_type{};
+struct deferred_false: std::false_type {};
 
 template <typename T, typename IDType, size_t num_IDs>
 struct PointStruct
