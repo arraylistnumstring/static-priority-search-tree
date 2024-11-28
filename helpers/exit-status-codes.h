@@ -1,0 +1,12 @@
+#ifndef EXIT_STATUS_CODES_H
+#define EXIT_STATUS_CODES_H
+
+enum ExitStatusCodes
+{
+	SUCCESS = 0,
+	FILE_NOT_FOUND_ERR,
+	INSUFFICIENT_NUM_ARGS_ERR,
+	INVALID_ARG_ERR
+};
+
+#endif

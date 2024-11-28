@@ -2,6 +2,7 @@
 #include <string>	// To use stoi() and string operators for command-line argument parsing
 
 #include "pst-test-info-struct.h"
+#include "exit-status-codes.h"		// For consistent exit status codes
 
 int main(int argc, char *argv[])
 {
@@ -66,7 +67,7 @@ int main(int argc, char *argv[])
 
 			std::cerr << "\t-w, --warps-per-block WARPS_PER_BLOCK\tNumber of warps to use in a CUDA thread block; only relevant when -g option is invoked; defaults to 1\n\n";
 
-			return 1;
+			return ExitStatusCodes::SUCCESS;
 		}
 
 		// Data-type parsing
@@ -112,7 +113,7 @@ int main(int argc, char *argv[])
 				if (i >= argc)
 				{
 					std::cerr << "Insufficient number of arguments provided for search bounds\n";
-					return 2;
+					return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
 				}
 
 				try
@@ -123,7 +124,7 @@ int main(int argc, char *argv[])
 				catch (std::invalid_argument const &ex)
 				{
 					std::cerr << "Invalid argument for search range value bound: " << argv[i] << '\n';
-					return 3;
+					return ExitStatusCodes::INVALID_ARG_ERR;
 				}
 			}
 
@@ -150,7 +151,7 @@ int main(int argc, char *argv[])
 			if (i >= argc)
 			{
 				std::cerr << "Insufficient number of arguments provided for ID data type\n";
-				return 2;
+				return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
 			}
 
 			try
@@ -179,7 +180,7 @@ int main(int argc, char *argv[])
 			catch (std::invalid_argument const &ex)
 			{
 				std::cerr << "Invalid argument for ID data type: " << argv[i] << '\n';
-				return 3;
+				return ExitStatusCodes::INVALID_ARG_ERR;
 			}
 		}
 
@@ -198,7 +199,7 @@ int main(int argc, char *argv[])
 			if (i >= argc)
 			{
 				std::cerr << "Insufficient number of arguments provided for random seed\n";
-				return 2;
+				return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
 			}
 
 			try
@@ -208,7 +209,7 @@ int main(int argc, char *argv[])
 			catch (std::invalid_argument const &ex)
 			{
 				std::cerr << "Invalid argument for random seed: " << argv[i] << '\n';
-				return 3;
+				return ExitStatusCodes::INVALID_ARG_ERR;
 			}
 		}
 
@@ -223,7 +224,7 @@ int main(int argc, char *argv[])
 			if (i >= argc)
 			{
 				std::cerr << "Insufficient number of arguments provided for number of warps per thread block\n";
-				return 2;
+				return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
 			}
 
 			try
@@ -233,7 +234,7 @@ int main(int argc, char *argv[])
 			catch (std::invalid_argument const &ex)
 			{
 				std::cerr << "Invalid argument for number of warps per thread block: " << argv[i] << '\n';
-				return 3;
+				return ExitStatusCodes::INVALID_ARG_ERR;
 			}
 		}
 
@@ -248,7 +249,7 @@ int main(int argc, char *argv[])
 					if (i >= argc)
 					{
 						std::cerr << "Insufficient number of arguments provided for tree value bounds\n";
-						return 2;
+						return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
 					}
 
 					try
@@ -258,7 +259,7 @@ int main(int argc, char *argv[])
 					catch (std::invalid_argument const &ex)
 					{
 						std::cerr << "Invalid argument for tree value bound: " << argv[i] << '\n';
-						return 3;
+						return ExitStatusCodes::INVALID_ARG_ERR;
 					}
 				}
 				// Test for optional presence of third and fourth arguments
@@ -277,7 +278,7 @@ int main(int argc, char *argv[])
 						catch (std::invalid_argument const &ex)
 						{
 							std::cerr << "Invalid argument for tree value interval size: " << argv[i] << '\n';
-							return 3;
+							return ExitStatusCodes::INVALID_ARG_ERR;
 						}
 					}
 				}
@@ -291,7 +292,7 @@ int main(int argc, char *argv[])
 			if (i >= argc)
 			{
 				std::cerr << "Insufficient number of arguments provided for number of elements\n";
-				return 2;
+				return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
 			}
 
 			try
@@ -301,7 +302,7 @@ int main(int argc, char *argv[])
 			catch (std::invalid_argument const &ex)
 			{
 				std::cerr << "Invalid argument for number of elements: " << argv[i] << '\n';
-				return 3;
+				return ExitStatusCodes::INVALID_ARG_ERR;
 			}
 
 		}
@@ -314,5 +315,5 @@ int main(int argc, char *argv[])
 	// Run test
 	test_info.test();
 
-	return 0;
+	return ExitStatusCodes::SUCCESS;
 }
