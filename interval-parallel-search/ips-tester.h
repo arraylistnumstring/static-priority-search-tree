@@ -1,5 +1,5 @@
-#ifndef INTERVAL_PARALLEL_SEARCH_TESTER_H
-#define INTERVAL_PARALLEL_SEARCH_TESTER_H
+#ifndef IPS_TESTER_H
+#define IPS_TESTER_H
 
 #include <algorithm>	// To use sort()
 #include <iostream>

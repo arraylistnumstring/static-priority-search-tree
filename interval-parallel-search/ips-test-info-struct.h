@@ -1,5 +1,5 @@
-#ifndef INTERVAL_PARALLEL_SEARCH_TEST_INFO_STRUCT_H
-#define INTERVAL_PARALLEL_SEARCH_TEST_INFO_STRUCT_H
+#ifndef IPS_TEST_INFO_STRUCT_H
+#define IPS_TEST_INFO_STRUCT_H
 
 #include <algorithm>
 #include <random>
