@@ -1,5 +1,5 @@
-#ifndef RAND_DATA_PT_GENERATION_H
-#define RAND_DATA_PT_GENERATION_H
+#ifndef RAND_DATA_PT_GENERATOR_H
+#define RAND_DATA_PT_GENERATOR_H
 
 #include "class-member-checkers.h"
 

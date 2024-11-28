@@ -13,7 +13,7 @@
 #include "gpu-err-chk.h"
 #include "helper-cuda--modified.h"
 #include "print-array.h"
-#include "rand-data-pt-generation.h"
+#include "rand-data-pt-generator.h"
 
 
 enum DataType {CHAR, DOUBLE, FLOAT, INT, LONG, UNSIGNED_INT, UNSIGNED_LONG};
