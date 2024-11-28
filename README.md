@@ -19,7 +19,7 @@ According to HPC support staff, CUDA Singularity image version 12.3.2 may still 
 
 To compile testers, run:
 
-	nvcc testers/pst-tester-driver.cu -ICommon -Ihelpers -Ipst -rdc true -std=c++20 -o testers/pst-tester-driver.out
+	nvcc testers/pst-rand-data-tester-driver.cu -ICommon -Ihelpers -Ipst -rdc true -std=c++20 -o testers/pst-rand-data-tester-driver.out
 
 - `-I<filepath>` adds the given filepath to the list of paths to search for headers.
 	- `Common`: NVIDIA CUDA sample headers
@@ -31,7 +31,7 @@ For debugging options, use:
 - `-D<flag>` to toggle various preprocessor flags:
 	- `-DDEBUG` to toggle DEBUG preprocessor flag and corresponding print output to aid with debugging variables that are inaccessible via gdb
 	- `-DDEBUG_CONSTR` to toggle constructor-internal debugging print statements
-	- `-DDEBUG_TEST` to toggle pst-tester-driver.h debugging print statements
+	- `-DDEBUG_TEST` to toggle pst-rand-data-tester-driver.cu debugging print statements
 	- `-DDEBUG_WRAP` to toggle pst-test-info.h debugging print statements
 	- `-DCUDA_FORCE_CDP1_IF_SUPPORTED` allows for debugging of dynamic parallelism even with legacy debugger backend; note: `cudaStreamFireAndForget` inside of the program is not compatible with this option; not supported on devices of compute capability 9.0 or greater
 - `-G` to get debugging info about device code (turns off all optimisations; is incompatible with and overrides `-lineinfo`)
