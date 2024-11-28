@@ -9,7 +9,7 @@
 #include <random>		// To use std::mt19937
 #include <type_traits>
 
-#include "class-member-testers.h"
+#include "class-member-checkers.h"
 #include "err-chk.h"
 #include "gpu-err-chk.h"
 #include "helper-cuda--modified.h"
@@ -156,15 +156,12 @@ struct PSTTester
 						void operator()(size_t num_elems, const unsigned warps_per_block, PSTTestCodes test_type=CONSTRUCT)
 						{
 							PointStructTemplate<T, IDType, num_IDs> *pt_arr
-								= generateRandPts<PointStructTemplate, T, IDType, num_IDs, Distrib, RandNumEng>(num_elems,
+								= generateRandPts<PointStructTemplate<T, IDType, num_IDs>, T>(num_elems,
 													id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.distr,
 													id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng,
 													id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.vals_inc_ordered,
-													id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr_active ? &(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr) : nullptr);
-
-							if constexpr (HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
-								addRandIDs(num_elems, pt_arr, id_type_wrapper.id_distr,
-											id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
+													id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr_active ? &(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr) : nullptr,
+													&(id_type_wrapper.id_distr));
 
 #ifdef DEBUG
 							printArray(std::cout, pt_arr, 0, num_elems);
@@ -464,32 +461,12 @@ struct PSTTester
 
 					void operator()(size_t num_elems, const unsigned warps_per_block, PSTTestCodes test_type=CONSTRUCT)
 					{
-						PointStructTemplate<T, void, num_IDs> *pt_arr = new PointStructTemplate<T, void, num_IDs>[num_elems];
-
-						for (size_t i = 0; i < num_elems; i++)
-						{
-							// Distribution takes random number engine as parameter with which to generate its next value
-							T val1 = num_ids_wrapper.tree_type_wrapper.pst_tester.distr(num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
-
-							T val2;
-							if (num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr_active)
-								val2 = val1 + num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr(num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
-							else
-								val2 = num_ids_wrapper.tree_type_wrapper.pst_tester.distr(num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
-
-							// Swap generated values only if val1 > val2 and monotonically increasing order is required
-							if (num_ids_wrapper.tree_type_wrapper.pst_tester.vals_inc_ordered
-									&& val1 > val2)
-							{
-								pt_arr[i].dim1_val = val2;
-								pt_arr[i].dim2_val = val1;
-							}
-							else
-							{
-								pt_arr[i].dim1_val = val1;
-								pt_arr[i].dim2_val = val2;
-							}
-						}
+						PointStructTemplate<T, void, num_IDs> *pt_arr
+							= generateRandPts<PointStructTemplate<T, void, num_IDs>, T, void>(num_elems,
+												num_ids_wrapper.tree_type_wrapper.pst_tester.distr,
+												num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng,
+												num_ids_wrapper.tree_type_wrapper.pst_tester.vals_inc_ordered,
+												num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr_active ? &(num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr) : nullptr);
 
 #ifdef DEBUG
 						printArray(std::cout, pt_arr, 0, num_elems);
