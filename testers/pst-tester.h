@@ -13,6 +13,7 @@
 #include "gpu-err-chk.h"
 #include "helper-cuda--modified.h"
 #include "print-array.h"
+#include "rand-data-pt-generation.h"
 
 
 enum DataType {CHAR, DOUBLE, FLOAT, INT, LONG, UNSIGNED_INT, UNSIGNED_LONG};
@@ -123,7 +124,7 @@ struct PSTTester
 					}
 				};
 
-				template <template <typename> typename IDDistrib, typename IDType>
+				template <template<typename> typename IDDistrib, typename IDType>
 				struct IDTypeWrapper
 				{
 					NumIDsWrapper<num_IDs> num_ids_wrapper;
@@ -153,34 +154,24 @@ struct PSTTester
 
 						void operator()(size_t num_elems, const unsigned warps_per_block, PSTTestCodes test_type=CONSTRUCT)
 						{
-							PointStructTemplate<T, IDType, num_IDs> *pt_arr = new PointStructTemplate<T, IDType, num_IDs>[num_elems];
-
-							for (size_t i = 0; i < num_elems; i++)
+							PointStructTemplate<T, IDType, num_IDs> *pt_arr;
+							if (id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.vals_inc_ordered)
 							{
-								// Distribution takes random number engine as parameter with which to generate its next value
-								T val1 = id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.distr(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
-
-								T val2;
-								if (id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr_active)
-									val2 = val1 + id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
-								else
-									val2 = id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.distr(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
-
-								// Swap generated values only if val1 > val2 and monotonically increasing order is required
-								if (id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.vals_inc_ordered
-										&& val1 > val2)
-								{
-									pt_arr[i].dim1_val = val2;
-									pt_arr[i].dim2_val = val1;
-								}
-								else
-								{
-									pt_arr[i].dim1_val = val1;
-									pt_arr[i].dim2_val = val2;
-								}
-								// Instantiation of value of type IDType
-								if constexpr (num_IDs == 1)
-									pt_arr[i].id = id_type_wrapper.id_distr(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
+								pt_arr = generateRandPts<PointStructTemplate, T, IDType, num_IDs, true, Distrib, IDDistrib, RandNumEng>(
+															num_elems,
+															id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.distr,
+															id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng,
+															id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr_active ? &(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr) : nullptr,
+															id_type_wrapper.id_distr);
+							}
+							else
+							{
+								pt_arr = generateRandPts<PointStructTemplate, T, IDType, num_IDs, false, Distrib, IDDistrib, RandNumEng>(
+															num_elems,
+															id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.distr,
+															id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng,
+															id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr_active ? &(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr) : nullptr,
+															id_type_wrapper.id_distr);
 							}
 
 #ifdef DEBUG
@@ -470,7 +461,7 @@ struct PSTTester
 				};
 
 				// Template specialisation for case with no ID and therefore no ID distribution; sepcialisation must follow primary (completely unspecified) template; full specialisation not allowed in class scope, hence the remaining dummy type
-				template <template <typename> typename IDDistrib>
+				template <template<typename> typename IDDistrib>
 				struct IDTypeWrapper<IDDistrib, void>
 				{
 					NumIDsWrapper<num_IDs> num_ids_wrapper;
