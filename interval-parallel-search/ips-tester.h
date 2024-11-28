@@ -117,34 +117,13 @@ struct InterParaSearchTester
 
 					void operator()(size_t num_elems, const unsigned num_thread_blocks, const unsigned threads_per_block)
 					{
-						PointStructTemplate<T, IDType, num_IDs> *pt_arr = new PointStructTemplate<T, IDType, num_IDs>[num_elems];
-
-						for (size_t i = 0; i < num_elems; i++)
-						{
-							// Distribution takes random number engine as parameter with which to generate its next value
-							T val1 = id_type_wrapper.num_ids_wrapper.para_search_tester.distr(id_type_wrapper.num_ids_wrapper.para_search_tester.rand_num_eng);
-
-							T val2;
-							if (id_type_wrapper.num_ids_wrapper.para_search_tester.inter_size_distr_active)
-								val2 = val1 + id_type_wrapper.num_ids_wrapper.para_search_tester.inter_size_distr(id_type_wrapper.num_ids_wrapper.para_search_tester.rand_num_eng);
-							else
-								val2 = id_type_wrapper.num_ids_wrapper.para_search_tester.distr(id_type_wrapper.num_ids_wrapper.para_search_tester.rand_num_eng);
-
-							// Interval parallel search requires that first value of PointStruct is no more than the second; written in this order for obvious parity with PSTTester
-							if (val1 > val2)
-							{
-								pt_arr[i].dim1_val = val2;
-								pt_arr[i].dim2_val = val1;
-							}
-							else
-							{
-								pt_arr[i].dim1_val = val1;
-								pt_arr[i].dim2_val = val2;
-							}
-							// Instantiation of value of type IDType
-							if constexpr (num_IDs == 1)
-								pt_arr[i].id = id_type_wrapper.id_distr(id_type_wrapper.num_ids_wrapper.para_search_tester.rand_num_eng);
-						}
+						PointStructTemplate<T, IDType, num_IDs> *pt_arr
+							= generateRandPts<PointStructTemplate<T, IDType, num_IDs>, T>(num_elems,
+												id_type_wrapper.num_ids_wrapper.para_search_tester.distr,
+												id_type_wrapper.num_ids_wrapper.para_search_tester.rand_num_eng,
+												true,
+												id_type_wrapper.num_ids_wrapper.para_search_tester.inter_size_distr_active ? &(id_type_wrapper.num_ids_wrapper.para_search_tester.inter_size_distr) : nullptr,
+												&(id_type_wrapper.id_distr));
 
 #ifdef DEBUG
 						printArray(std::cout, pt_arr, 0, num_elems);
