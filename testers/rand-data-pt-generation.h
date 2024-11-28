@@ -1,7 +1,6 @@
 #ifndef RAND_DATA_PT_GENERATION_H
 #define RAND_DATA_PT_GENERATION_H
 
-#include "class-member-testers.h"
 #include "pst-test-info-struct.h"
 
 
@@ -45,23 +44,16 @@ PointStructTemplate<T, IDType, num_IDs> *generateRandPts(const size_t num_elems,
 };
 
 // Must place ID instantiation as a separate function, as adding an additional IDDistrib template template parameter to generateRandPts() causes template instantiation to fail, even if explicitly specified when called
-/*
-template 
-void addRandIDs
+template <class PointStruct, typename IDDistrib, typename RandNumEng>
+void addRandIDs(size_t num_elems, PointStruct *pt_arr, IDDistrib &id_distr, RandNumEng &rand_num_eng)
 {
-	// Instantiation of value of type IDType
-	pt_arr[i].id = (*id_distr_ptr)(rand_num_eng);
+	for (size_t i = 0; i < num_elems; i++)
+		// Instantiation of values of type IDType
+		pt_arr[i].id = id_distr(rand_num_eng);
 };
-*/
 
 /*
 // Pre-condition: num_IDs == 0 <=> id_distr_ptr == nullptr
-template <template<typename, typename, size_t> class PointStructTemplate,	
-			typename T, typename IDType,
-		 	size_t num_IDs, bool vals_inc_ordered,
-			template<typename> typename Distrib,
-			template<typename> typename IDDistrib,
-			typename RandNumEng>
 PointStructTemplate<T, IDType, num_IDs> *generateRandPts(const size_t num_elems,
 														Distrib<T> &val_distr,
 														RandNumEng &rand_num_eng,

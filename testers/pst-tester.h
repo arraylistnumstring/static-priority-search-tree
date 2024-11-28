@@ -9,6 +9,7 @@
 #include <random>		// To use std::mt19937
 #include <type_traits>
 
+#include "class-member-testers.h"
 #include "err-chk.h"
 #include "gpu-err-chk.h"
 #include "helper-cuda--modified.h"
@@ -160,11 +161,10 @@ struct PSTTester
 													id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng,
 													id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.vals_inc_ordered,
 													id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr_active ? &(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr) : nullptr);
-/*
-								// Instantiation of value of type IDType
-								if constexpr (num_IDs == 1)
-									pt_arr[i].id = id_type_wrapper.id_distr(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
-									*/
+
+							if constexpr (HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
+								addRandIDs(num_elems, pt_arr, id_type_wrapper.id_distr,
+											id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng);
 
 #ifdef DEBUG
 							printArray(std::cout, pt_arr, 0, num_elems);
