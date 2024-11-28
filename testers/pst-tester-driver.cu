@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
 
 			std::cerr << "\t-b, --val-bounds MIN_VAL MAX_VAL [SIZE_BOUND_1] [SIZE_BOUND_2]\tBounds of values (inclusive) to use when generating random values for PST; must be castable to chosen datatype; when non-negative values SIZE_BOUND_1 and SIZE_BOUND_2 are specified, the lower bound of the interval is drawn from the range [MIN_VAL, MAX_VAL], and the upper bound is equal to the lower bound plus a value drawn from the range [SIZE_BOUND_1, SIZE_BOUND_2]; when only SIZE_BOUND_1 is specified, the added value is drawn from the range [0, SIZE_BOUND_1]\n\n";
 
-			std::cerr << "\t-I, --ids DATA_TYPE\tToggles assignment of IDs to the nodes of the tree with data type DATA_TYPE; defaults to false; valid data types are char, double, float, int, long\n\n";
+			std::cerr << "\t-I, --ids DATA_TYPE\tToggles assignment of IDs to the nodes of the tree with data type DATA_TYPE; defaults to false; valid data types are char, double, float, int, long, unsigned (equivalent to unsigned-int), unsigned-int, unsigned-long\n\n";
 
 			std::cerr << "\t-n, --num-elems NUM_ELEMS\tNumber of elements to put in tree\n\n";
 
@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
 			test_info.data_type = DataType::FLOAT;
 		else if (arg == "-i" || arg == "--int")
 			test_info.data_type = DataType::INT;
-		else if (arg == "l" || arg == "--long")
+		else if (arg == "-l" || arg == "--long")
 			test_info.data_type = DataType::LONG;
 
 		// Test-type parsing
@@ -171,6 +171,10 @@ int main(int argc, char *argv[])
 					test_info.id_type = DataType::INT;
 				else if (id_type_string == "long")
 					test_info.id_type = DataType::LONG;
+				else if (id_type_string == "unsigned" || id_type_string == "unsigned-int")
+					test_info.id_type = DataType::UNSIGNED_INT;
+				else if (id_type_string == "unsigned-long")
+					test_info.id_type = DataType::UNSIGNED_LONG;
 			}
 			catch (std::invalid_argument const &ex)
 			{
