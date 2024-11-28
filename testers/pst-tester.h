@@ -9,7 +9,6 @@
 #include <random>		// To use std::mt19937
 #include <type_traits>
 
-#include "class-member-checkers.h"
 #include "err-chk.h"
 #include "gpu-err-chk.h"
 #include "helper-cuda--modified.h"
