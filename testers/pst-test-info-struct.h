@@ -16,6 +16,9 @@
 struct PSTTestInfoStruct
 {
 	// Ordering of fields chosen to minimise size of struct; std::string type appears to take 32 bytes
+
+	std::string input_file;
+
 	enum NumSearchVals
 	{
 		NUM_VALS_TWO_SEARCH=2,
