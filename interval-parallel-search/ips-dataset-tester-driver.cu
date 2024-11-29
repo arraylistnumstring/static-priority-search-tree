@@ -21,18 +21,19 @@ int main(int argc, char *argv[])
 		if (arg == "-h" || arg == "--help")
 		{
 			std::cerr << "Usage: ./ips-dataset-tester-driver data-file ";
-			std::cerr << "PT_GRID_DIM_X PT_GRID_DIM_Y PT_GRID_DIM_Z ";
+			std::cerr << "ID_TYPE PT_GRID_DIM_X PT_GRID_DIM_Y PT_GRID_DIM_Z ";
 			std::cerr << "<datatype-flag> ";
 			std::cerr << "[-r] ";
 			std::cerr << "[-t] ";
 			std::cerr << "-B NUM_BLOCKS";
-			std::cerr << "-I ID_TYPE ";
 			std::cerr << "-m METACELL_DIM_X [METACELL_DIM_Y METACELL_DIM_Z] ";
 			std::cerr << "-s SEARCH_VAL ";
 			std::cerr << "-T THREADS_PER_BLOCK";
 			std::cerr << "\n\n";
 
 			std::cerr << "\tdata-file:\tBinary volume data input filename\n\n";
+
+			std::cerr << "\tID_TYPE\tMust be an unsigned integral type, namely unsigned (equivalent to unsigned-int), unsgiend-int or unsigned-long; this datatype will be used to store the dimensions of the point grid and metacells, and thus must be large enough to accommodate their values\n\n";
 
 			std::cerr << "\tPT_GRID_DIM_X PT_GRID_DIM_Y PT_GRID_DIM_Z:\n";
 			std::cerr << "\t\tDimensions of grid of points; note that because each point is the vertex of a cubic cell/voxel, the voxel grid thus has dimensions (PT_GRID_DIM_X - 1, PT_GRID_DIM_Y - 1, PT_GRID_DIM_Z - 1)\n\n";
@@ -45,7 +46,8 @@ int main(int argc, char *argv[])
 
 			std::cerr << "\t-B, --num-blocks NUM_BLOCKS\tNumber of blocks to use in grid for CUDA kernel\n\n";
 
-			std::cerr << "\t-I, --ids DATA_TYPE\tIndicates datatype used for indexing points and voxels, and thus must be of integral type; valid arguments for DATA_TYPE are char, int, long, unsigned (equivalent to unsigned-int), unsigned-int, unsigned-long\n\n";
+			std::cerr << "\t-m, --metacell-dims METACELL_DIM_X [METACELL_DIM_Y METACELL_DIM_Z]\n";
+			std::cerr << "\t\tDimensions to use for metacells, in units of voxels^3; if only METACELL_DIM_X is provided, METACELL_DIM_Y and METACELL_DIM_Z are set to be equal to the same value; metacell dimensions default to 4 * 4 * 4 voxels^3 (as this number is both a cubic number and a multiple of 32 (warp size, for maximal thread occupancy on the GPU), and is the smallest possible metacell satisfying both those criteria, as a smaller metacell yields more metacells, a regime where PST performs well)";
 
 			std::cerr << "\t-r, --report-IDs\tWhether to report point IDs or full info of a point; defaults to full info\n\n";
 
@@ -68,8 +70,28 @@ int main(int argc, char *argv[])
 				return ExitStatusCodes::FILE_NOT_FOUND_ERR;
 			}
 		}
-		
-		else if (i == 2)	// Get point grid dimensions
+
+		else if (i == 2)	// ID type parsing
+		{
+			test_info.pts_with_ids = true;
+
+			// Convert id_type_string to lowercase for easier processing
+			std::transform(arg.begin(), arg.end(),
+							arg.begin(),
+							[](unsigned char c){ return std::tolower(c); });
+
+			if (arg == "unsigned" || arg == "unsigned-int")
+				test_info.id_type = DataType::UNSIGNED_INT;
+			else if (arg == "unsigned-long")
+				test_info.id_type = DataType::UNSIGNED_LONG;
+			else
+			{
+				std::cerr << "Invalid argument for ID data type: " << arg << '\n';
+				return ExitStatusCodes::INVALID_ARG_ERR;
+			}
+		}
+
+		else if (i == 3)	// Get point grid dimensions
 		{
 			for (int j = 0; j < IPSTestInfoStruct::NUM_DIMS; j++)
 			{
@@ -91,44 +113,30 @@ int main(int argc, char *argv[])
 			test_info.data_type = DataType::FLOAT;
 		else if (arg == "-i" || arg == "--int")
 			test_info.data_type = DataType::INT;
-		else if (arg == "l" || arg == "--long")
+		else if (arg == "-l" || arg == "--long")
 			test_info.data_type = DataType::LONG;
 
-		// ID flag and ID type parsing
-		else if (arg == "-I" || arg == "--ids-on")
+		// Metacell dimension parsing
+		else if (arg == "-m" || arg == "--metacell-dims")
 		{
-			test_info.pts_with_ids = true;
-
-			i++;
-			if (i >= argc)
+			for (int j = 0; j < IPSTestInfoStruct::NUM_DIMS; j++)
 			{
-				std::cerr << "Insufficient number of arguments provided for ID data type\n";
-				return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
-			}
+				i++;
+				if (i >= argc)
+				{
+					if (j == 0)		// No dimensions given
+					{
+						std::cerr << "Insufficient number of arguments provided for metacell dimensions\n";
+						return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
+					}
+					else			// At least one dimension given; break out of loop
+						break;
+				}
 
-			// Convert id_type_string to lowercase for easier processing
-			std::string id_type_string(argv[i]);
-			std::transform(id_type_string.begin(), id_type_string.end(),
-							id_type_string.begin(),
-							[](unsigned char c){ return std::tolower(c); });
-
-			if (id_type_string == "char")
-				test_info.id_type = DataType::CHAR;
-			else if (id_type_string == "int")
-				test_info.id_type = DataType::INT;
-			else if (id_type_string == "long")
-				test_info.id_type = DataType::LONG;
-			else if (id_type_string == "unsigned" || id_type_string == "unsigned-int")
-				test_info.id_type = DataType::UNSIGNED_INT;
-			else if (id_type_string == "unsigned-long")
-				test_info.id_type = DataType::UNSIGNED_LONG;
-			else
-			{
-				std::cerr << "Invalid argument for ID data type: " << argv[i] << '\n';
-				return ExitStatusCodes::INVALID_ARG_ERR;
+				test_info.metacell_dim_strings[j] = std::string(argv[i]);
 			}
 		}
-		
+
 		// Report ID flag parsing
 		else if (arg == "-r" || arg == "--report-IDs")
 			test_info.report_IDs = true;

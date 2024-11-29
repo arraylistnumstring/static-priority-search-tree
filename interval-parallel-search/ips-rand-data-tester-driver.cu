@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
 			test_info.data_type = DataType::FLOAT;
 		else if (arg == "-i" || arg == "--int")
 			test_info.data_type = DataType::INT;
-		else if (arg == "l" || arg == "--long")
+		else if (arg == "-l" || arg == "--long")
 			test_info.data_type = DataType::LONG;
 
 		// ID flag and ID type parsing
