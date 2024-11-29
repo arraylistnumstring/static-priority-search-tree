@@ -39,6 +39,7 @@ struct PSTTester
 		requires std::is_arithmetic<T>::value
 	struct DataTypeWrapper
 	{
+		std::string input_file = "";
 		RandNumEng rand_num_eng;
 		Distrib<T> distr;
 		Distrib<T> inter_size_distr;
@@ -51,10 +52,12 @@ struct PSTTester
 		bool vals_inc_ordered;
 		bool inter_size_distr_active;
 
-		DataTypeWrapper(T min_val, T max_val, T inter_size_val1, T inter_size_val2,
+		DataTypeWrapper(std::string input_file, T min_val, T max_val,
+						T inter_size_val1, T inter_size_val2,
 						T dim1_val_bound1, T dim1_val_bound2,
 						T min_dim2_val, bool vals_inc_ordered)
-			: rand_num_eng(0),
+			: input_file(input_file),
+			rand_num_eng(0),
 			distr(min_val, max_val),
 			inter_size_distr(inter_size_val2 < 0 ? 0 : inter_size_val1, inter_size_val2 < 0 ? inter_size_val1 : inter_size_val2),
 			dim1_val_bound1(dim1_val_bound1),
@@ -64,10 +67,11 @@ struct PSTTester
 			inter_size_distr_active(inter_size_val1 >= 0)
 		{};
 
-		DataTypeWrapper(size_t rand_seed, T min_val, T max_val,
+		DataTypeWrapper(std::string input_file, size_t rand_seed, T min_val, T max_val,
 						T inter_size_val1, T inter_size_val2, T dim1_val_bound1,
 						T dim1_val_bound2, T min_dim2_val, bool vals_inc_ordered)
-			: rand_num_eng(rand_seed),
+			: input_file(input_file),
+			rand_num_eng(rand_seed),
 			distr(min_val, max_val),
 			inter_size_distr(inter_size_val2 < 0 ? 0 : inter_size_val1, inter_size_val2 < 0 ? inter_size_val1 : inter_size_val2),
 			dim1_val_bound1(dim1_val_bound1),
@@ -154,13 +158,19 @@ struct PSTTester
 
 						void operator()(size_t num_elems, const unsigned warps_per_block, PSTTestCodes test_type=CONSTRUCT)
 						{
-							PointStructTemplate<T, IDType, num_IDs> *pt_arr
-								= generateRandPts<PointStructTemplate<T, IDType, num_IDs>, T>(num_elems,
-													id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.distr,
-													id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng,
-													id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.vals_inc_ordered,
-													id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr_active ? &(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr) : nullptr,
-													&(id_type_wrapper.id_distr));
+							PointStructTemplate<T, IDType, num_IDs> *pt_arr;
+							if (id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.input_file == "")
+							{
+								pt_arr = generateRandPts<PointStructTemplate<T, IDType, num_IDs>, T>(num_elems,
+															id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.distr,
+															id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng,
+															id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.vals_inc_ordered,
+															id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr_active ? &(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr) : nullptr,
+															&(id_type_wrapper.id_distr));
+							}
+							else
+							{
+							}
 
 #ifdef DEBUG
 							printArray(std::cout, pt_arr, 0, num_elems);

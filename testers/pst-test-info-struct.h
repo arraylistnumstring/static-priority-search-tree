@@ -72,7 +72,8 @@ struct PSTTestInfoStruct
 		if (data_type == DataType::DOUBLE)
 		{
 			typename PSTTesterTimingDet::DataTypeWrapper<double, std::uniform_real_distribution>
-						pst_tester(rand_seed, std::stod(tree_val_range_strings[0]),
+						pst_tester(input_file, rand_seed,
+									std::stod(tree_val_range_strings[0]),
 									std::stod(tree_val_range_strings[1]),
 									std::stod(tree_val_range_strings[2]),
 									std::stod(tree_val_range_strings[3]),
@@ -86,7 +87,8 @@ struct PSTTestInfoStruct
 		else if (data_type == DataType::FLOAT)
 		{
 			typename PSTTesterTimingDet::DataTypeWrapper<float, std::uniform_real_distribution>
-						pst_tester(rand_seed, std::stof(tree_val_range_strings[0]),
+						pst_tester(input_file, rand_seed,
+									std::stof(tree_val_range_strings[0]),
 									std::stof(tree_val_range_strings[1]),
 									std::stof(tree_val_range_strings[2]),
 									std::stof(tree_val_range_strings[3]),
@@ -100,7 +102,8 @@ struct PSTTestInfoStruct
 		else if (data_type == DataType::INT)
 		{
 			typename PSTTesterTimingDet::DataTypeWrapper<int, std::uniform_int_distribution>
-						pst_tester(rand_seed, std::stoi(tree_val_range_strings[0]),
+						pst_tester(input_file, rand_seed,
+									std::stoi(tree_val_range_strings[0]),
 									std::stoi(tree_val_range_strings[1]),
 									std::stoi(tree_val_range_strings[2]),
 									std::stoi(tree_val_range_strings[3]),
@@ -114,7 +117,8 @@ struct PSTTestInfoStruct
 		else if (data_type == DataType::LONG)
 		{
 			typename PSTTesterTimingDet::DataTypeWrapper<long, std::uniform_int_distribution>
-						pst_tester(rand_seed, std::stol(tree_val_range_strings[0]),
+						pst_tester(input_file, rand_seed,
+									std::stol(tree_val_range_strings[0]),
 									std::stol(tree_val_range_strings[1]),
 									std::stol(tree_val_range_strings[2]),
 									std::stol(tree_val_range_strings[3]),
