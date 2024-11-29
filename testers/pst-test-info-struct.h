@@ -37,7 +37,7 @@ struct PSTTestInfoStruct
 	// Data types chosen to correspond to CUDA data types for correpsonding on-device values; as number of thread blocks and threads per block are both unsigned values, warps_per_block (which has value at most equal to threads per block) has been chosen similarly
 	unsigned warps_per_block = 1;
 
-	// By the standard, enums must be capable of holding int values, though the actual data-type can be char, signed int or unsigned int, as long as the chosen type can hold all values in the enumeration 
+	// By the standard, enums must be capable of holding int values, though the actual data-type can be char, signed int or unsigned int, as long as the chosen type can hold all values in the enumeration
 	DataType data_type;
 	PSTTestCodes test_type;
 	PSTType tree_type;

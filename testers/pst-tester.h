@@ -470,12 +470,18 @@ struct PSTTester
 
 					void operator()(size_t num_elems, const unsigned warps_per_block, PSTTestCodes test_type=CONSTRUCT)
 					{
-						PointStructTemplate<T, void, num_IDs> *pt_arr
-							= generateRandPts<PointStructTemplate<T, void, num_IDs>, T, void>(num_elems,
-												num_ids_wrapper.tree_type_wrapper.pst_tester.distr,
-												num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng,
-												num_ids_wrapper.tree_type_wrapper.pst_tester.vals_inc_ordered,
-												num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr_active ? &(num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr) : nullptr);
+						PointStructTemplate<T, void, num_IDs> *pt_arr;
+						if (num_ids_wrapper.tree_type_wrapper.pst_tester.input_file == "")
+						{
+							pt_arr = generateRandPts<PointStructTemplate<T, void, num_IDs>, T, void>(num_elems,
+														num_ids_wrapper.tree_type_wrapper.pst_tester.distr,
+														num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng,
+														num_ids_wrapper.tree_type_wrapper.pst_tester.vals_inc_ordered,
+														num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr_active ? &(num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr) : nullptr);
+						}
+						else
+						{
+						}
 
 #ifdef DEBUG
 						printArray(std::cout, pt_arr, 0, num_elems);

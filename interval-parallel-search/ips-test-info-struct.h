@@ -30,7 +30,7 @@ struct InterParaSearchTestInfoStruct
 	unsigned num_thread_blocks;
 	unsigned threads_per_block;
 
-	// By the standard, enums must be capable of holding int values, though the actual data-type can be char, signed int or unsigned int, as long as the chosen type can hold all values in the enumeration 
+	// By the standard, enums must be capable of holding int values, though the actual data-type can be char, signed int or unsigned int, as long as the chosen type can hold all values in the enumeration
 	DataType data_type;
 	DataType id_type;
 
@@ -62,7 +62,8 @@ struct InterParaSearchTestInfoStruct
 		if (data_type == DataType::DOUBLE)
 		{
 			typename InterParaSearchTesterTimingDet::DataTypeWrapper<double, std::uniform_real_distribution>
-						ips_tester_data_type_instan(rand_seed, std::stod(val_range_strings[0]),
+						ips_tester_data_type_instan(input_file, rand_seed,
+													std::stod(val_range_strings[0]),
 													std::stod(val_range_strings[1]),
 													std::stod(val_range_strings[2]),
 													std::stod(val_range_strings[3]),
@@ -73,7 +74,8 @@ struct InterParaSearchTestInfoStruct
 		else if (data_type == DataType::FLOAT)
 		{
 			typename InterParaSearchTesterTimingDet::DataTypeWrapper<float, std::uniform_real_distribution>
-						ips_tester_data_type_instan(rand_seed, std::stod(val_range_strings[0]),
+						ips_tester_data_type_instan(input_file, rand_seed,
+													std::stod(val_range_strings[0]),
 													std::stod(val_range_strings[1]),
 													std::stod(val_range_strings[2]),
 													std::stod(val_range_strings[3]),
@@ -84,7 +86,8 @@ struct InterParaSearchTestInfoStruct
 		else if (data_type == DataType::INT)
 		{
 			typename InterParaSearchTesterTimingDet::DataTypeWrapper<int, std::uniform_int_distribution>
-						ips_tester_data_type_instan(rand_seed, std::stod(val_range_strings[0]),
+						ips_tester_data_type_instan(input_file, rand_seed,
+													std::stod(val_range_strings[0]),
 													std::stod(val_range_strings[1]),
 													std::stod(val_range_strings[2]),
 													std::stod(val_range_strings[3]),
@@ -95,7 +98,8 @@ struct InterParaSearchTestInfoStruct
 		else if (data_type == DataType::LONG)
 		{
 			typename InterParaSearchTesterTimingDet::DataTypeWrapper<long, std::uniform_int_distribution>
-						ips_tester_data_type_instan(rand_seed, std::stod(val_range_strings[0]),
+						ips_tester_data_type_instan(input_file, rand_seed,
+													std::stod(val_range_strings[0]),
 													std::stod(val_range_strings[1]),
 													std::stod(val_range_strings[2]),
 													std::stod(val_range_strings[3]),

@@ -27,6 +27,7 @@ struct InterParaSearchTester
 		requires std::is_arithmetic<T>::value
 	struct DataTypeWrapper
 	{
+		std::string input_file = "";
 		RandNumEng rand_num_eng;
 		Distrib<T> distr;
 		Distrib<T> inter_size_distr;
@@ -36,18 +37,20 @@ struct InterParaSearchTester
 
 		bool inter_size_distr_active;
 
-		DataTypeWrapper(T min_val, T max_val, T inter_size_val1, T inter_size_val2,
-						T search_val)
-			: rand_num_eng(0),
+		DataTypeWrapper(std::string input_file, T min_val, T max_val,
+						T inter_size_val1, T inter_size_val2, T search_val)
+			: input_file(input_file),
+			rand_num_eng(0),
 			distr(min_val, max_val),
 			inter_size_distr(inter_size_val2 < 0 ? 0 : inter_size_val1, inter_size_val2 < 0 ? inter_size_val1 : inter_size_val2),
 			search_val(search_val),
 			inter_size_distr_active(inter_size_val1 >= 0)
 		{};
 
-		DataTypeWrapper(size_t rand_seed, T min_val, T max_val,
+		DataTypeWrapper(std::string input_file, size_t rand_seed, T min_val, T max_val,
 						T inter_size_val1, T inter_size_val2, T search_val)
-			: rand_num_eng(rand_seed),
+			: input_file(input_file),
+			rand_num_eng(rand_seed),
 			distr(min_val, max_val),
 			inter_size_distr(inter_size_val2 < 0 ? 0 : inter_size_val1, inter_size_val2 < 0 ? inter_size_val1 : inter_size_val2),
 			search_val(search_val),
@@ -117,13 +120,19 @@ struct InterParaSearchTester
 
 					void operator()(size_t num_elems, const unsigned num_thread_blocks, const unsigned threads_per_block)
 					{
-						PointStructTemplate<T, IDType, num_IDs> *pt_arr
-							= generateRandPts<PointStructTemplate<T, IDType, num_IDs>, T>(num_elems,
-												id_type_wrapper.num_ids_wrapper.para_search_tester.distr,
-												id_type_wrapper.num_ids_wrapper.para_search_tester.rand_num_eng,
-												true,
-												id_type_wrapper.num_ids_wrapper.para_search_tester.inter_size_distr_active ? &(id_type_wrapper.num_ids_wrapper.para_search_tester.inter_size_distr) : nullptr,
-												&(id_type_wrapper.id_distr));
+						PointStructTemplate<T, IDType, num_IDs> *pt_arr;
+						if (id_type_wrapper.num_ids_wrapper.para_search_tester.input_file == "")
+						{
+							pt_arr = generateRandPts<PointStructTemplate<T, IDType, num_IDs>, T>(num_elems,
+														id_type_wrapper.num_ids_wrapper.para_search_tester.distr,
+														id_type_wrapper.num_ids_wrapper.para_search_tester.rand_num_eng,
+														true,
+														id_type_wrapper.num_ids_wrapper.para_search_tester.inter_size_distr_active ? &(id_type_wrapper.num_ids_wrapper.para_search_tester.inter_size_distr) : nullptr,
+														&(id_type_wrapper.id_distr));
+						}
+						else
+						{
+						}
 
 #ifdef DEBUG
 						printArray(std::cout, pt_arr, 0, num_elems);
@@ -274,12 +283,18 @@ struct InterParaSearchTester
 
 				void operator()(size_t num_elems, const unsigned num_thread_blocks, const unsigned threads_per_block)
 				{
-					PointStructTemplate<T, void, num_IDs> *pt_arr
-						= generateRandPts<PointStructTemplate<T, void, num_IDs>, T, void>(num_elems,
-											num_ids_wrapper.para_search_tester.distr,
-											num_ids_wrapper.para_search_tester.rand_num_eng,
-											true,
-											num_ids_wrapper.para_search_tester.inter_size_distr_active ? &(num_ids_wrapper.para_search_tester.inter_size_distr) : nullptr);
+					PointStructTemplate<T, void, num_IDs> *pt_arr;
+					if (num_ids_wrapper.para_search_tester.input_file == "")
+					{
+						pt_arr = generateRandPts<PointStructTemplate<T, void, num_IDs>, T, void>(num_elems,
+													num_ids_wrapper.para_search_tester.distr,
+													num_ids_wrapper.para_search_tester.rand_num_eng,
+													true,
+													num_ids_wrapper.para_search_tester.inter_size_distr_active ? &(num_ids_wrapper.para_search_tester.inter_size_distr) : nullptr);
+					}
+					else
+					{
+					}
 
 #ifdef DEBUG
 					printArray(std::cout, pt_arr, 0, num_elems);
