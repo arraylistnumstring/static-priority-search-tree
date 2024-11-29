@@ -18,7 +18,7 @@ enum DataType {CHAR, DOUBLE, FLOAT, INT, LONG, UNSIGNED_INT, UNSIGNED_LONG};
 
 
 template <bool timed_CUDA>
-struct InterParaSearchTester
+struct IPSTester
 {
 	template <typename T,
 				template<typename> typename Distrib,

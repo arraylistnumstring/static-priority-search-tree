@@ -10,7 +10,7 @@ int main(int argc, char *argv[])
 #ifdef DEBUG_TEST
 	std::cout << "Began interval parallel search tester driver\n";
 #endif
-	InterParaSearchTestInfoStruct test_info;
+	IPSTestInfoStruct test_info;
 
 	// Parse command-line arguments
 	for (int i = 0; i < argc; i++)
@@ -21,6 +21,7 @@ int main(int argc, char *argv[])
 		if (arg == "-h" || arg == "--help")
 		{
 			std::cerr << "Usage: ./interval-parallel-search-tester-driver data-file ";
+			std::cerr << "PT_GRID_DIM_X PT_GRID_DIM_Y PT_GRID_DIM_Z "
 			std::cerr << "<datatype-flag> ";
 			std::cerr << "[-I ID_TYPE] ";
 			std::cerr << "[-r] ";
@@ -28,12 +29,16 @@ int main(int argc, char *argv[])
 			std::cerr << "[-t] ";
 			std::cerr << "-B NUM_BLOCKS";
 			std::cerr << "-b MIN_VAL MAX_VAL [SIZE_BOUND_1] [SIZE_BOUND_2] ";
+			std::cerr << "-m METACELL_DIM_X [METACELL_DIM_Y METACELL_DIM_Z] ";
 			std::cerr << "-n NUM_ELEMS ";
 			std::cerr << "-s SEARCH_VAL ";
 			std::cerr << "-T THREADS_PER_BLOCK";
 			std::cerr << "\n\n";
 
-			std::cerr << "\tdata-file:\tBinary volume data input file\n\n";
+			std::cerr << "\tdata-file:\tBinary volume data input filename\n\n";
+
+			std::cerr << "\tPT_GRID_DIM_X PT_GRID_DIM_Y PT_GRID_DIM_Z:\n";
+			std::cerr << "\t\tDimensions of grid of points; note that because each point is the vertex of a cubic cell/voxel, the voxel grid thus has dimensions (PT_GRID_DIM_X - 1, PT_GRID_DIM_Y - 1, PT_GRID_DIM_Z - 1)\n\n"
 
 			std::cerr << "\tdatatype-flag:\n";
 			std::cerr << "\t\t-d, --double\tUse doubles as values\n\n";
@@ -70,6 +75,30 @@ int main(int argc, char *argv[])
 			{
 				std::cerr << "File " << arg << " does not exist\n";
 				return ExitStatusCodes::FILE_NOT_FOUND_ERR;
+			}
+		}
+		
+		else if (i == 2)	// Check point grid dimensions
+		{
+			for (int j = 0; j < IPSTestInfoStruct::NUM_DIMS; j++)
+			{
+				if (i >= argc)
+				{
+					std::cerr << "Insufficient number of arguments provided for search bounds\n";
+					return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
+				}
+
+				try
+				{
+					test_info.pt_grid_dim_strings[i] = std::string(argv[i]);
+				}
+				catch (std::invalid_argument const &ex)
+				{
+					std::cerr << "Invalid argument for point grid dimension: " << argv[i] << '\n';
+					return ExitStatusCodes::INVALID_ARG_ERR;
+				}
+
+				i++;
 			}
 		}
 
@@ -179,9 +208,9 @@ int main(int argc, char *argv[])
 		// Interval value bound parsing
 		else if (arg == "-b" || arg == "--val-bounds")
 		{
-			for (int j = 0; j < InterParaSearchTestInfoStruct::MAX_NUM_VALS_INT_BOUNDS; j++)
+			for (int j = 0; j < IPSTestInfoStruct::MAX_NUM_VALS_INT_BOUNDS; j++)
 			{
-				if (j < InterParaSearchTestInfoStruct::MIN_NUM_VALS_INT_BOUNDS)
+				if (j < IPSTestInfoStruct::MIN_NUM_VALS_INT_BOUNDS)
 				{
 					i++;
 					if (i >= argc)
@@ -201,7 +230,7 @@ int main(int argc, char *argv[])
 					}
 				}
 				// Test for optional presence of third and fourth arguments
-				else	// j >= InterParaSearchTestInfoStruct::MIN_NUM_VALS_INT_BOUNDS)
+				else	// j >= IPSTestInfoStruct::MIN_NUM_VALS_INT_BOUNDS)
 				{
 					// If no more arguments can be parsed, or next argument is a new flag, avoid incrementing i and end loop over j
 					if (i + 1 >= argc || argv[i + 1][0] == '-')

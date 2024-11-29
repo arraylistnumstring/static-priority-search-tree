@@ -21,6 +21,7 @@ int main(int argc, char *argv[])
 		if (arg == "-h" || arg == "--help")
 		{
 			std::cerr << "Usage: ./pst-dataset-tester-driver data-file ";
+			std::cerr << "PT_GRID_DIM_X PT_GRID_DIM_Y PT_GRID_DIM_Z "
 			std::cerr << "<datatype-flag> <test-type-flag> <tree-type-flag> ";
 			std::cerr << "[-I ID_TYPE] ";
 			std::cerr << "[-O] ";
@@ -29,10 +30,14 @@ int main(int argc, char *argv[])
 			std::cerr << "[-t] ";
 			std::cerr << "[-w WARPS_PER_BLOCK] ";
 			std::cerr << "-b MIN_VAL MAX_VAL [SIZE_BOUND_1] [SIZE_BOUND_2] ";
+			std::cerr << "-m METACELL_DIM_X [METACELL_DIM_Y METACELL_DIM_Z] ";
 			std::cerr << "-n NUM_ELEMS";
 			std::cerr << "\n\n";
 
-			std::cerr << "\tdata-file:\tBinary volume data input file\n\n";
+			std::cerr << "\tdata-file:\tBinary volume data input filename\n\n";
+
+			std::cerr << "\tPT_GRID_DIM_X PT_GRID_DIM_Y PT_GRID_DIM_Z:\n";
+			std::cerr << "\t\tDimensions of grid of points; note that because each point is the vertex of a cubic cell/voxel, the voxel grid thus has dimensions (PT_GRID_DIM_X - 1, PT_GRID_DIM_Y - 1, PT_GRID_DIM_Z - 1)\n\n"
 
 			std::cerr << "\tdatatype-flag:\n";
 			std::cerr << "\t\t-d, --double\tUse doubles as values\n\n";
@@ -81,6 +86,30 @@ int main(int argc, char *argv[])
 			{
 				std::cerr << "File " << arg << " does not exist\n";
 				return ExitStatusCodes::FILE_NOT_FOUND_ERR;
+			}
+		}
+
+		else if (i == 2)	// Check point grid dimensions
+		{
+			for (int j = 0; j < PSTTestInfoStruct::NUM_DIMS; j++)
+			{
+				if (i >= argc)
+				{
+					std::cerr << "Insufficient number of arguments provided for search bounds\n";
+					return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
+				}
+
+				try
+				{
+					test_info.pt_grid_dim_strings[i] = std::string(argv[i]);
+				}
+				catch (std::invalid_argument const &ex)
+				{
+					std::cerr << "Invalid argument for point grid dimension: " << argv[i] << '\n';
+					return ExitStatusCodes::INVALID_ARG_ERR;
+				}
+
+				i++;
 			}
 		}
 

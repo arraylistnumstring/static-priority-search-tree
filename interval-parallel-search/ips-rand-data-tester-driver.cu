@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
 #ifdef DEBUG_TEST
 	std::cout << "Began interval parallel search tester driver\n";
 #endif
-	InterParaSearchTestInfoStruct test_info;
+	IPSTestInfoStruct test_info;
 
 	// Parse command-line arguments
 	for (int i = 0; i < argc; i++)
@@ -164,9 +164,9 @@ int main(int argc, char *argv[])
 		// Interval value bound parsing
 		else if (arg == "-b" || arg == "--val-bounds")
 		{
-			for (int j = 0; j < InterParaSearchTestInfoStruct::MAX_NUM_VALS_INT_BOUNDS; j++)
+			for (int j = 0; j < IPSTestInfoStruct::MAX_NUM_VALS_INT_BOUNDS; j++)
 			{
-				if (j < InterParaSearchTestInfoStruct::MIN_NUM_VALS_INT_BOUNDS)
+				if (j < IPSTestInfoStruct::MIN_NUM_VALS_INT_BOUNDS)
 				{
 					i++;
 					if (i >= argc)
@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
 					}
 				}
 				// Test for optional presence of third and fourth arguments
-				else	// j >= InterParaSearchTestInfoStruct::MIN_NUM_VALS_INT_BOUNDS)
+				else	// j >= IPSTestInfoStruct::MIN_NUM_VALS_INT_BOUNDS)
 				{
 					// If no more arguments can be parsed, or next argument is a new flag, avoid incrementing i and end loop over j
 					if (i + 1 >= argc || argv[i + 1][0] == '-')
