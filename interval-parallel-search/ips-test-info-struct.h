@@ -31,8 +31,9 @@ struct IPSTestInfoStruct
 	size_t num_elems;
 
 	// Data types are chosen to correspond to CUDA data types for corresponding on-device values
+	// Default values correspond with those chosen by Liu et al. in their original paper
 	unsigned num_thread_blocks;
-	unsigned threads_per_block;
+	unsigned threads_per_block = 128;
 
 	// By the standard, enums must be capable of holding int values, though the actual data-type can be char, signed int or unsigned int, as long as the chosen type can hold all values in the enumeration
 	DataType data_type;

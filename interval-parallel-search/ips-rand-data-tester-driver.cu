@@ -19,16 +19,16 @@ int main(int argc, char *argv[])
 		// Help message
 		if (arg == "-h" || arg == "--help")
 		{
-			std::cerr << "Usage: ./interval-parallel-search-tester-driver <datatype-flag> ";
+			std::cerr << "Usage: ./ips-rand-data-tester-driver <datatype-flag> ";
 			std::cerr << "[-I ID_TYPE] ";
 			std::cerr << "[-r] ";
 			std::cerr << "[-S RAND_SEED] ";
 			std::cerr << "[-t] ";
+			std::cerr << "[-T THREADS_PER_BLOCK] ";
 			std::cerr << "-B NUM_BLOCKS";
 			std::cerr << "-b MIN_VAL MAX_VAL [SIZE_BOUND_1] [SIZE_BOUND_2] ";
 			std::cerr << "-n NUM_ELEMS ";
-			std::cerr << "-s SEARCH_VAL ";
-			std::cerr << "-T THREADS_PER_BLOCK";
+			std::cerr << "-s SEARCH_VAL";
 			std::cerr << "\n\n";
 
 			std::cerr << "\tdatatype-flag:\n";
@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
 
 			std::cerr << "\t-s, --search-val SEARCH_VAL\tValue to search for in all intervals; interval bounds are treated as inclusive\n\n";
 
-			std::cerr << "\t-T, --threads-per-block THREADS_PER_BLOCK\tNumber of threads to use in a thread block\n\n";
+			std::cerr << "\t-T, --threads-per-block THREADS_PER_BLOCK\tNumber of threads to use in a thread block; defaults to 128, the number of threads originally used by Liu et al. for the interval parallel search (compaction) portion of their procedure\n\n";
 
 			std::cerr << "\t-t, --timed-CUDA\tToggles timing of the CUDA portion of the code using on-device functions; defaults to false\n\n";
 
