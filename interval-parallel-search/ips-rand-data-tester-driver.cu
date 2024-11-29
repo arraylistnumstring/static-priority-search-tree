@@ -102,6 +102,11 @@ int main(int argc, char *argv[])
 					test_info.id_type = DataType::UNSIGNED_INT;
 				else if (id_type_string == "unsigned-long")
 					test_info.id_type = DataType::UNSIGNED_LONG;
+				else
+				{
+					std::cerr << "Invalid argument for ID data type: " << argv[i] << '\n';
+					return ExitStatusCodes::INVALID_ARG_ERR;
+				}
 			}
 			catch (std::invalid_argument const &ex)
 			{
@@ -272,7 +277,13 @@ int main(int argc, char *argv[])
 				return ExitStatusCodes::INVALID_ARG_ERR;
 			}
 		}
-}
+
+		else	// Invalid argument
+		{
+			std::cerr << "Invalid command-line argument: " << argv[i] << '\n';
+			return ExitStatusCodes::INVALID_ARG_ERR;
+		}
+	}
 
 #ifdef DEBUG_TEST
 	std::cout << "Completed command-line argument parsing; beginning test-running code\n";
