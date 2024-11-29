@@ -79,16 +79,7 @@ int main(int argc, char *argv[])
 					return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
 				}
 
-				try
-				{
-					test_info.pt_grid_dim_strings[i] = std::string(argv[i]);
-				}
-				catch (std::invalid_argument const &ex)
-				{
-					std::cerr << "Invalid argument for point grid dimension: " << argv[i] << '\n';
-					return ExitStatusCodes::INVALID_ARG_ERR;
-				}
-
+				test_info.pt_grid_dim_strings[i] = std::string(argv[i]);
 				i++;
 			}
 		}
@@ -115,31 +106,23 @@ int main(int argc, char *argv[])
 				return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
 			}
 
-			try
-			{
-				// Convert id_type_string to lowercase for easier processing
-				std::string id_type_string(argv[i]);
-				std::transform(id_type_string.begin(), id_type_string.end(),
-								id_type_string.begin(),
-								[](unsigned char c){ return std::tolower(c); });
+			// Convert id_type_string to lowercase for easier processing
+			std::string id_type_string(argv[i]);
+			std::transform(id_type_string.begin(), id_type_string.end(),
+							id_type_string.begin(),
+							[](unsigned char c){ return std::tolower(c); });
 
-				if (id_type_string == "char")
-					test_info.id_type = DataType::CHAR;
-				else if (id_type_string == "int")
-					test_info.id_type = DataType::INT;
-				else if (id_type_string == "long")
-					test_info.id_type = DataType::LONG;
-				else if (id_type_string == "unsigned" || id_type_string == "unsigned-int")
-					test_info.id_type = DataType::UNSIGNED_INT;
-				else if (id_type_string == "unsigned-long")
-					test_info.id_type = DataType::UNSIGNED_LONG;
-				else
-				{
-					std::cerr << "Invalid argument for ID data type: " << argv[i] << '\n';
-					return ExitStatusCodes::INVALID_ARG_ERR;
-				}
-			}
-			catch (std::invalid_argument const &ex)
+			if (id_type_string == "char")
+				test_info.id_type = DataType::CHAR;
+			else if (id_type_string == "int")
+				test_info.id_type = DataType::INT;
+			else if (id_type_string == "long")
+				test_info.id_type = DataType::LONG;
+			else if (id_type_string == "unsigned" || id_type_string == "unsigned-int")
+				test_info.id_type = DataType::UNSIGNED_INT;
+			else if (id_type_string == "unsigned-long")
+				test_info.id_type = DataType::UNSIGNED_LONG;
+			else
 			{
 				std::cerr << "Invalid argument for ID data type: " << argv[i] << '\n';
 				return ExitStatusCodes::INVALID_ARG_ERR;
@@ -167,6 +150,7 @@ int main(int argc, char *argv[])
 
 			try
 			{
+				// Curly braces necessary around try blocks
 				test_info.num_thread_blocks = std::stoul(argv[i]);
 			}
 			catch (std::invalid_argument const &ex)
@@ -186,16 +170,7 @@ int main(int argc, char *argv[])
 				return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
 			}
 
-			try
-			{
-				// Curly braces necessary around try blocks
-				test_info.search_val_string = std::string(argv[i]);
-			}
-			catch (std::invalid_argument const &ex)
-			{
-				std::cerr << "Invalid argument for search value: " << argv[i] << '\n';
-				return ExitStatusCodes::INVALID_ARG_ERR;
-			}
+			test_info.search_val_string = std::string(argv[i]);
 		}
 
 		// Number of threads per block parsing

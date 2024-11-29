@@ -21,7 +21,7 @@ struct PSTTestInfoStruct
 
 	const static size_t NUM_DIMS = 3;
 	std::string pt_grid_dim_strings[NUM_DIMS] = {"0", "0", "0"};
-	std::string metacell_dim_strings[NUM_DIMS] = {"64", "0", "0"};
+	std::string metacell_dim_strings[NUM_DIMS] = {"4", "0", "0"};
 
 	enum NumSearchVals
 	{

@@ -38,18 +38,16 @@ int main(int argc, char *argv[])
 			std::cerr << "\t\t-l, --long\tUse longs as values\n\n";
 
 			std::cerr << "\ttest-type-flag:\n";
-			std::cerr << "\t\t-C, --construct\tConstruction-only test\n";
-			std::cerr << "\t\t-L, --left MAX_DIM1_VAL MIN_DIM2_VAL\tLeftwards search, treating MAX_DIM1_VAL as maximum dimension-1 value and MIN_DIM2_VAL as minimum dimension-2 value\n";
-			std::cerr << "\t\t-R, --right MIN_DIM1_VAL MIN_DIM2_VAL\tRightwards search, treating MIN_DIM1_VAL as minimum dimension-1 value and MIN_DIM2_VAL as minimum dimension-2 value\n";
-			std::cerr << "\t\t-T, --three MIN_DIM1_VAL MAX_DIM1_VAL MIN_DIM2_VAL\tThree-sided search, treating MIN_DIM1_VAL as minimum dimension-1 value, MAX_DIM1_VAL as maximum dimension-1 value and MIN_DIM2_VAL as minimum dimension-2 value\n";
-			std::cerr << "\tAll search bounds are inclusive\n";
-			std::cerr << '\n';
+			std::cerr << "\t\t-C, --construct\tConstruction-only test\n\n";
+			std::cerr << "\t\t-L, --left MAX_DIM1_VAL MIN_DIM2_VAL\tLeftwards search, treating MAX_DIM1_VAL as maximum dimension-1 value and MIN_DIM2_VAL as minimum dimension-2 value\n\n";
+			std::cerr << "\t\t-R, --right MIN_DIM1_VAL MIN_DIM2_VAL\tRightwards search, treating MIN_DIM1_VAL as minimum dimension-1 value and MIN_DIM2_VAL as minimum dimension-2 value\n\n";
+			std::cerr << "\t\t-T, --three MIN_DIM1_VAL MAX_DIM1_VAL MIN_DIM2_VAL\tThree-sided search, treating MIN_DIM1_VAL as minimum dimension-1 value, MAX_DIM1_VAL as maximum dimension-1 value and MIN_DIM2_VAL as minimum dimension-2 value\n\n";
+			std::cerr << "\tAll search bounds are inclusive\n\n";
 
 			std::cerr << "\ttree-type-flag:\n";
-			std::cerr << "\t\t-g, --gpu\tUse StaticPSTGPU\n";
-			std::cerr << "\t\t--iter\tUse StaticPSTCPUIter\n";
-			std::cerr << "\t\t--recur\tUse StaticPSTCPURecur\n";
-			std::cerr << '\n';
+			std::cerr << "\t\t-g, --gpu\tUse StaticPSTGPU\n\n";
+			std::cerr << "\t\t--iter\tUse StaticPSTCPUIter\n\n";
+			std::cerr << "\t\t--recur\tUse StaticPSTCPURecur\n\n";
 
 			std::cerr << "\t-b, --val-bounds MIN_VAL MAX_VAL [SIZE_BOUND_1] [SIZE_BOUND_2]\tBounds of values (inclusive) to use when generating random values for PST; must be castable to chosen datatype; when non-negative values SIZE_BOUND_1 and SIZE_BOUND_2 are specified, the lower bound of the interval is drawn from the range [MIN_VAL, MAX_VAL], and the upper bound is equal to the lower bound plus a value drawn from the range [SIZE_BOUND_1, SIZE_BOUND_2]; when only SIZE_BOUND_1 is specified, the added value is drawn from the range [0, SIZE_BOUND_1]\n\n";
 
@@ -116,16 +114,7 @@ int main(int argc, char *argv[])
 					return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
 				}
 
-				try
-				{
-					// Curly braces necessary around try blocks
-					test_info.search_range_strings[j] = std::string(argv[i]);
-				}
-				catch (std::invalid_argument const &ex)
-				{
-					std::cerr << "Invalid argument for search range value bound: " << argv[i] << '\n';
-					return ExitStatusCodes::INVALID_ARG_ERR;
-				}
+				test_info.search_range_strings[j] = std::string(argv[i]);
 			}
 
 			// For non-three-sided searches, move dimension-2 value to third slot of test_info.search_range_strings
@@ -154,35 +143,27 @@ int main(int argc, char *argv[])
 				return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
 			}
 
-			try
-			{
-				// Convert id_type_string to lowercase for easier processing
-				std::string id_type_string(argv[i]);
-				std::transform(id_type_string.begin(), id_type_string.end(),
-								id_type_string.begin(),
-								[](unsigned char c){ return std::tolower(c); });
+			// Convert id_type_string to lowercase for easier processing
+			std::string id_type_string(argv[i]);
+			std::transform(id_type_string.begin(), id_type_string.end(),
+							id_type_string.begin(),
+							[](unsigned char c){ return std::tolower(c); });
 
-				if (id_type_string == "char")
-					test_info.id_type = DataType::CHAR;
-				else if (id_type_string == "double")
-					test_info.id_type = DataType::DOUBLE;
-				else if (id_type_string == "float")
-					test_info.id_type = DataType::FLOAT;
-				else if (id_type_string == "int")
-					test_info.id_type = DataType::INT;
-				else if (id_type_string == "long")
-					test_info.id_type = DataType::LONG;
-				else if (id_type_string == "unsigned" || id_type_string == "unsigned-int")
-					test_info.id_type = DataType::UNSIGNED_INT;
-				else if (id_type_string == "unsigned-long")
-					test_info.id_type = DataType::UNSIGNED_LONG;
-				else
-				{
-					std::cerr << "Invalid argument for ID data type: " << argv[i] << '\n';
-					return ExitStatusCodes::INVALID_ARG_ERR;
-				}
-			}
-			catch (std::invalid_argument const &ex)
+			if (id_type_string == "char")
+				test_info.id_type = DataType::CHAR;
+			else if (id_type_string == "double")
+				test_info.id_type = DataType::DOUBLE;
+			else if (id_type_string == "float")
+				test_info.id_type = DataType::FLOAT;
+			else if (id_type_string == "int")
+				test_info.id_type = DataType::INT;
+			else if (id_type_string == "long")
+				test_info.id_type = DataType::LONG;
+			else if (id_type_string == "unsigned" || id_type_string == "unsigned-int")
+				test_info.id_type = DataType::UNSIGNED_INT;
+			else if (id_type_string == "unsigned-long")
+				test_info.id_type = DataType::UNSIGNED_LONG;
+			else
 			{
 				std::cerr << "Invalid argument for ID data type: " << argv[i] << '\n';
 				return ExitStatusCodes::INVALID_ARG_ERR;
@@ -209,6 +190,7 @@ int main(int argc, char *argv[])
 
 			try
 			{
+				// Curly braces necessary around try blocks
 				test_info.rand_seed = std::stoull(argv[i], nullptr, 0);
 			}
 			catch (std::invalid_argument const &ex)
@@ -257,15 +239,7 @@ int main(int argc, char *argv[])
 						return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
 					}
 
-					try
-					{
-						test_info.tree_val_range_strings[j] = std::string(argv[i]);
-					}
-					catch (std::invalid_argument const &ex)
-					{
-						std::cerr << "Invalid argument for tree value bound: " << argv[i] << '\n';
-						return ExitStatusCodes::INVALID_ARG_ERR;
-					}
+					test_info.tree_val_range_strings[j] = std::string(argv[i]);
 				}
 				// Test for optional presence of third and fourth arguments
 				else	// j >= PSTTestInfoStruct::MIN_NUM_VALS_INT_BOUNDS
@@ -276,15 +250,7 @@ int main(int argc, char *argv[])
 					else
 					{
 						i++;
-						try
-						{
-							test_info.tree_val_range_strings[j] = std::string(argv[i]);
-						}
-						catch (std::invalid_argument const &ex)
-						{
-							std::cerr << "Invalid argument for tree value interval size: " << argv[i] << '\n';
-							return ExitStatusCodes::INVALID_ARG_ERR;
-						}
+						test_info.tree_val_range_strings[j] = std::string(argv[i]);
 					}
 				}
 			}
