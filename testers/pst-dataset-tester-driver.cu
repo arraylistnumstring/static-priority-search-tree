@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
 
 			std::cerr << "\tdata-file\tBinary volume data input filename\n\n";
 
-			std::cerr << "\tID_TYPE\tMust be an unsigned integral type, namely unsigned (equivalent to unsigned-int), unsgiend-int or unsigned-long; this datatype will be used to store the dimensions of the point grid and metacells, and thus must be large enough to accommodate their values\n\n"
+			std::cerr << "\tID_TYPE\tMust be an unsigned integral type, namely unsigned (equivalent to unsigned-int), unsgiend-int or unsigned-long; this datatype will be used to store the dimensions of the point grid and metacells, and thus must be large enough to accommodate their values\n\n";
 
 			std::cerr << "\tPT_GRID_DIM_X PT_GRID_DIM_Y PT_GRID_DIM_Z\n";
 			std::cerr << "\t\tDimensions of grid of points; note that because each point is the vertex of a cubic cell/voxel, the voxel grid thus has dimensions (PT_GRID_DIM_X - 1, PT_GRID_DIM_Y - 1, PT_GRID_DIM_Z - 1)\n\n";
