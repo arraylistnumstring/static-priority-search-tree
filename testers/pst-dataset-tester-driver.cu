@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
 		if (arg == "-h" || arg == "--help")
 		{
 			std::cerr << "Usage: ./pst-dataset-tester-driver data-file ";
-			std::cerr << "PT_GRID_DIM_X PT_GRID_DIM_Y PT_GRID_DIM_Z "
+			std::cerr << "PT_GRID_DIM_X PT_GRID_DIM_Y PT_GRID_DIM_Z ";
 			std::cerr << "<datatype-flag> <tree-type-flag> ";
 			std::cerr << "[-r] ";
 			std::cerr << "[-t] ";
@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
 			std::cerr << "\tdata-file:\tBinary volume data input filename\n\n";
 
 			std::cerr << "\tPT_GRID_DIM_X PT_GRID_DIM_Y PT_GRID_DIM_Z:\n";
-			std::cerr << "\t\tDimensions of grid of points; note that because each point is the vertex of a cubic cell/voxel, the voxel grid thus has dimensions (PT_GRID_DIM_X - 1, PT_GRID_DIM_Y - 1, PT_GRID_DIM_Z - 1)\n\n"
+			std::cerr << "\t\tDimensions of grid of points; note that because each point is the vertex of a cubic cell/voxel, the voxel grid thus has dimensions (PT_GRID_DIM_X - 1, PT_GRID_DIM_Y - 1, PT_GRID_DIM_Z - 1)\n\n";
 
 			std::cerr << "\tdatatype-flag:\n";
 			std::cerr << "\t\t-d, --double\tUse doubles as values\n\n";
