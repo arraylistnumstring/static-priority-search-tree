@@ -37,6 +37,11 @@ int main(int argc, char *argv[])
 
 			std::cerr << "\tPT_GRID_DIM_X PT_GRID_DIM_Y PT_GRID_DIM_Z\n";
 			std::cerr << "\t\tDimensions of grid of points; note that because each point is the vertex of a cubic cell/voxel, the voxel grid thus has dimensions (PT_GRID_DIM_X - 1, PT_GRID_DIM_Y - 1, PT_GRID_DIM_Z - 1)\n\n";
+			std::cerr << "\t\tDataset dimensions:\n\n";
+			std::cerr << "\t\t\tIsabel: (500 500 100)\n\n";
+			std::cerr << "\t\t\tRadiation: (600 248 248)\n\n";
+			std::cerr << "\t\t\tTeraShake: (750 375 100)\n\n";
+			std::cerr << "\t\t\tVortex: (128 128 128)\n\n";
 
 			std::cerr << "\tdatatype-flag:\n";
 			std::cerr << "\t\t-d, --double\tUse doubles as values\n\n";
