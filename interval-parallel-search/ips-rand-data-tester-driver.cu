@@ -22,8 +22,8 @@ int main(int argc, char *argv[])
 			std::cerr << "[-I ID_TYPE] ";
 			std::cerr << "[-r] ";
 			std::cerr << "[-S RAND_SEED] ";
-			std::cerr << "[-t] ";
 			std::cerr << "[-T THREADS_PER_BLOCK] ";
+			std::cerr << "[-t] ";
 			std::cerr << "-B NUM_BLOCKS";
 			std::cerr << "-b MIN_VAL MAX_VAL [SIZE_BOUND_1] [SIZE_BOUND_2] ";
 			std::cerr << "-n NUM_ELEMS ";
@@ -132,6 +132,27 @@ int main(int argc, char *argv[])
 			}
 		}
 
+		// Number of threads per block parsing
+		else if (arg == "-T" || arg == "--threads-per-block")
+		{
+			i++;
+			if (i >= argc)
+			{
+				std::cerr << "Insufficient number of arguments provided for number of threads per block\n";
+				return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
+			}
+
+			try
+			{
+				test_info.threads_per_block = std::stoul(argv[i]);
+			}
+			catch (std::invalid_argument const &ex)
+			{
+				std::cerr << "Invalid argument for number of threads per block: " << argv[i] << '\n';
+				return ExitStatusCodes::INVALID_ARG_ERR;
+			}
+		}
+
 		// CUDA code timing flag
 		else if (arg == "-t" || arg == "--timed-CUDA")
 			test_info.timed_CUDA = true;
@@ -222,27 +243,6 @@ int main(int argc, char *argv[])
 			}
 
 			test_info.search_val_string = argv[i];
-		}
-
-		// Number of threads per block parsing
-		else if (arg == "-T" || arg == "--threads-per-block")
-		{
-			i++;
-			if (i >= argc)
-			{
-				std::cerr << "Insufficient number of arguments provided for number of threads per block\n";
-				return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
-			}
-
-			try
-			{
-				test_info.threads_per_block = std::stoul(argv[i]);
-			}
-			catch (std::invalid_argument const &ex)
-			{
-				std::cerr << "Invalid argument for number of threads per block: " << argv[i] << '\n';
-				return ExitStatusCodes::INVALID_ARG_ERR;
-			}
 		}
 
 		else	// Invalid argument

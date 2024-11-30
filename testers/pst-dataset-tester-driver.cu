@@ -24,10 +24,10 @@ int main(int argc, char *argv[])
 			std::cerr << "DIM_TYPE PT_GRID_DIM_X PT_GRID_DIM_Y PT_GRID_DIM_Z ";
 			std::cerr << "<datatype-flag> <tree-type-flag> ";
 			std::cerr << "[-I] ";
+			std::cerr << "[-m METACELL_DIM_X [METACELL_DIM_Y METACELL_DIM_Z]] ";
 			std::cerr << "[-r] ";
 			std::cerr << "[-t] ";
 			std::cerr << "[-w WARPS_PER_BLOCK] ";
-			std::cerr << "-m METACELL_DIM_X [METACELL_DIM_Y METACELL_DIM_Z] ";
 			std::cerr << "-s SEARCH_VAL ";
 			std::cerr << "\n\n";
 
@@ -156,6 +156,32 @@ int main(int argc, char *argv[])
 		else if (arg == "-r" || arg == "--report-IDs")
 			test_info.report_IDs = true;
 
+		// CUDA code timing flag
+		else if (arg == "-t" || arg == "--timed")
+			test_info.timed = true;
+
+		// Warps per block parsing
+		else if (arg == "-w" || arg == "--warps-per-block")
+		{
+			i++;
+			if (i >= argc)
+			{
+				std::cerr << "Insufficient number of arguments provided for number of warps per thread block\n";
+				return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
+			}
+
+			try
+			{
+				// Curly braces necessary around try block
+				test_info.warps_per_block = std::stoul(argv[i], nullptr, 0);
+			}
+			catch (std::invalid_argument const &ex)
+			{
+				std::cerr << "Invalid argument for number of warps per thread block: " << argv[i] << '\n';
+				return ExitStatusCodes::INVALID_ARG_ERR;
+			}
+		}
+
 		// Search value parsing; as this is an interval search, this correpsonds to a two-sided left search in the dual space that transforms intervals into points in the intersections of half spaces in the real plane R^2
 		else if (arg == "-s" || arg == "--search-val")
 		{
@@ -182,32 +208,6 @@ int main(int argc, char *argv[])
 			// As this is a non-three-sided search, move dimension-2 value to third slot of test_info.search_range_strings
 			test_info.search_range_strings[num_search_vals]
 				= test_info.search_range_strings[num_search_vals - 1];
-		}
-
-		// CUDA code timing flag
-		else if (arg == "-t" || arg == "--timed")
-			test_info.timed = true;
-
-		// Warps per block parsing
-		else if (arg == "-w" || arg == "--warps-per-block")
-		{
-			i++;
-			if (i >= argc)
-			{
-				std::cerr << "Insufficient number of arguments provided for number of warps per thread block\n";
-				return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
-			}
-
-			try
-			{
-				// Curly braces necessary around try block
-				test_info.warps_per_block = std::stoul(argv[i], nullptr, 0);
-			}
-			catch (std::invalid_argument const &ex)
-			{
-				std::cerr << "Invalid argument for number of warps per thread block: " << argv[i] << '\n';
-				return ExitStatusCodes::INVALID_ARG_ERR;
-			}
 		}
 
 		else	// Invalid argument

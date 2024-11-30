@@ -23,12 +23,12 @@ int main(int argc, char *argv[])
 			std::cerr << "DIM_TYPE PT_GRID_DIM_X PT_GRID_DIM_Y PT_GRID_DIM_Z ";
 			std::cerr << "<datatype-flag> ";
 			std::cerr << "[-I] ";
+			std::cerr << "[-m METACELL_DIM_X [METACELL_DIM_Y METACELL_DIM_Z]] ";
 			std::cerr << "[-r] ";
+			std::cerr << "[-T THREADS_PER_BLOCK] ";
 			std::cerr << "[-t] ";
-			std::cerr << "-B NUM_BLOCKS";
-			std::cerr << "-m METACELL_DIM_X [METACELL_DIM_Y METACELL_DIM_Z] ";
+			std::cerr << "-B NUM_BLOCKS ";
 			std::cerr << "-s SEARCH_VAL ";
-			std::cerr << "-T THREADS_PER_BLOCK";
 			std::cerr << "\n\n";
 
 			std::cerr << "\tdata-file:\tBinary volume data input filename\n\n";
@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
 
 			std::cerr << "\t-s, --search-val SEARCH_VAL\tValue to search for in all intervals; interval bounds are treated as inclusive\n\n";
 
-			std::cerr << "\t-T, --threads-per-block THREADS_PER_BLOCK\tNumber of threads to use in a thread block\n\n";
+			std::cerr << "\t-T, --threads-per-block THREADS_PER_BLOCK\tNumber of threads to use in a thread block; defaults to 128, the number of threads originally used by Liu et al. for the interval parallel search (compaction) portion of their procedure\n\n";
 
 			std::cerr << "\t-t, --timed-CUDA\tToggles timing of the CUDA portion of the code using on-device functions; defaults to false\n\n";
 
@@ -145,6 +145,27 @@ int main(int argc, char *argv[])
 		else if (arg == "-r" || arg == "--report-IDs")
 			test_info.report_IDs = true;
 
+		// Number of threads per block parsing
+		else if (arg == "-T" || arg == "--threads-per-block")
+		{
+			i++;
+			if (i >= argc)
+			{
+				std::cerr << "Insufficient number of arguments provided for number of threads per block\n";
+				return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
+			}
+
+			try
+			{
+				test_info.threads_per_block = std::stoul(argv[i]);
+			}
+			catch (std::invalid_argument const &ex)
+			{
+				std::cerr << "Invalid argument for number of threads per block: " << argv[i] << '\n';
+				return ExitStatusCodes::INVALID_ARG_ERR;
+			}
+		}
+
 		// CUDA code timing flag
 		else if (arg == "-t" || arg == "--timed-CUDA")
 			test_info.timed_CUDA = true;
@@ -183,27 +204,6 @@ int main(int argc, char *argv[])
 			}
 
 			test_info.search_val_string = argv[i];
-		}
-
-		// Number of threads per block parsing
-		else if (arg == "-T" || arg == "--threads-per-block")
-		{
-			i++;
-			if (i >= argc)
-			{
-				std::cerr << "Insufficient number of arguments provided for number of threads per block\n";
-				return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
-			}
-
-			try
-			{
-				test_info.threads_per_block = std::stoul(argv[i]);
-			}
-			catch (std::invalid_argument const &ex)
-			{
-				std::cerr << "Invalid argument for number of threads per block: " << argv[i] << '\n';
-				return ExitStatusCodes::INVALID_ARG_ERR;
-			}
 		}
 
 		else	// Invalid argument
