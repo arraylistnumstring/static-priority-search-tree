@@ -147,9 +147,12 @@ struct PSTTester
 
 					IDTypeWrapper(NumIDsWrapper<num_IDs> num_ids_wrapper,
 									IDType pt_grid_dims[NUM_DIMS])
-						: num_ids_wrapper(num_ids_wrapper),
-						pt_grid_dims(pt_grid_dims)
-					{};
+						: num_ids_wrapper(num_ids_wrapper)
+					{
+						// Attempting to put pt_grid_dims as part of the member initialiser list causes an error, as the input parameter is treated as being of type IDType *, rather than of type IDType[NUM_DIMS]
+						for (int i = 0; i < NUM_DIMS; i++)
+							this->pt_grid_dims[i] = pt_grid_dims[i];
+					};
 
 					template <typename RetType=PointStructTemplate<T, IDType, num_IDs>>
 						// Requires that RetType is either of type IDType or of type PointStructTemplate<T, IDType, num_IDs>
