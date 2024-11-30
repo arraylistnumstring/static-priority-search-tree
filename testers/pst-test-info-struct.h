@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cstdlib>		// To use std::exit()
+#include <functional>	// To use std::function
 #include <random>
 #include <string>
 
@@ -60,91 +61,78 @@ struct PSTTestInfoStruct
 	{
 		// Must explicitly set class instantiation variables to true and false in each branch in order for code to be compile-time determinable
 		if (timed)
-		{
-			PSTTester<true> pst_tester;
-
-			dataTypeWrap(pst_tester);
-		}
+			dataTypeWrap<PSTTester<true>>();
 		else
-		{
-			PSTTester<false> pst_tester;
-
-			dataTypeWrap(pst_tester);
-		}
+			dataTypeWrap<PSTTester<false>>();
 	};
 
 	template <class PSTTesterTimingDet>
-	void dataTypeWrap(PSTTesterTimingDet pst_tester)
+	void dataTypeWrap()
+	{
+		if (data_type == DataType::DOUBLE)
+		{
+			// typename necessary, as compiler defaults to treating nested names as variables
+			// Function pointers cannot have default arguments (and presumably std::functions operate the same way, at least when passed as parameters), so wrap std::stod in a lambda function with the correct signature
+			// Casting necessary as compiler fails to recognise a lambda as an std::function of the same signature and return type, thereby failing to instantiate template function
+			treeTypeWrapCaller<typename PSTTesterTimingDet::DataTypeWrapper<double, std::uniform_real_distribution>>(static_cast<std::function<double(const std::string &)>>(
+						[](const std::string &str) -> double
+						{
+							return std::stod(str);
+						})
+					);
+		}
+		else if (data_type == DataType::FLOAT)
+		{
+			treeTypeWrapCaller<typename PSTTesterTimingDet::DataTypeWrapper<float, std::uniform_real_distribution>>(static_cast<std::function<float(const std::string &)>>(
+						[](const std::string &str) -> float
+						{
+							return std::stof(str);
+						})
+					);
+		}
+		else if (data_type == DataType::INT)
+		{
+			treeTypeWrapCaller<typename PSTTesterTimingDet::DataTypeWrapper<int, std::uniform_int_distribution>>(static_cast<std::function<int(const std::string &)>>(
+					[](const std::string &str) -> int
+					{
+						return std::stoi(str);
+					})
+				);
+		}
+		else if (data_type == DataType::LONG)
+		{
+			treeTypeWrapCaller<typename PSTTesterTimingDet::DataTypeWrapper<long, std::uniform_int_distribution>>(static_cast<std::function<long(const std::string &)>>(
+						[](const std::string &str) -> long
+						{
+							return std::stol(str);
+						})
+					);
+		}
+	};
+
+	template <typename DataTypeWrapperInstantiated, typename T>
+	void treeTypeWrapCaller(std::function<T(const std::string &)> conv_func)
 	{
 		try
 		{
-			if (data_type == DataType::DOUBLE)
-			{
-				typename PSTTesterTimingDet::DataTypeWrapper<double, std::uniform_real_distribution>
-							pst_tester(input_file, rand_seed,
-										std::stod(tree_val_range_strings[0]),
-										std::stod(tree_val_range_strings[1]),
-										std::stod(tree_val_range_strings[2]),
-										std::stod(tree_val_range_strings[3]),
-										std::stod(search_range_strings[0]),
-										std::stod(search_range_strings[1]),
-										std::stod(search_range_strings[2]),
-										ordered_vals);
-				
-				treeTypeWrap(pst_tester);
-			}
-			else if (data_type == DataType::FLOAT)
-			{
-				typename PSTTesterTimingDet::DataTypeWrapper<float, std::uniform_real_distribution>
-							pst_tester(input_file, rand_seed,
-										std::stof(tree_val_range_strings[0]),
-										std::stof(tree_val_range_strings[1]),
-										std::stof(tree_val_range_strings[2]),
-										std::stof(tree_val_range_strings[3]),
-										std::stof(search_range_strings[0]),
-										std::stof(search_range_strings[1]),
-										std::stof(search_range_strings[2]),
-										ordered_vals);
-				
-				treeTypeWrap(pst_tester);
-			}
-			else if (data_type == DataType::INT)
-			{
-				typename PSTTesterTimingDet::DataTypeWrapper<int, std::uniform_int_distribution>
-							pst_tester(input_file, rand_seed,
-										std::stoi(tree_val_range_strings[0]),
-										std::stoi(tree_val_range_strings[1]),
-										std::stoi(tree_val_range_strings[2]),
-										std::stoi(tree_val_range_strings[3]),
-										std::stoi(search_range_strings[0]),
-										std::stoi(search_range_strings[1]),
-										std::stoi(search_range_strings[2]),
-										ordered_vals);
-				
-				treeTypeWrap(pst_tester);
-			}
-			else if (data_type == DataType::LONG)
-			{
-				typename PSTTesterTimingDet::DataTypeWrapper<long, std::uniform_int_distribution>
-							pst_tester(input_file, rand_seed,
-										std::stol(tree_val_range_strings[0]),
-										std::stol(tree_val_range_strings[1]),
-										std::stol(tree_val_range_strings[2]),
-										std::stol(tree_val_range_strings[3]),
-										std::stol(search_range_strings[0]),
-										std::stol(search_range_strings[1]),
-										std::stol(search_range_strings[2]),
-										ordered_vals);
-				
-				treeTypeWrap(pst_tester);
-			}
+			DataTypeWrapperInstantiated pst_tester(input_file, rand_seed,
+													conv_func(tree_val_range_strings[0]),
+													conv_func(tree_val_range_strings[1]),
+													conv_func(tree_val_range_strings[2]),
+													conv_func(tree_val_range_strings[3]),
+													conv_func(search_range_strings[0]),
+													conv_func(search_range_strings[1]),
+													conv_func(search_range_strings[2]),
+													ordered_vals);
+
+			treeTypeWrap(pst_tester);
 		}
 		catch (std::invalid_argument const &ex)
 		{
 			std::cerr << "Invalid argument for tree value range and/or search range\n";
 			std::exit(ExitStatusCodes::INVALID_ARG_ERR);
 		}
-	};
+	}
 
 	// Instantiate next PSTTester type with respect to tree type
 	template <typename PSTTesterDataTypeInstantiated>
@@ -194,10 +182,10 @@ struct PSTTestInfoStruct
 			std::cout << "Instantiated num_IDs = 1 wrapper\n";
 #endif
 			
-			if (input_file == "")	// Randomly-generated IDs
+			//if (input_file == "")	// Randomly-generated IDs
 				IDTypeWrapDistr(pst_tester_num_ids_instan);
-			else
-				IDTypeWrapIndexed(pst_tester_num_ids_instan, )
+			/*else
+				IDTypeWrapIndexed(pst_tester_num_ids_instan, );*/
 		}
 		else	// !pts_with_ids; can skip IDTypeWrap()
 		{
@@ -217,9 +205,9 @@ struct PSTTestInfoStruct
 		}
 	};
 
-	// Instantiate next PSTTester type with respect to ID type
+	// Instantiate next PSTTester type with respect to ID type for randomly generated IDs
 	template <class PSTTesterDataTreeTypesNumIDsInstantiated>
-	void IDTypeWrap(PSTTesterDataTreeTypesNumIDsInstantiated pst_tester)
+	void IDTypeWrapDistr(PSTTesterDataTreeTypesNumIDsInstantiated pst_tester)
 	{
 		if (id_type == DataType::CHAR)
 		{
