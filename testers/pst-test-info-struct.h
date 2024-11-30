@@ -361,6 +361,25 @@ struct PSTTestInfoStruct
 		}
 	};
 
+	template <typename PSTTesterDataTreeTypesNumIDsInstantiated, typename IDDistr, typename IDType>
+	void testWrapCaller(PSTTesterDataTreeTypesNumIDsInstantiated pst_tester)
+	{
+		typename PSTTesterDataTreeTypesNumIDsInstantiated::IDTypeWrapper<IDDistr, IDType> pst_tester_id_instan(pst_tester);
+
+		if (report_IDs)
+		{
+			typename PSTTesterDataTreeTypesNumIDsInstantiated::IDTypeWrapper<IDDistr, IDType>::RetTypeWrapper<IDType> pst_tester_id_ret_types_instan(pst_tester_id_instan);
+
+			testWrap(pst_tester_id_ret_types_instan);
+		}
+		else
+		{
+			typename PSTTesterDataTreeTypesNumIDsInstantiated::IDTypeWrapper<IDDistr, IDType>::RetTypeWrapper<> pst_tester_id_ret_types_instan(pst_tester_id_instan);
+
+			testWrap(pst_tester_id_ret_types_instan);
+		}
+	};
+
 	// Run test
 	template <typename PSTTesterClass>
 	void testWrap(PSTTesterClass pst_tester)
