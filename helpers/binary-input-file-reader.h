@@ -1,0 +1,6 @@
+#ifndef BINARY_INPUT_FILE_READER_H
+#define BINARY_INPUT_FILE_READER_H
+
+
+
+#endif

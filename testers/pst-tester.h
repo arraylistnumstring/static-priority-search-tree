@@ -177,6 +177,10 @@ struct PSTTester
 						void operator()(size_t num_elems, const unsigned warps_per_block, PSTTestCodes test_type=CONSTRUCT)
 						{
 							PointStructTemplate<T, IDType, num_IDs> *pt_arr;
+
+							// Will only be non-nullptr-valued if reading from an input file
+							T *vertex_arr = nullptr;
+
 							if (id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.input_file == "")
 							{
 								pt_arr = generateRandPts<PointStructTemplate<T, IDType, num_IDs>, T>(num_elems,
@@ -188,7 +192,14 @@ struct PSTTester
 							}
 							else
 							{
-								// TODO: Dataset loading and processing
+								IDType num_vertices = 1;
+								for (int i = 0; i < NUM_DIMS; i++)
+									num_vertices *= id_type_wrapper.pt_grid_dims[i];
+
+								// Read in vertex array from binary file
+								vertex_arr = readInVertices<T>(input_file, num_vertices);
+
+								pt_arr = formMetacells(vertex_arr);
 							}
 
 #ifdef DEBUG
