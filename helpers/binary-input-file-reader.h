@@ -2,11 +2,13 @@
 #define BINARY_INPUT_FILE_READER_H
 
 #include <fstream>
+#include <type_traits>
 
 #include "exit-status-codes.h"
 #include "preprocessor-symbols.h"
 
 template <typename T, typename GridDimType>
+	requires std::is_integral<GridDimType>::value
 T *readInVertices(std::string input_filename, GridDimType grid_dims[NUM_DIMS])
 {
 	GridDimType num_vertices = 1;

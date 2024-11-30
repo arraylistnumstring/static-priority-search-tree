@@ -9,6 +9,7 @@
 #include <random>		// To use std::mt19937
 #include <type_traits>
 
+#include "binary-input-file-reader.h"
 #include "err-chk.h"
 #include "gpu-err-chk.h"
 #include "helper-cuda--modified.h"
@@ -181,7 +182,20 @@ struct PSTTester
 							// Will only be non-nullptr-valued if reading from an input file
 							T *vertex_arr = nullptr;
 
-							if (id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.input_file == "")
+							// Wrap readInVertices in a if constexpr type check (so that it will only be compiled if it succeeds), as pt_grid_dims will be used to allocate memory, and thus must be of integral type
+							if constexpr (std::is_integral<IDType>::value)
+							{
+								if (id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.input_file != "")
+								{
+									// Read in vertex array from binary file
+									vertex_arr = readInVertices<T>(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.input_file,
+																	id_type_wrapper.pt_grid_dims);
+
+									//pt_arr = formMetacells(vertex_arr);
+								}
+							}
+							if (!std::is_integral<IDType>::value ||
+									id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.input_file == "")
 							{
 								pt_arr = generateRandPts<PointStructTemplate<T, IDType, num_IDs>, T>(num_elems,
 															id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.distr,
@@ -189,13 +203,6 @@ struct PSTTester
 															id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.vals_inc_ordered,
 															id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr_active ? &(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr) : nullptr,
 															&(id_type_wrapper.id_distr));
-							}
-							else
-							{
-								// Read in vertex array from binary file
-								vertex_arr = readInVertices<T>(input_file, pt_grid_dims);
-
-								pt_arr = formMetacells(vertex_arr);
 							}
 
 #ifdef DEBUG
