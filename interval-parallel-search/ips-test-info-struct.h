@@ -119,7 +119,7 @@ struct IPSTestInfoStruct
 		}
 		catch (std::invalid_argument const &ex)
 		{
-			std::cerr << "Invalid argument for tree value range and/or search range\n";
+			std::cerr << "Invalid argument for interval value range and/or search range\n";
 			std::exit(ExitStatusCodes::INVALID_ARG_ERR);
 		}
 	};
