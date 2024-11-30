@@ -149,7 +149,7 @@ struct IPSTestInfoStruct
 	void IDTypeWrap(IPSTesterDataTypeNumIDsInstantiated ips_tester)
 	{
 		if (id_type == DataType::CHAR)
-			IDTypeWrapInstantiator<std::uniform_int_distribution, char>(pst_tester,
+			IDTypeWrapInstantiator<std::uniform_int_distribution, char>(ips_tester,
 										static_cast<std::function<char(const std::string &)>>(
 													[](const std::string &str) -> char
 													{
@@ -157,7 +157,7 @@ struct IPSTestInfoStruct
 													})
 									);
 		else if (id_type == DataType::DOUBLE)
-			IDTypeWrapInstantiator<std::uniform_real_distribution, double>(pst_tester,
+			IDTypeWrapInstantiator<std::uniform_real_distribution, double>(ips_tester,
 										static_cast<std::function<double(const std::string &)>>(
 													[](const std::string &str) -> double
 													{
@@ -165,7 +165,7 @@ struct IPSTestInfoStruct
 													})
 									);
 		else if (id_type == DataType::FLOAT)
-			IDTypeWrapInstantiator<std::uniform_real_distribution, float>(pst_tester,
+			IDTypeWrapInstantiator<std::uniform_real_distribution, float>(ips_tester,
 										static_cast<std::function<float(const std::string &)>>(
 													[](const std::string &str) -> float
 													{
@@ -173,7 +173,7 @@ struct IPSTestInfoStruct
 													})
 									);
 		else if (id_type == DataType::INT)
-			IDTypeWrapInstantiator<std::uniform_int_distribution, int>(pst_tester,
+			IDTypeWrapInstantiator<std::uniform_int_distribution, int>(ips_tester,
 										static_cast<std::function<int(const std::string &)>>(
 													[](const std::string &str) -> int
 													{
@@ -181,7 +181,7 @@ struct IPSTestInfoStruct
 													})
 									);
 		else if (id_type == DataType::LONG)
-			IDTypeWrapInstantiator<std::uniform_int_distribution, long>(pst_tester,
+			IDTypeWrapInstantiator<std::uniform_int_distribution, long>(ips_tester,
 										static_cast<std::function<long(const std::string &)>>(
 													[](const std::string &str) -> long
 													{
@@ -189,7 +189,7 @@ struct IPSTestInfoStruct
 													})
 									);
 		else if (id_type == DataType::UNSIGNED_INT)
-			IDTypeWrapInstantiator<std::uniform_int_distribution, unsigned>(pst_tester,
+			IDTypeWrapInstantiator<std::uniform_int_distribution, unsigned>(ips_tester,
 										static_cast<std::function<unsigned(const std::string &)>>(
 													[](const std::string &str) -> unsigned
 													{
@@ -197,7 +197,7 @@ struct IPSTestInfoStruct
 													})
 									);
 		else if (id_type == DataType::UNSIGNED_LONG)
-			IDTypeWrapInstantiator<std::uniform_int_distribution, unsigned long>(pst_tester,
+			IDTypeWrapInstantiator<std::uniform_int_distribution, unsigned long>(ips_tester,
 										static_cast<std::function<unsigned long(const std::string &)>>(
 													[](const std::string &str) -> unsigned long
 													{
