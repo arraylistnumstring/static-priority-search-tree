@@ -139,6 +139,7 @@ struct PSTTester
 					IDDistrib<IDType> id_distr;
 
 					IDType pt_grid_dims[NUM_DIMS];
+					IDType metacell_dims[NUM_DIMS];
 
 					IDTypeWrapper(NumIDsWrapper<num_IDs> num_ids_wrapper)
 						: num_ids_wrapper(num_ids_wrapper),
@@ -146,12 +147,16 @@ struct PSTTester
 					{};
 
 					IDTypeWrapper(NumIDsWrapper<num_IDs> num_ids_wrapper,
-									IDType pt_grid_dims[NUM_DIMS])
+									IDType pt_grid_dims[NUM_DIMS],
+									IDType metacell_dims[NUM_DIMS])
 						: num_ids_wrapper(num_ids_wrapper)
 					{
-						// Attempting to put pt_grid_dims as part of the member initialiser list causes an error, as the input parameter is treated as being of type IDType *, rather than of type IDType[NUM_DIMS]
+						// Attempting to put a const-sized array as part of the member initialiser list causes an error, as the input parameter is treated as being of type IDType *, rather than of type IDType[NUM_DIMS]
 						for (int i = 0; i < NUM_DIMS; i++)
+						{
 							this->pt_grid_dims[i] = pt_grid_dims[i];
+							this->metacell_dims[i] = metacell_dims[i];
+						}
 					};
 
 					template <typename RetType=PointStructTemplate<T, IDType, num_IDs>>

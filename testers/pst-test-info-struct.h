@@ -276,23 +276,39 @@ struct PSTTestInfoStruct
 		else
 		{
 			IDType pt_grid_dims[NUM_DIMS];
+			IDType metacell_dims[NUM_DIMS];
 			for (int i = 0; i < NUM_DIMS; i++)
 			{
 				try
 				{
 					pt_grid_dims[i] = conv_func(pt_grid_dim_strings[i]);
+					metacell_dims[i] = conv_func(metacell_dim_strings[i]);
 				}
 				catch (std::invalid_argument const &ex)
 				{
-					std::cerr << "Invalid argument for point grid dimension " << i << '\n';
+					std::cerr << "Invalid argument for point grid and/or metacell dimension " << i << '\n';
 					std::exit(ExitStatusCodes::INVALID_ARG_ERR);
 				}
 
 				if (pt_grid_dims[i] <= 0)
+				{
 					std::cerr << "Invalid value of " << pt_grid_dims[i] << " for point grid dimension " << i << '\n';
+					std::exit(ExitStatusCodes::INVALID_ARG_ERR);
+				}
+				if ( (i == 0  && metacell_dims[i] == 0)
+						// Check whether IDType is unsigned to silence "meaningless comparison with 0" warnings
+						|| (!std::is_unsigned<IDType>::value && metacell_dims[i] < 0) )
+				{
+					std::cerr << "Invalid value of " << metacell_dims[i] << " for metacell dimension " << i << '\n';
+					std::exit(ExitStatusCodes::INVALID_ARG_ERR);
+				}
+				else if (metacell_dims[i] == 0)
+				{
+					metacell_dims[i] = metacell_dims[0];
+				}
 			}
 
-			typename PSTTesterDataTreeTypesNumIDsInstantiated::IDTypeWrapper<IDDistr, IDType> pst_tester_id_instan(pst_tester, pt_grid_dims);
+			typename PSTTesterDataTreeTypesNumIDsInstantiated::IDTypeWrapper<IDDistr, IDType> pst_tester_id_instan(pst_tester, pt_grid_dims, metacell_dims);
 
 			reportIDsWrap<IDType>(pst_tester_id_instan);
 		}
