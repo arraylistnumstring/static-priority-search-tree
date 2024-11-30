@@ -70,7 +70,6 @@ struct PSTTestInfoStruct
 	void dataTypeWrap()
 	{
 		if (data_type == DataType::DOUBLE)
-		{
 			// typename necessary, as compiler defaults to treating nested names as variables
 			// Function pointers cannot have default arguments (and presumably std::functions operate the same way, at least when passed as parameters), so wrap std::stod in a lambda function with the correct signature
 			// Casting necessary as compiler fails to recognise a lambda as an std::function of the same signature and return type, thereby failing to instantiate template function
@@ -80,34 +79,27 @@ struct PSTTestInfoStruct
 							return std::stod(str);
 						})
 					);
-		}
 		else if (data_type == DataType::FLOAT)
-		{
 			treeTypeWrapCaller<typename PSTTesterTimingDet::DataTypeWrapper<float, std::uniform_real_distribution>>(static_cast<std::function<float(const std::string &)>>(
 						[](const std::string &str) -> float
 						{
 							return std::stof(str);
 						})
 					);
-		}
 		else if (data_type == DataType::INT)
-		{
 			treeTypeWrapCaller<typename PSTTesterTimingDet::DataTypeWrapper<int, std::uniform_int_distribution>>(static_cast<std::function<int(const std::string &)>>(
 					[](const std::string &str) -> int
 					{
 						return std::stoi(str);
 					})
 				);
-		}
 		else if (data_type == DataType::LONG)
-		{
 			treeTypeWrapCaller<typename PSTTesterTimingDet::DataTypeWrapper<long, std::uniform_int_distribution>>(static_cast<std::function<long(const std::string &)>>(
 						[](const std::string &str) -> long
 						{
 							return std::stol(str);
 						})
 					);
-		}
 	};
 
 	template <typename DataTypeWrapperInstantiated, typename T>

@@ -3,6 +3,7 @@
 
 #include "exit-status-codes.h"		// For consistent exit status codes
 #include "ips-test-info-struct.h"
+#include "preprocessor-symbols.h"
 
 int main(int argc, char *argv[])
 {
@@ -93,7 +94,7 @@ int main(int argc, char *argv[])
 
 		else if (i == 3)	// Get point grid dimensions
 		{
-			for (int j = 0; j < IPSTestInfoStruct::NUM_DIMS; j++)
+			for (int j = 0; j < NUM_DIMS; j++)
 			{
 				if (i >= argc)
 				{
@@ -123,7 +124,7 @@ int main(int argc, char *argv[])
 		// Metacell dimension parsing
 		else if (arg == "-m" || arg == "--metacell-dims")
 		{
-			for (int j = 0; j < IPSTestInfoStruct::NUM_DIMS; j++)
+			for (int j = 0; j < NUM_DIMS; j++)
 			{
 				i++;
 				if (i >= argc)

@@ -8,6 +8,7 @@
 
 #include "exit-status-codes.h"
 #include "ips-tester.h"
+#include "preprocessor-symbols.h"
 #include "point-struct.h"
 
 
@@ -18,16 +19,15 @@ struct IPSTestInfoStruct
 
 	std::string input_file = "";
 
-	const static size_t NUM_DIMS = 3;
 	std::string pt_grid_dim_strings[NUM_DIMS] = {"0", "0", "0"};
 	std::string metacell_dim_strings[NUM_DIMS] = {"64", "0", "0"};
+
+	std::string search_val_string;
 
 	// Number of values necessary to define the bounds of an interval
 	const static size_t MIN_NUM_VALS_INT_BOUNDS = 2;
 	const static size_t MAX_NUM_VALS_INT_BOUNDS = 4;
 	std::string val_range_strings[MAX_NUM_VALS_INT_BOUNDS] = {"0", "0", "-1", "-1"};
-
-	std::string search_val_string;
 
 	size_t rand_seed = 0;
 	size_t num_elems;
@@ -50,72 +50,60 @@ struct IPSTestInfoStruct
 	{
 		// Must explicitly set class instantiation variables to true and false in each branch in order for code to be compile-time determinable
 		if (timed_CUDA)
-		{
-			IPSTester<true> ips_tester;
-			
-			dataTypeWrap(ips_tester);
-		}
+			dataTypeWrap<IPSTester<true>>();
 		else
-		{
-			IPSTester<false> ips_tester;
-
-			dataTypeWrap(ips_tester);
-		}
+			dataTypeWrap<IPSTester<false>>();
 	};
 
 	template <class IPSTesterTimingDet>
-	void dataTypeWrap(IPSTesterTimingDet ips_tester)
+	void dataTypeWrap()
+	{
+		if (data_type == DataType::DOUBLE)
+			// typename necessary, as compiler defaults to treating nested names as variables
+			// Function pointers cannot have default arguments (and presumably std::functions operate the same way, at least when passed as parameters), so wrap std::stod in a lambda function with the correct signature
+			// Casting necessary as compiler fails to recognise a lambda as an std::function of the same signature and return type, thereby failing to instantiate template function
+			numIDsWrapCaller<typename IPSTesterTimingDet::DataTypeWrapper<double, std::uniform_real_distribution>>(static_cast<std::function<double(const std::string &)>>(
+						[](const std::string &str) -> double
+						{
+							return std::stod(str);
+						})
+					);
+		else if (data_type == DataType::FLOAT)
+			numIDsWrapCaller<typename IPSTesterTimingDet::DataTypeWrapper<float, std::uniform_real_distribution>>(static_cast<std::function<float(const std::string &)>>(
+						[](const std::string &str) -> float
+						{
+							return std::stof(str);
+						})
+					);
+		else if (data_type == DataType::INT)
+			numIDsWrapCaller<typename IPSTesterTimingDet::DataTypeWrapper<int, std::uniform_int_distribution>>(static_cast<std::function<int(const std::string &)>>(
+						[](const std::string &str) -> int
+						{
+							return std::stoi(str);
+						})
+					);
+		else if (data_type == DataType::LONG)
+			numIDsWrapCaller<typename IPSTesterTimingDet::DataTypeWrapper<long, std::uniform_int_distribution>>(static_cast<std::function<long(const std::string &)>>(
+						[](const std::string &str) -> long
+						{
+							return std::stol(str);
+						})
+					);
+	};
+
+	template <typename DataTypeWrapperInstantiated, typename T>
+	void numIDsWrapCaller(std::function<T(const std::string &)> conv_func)
 	{
 		try
 		{
-			if (data_type == DataType::DOUBLE)
-			{
-				typename IPSTesterTimingDet::DataTypeWrapper<double, std::uniform_real_distribution>
-							ips_tester_data_type_instan(input_file, rand_seed,
-														std::stod(val_range_strings[0]),
-														std::stod(val_range_strings[1]),
-														std::stod(val_range_strings[2]),
-														std::stod(val_range_strings[3]),
-														std::stod(search_val_string));
-				
-				numIDsWrap(ips_tester_data_type_instan);
-			}
-			else if (data_type == DataType::FLOAT)
-			{
-				typename IPSTesterTimingDet::DataTypeWrapper<float, std::uniform_real_distribution>
-							ips_tester_data_type_instan(input_file, rand_seed,
-														std::stod(val_range_strings[0]),
-														std::stod(val_range_strings[1]),
-														std::stod(val_range_strings[2]),
-														std::stod(val_range_strings[3]),
-														std::stod(search_val_string));
-				
-				numIDsWrap(ips_tester_data_type_instan);
-			}
-			else if (data_type == DataType::INT)
-			{
-				typename IPSTesterTimingDet::DataTypeWrapper<int, std::uniform_int_distribution>
-							ips_tester_data_type_instan(input_file, rand_seed,
-														std::stod(val_range_strings[0]),
-														std::stod(val_range_strings[1]),
-														std::stod(val_range_strings[2]),
-														std::stod(val_range_strings[3]),
-														std::stod(search_val_string));
-				
-				numIDsWrap(ips_tester_data_type_instan);
-			}
-			else if (data_type == DataType::LONG)
-			{
-				typename IPSTesterTimingDet::DataTypeWrapper<long, std::uniform_int_distribution>
-							ips_tester_data_type_instan(input_file, rand_seed,
-														std::stod(val_range_strings[0]),
-														std::stod(val_range_strings[1]),
-														std::stod(val_range_strings[2]),
-														std::stod(val_range_strings[3]),
-														std::stod(search_val_string));
-				
-				numIDsWrap(ips_tester_data_type_instan);
-			}
+			DataTypeWrapperInstantiated pst_tester(input_file, rand_seed,
+													conv_func(val_range_strings[0]),
+													conv_func(val_range_strings[1]),
+													conv_func(val_range_strings[2]),
+													conv_func(val_range_strings[3]),
+													conv_func(search_val_string));
+
+			numIDsWrap(pst_tester);
 		}
 		catch (std::invalid_argument const &ex)
 		{
