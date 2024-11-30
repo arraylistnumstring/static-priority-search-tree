@@ -11,6 +11,7 @@
 #include "gpu-err-chk.h"
 #include "helper-cuda--modified.h"
 #include "interval-parallel-search.h"
+#include "isosurface-data-preprocessing.h"
 #include "preprocessor-symbols.h"
 #include "print-array.h"
 #include "rand-data-pt-generator.h"
@@ -63,7 +64,7 @@ struct IPSTester
 		struct NumIDsWrapper
 		{
 			// Nested class have access to all levels of access of their enclosing scope; however, as nested classes are not associated with any enclosing class instance in particular, must keep track of the desired "parent" instance, if any
-			DataTypeWrapper<T, Distrib, RandNumEng> para_search_tester;
+			DataTypeWrapper<T, Distrib, RandNumEng> ips_tester;
 
 			// Track CUDA device properties; placed in this struct to reduce code redundancy, as this is the only struct that is unspecialised and has a single constructor
 			// Data types chosen because they are the ones respectively returned by CUDA
@@ -71,8 +72,8 @@ struct IPSTester
 			int dev_ind;
 			cudaDeviceProp dev_props;
 
-			NumIDsWrapper(DataTypeWrapper<T, Distrib, RandNumEng> para_search_tester)
-				: para_search_tester(para_search_tester)
+			NumIDsWrapper(DataTypeWrapper<T, Distrib, RandNumEng> ips_tester)
+				: ips_tester(ips_tester)
 			{
 				// Check and save number of GPUs attached to machine
 				gpuErrorCheck(cudaGetDeviceCount(&num_devs), "Error in getting number of devices: ");
@@ -138,24 +139,42 @@ struct IPSTester
 					void operator()(size_t num_elems, const unsigned num_thread_blocks, const unsigned threads_per_block)
 					{
 						PointStructTemplate<T, IDType, num_IDs> *pt_arr;
-						if (id_type_wrapper.num_ids_wrapper.para_search_tester.input_file == "")
+
+						// Will only be non-nullptr-valued if reading from an input file
+						T *vertex_arr = nullptr;
+
+						// Place random data generation condition before data input reading so that any timing mechanism for the latter will not be impacted by the evaluation of this conditional
+						if (!std::is_integral<IDType>::value ||
+								id_type_wrapper.num_ids_wrapper.ips_tester.input_file == "")
 						{
 							pt_arr = generateRandPts<PointStructTemplate<T, IDType, num_IDs>, T>(num_elems,
-														id_type_wrapper.num_ids_wrapper.para_search_tester.distr,
-														id_type_wrapper.num_ids_wrapper.para_search_tester.rand_num_eng,
+														id_type_wrapper.num_ids_wrapper.ips_tester.distr,
+														id_type_wrapper.num_ids_wrapper.ips_tester.rand_num_eng,
 														true,
-														id_type_wrapper.num_ids_wrapper.para_search_tester.inter_size_distr_active ? &(id_type_wrapper.num_ids_wrapper.para_search_tester.inter_size_distr) : nullptr,
+														id_type_wrapper.num_ids_wrapper.ips_tester.inter_size_distr_active ? &(id_type_wrapper.num_ids_wrapper.ips_tester.inter_size_distr) : nullptr,
 														&(id_type_wrapper.id_distr));
-						}
-						else
-						{
-							// TODO: Dataset loading and processing
-						}
 
 #ifdef DEBUG
-						printArray(std::cout, pt_arr, 0, num_elems);
-						std::cout << '\n';
+							printArray(std::cout, pt_arr, 0, num_elems);
+							std::cout << '\n';
 #endif
+						}
+						// Wrap readInVertices in an if constexpr type check (so that it will only be compiled if it succeeds), as pt_grid_dims will be used to allocate memory, and thus must be of integral type
+						if constexpr (std::is_integral<IDType>::value)
+						{
+							if (id_type_wrapper.num_ids_wrapper.ips_tester.input_file != "")
+							{
+								// Read in vertex array from binary file
+								vertex_arr = readInVertices<T>(id_type_wrapper.num_ids_wrapper.ips_tester.input_file,
+																id_type_wrapper.pt_grid_dims);
+
+								// TODO: Copy vertex_arr to GPU so it's ready for metacell formation and marching cubes
+
+								pt_arr = formMetacells<PointStructTemplate, num_IDs>(vertex_arr,
+															id_type_wrapper.pt_grid_dims,
+															id_type_wrapper.metacell_dims);
+							}
+						}
 
 						size_t num_res_elems = 0;
 						RetType *res_arr;
@@ -201,7 +220,12 @@ struct IPSTester
 											"Error in recording start event for timing CUDA search code");
 						}
 
-						intervalParallelSearch(pt_arr_d, num_elems, res_arr, num_res_elems, id_type_wrapper.num_ids_wrapper.para_search_tester.search_val, id_type_wrapper.num_ids_wrapper.dev_ind, id_type_wrapper.num_ids_wrapper.num_devs, id_type_wrapper.num_ids_wrapper.dev_props.warpSize, num_thread_blocks, threads_per_block);
+						intervalParallelSearch(pt_arr_d, num_elems, res_arr, num_res_elems,
+												id_type_wrapper.num_ids_wrapper.ips_tester.search_val,
+												id_type_wrapper.num_ids_wrapper.dev_ind,
+												id_type_wrapper.num_ids_wrapper.num_devs,
+												id_type_wrapper.num_ids_wrapper.dev_props.warpSize,
+												num_thread_blocks, threads_per_block);
 
 						if constexpr (timed_CUDA)
 						{
@@ -303,10 +327,10 @@ struct IPSTester
 				{
 					PointStructTemplate<T, void, num_IDs> *pt_arr
 						= generateRandPts<PointStructTemplate<T, void, num_IDs>, T, void>(num_elems,
-													num_ids_wrapper.para_search_tester.distr,
-													num_ids_wrapper.para_search_tester.rand_num_eng,
+													num_ids_wrapper.ips_tester.distr,
+													num_ids_wrapper.ips_tester.rand_num_eng,
 													true,
-													num_ids_wrapper.para_search_tester.inter_size_distr_active ? &(num_ids_wrapper.para_search_tester.inter_size_distr) : nullptr);
+													num_ids_wrapper.ips_tester.inter_size_distr_active ? &(num_ids_wrapper.ips_tester.inter_size_distr) : nullptr);
 
 #ifdef DEBUG
 					printArray(std::cout, pt_arr, 0, num_elems);
@@ -358,7 +382,11 @@ struct IPSTester
 					}
 
 					// Do search and report that returns PointStructTemplate
-					intervalParallelSearch(pt_arr_d, num_elems, res_pt_arr, num_res_elems, num_ids_wrapper.para_search_tester.search_val, num_ids_wrapper.dev_ind, num_ids_wrapper.num_devs, num_ids_wrapper.dev_props.warpSize, num_thread_blocks, threads_per_block);
+					intervalParallelSearch(pt_arr_d, num_elems, res_pt_arr, num_res_elems,
+											num_ids_wrapper.ips_tester.search_val,
+											num_ids_wrapper.dev_ind, num_ids_wrapper.num_devs,
+											num_ids_wrapper.dev_props.warpSize,
+											num_thread_blocks, threads_per_block);
 
 					if constexpr (timed_CUDA)
 					{

@@ -287,6 +287,7 @@ struct PSTTestInfoStruct
 					std::cerr << "Invalid value of " << pt_grid_dims[i] << " for point grid dimension " << i << '\n';
 					std::exit(ExitStatusCodes::INVALID_ARG_ERR);
 				}
+				// If first metacell dimension is 0, return an error
 				if ( (i == 0  && metacell_dims[i] == 0)
 						// Check whether IDType is unsigned to silence "meaningless comparison with 0" warnings
 						|| (!std::is_unsigned<IDType>::value && metacell_dims[i] < 0) )
@@ -294,10 +295,9 @@ struct PSTTestInfoStruct
 					std::cerr << "Invalid value of " << metacell_dims[i] << " for metacell dimension " << i << '\n';
 					std::exit(ExitStatusCodes::INVALID_ARG_ERR);
 				}
+				// If second or third metacell dimension is 0, use the first dimension's value as its own
 				else if (metacell_dims[i] == 0)
-				{
 					metacell_dims[i] = metacell_dims[0];
-				}
 			}
 
 			typename PSTTesterDataTreeTypesNumIDsInstantiated::IDTypeWrapper<IDDistr, IDType> pst_tester_id_instan(pst_tester, pt_grid_dims, metacell_dims);
