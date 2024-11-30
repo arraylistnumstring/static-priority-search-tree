@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
 					return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
 				}
 
-				test_info.search_range_strings[j] = std::string(argv[i]);
+				test_info.search_range_strings[j] = argv[i];
 			}
 
 			// For non-three-sided searches, move dimension-2 value to third slot of test_info.search_range_strings
@@ -239,8 +239,8 @@ int main(int argc, char *argv[])
 						return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
 					}
 
-					test_info.tree_val_range_strings[j] = std::string(argv[i]);
-				}
+					test_info.tree_val_range_strings[j] = argv[i];
+
 				// Test for optional presence of third and fourth arguments
 				else	// j >= PSTTestInfoStruct::MIN_NUM_VALS_INT_BOUNDS
 				{
@@ -250,7 +250,7 @@ int main(int argc, char *argv[])
 					else
 					{
 						i++;
-						test_info.tree_val_range_strings[j] = std::string(argv[i]);
+						test_info.tree_val_range_strings[j] = argv[i];
 					}
 				}
 			}

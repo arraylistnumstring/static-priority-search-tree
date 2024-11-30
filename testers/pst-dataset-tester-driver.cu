@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
 					return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
 				}
 
-				test_info.pt_grid_dim_strings[i] = std::string(argv[i]);
+				test_info.pt_grid_dim_strings[i] = argv[i];
 				i++;
 			}
 		}
@@ -143,7 +143,7 @@ int main(int argc, char *argv[])
 						break;
 				}
 
-				test_info.metacell_dim_strings[j] = std::string(argv[i]);
+				test_info.metacell_dim_strings[j] = argv[i];
 			}
 		}
 
@@ -170,7 +170,7 @@ int main(int argc, char *argv[])
 					return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
 				}
 
-				test_info.search_range_strings[j] = std::string(argv[i]);
+				test_info.search_range_strings[j] = argv[i];
 			}
 
 			// As this is a non-three-sided search, move dimension-2 value to third slot of test_info.search_range_strings

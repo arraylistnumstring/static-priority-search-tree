@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
 					return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
 				}
 
-				test_info.pt_grid_dim_strings[i] = std::string(argv[i]);
+				test_info.pt_grid_dim_strings[i] = argv[i];
 				i++;
 			}
 		}
@@ -133,7 +133,7 @@ int main(int argc, char *argv[])
 						break;
 				}
 
-				test_info.metacell_dim_strings[j] = std::string(argv[i]);
+				test_info.metacell_dim_strings[j] = argv[i];
 			}
 		}
 
@@ -178,7 +178,7 @@ int main(int argc, char *argv[])
 				return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
 			}
 
-			test_info.search_val_string = std::string(argv[i]);
+			test_info.search_val_string = argv[i];
 		}
 
 		// Number of threads per block parsing
