@@ -10,6 +10,7 @@
 #include "static-pst-cpu-iter.h"
 #include "static-pst-cpu-recur.h"
 #include "static-pst-gpu.h"
+#include "preprocessor-symbols.h"
 
 
 // Struct for information necessary to instantiate PSTTester
@@ -19,7 +20,6 @@ struct PSTTestInfoStruct
 
 	std::string input_file = "";
 
-	const static size_t NUM_DIMS = 3;
 	std::string pt_grid_dim_strings[NUM_DIMS] = {"0", "0", "0"};
 	std::string metacell_dim_strings[NUM_DIMS] = {"4", "0", "0"};
 
@@ -47,6 +47,7 @@ struct PSTTestInfoStruct
 	PSTType tree_type;
 	DataType id_type;
 
+	// Only queried when generating random data, but set consistently with the operation being done in all cases for ease of debugging
 	bool ordered_vals = false;
 	bool pts_with_ids = false;
 	bool report_IDs = false;

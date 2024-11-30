@@ -3,6 +3,7 @@
 #include <string>		// To use stoi() and string operators for command-line argument parsing
 
 #include "exit-status-codes.h"		// For consistent exit status codes
+#include "preprocessor-symbols.h"
 #include "pst-test-info-struct.h"
 
 int main(int argc, char *argv[])
@@ -95,7 +96,7 @@ int main(int argc, char *argv[])
 
 		else if (i == 3)	// Check point grid dimensions
 		{
-			for (int j = 0; j < PSTTestInfoStruct::NUM_DIMS; j++)
+			for (int j = 0; j < NUM_DIMS; j++)
 			{
 				if (i >= argc)
 				{
@@ -129,7 +130,7 @@ int main(int argc, char *argv[])
 		// Metacell dimension parsing
 		else if (arg == "-m" || arg == "--metacell-dims")
 		{
-			for (int j = 0; j < PSTTestInfoStruct::NUM_DIMS; j++)
+			for (int j = 0; j < NUM_DIMS; j++)
 			{
 				i++;
 				if (i >= argc)
@@ -151,14 +152,15 @@ int main(int argc, char *argv[])
 		else if (arg == "-r" || arg == "--report-IDs")
 			test_info.report_IDs = true;
 
-		// Test-type parsing
+		// Search value parsing; as this is an interval search, this correpsonds to a two-sided left search in the dual space that transforms intervals into points in the intersections of half spaces in the real plane R^2
 		else if (arg == "-s" || arg == "--search-val")
 		{
 			PSTTestInfoStruct::NumSearchVals num_search_vals;
 
-			// Use dual space transformation of intervals into points and the intersections of half-spaces
 			num_search_vals = PSTTestInfoStruct::NumSearchVals::NUM_VALS_TWO_SEARCH;
 			test_info.test_type = PSTTestCodes::LEFT_SEARCH;
+
+			test_info.ordered_vals = true;	// Interval search, so values in the interval must be ordered; not actually used, but set for consistency when debugging
 
 			// Consume requisite number of arguments for later conversion to search range values
 			for (int j = 0; j < num_search_vals; j++)
