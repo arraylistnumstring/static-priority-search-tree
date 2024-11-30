@@ -149,146 +149,127 @@ struct IPSTestInfoStruct
 	void IDTypeWrap(IPSTesterDataTypeNumIDsInstantiated ips_tester)
 	{
 		if (id_type == DataType::CHAR)
-		{
-			// typename necessary, as compiler defaults to treating nested names as variables
-			typename IPSTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, char> ips_tester_id_instan(ips_tester);
-
-#ifdef DEBUG_WRAP
-			std::cout << "Instantiated IDType = char wrapper\n";
-#endif
-
-			if (report_IDs)
-			{
-				typename IPSTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, char>::RetTypeWrapper<char> ips_tester_id_ret_types_instan(ips_tester_id_instan);
-
-				testWrap(ips_tester_id_ret_types_instan);
-			}
-			else
-			{
-				// Must have <> to use default template parameter
-				typename IPSTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, char>::RetTypeWrapper<> ips_tester_id_ret_types_instan(ips_tester_id_instan);
-				testWrap(ips_tester_id_ret_types_instan);
-			}
-		}
+			IDTypeWrapInstantiator<std::uniform_int_distribution, char>(pst_tester,
+										static_cast<std::function<char(const std::string &)>>(
+													[](const std::string &str) -> char
+													{
+														return static_cast<char>(std::stoi(str));
+													})
+									);
 		else if (id_type == DataType::DOUBLE)
-		{
-			typename IPSTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, double> ips_tester_id_instan(ips_tester);
-
-#ifdef DEBUG_WRAP
-			std::cout << "Instantiated IDType = double wrapper\n";
-#endif
-
-			if (report_IDs)
-			{
-				typename IPSTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, double>::RetTypeWrapper<double> ips_tester_id_ret_types_instan(ips_tester_id_instan);
-
-				testWrap(ips_tester_id_ret_types_instan);
-			}
-			else
-			{
-				typename IPSTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, double>::RetTypeWrapper<> ips_tester_id_ret_types_instan(ips_tester_id_instan);
-				testWrap(ips_tester_id_ret_types_instan);
-			}
-		}
+			IDTypeWrapInstantiator<std::uniform_real_distribution, double>(pst_tester,
+										static_cast<std::function<double(const std::string &)>>(
+													[](const std::string &str) -> double
+													{
+														return std::stod(str);
+													})
+									);
 		else if (id_type == DataType::FLOAT)
-		{
-			typename IPSTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, float> ips_tester_id_instan(ips_tester);
-
-#ifdef DEBUG_WRAP
-			std::cout << "Instantiated IDType = float wrapper\n";
-#endif
-
-			if (report_IDs)
-			{
-				typename IPSTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, float>::RetTypeWrapper<float> ips_tester_id_ret_types_instan(ips_tester_id_instan);
-
-				testWrap(ips_tester_id_ret_types_instan);
-			}
-			else
-			{
-				typename IPSTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_real_distribution, float>::RetTypeWrapper<> ips_tester_id_ret_types_instan(ips_tester_id_instan);
-				testWrap(ips_tester_id_ret_types_instan);
-			}
-		}
+			IDTypeWrapInstantiator<std::uniform_real_distribution, float>(pst_tester,
+										static_cast<std::function<float(const std::string &)>>(
+													[](const std::string &str) -> float
+													{
+														return std::stof(str);
+													})
+									);
 		else if (id_type == DataType::INT)
-		{
-			typename IPSTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, int> ips_tester_id_instan(ips_tester);
-
-#ifdef DEBUG_WRAP
-			std::cout << "Instantiated IDType = int wrapper\n";
-#endif
-
-			if (report_IDs)
-			{
-				typename IPSTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, int>::RetTypeWrapper<int> ips_tester_id_ret_types_instan(ips_tester_id_instan);
-
-				testWrap(ips_tester_id_ret_types_instan);
-			}
-			else
-			{
-				typename IPSTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, int>::RetTypeWrapper<> ips_tester_id_ret_types_instan(ips_tester_id_instan);
-				testWrap(ips_tester_id_ret_types_instan);
-			}
-		}
+			IDTypeWrapInstantiator<std::uniform_int_distribution, int>(pst_tester,
+										static_cast<std::function<int(const std::string &)>>(
+													[](const std::string &str) -> int
+													{
+														return std::stoi(str);
+													})
+									);
 		else if (id_type == DataType::LONG)
-		{
-			typename IPSTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, long> ips_tester_id_instan(ips_tester);
-
-#ifdef DEBUG_WRAP
-			std::cout << "Instantiated IDType = long wrapper\n";
-#endif
-
-			if (report_IDs)
-			{
-				typename IPSTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, long>::RetTypeWrapper<long> ips_tester_id_ret_types_instan(ips_tester_id_instan);
-
-				testWrap(ips_tester_id_ret_types_instan);
-			}
-			else
-			{
-				typename IPSTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, long>::RetTypeWrapper<> ips_tester_id_ret_types_instan(ips_tester_id_instan);
-				testWrap(ips_tester_id_ret_types_instan);
-			}
-		}
+			IDTypeWrapInstantiator<std::uniform_int_distribution, long>(pst_tester,
+										static_cast<std::function<long(const std::string &)>>(
+													[](const std::string &str) -> long
+													{
+														return std::stol(str);
+													})
+									);
 		else if (id_type == DataType::UNSIGNED_INT)
-		{
-			typename IPSTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, unsigned> ips_tester_id_instan(ips_tester);
-
-#ifdef DEBUG_WRAP
-			std::cout << "Instantiated IDType = unsigned int wrapper\n";
-#endif
-
-			if (report_IDs)
-			{
-				typename IPSTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, unsigned>::RetTypeWrapper<unsigned> ips_tester_id_ret_types_instan(ips_tester_id_instan);
-
-				testWrap(ips_tester_id_ret_types_instan);
-			}
-			else
-			{
-				typename IPSTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, unsigned>::RetTypeWrapper<> ips_tester_id_ret_types_instan(ips_tester_id_instan);
-				testWrap(ips_tester_id_ret_types_instan);
-			}
-		}
+			IDTypeWrapInstantiator<std::uniform_int_distribution, unsigned>(pst_tester,
+										static_cast<std::function<unsigned(const std::string &)>>(
+													[](const std::string &str) -> unsigned
+													{
+														return static_cast<unsigned>(std::stoul(str));
+													})
+									);
 		else if (id_type == DataType::UNSIGNED_LONG)
+			IDTypeWrapInstantiator<std::uniform_int_distribution, unsigned long>(pst_tester,
+										static_cast<std::function<unsigned long(const std::string &)>>(
+													[](const std::string &str) -> unsigned long
+													{
+														return std::stoul(str);
+													})
+									);
+	};
+
+	template <template<typename> typename IDDistr, typename IDType, typename IPSTesterDataTypeNumIDsInstantiated>
+	void IDTypeWrapInstantiator(IPSTesterDataTypeNumIDsInstantiated ips_tester, std::function<IDType(const std::string &)> conv_func)
+	{
+		if (input_file == "")	// Randomly-generated IDs
 		{
-			typename IPSTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, unsigned long> ips_tester_id_instan(ips_tester);
+			typename IPSTesterDataTypeNumIDsInstantiated::IDTypeWrapper<IDDistr, IDType> ips_tester_id_instan(ips_tester);
 
-#ifdef DEBUG_WRAP
-			std::cout << "Instantiated IDType = unsigned long wrapper\n";
-#endif
-
-			if (report_IDs)
+			reportIDsWrap<IDType>(ips_tester_id_instan);
+		}
+		else
+		{
+			IDType pt_grid_dims[NUM_DIMS];
+			IDType metacell_dims[NUM_DIMS];
+			for (int i = 0; i < NUM_DIMS; i++)
 			{
-				typename IPSTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, unsigned long>::RetTypeWrapper<unsigned long> ips_tester_id_ret_types_instan(ips_tester_id_instan);
+				try
+				{
+					pt_grid_dims[i] = conv_func(pt_grid_dim_strings[i]);
+					metacell_dims[i] = conv_func(metacell_dim_strings[i]);
+				}
+				catch (std::invalid_argument const &ex)
+				{
+					std::cerr << "Invalid argument for point grid and/or metacell dimension " << i << '\n';
+					std::exit(ExitStatusCodes::INVALID_ARG_ERR);
+				}
 
-				testWrap(ips_tester_id_ret_types_instan);
+				if (pt_grid_dims[i] <= 0)
+				{
+					std::cerr << "Invalid value of " << pt_grid_dims[i] << " for point grid dimension " << i << '\n';
+					std::exit(ExitStatusCodes::INVALID_ARG_ERR);
+				}
+				if ( (i == 0  && metacell_dims[i] == 0)
+						// Check whether IDType is unsigned to silence "meaningless comparison with 0" warnings
+						|| (!std::is_unsigned<IDType>::value && metacell_dims[i] < 0) )
+				{
+					std::cerr << "Invalid value of " << metacell_dims[i] << " for metacell dimension " << i << '\n';
+					std::exit(ExitStatusCodes::INVALID_ARG_ERR);
+				}
+				else if (metacell_dims[i] == 0)
+				{
+					metacell_dims[i] = metacell_dims[0];
+				}
 			}
-			else
-			{
-				typename IPSTesterDataTypeNumIDsInstantiated::IDTypeWrapper<std::uniform_int_distribution, unsigned long>::RetTypeWrapper<> ips_tester_id_ret_types_instan(ips_tester_id_instan);
-				testWrap(ips_tester_id_ret_types_instan);
-			}
+
+			typename IPSTesterDataTypeNumIDsInstantiated::IDTypeWrapper<IDDistr, IDType> ips_tester_id_instan(ips_tester, pt_grid_dims, metacell_dims);
+
+			reportIDsWrap<IDType>(ips_tester_id_instan);
+		}
+	}
+
+	template <typename IDType, typename IPSTesterDataIDTypesInstantiated>
+	void reportIDsWrap(IPSTesterDataIDTypesInstantiated ips_tester)
+	{
+		if (report_IDs)
+		{
+			typename IPSTesterDataIDTypesInstantiated::RetTypeWrapper<IDType> ips_tester_fully_instan(ips_tester);
+
+			testWrap(ips_tester_fully_instan);
+		}
+		else
+		{
+			typename IPSTesterDataIDTypesInstantiated::RetTypeWrapper<> ips_tester_fully_instan(ips_tester);
+
+			testWrap(ips_tester_fully_instan);
 		}
 	};
 
