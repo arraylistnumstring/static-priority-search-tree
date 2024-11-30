@@ -2,9 +2,11 @@
 #define PST_TEST_INFO_STRUCT_H
 
 #include <algorithm>
+#include <cstdlib>		// To use std::exit()
 #include <random>
 #include <string>
 
+#include "exit-status-codes.h"
 #include "point-struct.h"
 #include "pst-tester.h"
 #include "static-pst-cpu-iter.h"
@@ -74,65 +76,73 @@ struct PSTTestInfoStruct
 	template <class PSTTesterTimingDet>
 	void dataTypeWrap(PSTTesterTimingDet pst_tester)
 	{
-		if (data_type == DataType::DOUBLE)
+		try
 		{
-			typename PSTTesterTimingDet::DataTypeWrapper<double, std::uniform_real_distribution>
-						pst_tester(input_file, rand_seed,
-									std::stod(tree_val_range_strings[0]),
-									std::stod(tree_val_range_strings[1]),
-									std::stod(tree_val_range_strings[2]),
-									std::stod(tree_val_range_strings[3]),
-									std::stod(search_range_strings[0]),
-									std::stod(search_range_strings[1]),
-									std::stod(search_range_strings[2]),
-									ordered_vals);
-			
-			treeTypeWrap(pst_tester);
+			if (data_type == DataType::DOUBLE)
+			{
+				typename PSTTesterTimingDet::DataTypeWrapper<double, std::uniform_real_distribution>
+							pst_tester(input_file, rand_seed,
+										std::stod(tree_val_range_strings[0]),
+										std::stod(tree_val_range_strings[1]),
+										std::stod(tree_val_range_strings[2]),
+										std::stod(tree_val_range_strings[3]),
+										std::stod(search_range_strings[0]),
+										std::stod(search_range_strings[1]),
+										std::stod(search_range_strings[2]),
+										ordered_vals);
+				
+				treeTypeWrap(pst_tester);
+			}
+			else if (data_type == DataType::FLOAT)
+			{
+				typename PSTTesterTimingDet::DataTypeWrapper<float, std::uniform_real_distribution>
+							pst_tester(input_file, rand_seed,
+										std::stof(tree_val_range_strings[0]),
+										std::stof(tree_val_range_strings[1]),
+										std::stof(tree_val_range_strings[2]),
+										std::stof(tree_val_range_strings[3]),
+										std::stof(search_range_strings[0]),
+										std::stof(search_range_strings[1]),
+										std::stof(search_range_strings[2]),
+										ordered_vals);
+				
+				treeTypeWrap(pst_tester);
+			}
+			else if (data_type == DataType::INT)
+			{
+				typename PSTTesterTimingDet::DataTypeWrapper<int, std::uniform_int_distribution>
+							pst_tester(input_file, rand_seed,
+										std::stoi(tree_val_range_strings[0]),
+										std::stoi(tree_val_range_strings[1]),
+										std::stoi(tree_val_range_strings[2]),
+										std::stoi(tree_val_range_strings[3]),
+										std::stoi(search_range_strings[0]),
+										std::stoi(search_range_strings[1]),
+										std::stoi(search_range_strings[2]),
+										ordered_vals);
+				
+				treeTypeWrap(pst_tester);
+			}
+			else if (data_type == DataType::LONG)
+			{
+				typename PSTTesterTimingDet::DataTypeWrapper<long, std::uniform_int_distribution>
+							pst_tester(input_file, rand_seed,
+										std::stol(tree_val_range_strings[0]),
+										std::stol(tree_val_range_strings[1]),
+										std::stol(tree_val_range_strings[2]),
+										std::stol(tree_val_range_strings[3]),
+										std::stol(search_range_strings[0]),
+										std::stol(search_range_strings[1]),
+										std::stol(search_range_strings[2]),
+										ordered_vals);
+				
+				treeTypeWrap(pst_tester);
+			}
 		}
-		else if (data_type == DataType::FLOAT)
+		catch (std::invalid_argument const &ex)
 		{
-			typename PSTTesterTimingDet::DataTypeWrapper<float, std::uniform_real_distribution>
-						pst_tester(input_file, rand_seed,
-									std::stof(tree_val_range_strings[0]),
-									std::stof(tree_val_range_strings[1]),
-									std::stof(tree_val_range_strings[2]),
-									std::stof(tree_val_range_strings[3]),
-									std::stof(search_range_strings[0]),
-									std::stof(search_range_strings[1]),
-									std::stof(search_range_strings[2]),
-									ordered_vals);
-			
-			treeTypeWrap(pst_tester);
-		}
-		else if (data_type == DataType::INT)
-		{
-			typename PSTTesterTimingDet::DataTypeWrapper<int, std::uniform_int_distribution>
-						pst_tester(input_file, rand_seed,
-									std::stoi(tree_val_range_strings[0]),
-									std::stoi(tree_val_range_strings[1]),
-									std::stoi(tree_val_range_strings[2]),
-									std::stoi(tree_val_range_strings[3]),
-									std::stoi(search_range_strings[0]),
-									std::stoi(search_range_strings[1]),
-									std::stoi(search_range_strings[2]),
-									ordered_vals);
-			
-			treeTypeWrap(pst_tester);
-		}
-		else if (data_type == DataType::LONG)
-		{
-			typename PSTTesterTimingDet::DataTypeWrapper<long, std::uniform_int_distribution>
-						pst_tester(input_file, rand_seed,
-									std::stol(tree_val_range_strings[0]),
-									std::stol(tree_val_range_strings[1]),
-									std::stol(tree_val_range_strings[2]),
-									std::stol(tree_val_range_strings[3]),
-									std::stol(search_range_strings[0]),
-									std::stol(search_range_strings[1]),
-									std::stol(search_range_strings[2]),
-									ordered_vals);
-			
-			treeTypeWrap(pst_tester);
+			std::cerr << "Invalid argument for tree value range and/or search range\n";
+			std::exit(ExitStatusCodes::INVALID_ARG_ERR);
 		}
 	};
 
@@ -184,7 +194,10 @@ struct PSTTestInfoStruct
 			std::cout << "Instantiated num_IDs = 1 wrapper\n";
 #endif
 			
-			IDTypeWrap(pst_tester_num_ids_instan);
+			if (input_file == "")	// Randomly-generated IDs
+				IDTypeWrapDistr(pst_tester_num_ids_instan);
+			else
+				IDTypeWrapIndexed(pst_tester_num_ids_instan, )
 		}
 		else	// !pts_with_ids; can skip IDTypeWrap()
 		{

@@ -2,9 +2,11 @@
 #define IPS_TEST_INFO_STRUCT_H
 
 #include <algorithm>
+#include <cstdlib>		// To use std::exit()
 #include <random>
 #include <string>
 
+#include "exit-status-codes.h"
 #include "ips-tester.h"
 #include "point-struct.h"
 
@@ -64,53 +66,61 @@ struct IPSTestInfoStruct
 	template <class IPSTesterTimingDet>
 	void dataTypeWrap(IPSTesterTimingDet ips_tester)
 	{
-		if (data_type == DataType::DOUBLE)
+		try
 		{
-			typename IPSTesterTimingDet::DataTypeWrapper<double, std::uniform_real_distribution>
-						ips_tester_data_type_instan(input_file, rand_seed,
-													std::stod(val_range_strings[0]),
-													std::stod(val_range_strings[1]),
-													std::stod(val_range_strings[2]),
-													std::stod(val_range_strings[3]),
-													std::stod(search_val_string));
-			
-			numIDsWrap(ips_tester_data_type_instan);
+			if (data_type == DataType::DOUBLE)
+			{
+				typename IPSTesterTimingDet::DataTypeWrapper<double, std::uniform_real_distribution>
+							ips_tester_data_type_instan(input_file, rand_seed,
+														std::stod(val_range_strings[0]),
+														std::stod(val_range_strings[1]),
+														std::stod(val_range_strings[2]),
+														std::stod(val_range_strings[3]),
+														std::stod(search_val_string));
+				
+				numIDsWrap(ips_tester_data_type_instan);
+			}
+			else if (data_type == DataType::FLOAT)
+			{
+				typename IPSTesterTimingDet::DataTypeWrapper<float, std::uniform_real_distribution>
+							ips_tester_data_type_instan(input_file, rand_seed,
+														std::stod(val_range_strings[0]),
+														std::stod(val_range_strings[1]),
+														std::stod(val_range_strings[2]),
+														std::stod(val_range_strings[3]),
+														std::stod(search_val_string));
+				
+				numIDsWrap(ips_tester_data_type_instan);
+			}
+			else if (data_type == DataType::INT)
+			{
+				typename IPSTesterTimingDet::DataTypeWrapper<int, std::uniform_int_distribution>
+							ips_tester_data_type_instan(input_file, rand_seed,
+														std::stod(val_range_strings[0]),
+														std::stod(val_range_strings[1]),
+														std::stod(val_range_strings[2]),
+														std::stod(val_range_strings[3]),
+														std::stod(search_val_string));
+				
+				numIDsWrap(ips_tester_data_type_instan);
+			}
+			else if (data_type == DataType::LONG)
+			{
+				typename IPSTesterTimingDet::DataTypeWrapper<long, std::uniform_int_distribution>
+							ips_tester_data_type_instan(input_file, rand_seed,
+														std::stod(val_range_strings[0]),
+														std::stod(val_range_strings[1]),
+														std::stod(val_range_strings[2]),
+														std::stod(val_range_strings[3]),
+														std::stod(search_val_string));
+				
+				numIDsWrap(ips_tester_data_type_instan);
+			}
 		}
-		else if (data_type == DataType::FLOAT)
+		catch (std::invalid_argument const &ex)
 		{
-			typename IPSTesterTimingDet::DataTypeWrapper<float, std::uniform_real_distribution>
-						ips_tester_data_type_instan(input_file, rand_seed,
-													std::stod(val_range_strings[0]),
-													std::stod(val_range_strings[1]),
-													std::stod(val_range_strings[2]),
-													std::stod(val_range_strings[3]),
-													std::stod(search_val_string));
-			
-			numIDsWrap(ips_tester_data_type_instan);
-		}
-		else if (data_type == DataType::INT)
-		{
-			typename IPSTesterTimingDet::DataTypeWrapper<int, std::uniform_int_distribution>
-						ips_tester_data_type_instan(input_file, rand_seed,
-													std::stod(val_range_strings[0]),
-													std::stod(val_range_strings[1]),
-													std::stod(val_range_strings[2]),
-													std::stod(val_range_strings[3]),
-													std::stod(search_val_string));
-			
-			numIDsWrap(ips_tester_data_type_instan);
-		}
-		else if (data_type == DataType::LONG)
-		{
-			typename IPSTesterTimingDet::DataTypeWrapper<long, std::uniform_int_distribution>
-						ips_tester_data_type_instan(input_file, rand_seed,
-													std::stod(val_range_strings[0]),
-													std::stod(val_range_strings[1]),
-													std::stod(val_range_strings[2]),
-													std::stod(val_range_strings[3]),
-													std::stod(search_val_string));
-			
-			numIDsWrap(ips_tester_data_type_instan);
+			std::cerr << "Invalid argument for tree value range and/or search range\n";
+			std::exit(ExitStatusCodes::INVALID_ARG_ERR);
 		}
 	};
 
