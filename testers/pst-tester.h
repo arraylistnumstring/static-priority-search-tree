@@ -192,12 +192,8 @@ struct PSTTester
 							}
 							else
 							{
-								IDType num_vertices = 1;
-								for (int i = 0; i < NUM_DIMS; i++)
-									num_vertices *= id_type_wrapper.pt_grid_dims[i];
-
 								// Read in vertex array from binary file
-								vertex_arr = readInVertices<T>(input_file, num_vertices);
+								vertex_arr = readInVertices<T>(input_file, pt_grid_dims);
 
 								pt_arr = formMetacells(vertex_arr);
 							}
