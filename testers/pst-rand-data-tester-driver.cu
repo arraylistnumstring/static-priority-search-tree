@@ -1,4 +1,3 @@
-#include <random>	// To use uniform_int_distribution and uniform_real_distribution
 #include <string>	// To use stoi() and string operators for command-line argument parsing
 
 #include "exit-status-codes.h"		// For consistent exit status codes
@@ -240,7 +239,7 @@ int main(int argc, char *argv[])
 					}
 
 					test_info.tree_val_range_strings[j] = argv[i];
-
+				}
 				// Test for optional presence of third and fourth arguments
 				else	// j >= PSTTestInfoStruct::MIN_NUM_VALS_INT_BOUNDS
 				{

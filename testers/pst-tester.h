@@ -138,7 +138,7 @@ struct PSTTester
 					// Bounds of distribution [a, b] must satisfy b - a <= std::numeric_limits<IDType>::max()
 					IDDistrib<IDType> id_distr;
 
-					IDType[NUM_DIMS] pt_grid_dims;
+					IDType pt_grid_dims[NUM_DIMS];
 
 					IDTypeWrapper(NumIDsWrapper<num_IDs> num_ids_wrapper)
 						: num_ids_wrapper(num_ids_wrapper),
@@ -146,7 +146,7 @@ struct PSTTester
 					{};
 
 					IDTypeWrapper(NumIDsWrapper<num_IDs> num_ids_wrapper,
-									IDType[NUM_DIMS] pt_grid_dims)
+									IDType pt_grid_dims[NUM_DIMS])
 						: num_ids_wrapper(num_ids_wrapper),
 						pt_grid_dims(pt_grid_dims)
 					{};
