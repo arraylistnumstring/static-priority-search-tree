@@ -22,8 +22,9 @@ int main(int argc, char *argv[])
 		if (arg == "-h" || arg == "--help")
 		{
 			std::cerr << "Usage: ./pst-dataset-tester-driver data-file ";
-			std::cerr << "ID_TYPE PT_GRID_DIM_X PT_GRID_DIM_Y PT_GRID_DIM_Z ";
+			std::cerr << "DIM_TYPE PT_GRID_DIM_X PT_GRID_DIM_Y PT_GRID_DIM_Z ";
 			std::cerr << "<datatype-flag> <tree-type-flag> ";
+			std::cerr << "[-I] ";
 			std::cerr << "[-r] ";
 			std::cerr << "[-t] ";
 			std::cerr << "[-w WARPS_PER_BLOCK] ";
@@ -33,7 +34,7 @@ int main(int argc, char *argv[])
 
 			std::cerr << "\tdata-file\tBinary volume data input filename\n\n";
 
-			std::cerr << "\tID_TYPE\tMust be an unsigned integral type, namely unsigned (equivalent to unsigned-int), unsgiend-int or unsigned-long; this datatype will be used to store the dimensions of the point grid and metacells, and thus must be large enough to accommodate their values\n\n";
+			std::cerr << "\tDIM_TYPE\tMust be an unsigned integral type, namely unsigned (equivalent to unsigned-int), unsgiend-int or unsigned-long; this datatype will be used to store the dimensions of the point grid and metacells, and thus must be large enough to accommodate their values\n\n";
 
 			std::cerr << "\tPT_GRID_DIM_X PT_GRID_DIM_Y PT_GRID_DIM_Z\n";
 			std::cerr << "\t\tDimensions of grid of points; note that because each point is the vertex of a cubic cell/voxel, the voxel grid thus has dimensions (PT_GRID_DIM_X - 1, PT_GRID_DIM_Y - 1, PT_GRID_DIM_Z - 1)\n\n";
@@ -48,6 +49,8 @@ int main(int argc, char *argv[])
 			std::cerr << "\t\t-g, --gpu\tUse StaticPSTGPU\n\n";
 			std::cerr << "\t\t--iter\tUse StaticPSTCPUIter\n\n";
 			std::cerr << "\t\t--recur\tUse StaticPSTCPURecur\n\n";
+
+			std::cerr << "\t-I, --ids\tToggles assignment of IDs to the nodes of the tree with data type DIM_TYPE; defaults to false\n\n";
 
 			std::cerr << "\t-m, --metacell-dims METACELL_DIM_X [METACELL_DIM_Y METACELL_DIM_Z]\n";
 			std::cerr << "\t\tDimensions to use for metacells, in units of voxels^3; if only METACELL_DIM_X is provided, METACELL_DIM_Y and METACELL_DIM_Z are set to be equal to the same value; metacell dimensions default to 4 * 4 * 4 voxels^3 (as this number is both a cubic number and a multiple of 32 (warp size, for maximal thread occupancy on the GPU), and is the smallest possible metacell satisfying both those criteria, as a smaller metacell yields more metacells, a regime where PST performs well)";
@@ -74,10 +77,8 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		else if (i == 2)	// ID type parsing
+		else if (i == 2)	// Dimension data type parsing
 		{
-			test_info.pts_with_ids = true;
-
 			// Convert id_type_string to lowercase for easier processing
 			std::transform(arg.begin(), arg.end(),
 							arg.begin(),
@@ -126,6 +127,10 @@ int main(int argc, char *argv[])
 			test_info.tree_type = PSTType::CPU_ITER;
 		else if (arg == "--recur")
 			test_info.tree_type = PSTType::CPU_RECUR;
+
+		// ID flag
+		else if (arg == "-I" || arg == "--ids")
+			test_info.pts_with_ids = true;
 
 		// Metacell dimension parsing
 		else if (arg == "-m" || arg == "--metacell-dims")
