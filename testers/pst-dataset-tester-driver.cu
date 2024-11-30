@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		else if (i == 2)	// Dimension data type parsing
+		else if (i == 2)	// Dimension value type parsing
 		{
 			// Convert id_type_string to lowercase for easier processing
 			std::transform(arg.begin(), arg.end(),

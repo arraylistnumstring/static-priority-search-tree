@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
 		if (arg == "-h" || arg == "--help")
 		{
 			std::cerr << "Usage: ./ips-dataset-tester-driver data-file ";
-			std::cerr << "ID_TYPE PT_GRID_DIM_X PT_GRID_DIM_Y PT_GRID_DIM_Z ";
+			std::cerr << "DIM_TYPE PT_GRID_DIM_X PT_GRID_DIM_Y PT_GRID_DIM_Z ";
 			std::cerr << "<datatype-flag> ";
 			std::cerr << "[-I] ";
 			std::cerr << "[-r] ";
@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
 
 			std::cerr << "\tdata-file:\tBinary volume data input filename\n\n";
 
-			std::cerr << "\tID_TYPE\tMust be an unsigned integral type, namely unsigned (equivalent to unsigned-int), unsgiend-int or unsigned-long; this datatype will be used to store the dimensions of the point grid and metacells, and thus must be large enough to accommodate their values\n\n";
+			std::cerr << "\tDIM_TYPE\tMust be an unsigned integral type, namely unsigned (equivalent to unsigned-int), unsgiend-int or unsigned-long; this datatype will be used to store the dimensions of the point grid and metacells, and thus must be large enough to accommodate their values\n\n";
 
 			std::cerr << "\tPT_GRID_DIM_X PT_GRID_DIM_Y PT_GRID_DIM_Z:\n";
 			std::cerr << "\t\tDimensions of grid of points; note that because each point is the vertex of a cubic cell/voxel, the voxel grid thus has dimensions (PT_GRID_DIM_X - 1, PT_GRID_DIM_Y - 1, PT_GRID_DIM_Z - 1)\n\n";
@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		else if (i == 2)	// ID type parsing
+		else if (i == 2)	// Dimension value type parsing
 		{
 			// Convert id_type_string to lowercase for easier processing
 			std::transform(arg.begin(), arg.end(),
