@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
 	IPSTestInfoStruct test_info;
 
 	// Parse command-line arguments
-	for (int i = 0; i < argc; i++)
+	for (int i = 1; i < argc; i++)
 	{
 		std::string arg(argv[i]);	// Allow use of string's operators and functions
 

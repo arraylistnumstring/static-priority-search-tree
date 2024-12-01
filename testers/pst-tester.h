@@ -17,6 +17,10 @@
 #include "print-array.h"
 #include "rand-data-pt-generator.h"
 
+#ifdef DEBUG
+#include "vertex-data-helpers.h"
+#endif
+
 
 enum DataType {CHAR, DOUBLE, FLOAT, INT, LONG, UNSIGNED_INT, UNSIGNED_LONG};
 
@@ -182,6 +186,10 @@ struct PSTTester
 							// Will only be non-nullptr-valued if reading from an input file
 							T *vertex_arr = nullptr;
 
+							// Variables must be outside of conditionals to be accessible in later conditionals
+							// Place CPU timing here, as GPU -> CPU transfer time of metacells must be taken into consideration for the "construct" cost
+							std::chrono::time_point<std::chrono::steady_clock> construct_start_wall, construct_stop_wall, search_start_wall, search_stop_wall;
+
 							// Place random data generation condition before data input reading so that any timing mechanism for the latter will not be impacted by the evaluation of this conditional
 							if (!std::is_integral<IDType>::value ||
 									id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.input_file == "")
@@ -206,6 +214,20 @@ struct PSTTester
 									// Read in vertex array from binary file
 									vertex_arr = readInVertices<T>(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.input_file,
 																	id_type_wrapper.pt_grid_dims);
+
+#ifdef DEBUG
+									for (IDType k = 0; k < id_type_wrapper.pt_grid_dims[2]; k++)
+										for (IDType j = 0; j < id_type_wrapper.pt_grid_dims[1]; j++)
+											for (IDType i = 0; i < id_type_wrapper.pt_grid_dims[0]; i++)
+											{
+												std::cout << 'V';
+												std::cout << '[' << i << ']';
+												std::cout << '[' << j << ']';
+												std::cout << '[' << k << ']';
+												std::cout << '=' << id_type_wrapper.pt_grid_dims[linearVertID(i, j, k, id_type_wrapper.pt_grid_dims)];
+												std::cout << '\n';
+											}
+#endif
 
 									// TODO: Copy vertex_arr to GPU so it's ready for metacell formation and marching cubes
 
@@ -250,10 +272,8 @@ struct PSTTester
 													+ " of " + std::to_string(id_type_wrapper.num_ids_wrapper.num_devs));
 							}
 
-							// Variables must be outside of conditionals to be accessible in later conditionals
 							cudaEvent_t construct_start_CUDA, construct_stop_CUDA, search_start_CUDA, search_stop_CUDA;
 							std::clock_t construct_start_CPU, construct_stop_CPU, search_start_CPU, search_stop_CPU;
-							std::chrono::time_point<std::chrono::steady_clock> construct_start_wall, construct_stop_wall, search_start_wall, search_stop_wall;
 
 							if constexpr (timed)
 							{
