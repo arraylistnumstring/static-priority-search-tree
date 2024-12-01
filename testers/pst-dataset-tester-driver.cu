@@ -33,15 +33,15 @@ int main(int argc, char *argv[])
 
 			std::cerr << "\tdata-file\tBinary volume data input filename\n\n";
 
-			std::cerr << "\tDIM_TYPE\tMust be an unsigned integral type, namely unsigned (equivalent to unsigned-int), unsgiend-int or unsigned-long; this datatype will be used to store the dimensions of the point grid and metacells, and thus must be large enough to accommodate their values\n\n";
+			std::cerr << "\tDIM_TYPE\tMust be an unsigned integral type, namely unsigned (equivalent to unsigned-int), unsigned-int or unsigned-long; this datatype will be used to store the dimensions of the point grid and metacells, and thus must be large enough to accommodate their values\n\n";
 
 			std::cerr << "\tPT_GRID_DIM_X PT_GRID_DIM_Y PT_GRID_DIM_Z\n";
-			std::cerr << "\t\tDimensions of grid of points; note that because each point is the vertex of a cubic cell/voxel, the voxel grid thus has dimensions (PT_GRID_DIM_X - 1, PT_GRID_DIM_Y - 1, PT_GRID_DIM_Z - 1)\n\n";
-			std::cerr << "\t\tDataset dimensions:\n\n";
-			std::cerr << "\t\t\tIsabel: (500 500 100)\n\n";
-			std::cerr << "\t\t\tRadiation: (600 248 248)\n\n";
-			std::cerr << "\t\t\tTeraShake: (750 375 100)\n\n";
-			std::cerr << "\t\t\tVortex: (128 128 128)\n\n";
+			std::cerr << "\t\t\tDimensions of grid of points; note that because each point is the vertex of a cubic cell/voxel, the voxel grid thus has dimensions (PT_GRID_DIM_X - 1, PT_GRID_DIM_Y - 1, PT_GRID_DIM_Z - 1)\n";
+			std::cerr << "\t\t\tDataset dimensions:\n";
+			std::cerr << "\t\t\t\tIsabel: (500 500 100)\n";
+			std::cerr << "\t\t\t\tRadiation: (600 248 248)\n";
+			std::cerr << "\t\t\t\tTeraShake: (750 375 100)\n";
+			std::cerr << "\t\t\t\tVortex: (128 128 128)\n";
 
 			std::cerr << "\tdatatype-flag:\n";
 			std::cerr << "\t\t-d, --double\tUse doubles as values\n\n";
@@ -51,21 +51,23 @@ int main(int argc, char *argv[])
 
 			std::cerr << "\ttree-type-flag:\n";
 			std::cerr << "\t\t-g, --gpu\tUse StaticPSTGPU\n\n";
-			std::cerr << "\t\t--iter\tUse StaticPSTCPUIter\n\n";
-			std::cerr << "\t\t--recur\tUse StaticPSTCPURecur\n\n";
+			std::cerr << "\t\t--iter\t\tUse StaticPSTCPUIter\n\n";
+			std::cerr << "\t\t--recur\t\tUse StaticPSTCPURecur\n\n";
 
 			std::cerr << "\t-I, --ids\tToggles assignment of IDs to the nodes of the tree with data type DIM_TYPE; defaults to false\n\n";
 
 			std::cerr << "\t-m, --metacell-dims METACELL_DIM_X [METACELL_DIM_Y METACELL_DIM_Z]\n";
-			std::cerr << "\t\tDimensions to use for metacells, in units of voxels^3; if only METACELL_DIM_X is provided, METACELL_DIM_Y and METACELL_DIM_Z are set to be equal to the same value; metacell dimensions default to 4 * 4 * 4 voxels^3 (as this number is both a cubic number and a multiple of 32 (warp size, for maximal thread occupancy on the GPU), and is the smallest possible metacell satisfying both those criteria, as a smaller metacell yields more metacells, a regime where PST performs well)";
+			std::cerr << "\t\t\tDimensions to use for metacells, in units of voxels^3; if only METACELL_DIM_X is provided, METACELL_DIM_Y and METACELL_DIM_Z are set to be equal to the same value; metacell dimensions default to 4 * 4 * 4 voxels^3 (as this number is both a cubic number and a multiple of 32 (warp size, for maximal thread occupancy on the GPU), and is the smallest possible metacell satisfying both those criteria, as a smaller metacell yields more metacells, a regime where PST performs well)";
 
 			std::cerr << "\t-r, --report-IDs\tWhether to report point IDs or full info of a point; defaults to full info\n\n";
 
-			std::cerr << "\t-s, --search-val SEARCH_VAL\tValue to search for in all intervals; interval bounds are treated as inclusive\n\n";
+			std::cerr << "\t-s, --search-val SEARCH_VAL\n";
+			std::cerr << "\t\t\tValue to search for in all intervals; interval bounds are treated as inclusive\n\n";
 
 			std::cerr << "\t-t, --timed\tToggles timing of the construction and search portion of the code; uses on-device functions for GPU PST; defaults to false\n\n";
 
-			std::cerr << "\t-w, --warps-per-block WARPS_PER_BLOCK\tNumber of warps to use in a CUDA thread block; only relevant when -g option is invoked; defaults to 1\n\n";
+			std::cerr << "\t-w, --warps-per-block WARPS_PER_BLOCK\n";
+			std::cerr << "\t\t\tNumber of warps to use in a CUDA thread block; only relevant when -g option is invoked; defaults to 1\n\n";
 
 			return ExitStatusCodes::SUCCESS;
 		}

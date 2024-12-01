@@ -37,32 +37,40 @@ int main(int argc, char *argv[])
 			std::cerr << "\t\t-l, --long\tUse longs as values\n\n";
 
 			std::cerr << "\ttest-type-flag:\n";
-			std::cerr << "\t\t-C, --construct\tConstruction-only test\n\n";
-			std::cerr << "\t\t-L, --left MAX_DIM1_VAL MIN_DIM2_VAL\tLeftwards search, treating MAX_DIM1_VAL as maximum dimension-1 value and MIN_DIM2_VAL as minimum dimension-2 value\n\n";
-			std::cerr << "\t\t-R, --right MIN_DIM1_VAL MIN_DIM2_VAL\tRightwards search, treating MIN_DIM1_VAL as minimum dimension-1 value and MIN_DIM2_VAL as minimum dimension-2 value\n\n";
-			std::cerr << "\t\t-T, --three MIN_DIM1_VAL MAX_DIM1_VAL MIN_DIM2_VAL\tThree-sided search, treating MIN_DIM1_VAL as minimum dimension-1 value, MAX_DIM1_VAL as maximum dimension-1 value and MIN_DIM2_VAL as minimum dimension-2 value\n\n";
+			std::cerr << "\t\t-C, --construct\n";
+			std::cerr << "\t\t\t\tConstruction-only test\n\n";
+			std::cerr << "\t\t-L, --left MAX_DIM1_VAL MIN_DIM2_VAL\n";
+			std::cerr << "\t\t\t\tLeftwards search, treating MAX_DIM1_VAL as maximum dimension-1 value and MIN_DIM2_VAL as minimum dimension-2 value\n\n";
+			std::cerr << "\t\t-R, --right MIN_DIM1_VAL MIN_DIM2_VAL\n";
+			std::cerr << "\t\t\t\tRightwards search, treating MIN_DIM1_VAL as minimum dimension-1 value and MIN_DIM2_VAL as minimum dimension-2 value\n\n";
+			std::cerr << "\t\t-T, --three MIN_DIM1_VAL MAX_DIM1_VAL MIN_DIM2_VAL\n";
+			std::cerr << "\t\t\t\tThree-sided search, treating MIN_DIM1_VAL as minimum dimension-1 value, MAX_DIM1_VAL as maximum dimension-1 value and MIN_DIM2_VAL as minimum dimension-2 value\n\n";
 			std::cerr << "\tAll search bounds are inclusive\n\n";
 
 			std::cerr << "\ttree-type-flag:\n";
 			std::cerr << "\t\t-g, --gpu\tUse StaticPSTGPU\n\n";
-			std::cerr << "\t\t--iter\tUse StaticPSTCPUIter\n\n";
-			std::cerr << "\t\t--recur\tUse StaticPSTCPURecur\n\n";
+			std::cerr << "\t\t--iter\t\tUse StaticPSTCPUIter\n\n";
+			std::cerr << "\t\t--recur\t\tUse StaticPSTCPURecur\n\n";
 
-			std::cerr << "\t-b, --val-bounds MIN_VAL MAX_VAL [SIZE_BOUND_1] [SIZE_BOUND_2]\tBounds of values (inclusive) to use when generating random values for PST; must be castable to chosen datatype; when non-negative values SIZE_BOUND_1 and SIZE_BOUND_2 are specified, the lower bound of the interval is drawn from the range [MIN_VAL, MAX_VAL], and the upper bound is equal to the lower bound plus a value drawn from the range [SIZE_BOUND_1, SIZE_BOUND_2]; when only SIZE_BOUND_1 is specified, the added value is drawn from the range [0, SIZE_BOUND_1]\n\n";
+			std::cerr << "\t-b, --val-bounds MIN_VAL MAX_VAL [SIZE_BOUND_1] [SIZE_BOUND_2]\n";
+			std::cerr << "\t\t\t\tBounds of values (inclusive) to use when generating random values for PST; must be castable to chosen datatype; when non-negative values SIZE_BOUND_1 and SIZE_BOUND_2 are specified, the lower bound of the interval is drawn from the range [MIN_VAL, MAX_VAL], and the upper bound is equal to the lower bound plus a value drawn from the range [SIZE_BOUND_1, SIZE_BOUND_2]; when only SIZE_BOUND_1 is specified, the added value is drawn from the range [0, SIZE_BOUND_1]\n\n";
 
 			std::cerr << "\t-I, --ids ID_TYPE\tToggles assignment of IDs to the nodes of the tree with data type ID_TYPE; defaults to false; valid arguments for ID_TYPE are char, double, float, int, long, unsigned (equivalent to unsigned-int), unsigned-int, unsigned-long\n\n";
 
-			std::cerr << "\t-n, --num-elems NUM_ELEMS\tNumber of elements to put in tree\n\n";
+			std::cerr << "\t-n, --num-elems NUM_ELEMS\n";
+			std::cerr << "\t\t\t\tNumber of elements to put in tree\n\n";
 
 			std::cerr << "\t-O, --ordered-vals\tWhether to order values such that dimension-1 values are always less than or equal to their paired dimension-2 values; defaults to false\n\n";
 
 			std::cerr << "\t-r, --report-IDs\tWhether to report point IDs or full info of a point; defaults to full info; if no ID type is specified, always reports full info\n\n";
 
-			std::cerr << "\t-S, --rand-seed RAND_SEED\tRandom seed to use when generating data for tree; defaults to 0\n\n";
+			std::cerr << "\t-S, --rand-seed RAND_SEED\n";
+			std::cerr << "\t\t\t\tRandom seed to use when generating data for tree; defaults to 0\n\n";
 
-			std::cerr << "\t-t, --timed\tToggles timing of the construction and search portion of the code; uses on-device functions for GPU PST; defaults to false\n\n";
+			std::cerr << "\t-t, --timed\t\tToggles timing of the construction and search portion of the code; uses on-device functions for GPU PST; defaults to false\n\n";
 
-			std::cerr << "\t-w, --warps-per-block WARPS_PER_BLOCK\tNumber of warps to use in a CUDA thread block; only relevant when -g option is invoked; defaults to 1\n\n";
+			std::cerr << "\t-w, --warps-per-block WARPS_PER_BLOCK\n";
+			std::cerr << "\t\t\t\tNumber of warps to use in a CUDA thread block; only relevant when -g option is invoked; defaults to 1\n\n";
 
 			return ExitStatusCodes::SUCCESS;
 		}

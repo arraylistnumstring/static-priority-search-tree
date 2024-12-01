@@ -36,21 +36,27 @@ int main(int argc, char *argv[])
 			std::cerr << "\t\t-i, --int\tUse ints for values\n\n";
 			std::cerr << "\t\t-l, --long\tUse longs as values\n\n";
 
-			std::cerr << "\t-B, --num-blocks NUM_BLOCKS\tNumber of blocks to use in grid for CUDA kernel\n\n";
+			std::cerr << "\t-B, --num-blocks NUM_BLOCKS\n";
+			std::cerr << "\t\t\t\tNumber of blocks to use in grid for CUDA kernel\n\n";
 
-			std::cerr << "\t-b, --val-bounds MIN_VAL MAX_VAL [SIZE_BOUND_1] [SIZE_BOUND_2]\tBounds of values (inclusive) to use when generating random values to search on; must be castable to chosen datatype; when non-negative values SIZE_BOUND_1 and SIZE_BOUND_2 are specified, the lower bound of the interval is drawn from the range [MIN_VAL, MAX_VAL], and the upper bound is equal to the lower bound plus a value drawn from the range [SIZE_BOUND_1, SIZE_BOUND_2]; when only SIZE_BOUND_1 is specified, the added value is drawn from the range [0, SIZE_BOUND_1]\n\n";
+			std::cerr << "\t-b, --val-bounds MIN_VAL MAX_VAL [SIZE_BOUND_1] [SIZE_BOUND_2]\n";
+			std::cerr << "\t\t\t\tBounds of values (inclusive) to use when generating random values to search on; must be castable to chosen datatype; when non-negative values SIZE_BOUND_1 and SIZE_BOUND_2 are specified, the lower bound of the interval is drawn from the range [MIN_VAL, MAX_VAL], and the upper bound is equal to the lower bound plus a value drawn from the range [SIZE_BOUND_1, SIZE_BOUND_2]; when only SIZE_BOUND_1 is specified, the added value is drawn from the range [0, SIZE_BOUND_1]\n\n";
 
 			std::cerr << "\t-I, --ids ID_TYPE\tToggles assignment of IDs of data type ID_TYPE to input points; defaults to false; valid arguments for ID_TYPE are char, double, float, int, long, unsigned (equivalent to unsigned-int), unsigned-int, unsigned-long\n\n";
 
-			std::cerr << "\t-n, --num-elems NUM_ELEMS\tNumber of elements to put in tree\n\n";
+			std::cerr << "\t-n, --num-elems NUM_ELEMS\n";
+			std::cerr << "\t\t\t\tNumber of elements to put in tree\n\n";
 
 			std::cerr << "\t-r, --report-IDs\tWhether to report point IDs or full info of a point; defaults to full info; if no ID type is specified, always reports full info\n\n";
 
-			std::cerr << "\t-S, --rand-seed RAND_SEED\tRandom seed to use when generating data for tree; defaults to 0\n\n";
+			std::cerr << "\t-S, --rand-seed RAND_SEED\n";
+			std::cerr << "\t\t\t\tRandom seed to use when generating data for tree; defaults to 0\n\n";
 
-			std::cerr << "\t-s, --search-val SEARCH_VAL\tValue to search for in all intervals; interval bounds are treated as inclusive\n\n";
+			std::cerr << "\t-s, --search-val SEARCH_VAL\n";
+			std::cerr << "\t\t\t\tValue to search for in all intervals; interval bounds are treated as inclusive\n\n";
 
-			std::cerr << "\t-T, --threads-per-block THREADS_PER_BLOCK\tNumber of threads to use in a thread block; defaults to 128, the number of threads originally used by Liu et al. for the interval parallel search (compaction) portion of their procedure\n\n";
+			std::cerr << "\t-T, --threads-per-block THREADS_PER_BLOCK\n";
+			std::cerr << "\t\t\t\tNumber of threads to use in a thread block; defaults to 128, the number of threads originally used by Liu et al. for the interval parallel search (compaction) portion of their procedure\n\n";
 
 			std::cerr << "\t-t, --timed-CUDA\tToggles timing of the CUDA portion of the code using on-device functions; defaults to false\n\n";
 
