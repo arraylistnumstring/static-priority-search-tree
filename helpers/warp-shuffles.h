@@ -164,7 +164,7 @@ template <typename T, typename U>
 			>::value
 __forceinline__ __device__ void warpPrefixSum(const T mask, U &num)
 {
-	// As a comma-delimited declaration does not allow declarations of different types, create the const-valued shfl_offset_lim before the loop instead
+	// As a comma-delimited declaration does not allow declarations of different types (including variables of different const-ness), create the const-valued shfl_offset_lim outside of the loop initialiser, i.e. before shfl_offset
 	// At time of writing (compute capability 9.0), warp size is 32; hence, fls() will always be at most warpSize - 1 (32 bits, with the leftmost 0-indexed as bit 31), so shfl_offset_lim will evaluate to warpSize if the entire warp is active
 	const T shfl_offset_lim = fls(mask) + 1;
 

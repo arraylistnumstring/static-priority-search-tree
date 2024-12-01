@@ -60,8 +60,12 @@ struct IPSTestInfoStruct
 	{
 		if (data_type == DataType::DOUBLE)
 			// typename necessary, as compiler defaults to treating nested names as variables
-			// Function pointers cannot have default arguments (and presumably std::functions operate the same way, at least when passed as parameters), so wrap std::stod in a lambda function with the correct signature
-			// Casting necessary as compiler fails to recognise a lambda as an std::function of the same signature and return type, thereby failing to instantiate template function
+			/*
+				For functions with default arguments, outside of directly calling that function by name, default arguments are not visible, so when binding functions, type signatures treat all parameters the same.
+				For example, an invocation of e.g. std::stod() is treated as a signature of std::function<double(const std::string &, std::size_t *)> (even though the second argument has a default value), and thus cannot be assigned to a function with signature std::function<double(const std::string &)>
+				Hence, in general, to solve such issues, wrap the desired function in a lambda function with the correct signature.
+			*/
+			// Casting necessary as compiler fails to recognise a lambda as an std::function of the same signature and return type (instead recognising it as a lambda [](const std::string &)->double), thereby failing to instantiate template function
 			numIDsWrapCaller<typename IPSTesterTimingDet::DataTypeWrapper<double, std::uniform_real_distribution>>(static_cast<std::function<double(const std::string &)>>(
 						[](const std::string &str) -> double
 						{
