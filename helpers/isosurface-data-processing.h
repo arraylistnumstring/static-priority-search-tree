@@ -1,5 +1,5 @@
-#ifndef ISOSURFACE_DATA_PREPROCESSING_H
-#define ISOSURFACE_DATA_PREPROCESSING_H
+#ifndef ISOSURFACE_DATA_PROCESSING_H
+#define ISOSURFACE_DATA_PROCESSING_H
 
 #include <fstream>
 #include <type_traits>
