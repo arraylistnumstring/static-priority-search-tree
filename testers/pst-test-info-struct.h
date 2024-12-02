@@ -69,6 +69,16 @@ struct PSTTestInfoStruct
 	template <class PSTTesterTimingDet>
 	void dataTypeWrap()
 	{
+#ifdef DEBUG_WRAP
+		std::cout << "Began dataTypeWrap()\n";
+		std::cout << "Table of data type values:\n";
+		std::cout << "Double: " << DataType::DOUBLE << '\n';
+		std::cout << "Float: " << DataType::FLOAT << '\n';
+		std::cout << "Int: " << DataType::INT << '\n';
+		std::cout << "Long: " << DataType::LONG << '\n';
+		std::cout << '\n';
+		std::cout << "Data type is " << data_type << '\n';
+#endif
 		if (data_type == DataType::DOUBLE)
 			// typename necessary, as compiler defaults to treating nested names as variables
 			/*
@@ -109,6 +119,9 @@ struct PSTTestInfoStruct
 	template <typename DataTypeWrapperInstantiated, typename T>
 	void treeTypeWrapCaller(std::function<T(const std::string &)> conv_func)
 	{
+#ifdef DEBUG_WRAP
+		std::cout << "Began treeTypeWrapCaller()\n";
+#endif
 		try
 		{
 			DataTypeWrapperInstantiated pst_tester(input_file, rand_seed,
@@ -134,6 +147,9 @@ struct PSTTestInfoStruct
 	template <typename PSTTesterDataTypeInstantiated>
 	void treeTypeWrap(PSTTesterDataTypeInstantiated pst_tester)
 	{
+#ifdef DEBUG_WRAP
+		std::cout << "Began treeTypeWrap()\n";
+#endif
 		if (tree_type == PSTType::CPU_ITER)
 		{
 			typename PSTTesterDataTypeInstantiated::TreeTypeWrapper<PointStruct, StaticPSTCPUIter, PSTType::CPU_ITER> pst_tester_tree_instan(pst_tester);

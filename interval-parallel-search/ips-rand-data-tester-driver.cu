@@ -1,6 +1,7 @@
 #include <string>	// To use stoi() and string operators for command-line argument parsing
 
 #include "exit-status-codes.h"		// For consistent exit status codes
+#include "ips-tester.h"
 #include "ips-test-info-struct.h"
 
 int main(int argc, char *argv[])
@@ -14,6 +15,10 @@ int main(int argc, char *argv[])
 	for (int i = 1; i < argc; i++)
 	{
 		std::string arg(argv[i]);	// Allow use of string's operators and functions
+#ifdef DEBUG_TEST
+		std::cout << "Command line argument detected: " << arg << '\n';
+		std::cout << "Argument number: " << i << '\n';
+#endif
 
 		// Help message
 		if (arg == "-h" || arg == "--help")

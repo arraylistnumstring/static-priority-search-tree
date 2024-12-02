@@ -3,6 +3,7 @@
 
 #include "exit-status-codes.h"		// For consistent exit status codes
 #include "preprocessor-symbols.h"
+#include "pst-tester.h"
 #include "pst-test-info-struct.h"
 
 int main(int argc, char *argv[])
@@ -16,6 +17,10 @@ int main(int argc, char *argv[])
 	for (int i = 1; i < argc; i++)
 	{
 		std::string arg(argv[i]);	// Allow use of string's operators and functions
+#ifdef DEBUG_TEST
+		std::cout << "Command line argument detected: " << arg << '\n';
+		std::cout << "Argument number: " << i << '\n';
+#endif
 
 		// Help message
 		if (arg == "-h" || arg == "--help")
@@ -101,19 +106,20 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		else if (i == 3)	// Check point grid dimensions
+		else if (i == 3)	// Get point grid dimensions
 		{
+			// Because of lack of parity of incrementing behavior between first and later arguments when arguments have no flags, simply use index j to access objects, and update the value of i later
 			for (int j = 0; j < NUM_DIMS; j++)
 			{
-				if (i >= argc)
+				if (i + j >= argc)
 				{
 					std::cerr << "Insufficient number of arguments provided for search bounds\n";
 					return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
 				}
 
-				test_info.pt_grid_dim_strings[i] = argv[i];
-				i++;
+				test_info.pt_grid_dim_strings[j] = argv[i + j];
 			}
+			i += NUM_DIMS - 1;
 		}
 
 		// Data-type parsing
@@ -199,22 +205,16 @@ int main(int argc, char *argv[])
 
 			test_info.ordered_vals = true;	// Interval search, so values in the interval must be ordered; not actually used, but set for consistency when debugging
 
-			// Consume requisite number of arguments for later conversion to search range values
-			for (int j = 0; j < num_search_vals; j++)
+			i++;
+			if (i >= argc)
 			{
-				i++;
-				if (i >= argc)
-				{
-					std::cerr << "Insufficient number of arguments provided for search bounds\n";
-					return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
-				}
-
-				test_info.search_range_strings[j] = argv[i];
+				std::cerr << "Insufficient number of arguments provided for search bounds\n";
+				return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
 			}
 
-			// As this is a non-three-sided search, move dimension-2 value to third slot of test_info.search_range_strings
-			test_info.search_range_strings[num_search_vals]
-				= test_info.search_range_strings[num_search_vals - 1];
+			// As this is a two-sided interval search, dimension-2 value is the same as the dimension-1 value; put dimension-2 value in third slot of test_info.search_range_strings
+			test_info.search_range_strings[0]
+				= test_info.search_range_strings[num_search_vals] = argv[i];
 		}
 
 		else	// Invalid argument

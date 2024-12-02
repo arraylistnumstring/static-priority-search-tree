@@ -2,6 +2,7 @@
 #include <string>		// To use stoi() and string operators for command-line argument parsing
 
 #include "exit-status-codes.h"		// For consistent exit status codes
+#include "ips-tester.h"
 #include "ips-test-info-struct.h"
 #include "preprocessor-symbols.h"
 
@@ -16,6 +17,10 @@ int main(int argc, char *argv[])
 	for (int i = 1; i < argc; i++)
 	{
 		std::string arg(argv[i]);	// Allow use of string's operators and functions
+#ifdef DEBUG_TEST
+		std::cout << "Command line argument detected: " << arg << '\n';
+		std::cout << "Argument number: " << i << '\n';
+#endif
 
 		// Help message
 		if (arg == "-h" || arg == "--help")
@@ -102,17 +107,18 @@ int main(int argc, char *argv[])
 
 		else if (i == 3)	// Get point grid dimensions
 		{
+			// Because of lack of parity of incrementing behavior between first and later arguments when arguments have no flags, simply use index j to access objects, and update the value of i later
 			for (int j = 0; j < NUM_DIMS; j++)
 			{
-				if (i >= argc)
+				if (i + j >= argc)
 				{
 					std::cerr << "Insufficient number of arguments provided for search bounds\n";
 					return ExitStatusCodes::INSUFFICIENT_NUM_ARGS_ERR;
 				}
 
-				test_info.pt_grid_dim_strings[i] = argv[i];
-				i++;
+				test_info.pt_grid_dim_strings[j] = argv[i + j];
 			}
+			i += NUM_DIMS - 1;
 		}
 
 		// Data-type parsing
