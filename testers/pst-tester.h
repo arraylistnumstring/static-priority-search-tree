@@ -17,10 +17,6 @@
 #include "print-array.h"
 #include "rand-data-pt-generator.h"
 
-#ifdef DEBUG
-#include "vertex-data-helpers.h"
-#endif
-
 
 enum DataType {CHAR, DOUBLE, FLOAT, INT, LONG, UNSIGNED_INT, UNSIGNED_LONG};
 
