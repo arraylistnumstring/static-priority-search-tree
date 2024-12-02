@@ -265,7 +265,7 @@ struct IPSTestInfoStruct
 					std::exit(ExitStatusCodes::INVALID_ARG_ERR);
 				}
 				else if (metacell_dims[i] == 0)
-					metacell_dims[i] = metacell_dims[0];
+					metacell_dims[i] = metacell_dims[Dims::X_DIM_IND];
 			}
 
 			typename IPSTesterDataTypeNumIDsInstantiated::IDTypeWrapper<IDDistr, IDType> ips_tester_id_instan(ips_tester, pt_grid_dims, metacell_dims);

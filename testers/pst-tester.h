@@ -220,9 +220,9 @@ struct PSTTester
 																		);
 
 #ifdef DEBUG
-									for (IDType k = 0; k < id_type_wrapper.pt_grid_dims[2]; k++)
-										for (IDType j = 0; j < id_type_wrapper.pt_grid_dims[1]; j++)
-											for (IDType i = 0; i < id_type_wrapper.pt_grid_dims[0]; i++)
+									for (IDType k = 0; k < id_type_wrapper.pt_grid_dims[Dims::Z_DIM_IND]; k++)
+										for (IDType j = 0; j < id_type_wrapper.pt_grid_dims[Dims::Y_DIM_IND]; j++)
+											for (IDType i = 0; i < id_type_wrapper.pt_grid_dims[Dims::X_DIM_IND]; i++)
 											{
 												std::cout << 'V';
 												std::cout << '[' << i << ']';

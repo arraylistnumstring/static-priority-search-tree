@@ -320,7 +320,7 @@ struct PSTTestInfoStruct
 				}
 				// If second or third metacell dimension is 0, use the first dimension's value as its own
 				else if (metacell_dims[i] == 0)
-					metacell_dims[i] = metacell_dims[0];
+					metacell_dims[i] = metacell_dims[Dims::X_DIM_IND];
 			}
 
 			typename PSTTesterDataTreeTypesNumIDsInstantiated::IDTypeWrapper<IDDistr, IDType> pst_tester_id_instan(pst_tester, pt_grid_dims, metacell_dims);
