@@ -190,6 +190,10 @@ struct PSTTester
 							// Place CPU timing here, as GPU -> CPU transfer time of metacells must be taken into consideration for the "construct" cost
 							std::chrono::time_point<std::chrono::steady_clock> construct_start_wall, construct_stop_wall, search_start_wall, search_stop_wall;
 
+#ifdef DEBUG
+							std::cout << "Input file: " << id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.input_file << '\n';
+#endif
+
 							// Place random data generation condition before data input reading so that any timing mechanism for the latter will not be impacted by the evaluation of this conditional
 							if (!std::is_integral<IDType>::value ||
 									id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.input_file == "")
@@ -224,7 +228,7 @@ struct PSTTester
 												std::cout << '[' << i << ']';
 												std::cout << '[' << j << ']';
 												std::cout << '[' << k << ']';
-												std::cout << '=' << id_type_wrapper.pt_grid_dims[linearVertID(i, j, k, id_type_wrapper.pt_grid_dims)];
+												std::cout << '=' << vertex_arr[linearVertID(i, j, k, id_type_wrapper.pt_grid_dims)];
 												std::cout << '\n';
 											}
 #endif
