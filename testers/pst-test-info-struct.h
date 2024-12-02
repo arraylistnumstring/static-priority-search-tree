@@ -9,11 +9,11 @@
 
 #include "exit-status-codes.h"
 #include "point-struct.h"
+#include "preprocessor-symbols.h"
 #include "pst-tester.h"
 #include "static-pst-cpu-iter.h"
 #include "static-pst-cpu-recur.h"
 #include "static-pst-gpu.h"
-#include "preprocessor-symbols.h"
 
 
 // Struct for information necessary to instantiate PSTTester
@@ -186,6 +186,9 @@ struct PSTTestInfoStruct
 	template <typename PSTTesterDataTreeTypesInstantiated>
 	void numIDsWrap(PSTTesterDataTreeTypesInstantiated pst_tester)
 	{
+#ifdef DEBUG_WRAP
+		std::cout << "Began numIDsWrap()\n";
+#endif
 		if (pts_with_ids)
 		{
 			typename PSTTesterDataTreeTypesInstantiated::NumIDsWrapper<1> pst_tester_num_ids_instan(pst_tester);

@@ -8,8 +8,8 @@
 
 #include "exit-status-codes.h"
 #include "ips-tester.h"
-#include "preprocessor-symbols.h"
 #include "point-struct.h"
+#include "preprocessor-symbols.h"
 
 
 // Struct for information necessary to instantiate IPSTester
@@ -20,7 +20,7 @@ struct IPSTestInfoStruct
 	std::string input_file = "";
 
 	std::string pt_grid_dim_strings[NUM_DIMS] = {"0", "0", "0"};
-	std::string metacell_dim_strings[NUM_DIMS] = {"64", "0", "0"};
+	std::string metacell_dim_strings[NUM_DIMS] = {"4", "0", "0"};
 
 	std::string search_val_string;
 
@@ -58,6 +58,16 @@ struct IPSTestInfoStruct
 	template <class IPSTesterTimingDet>
 	void dataTypeWrap()
 	{
+#ifdef DEBUG_WRAP
+		std::cout << "Began dataTypeWrap()\n";
+		std::cout << "Table of data type values:\n";
+		std::cout << "Double: " << DataType::DOUBLE << '\n';
+		std::cout << "Float: " << DataType::FLOAT << '\n';
+		std::cout << "Int: " << DataType::INT << '\n';
+		std::cout << "Long: " << DataType::LONG << '\n';
+		std::cout << '\n';
+		std::cout << "Data type is " << data_type << '\n';
+#endif
 		if (data_type == DataType::DOUBLE)
 			// typename necessary, as compiler defaults to treating nested names as variables
 			/*
@@ -98,6 +108,9 @@ struct IPSTestInfoStruct
 	template <typename DataTypeWrapperInstantiated, typename T>
 	void numIDsWrapCaller(std::function<T(const std::string &)> conv_func)
 	{
+#ifdef DEBUG_WRAP
+		std::cout << "Began numIDsWrapCaller()\n";
+#endif
 		try
 		{
 			DataTypeWrapperInstantiated pst_tester(input_file, rand_seed,
@@ -120,6 +133,9 @@ struct IPSTestInfoStruct
 	template <typename IPSTesterDataTypesInstantiated>
 	void numIDsWrap(IPSTesterDataTypesInstantiated ips_tester)
 	{
+#ifdef DEBUG_WRAP
+		std::cout << "Began numIDsWrap()\n";
+#endif
 		if (pts_with_ids)
 		{
 			typename IPSTesterDataTypesInstantiated::NumIDsWrapper<PointStruct, 1> ips_tester_num_ids_instan(ips_tester);
@@ -249,9 +265,7 @@ struct IPSTestInfoStruct
 					std::exit(ExitStatusCodes::INVALID_ARG_ERR);
 				}
 				else if (metacell_dims[i] == 0)
-				{
 					metacell_dims[i] = metacell_dims[0];
-				}
 			}
 
 			typename IPSTesterDataTypeNumIDsInstantiated::IDTypeWrapper<IDDistr, IDType> ips_tester_id_instan(ips_tester, pt_grid_dims, metacell_dims);
