@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
 			std::cerr << "\t-B, --num-blocks NUM_BLOCKS\n";
 			std::cerr << "\t\t\t\tNumber of blocks to use in grid for CUDA kernel\n\n";
 
-			std::cerr << "\t-I, --ids\t\tToggles assignment of IDs to the nodes of the tree with data type DIM_TYPE; defaults to false\n\n";
+			std::cerr << "\t-I, --ids\t\tToggles assignment of IDs of data type DIM_TYPE to input points; defaults to false\n\n";
 
 			std::cerr << "\t-m, --metacell-dims METACELL_DIM_X [METACELL_DIM_Y METACELL_DIM_Z]\n";
 			std::cerr << "\t\t\t\tDimensions to use for metacells, in units of voxels^3; if only METACELL_DIM_X is provided, METACELL_DIM_Y and METACELL_DIM_Z are set to be equal to the same value; metacell dimensions default to 4 * 4 * 4 voxels^3 (as this number is both a cubic number and a multiple of 32 (warp size, for maximal thread occupancy on the GPU), and is the smallest possible metacell satisfying both those criteria, as a smaller metacell yields more metacells, a regime where PST performs well)";

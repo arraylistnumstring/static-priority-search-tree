@@ -16,6 +16,11 @@
 #include "print-array.h"
 #include "rand-data-pt-generator.h"
 
+#ifdef DEBUG
+#include "vertex-data-helpers.h"
+#endif
+
+
 enum DataType {CHAR, DOUBLE, FLOAT, INT, LONG, UNSIGNED_INT, UNSIGNED_LONG};
 
 
@@ -143,6 +148,10 @@ struct IPSTester
 						// Will only be non-nullptr-valued if reading from an input file
 						T *vertex_arr = nullptr;
 
+#ifdef DEBUG
+						std::cout << "Input file: " << id_type_wrapper.num_ids_wrapper.ips_tester.input_file << '\n';
+#endif
+
 						// Place random data generation condition before data input reading so that any timing mechanism for the latter will not be impacted by the evaluation of this conditional
 						if (!std::is_integral<IDType>::value ||
 								id_type_wrapper.num_ids_wrapper.ips_tester.input_file == "")
@@ -167,6 +176,20 @@ struct IPSTester
 								// Read in vertex array from binary file
 								vertex_arr = readInVertices<T>(id_type_wrapper.num_ids_wrapper.ips_tester.input_file,
 																id_type_wrapper.pt_grid_dims);
+
+#ifdef DEBUG
+								for (IDType k = 0; k < id_type_wrapper.pt_grid_dims[2]; k++)
+									for (IDType j = 0; j < id_type_wrapper.pt_grid_dims[1]; j++)
+										for (IDType i = 0; i < id_type_wrapper.pt_grid_dims[0]; i++)
+										{
+											std::cout << 'V';
+											std::cout << '[' << i << ']';
+											std::cout << '[' << j << ']';
+											std::cout << '[' << k << ']';
+											std::cout << '=' << vertex_arr[linearVertID(i, j, k, id_type_wrapper.pt_grid_dims)];
+											std::cout << '\n';
+										}
+#endif
 
 								// TODO: Copy vertex_arr to GPU so it's ready for metacell formation and marching cubes
 
