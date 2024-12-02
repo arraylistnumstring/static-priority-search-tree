@@ -4,7 +4,7 @@
 #include "exit-status-codes.h"		// For consistent exit status codes
 #include "ips-tester.h"
 #include "ips-test-info-struct.h"
-#include "preprocessor-symbols.h"
+#include "isosurface-data-processing.h"		// For NUM_DIMS definition
 
 int main(int argc, char *argv[])
 {
@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
 		else if (i == 3)	// Get point grid dimensions
 		{
 			// Because of lack of parity of incrementing behavior between first and later arguments when arguments have no flags, simply use index j to access objects, and update the value of i later
-			for (int j = 0; j < NUM_DIMS; j++)
+			for (int j = 0; j < Dims::NUM_DIMS; j++)
 			{
 				if (i + j >= argc)
 				{
@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
 
 				test_info.pt_grid_dim_strings[j] = argv[i + j];
 			}
-			i += NUM_DIMS - 1;
+			i += Dims::NUM_DIMS - 1;
 		}
 
 		// Data-type parsing
@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
 		// Metacell dimension parsing
 		else if (arg == "-m" || arg == "--metacell-dims")
 		{
-			for (int j = 0; j < NUM_DIMS; j++)
+			for (int j = 0; j < Dims::NUM_DIMS; j++)
 			{
 				i++;
 				if (i >= argc)

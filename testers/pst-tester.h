@@ -12,8 +12,7 @@
 #include "err-chk.h"
 #include "gpu-err-chk.h"
 #include "helper-cuda--modified.h"
-#include "isosurface-data-processing.h"
-#include "preprocessor-symbols.h"
+#include "isosurface-data-processing.h"		// For NUM_DIMS definition
 #include "print-array.h"
 #include "rand-data-pt-generator.h"
 
@@ -139,8 +138,8 @@ struct PSTTester
 					// Bounds of distribution [a, b] must satisfy b - a <= std::numeric_limits<IDType>::max()
 					IDDistrib<IDType> id_distr;
 
-					IDType pt_grid_dims[NUM_DIMS];
-					IDType metacell_dims[NUM_DIMS];
+					IDType pt_grid_dims[Dims::NUM_DIMS];
+					IDType metacell_dims[Dims::NUM_DIMS];
 
 					IDTypeWrapper(NumIDsWrapper<num_IDs> num_ids_wrapper)
 						: num_ids_wrapper(num_ids_wrapper),
@@ -148,12 +147,12 @@ struct PSTTester
 					{};
 
 					IDTypeWrapper(NumIDsWrapper<num_IDs> num_ids_wrapper,
-									IDType pt_grid_dims[NUM_DIMS],
-									IDType metacell_dims[NUM_DIMS])
+									IDType pt_grid_dims[Dims::NUM_DIMS],
+									IDType metacell_dims[Dims::NUM_DIMS])
 						: num_ids_wrapper(num_ids_wrapper)
 					{
-						// Attempting to put a const-sized array as part of the member initialiser list causes an error, as the input parameter is treated as being of type IDType *, rather than of type IDType[NUM_DIMS]
-						for (int i = 0; i < NUM_DIMS; i++)
+						// Attempting to put a const-sized array as part of the member initialiser list causes an error, as the input parameter is treated as being of type IDType *, rather than of type IDType[Dims::NUM_DIMS]
+						for (int i = 0; i < Dims::NUM_DIMS; i++)
 						{
 							this->pt_grid_dims[i] = pt_grid_dims[i];
 							this->metacell_dims[i] = metacell_dims[i];
@@ -180,7 +179,7 @@ struct PSTTester
 							PointStructTemplate<T, IDType, num_IDs> *pt_arr;
 
 							// Will only be non-nullptr-valued if reading from an input file
-							T *vertex_arr = nullptr;
+							T *vertex_arr_d = nullptr;
 
 							// Variables must be outside of conditionals to be accessible in later conditionals
 							// Place CPU timing here, as GPU -> CPU transfer time of metacells must be taken into consideration for the "construct" cost
@@ -211,9 +210,14 @@ struct PSTTester
 							{
 								if (id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.input_file != "")
 								{
+									IDType num_verts = 1;
+									for (int i = 0; i < Dims::NUM_DIMS; i++)
+										num_verts *= id_type_wrapper.pt_grid_dims[i];
+
 									// Read in vertex array from binary file
-									vertex_arr = readInVertices<T>(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.input_file,
-																	id_type_wrapper.pt_grid_dims);
+									T *vertex_arr = readInVertices<T>(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.input_file,
+																			num_verts
+																		);
 
 #ifdef DEBUG
 									for (IDType k = 0; k < id_type_wrapper.pt_grid_dims[2]; k++)
@@ -229,11 +233,32 @@ struct PSTTester
 											}
 #endif
 
-									// TODO: Copy vertex_arr to GPU so it's ready for metacell formation and marching cubes
+									// Copy vertex_arr to GPU so it's ready for metacell formation and marching cubes
+									gpuErrorCheck(cudaMalloc(&vertex_arr_d, num_verts * sizeof(T)),
+														"Error in allocating vertex storage array on device "
+														+ std::to_string(id_type_wrapper.num_ids_wrapper.dev_ind)
+														+ " of "
+														+ std::to_string(id_type_wrapper.num_ids_wrapper.num_devs)
+														+ ": "
+													);
+									// Implicitly synchronous from the host's point of view as only pinned memory can have truly asynchronous cudaMemcpy() calls
+									gpuErrorCheck(cudaMemcpy(vertex_arr_d, vertex_arr, num_verts * sizeof(T), cudaMemcpyDefault),
+														"Error in copying array of vertices to device "
+														+ std::to_string(id_type_wrapper.num_ids_wrapper.dev_ind)
+														+ " of "
+														+ std::to_string(id_type_wrapper.num_ids_wrapper.num_devs)
+														+ ": "
+													);
 
-									pt_arr = formMetacells<PointStructTemplate, num_IDs>(vertex_arr,
+									// Prior cudaMemcpy() is staged, if not already written through, so can free vertex_arr
+									delete[] vertex_arr;
+
+									pt_arr = formMetacells<PointStructTemplate, num_IDs>(vertex_arr_d,
 																id_type_wrapper.pt_grid_dims,
-																id_type_wrapper.metacell_dims);
+																id_type_wrapper.metacell_dims,
+																id_type_wrapper.num_ids_wrapper.dev_ind,
+																id_type_wrapper.num_ids_wrapper.num_devs
+															);
 
 									if constexpr (pst_type != GPU)
 									{

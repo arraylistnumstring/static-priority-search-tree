@@ -8,8 +8,8 @@
 
 #include "exit-status-codes.h"
 #include "ips-tester.h"
+#include "isosurface-data-processing.h"		// For NUM_DIMS definition
 #include "point-struct.h"
-#include "preprocessor-symbols.h"
 
 
 // Struct for information necessary to instantiate IPSTester
@@ -19,8 +19,8 @@ struct IPSTestInfoStruct
 
 	std::string input_file = "";
 
-	std::string pt_grid_dim_strings[NUM_DIMS] = {"0", "0", "0"};
-	std::string metacell_dim_strings[NUM_DIMS] = {"4", "0", "0"};
+	std::string pt_grid_dim_strings[Dims::NUM_DIMS] = {"0", "0", "0"};
+	std::string metacell_dim_strings[Dims::NUM_DIMS] = {"4", "0", "0"};
 
 	std::string search_val_string;
 
@@ -237,9 +237,9 @@ struct IPSTestInfoStruct
 		}
 		else
 		{
-			IDType pt_grid_dims[NUM_DIMS];
-			IDType metacell_dims[NUM_DIMS];
-			for (int i = 0; i < NUM_DIMS; i++)
+			IDType pt_grid_dims[Dims::NUM_DIMS];
+			IDType metacell_dims[Dims::NUM_DIMS];
+			for (int i = 0; i < Dims::NUM_DIMS; i++)
 			{
 				try
 				{

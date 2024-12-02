@@ -5,26 +5,45 @@
 #include <type_traits>
 
 #include "exit-status-codes.h"
-#include "preprocessor-symbols.h"
+#include "gpu-err-chk.h"
+
+// For enums, first value (if unspecified) is guaranteed to be 0, and all other unspecified values have value (previous enum's value) + 1
+enum Dims
+{
+	X_DIM_IND = 0,
+	Y_DIM_IND,
+	Z_DIM_IND,
+	NUM_DIMS
+}
 
 template <template<typename, typename, size_t> class PointStructTemplate,
 		 	size_t num_IDs, typename T, typename GridDimType>
 	requires std::is_integral<GridDimType>::value
-PointStructTemplate<T, GridDimType, num_IDs> *formMetacells(T *vertex_arr_d, GridDimType pt_grid_dims[NUM_DIMS], GridDimType metacell_dims[NUM_DIMS])
+PointStructTemplate<T, GridDimType, num_IDs> *formMetacells(T *const vertex_arr_d, GridDimType pt_grid_dims[Dims::NUM_DIMS], GridDimType metacell_dims[Dims::NUM_DIMS], const int dev_ind, const int num_devs)
 {
-	// Total number of metacells is \Pi_{i=1}^NUM_DIMS ceil((pt_grid_dims[i] - 1) / metacell_dims[i])
+	// Total number of metacells is \Pi_{i=1}^Dims::NUM_DIMS ceil((pt_grid_dims[i] - 1) / metacell_dims[i])
 	// Note that the ceiling function is used because if metacell_dims[i] \not | (pt_grid_dims[i] - 1), then the last metacell(s) in dimension i will be nonempty, though not fully tiled
 	// The -1 addend arises because if one surjectively assigns to each metacell the vertex on its volume that has the smallest indices in each dimension, the edges of the point grid where indices are largest in a given direction will have no metacells, as there are no further points to which to interpolate or draw such a metacell
 	GridDimType num_metacells = 1;
-	for (int i = 0; i < NUM_DIMS; i++)
+	for (int i = 0; i < Dims::NUM_DIMS; i++)
 		num_metacells *= (pt_grid_dims[i] - 1) / metacell_dims[i]
 							+ ( (pt_grid_dims[i] - 1) % metacell_dims[i] == 0 ? 0 : 1);
 
-	// TODO: CUDA allocations for PointStructTemplate<T, GridDimType, num_IDs> *
+	// On-device memory allocations for metacell array
+	PointStructTemplate<T, GridDimType, num_IDs> *metacell_arr_d;
 
-	// TODO: Call to __global__ function formMetacellsGlobal()
+	gpuErrorCheck(cudaMalloc(&metacell_arr_d, num_metacells * sizeof(PointStructTemplate<T, GridDimType, num_IDs>)),
+					"Error in allocating metacell storage array on device "
+					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+					+ ": ");
 
-	return nullptr;
+	// Perhaps a number of blocks that is the maximum amount possible in a given architecture, with insufficiencies being compensated for by grid-level iterations?
+	dim3 num_blocks();
+	dim3 threads_per_block(metacell_dims[0], metacell_dims[1], metacell_dims[2]);
+
+	formMetacellsGlobal<<<num_blocks, threads_per_block/*, Some shared memory for inter-warp reduces(?) */>>>(vertex_arr_d, metacell_arr_d, pt_grid_dims, metacell_dims);
+
+	return metacell_arr_d;
 };
 
 template <typename GridDimType>
@@ -34,19 +53,15 @@ __forceinline__ __host__ __device__
 #else
 inline
 #endif
-GridDimType linearVertID(const GridDimType x, const GridDimType y, const GridDimType z, GridDimType const vert_grid_dims[NUM_DIMS])
+GridDimType linearVertID(const GridDimType x, const GridDimType y, const GridDimType z, GridDimType const vert_grid_dims[Dims::NUM_DIMS])
 {
 	return x + (y + z * vert_grid_dims[1]) * vert_grid_dims[0];
 };
 
 template <typename T, typename GridDimType>
 	requires std::is_integral<GridDimType>::value
-T *readInVertices(std::string input_filename, GridDimType grid_dims[NUM_DIMS])
+T *readInVertices(std::string input_filename, GridDimType num_vertices)
 {
-	GridDimType num_vertices = 1;
-	for (int i = 0; i < NUM_DIMS; i++)
-		num_vertices *= grid_dims[i];
-
 	T *vertex_arr = new T[num_vertices];
 
 	std::ifstream input_filestream(input_filename, std::ios_base::binary);

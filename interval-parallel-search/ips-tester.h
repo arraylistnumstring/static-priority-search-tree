@@ -11,8 +11,7 @@
 #include "gpu-err-chk.h"
 #include "helper-cuda--modified.h"
 #include "interval-parallel-search.h"
-#include "isosurface-data-processing.h"
-#include "preprocessor-symbols.h"
+#include "isosurface-data-processing.h"		// For NUM_DIMS definition
 #include "print-array.h"
 #include "rand-data-pt-generator.h"
 
@@ -101,8 +100,8 @@ struct IPSTester
 				// Bounds of distribution [a, b] must satisfy b - a <= std::numeric_limits<IDType>::max()
 				IDDistrib<IDType> id_distr;
 
-				IDType pt_grid_dims[NUM_DIMS];
-				IDType metacell_dims[NUM_DIMS];
+				IDType pt_grid_dims[Dims::NUM_DIMS];
+				IDType metacell_dims[Dims::NUM_DIMS];
 
 				IDTypeWrapper(NumIDsWrapper<PointStructTemplate, num_IDs> num_ids_wrapper)
 					: num_ids_wrapper(num_ids_wrapper),
@@ -110,12 +109,12 @@ struct IPSTester
 				{};
 
 				IDTypeWrapper(NumIDsWrapper<PointStructTemplate, num_IDs> num_ids_wrapper,
-								IDType pt_grid_dims[NUM_DIMS],
-								IDType metacell_dims[NUM_DIMS])
+								IDType pt_grid_dims[Dims::NUM_DIMS],
+								IDType metacell_dims[Dims::NUM_DIMS])
 					: num_ids_wrapper(num_ids_wrapper)
 				{
-					// Attempting to put a const-sized array as part of the member initialiser list causes an error, as the input parameter is treated as being of type IDType *, rather than of type IDType[NUM_DIMS]
-					for (int i = 0; i < NUM_DIMS; i++)
+					// Attempting to put a const-sized array as part of the member initialiser list causes an error, as the input parameter is treated as being of type IDType *, rather than of type IDType[Dims::NUM_DIMS]
+					for (int i = 0; i < Dims::NUM_DIMS; i++)
 					{
 						this->pt_grid_dims[i] = pt_grid_dims[i];
 						this->metacell_dims[i] = metacell_dims[i];
