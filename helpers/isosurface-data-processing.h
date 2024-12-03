@@ -5,6 +5,7 @@
 #include <iostream>
 #include <type_traits>
 
+#include "class-member-checkers.h"
 #include "dev-symbols.h"
 #include "exit-status-codes.h"
 #include "gpu-err-chk.h"
@@ -132,7 +133,18 @@ __global__ void formMetacellsGlobal(T *const vertex_arr_d, PointStruct *const me
 				// Intrawarp shuffle for metacell min-max val determination
 				// Interwarp shuffle for metacell min-max val determination
 
-				// Single thread writes result to global memory array
+				// Single thread in block writes result to global memory array
+				if (threadIdx.x == 0)
+				{
+					GridDimType metacellID = lineariseID(base_voxel_coord_x / metacell_dims_x,
+															base_voxel_coord_y / metacell_dims_y,
+															base_voxel_coord_z / metacell_dims_z
+														);
+					pt_arr[metacellID].dim1_val = min_vert_val;
+					pt_arr[metacellID].dim2_val = max_vert_val;
+					if constexpr (HasID<PointStruct>::value)
+						pt_arr[metacellID].id = metacellID;
+				}
 			}
 		}
 	}

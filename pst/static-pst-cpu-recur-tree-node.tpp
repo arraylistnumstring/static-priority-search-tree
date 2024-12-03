@@ -1,3 +1,6 @@
+#include "class-member-checkers.h"
+
+
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
 class StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::TreeNode
@@ -14,7 +17,7 @@ class StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::TreeNode
 		virtual void print(std::ostream &os) const
 		{
 			os << '(' << pt.dim1_val << ", " << pt.dim2_val  << "; " << median_dim1_val;
-			if constexpr (num_IDs == 1)
+			if constexpr (HasID<PointStructTemplate<T, IDType, num_IDs>::value)
 				os << "; " << pt.id;
 			os << ')';
 		};

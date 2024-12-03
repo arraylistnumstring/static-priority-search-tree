@@ -39,7 +39,7 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 #endif
 
 	// Memory transfer only permitted for on-host pinned (page-locked) memory, so do such operations in the default stream
-	if constexpr (num_IDs == 0)
+	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>::value)
 	{
 		// Allocate as a T array so that alignment requirements for larger data types are obeyed
 		gpuErrorCheck(cudaMalloc(&root_d, tot_arr_size_num_datatype * sizeof(T)),
@@ -150,7 +150,7 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 	gpuErrorCheck(cudaStreamCreateWithFlags(&stream_root_init, cudaStreamNonBlocking),
 					"Error in creating asynchronous stream for zero-intialising on-device priority search tree storage array on device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs) + ": ");
-	if constexpr (num_IDs == 0)
+	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>::value)
 	{
 		gpuErrorCheck(cudaMemsetAsync(root_d, 0, tot_arr_size_num_datatype * sizeof(T), stream_root_init),
 						"Error in zero-intialising on-device priority search tree storage array via cudaMemset() on device "
@@ -274,7 +274,7 @@ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::print(std::ostream &
 	const size_t tot_arr_size_num_datatype = calcTotArrSizeNumDatatype(num_elems);
 	T *temp_root;
 	// Use of () after new and new[] causes value-initialisation (to 0) starting in C++03; needed for any nodes that technically contain no data
-	if constexpr (num_IDs == 0)
+	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>::value)
 		// No IDs present
 		temp_root = new T[tot_arr_size_num_datatype]();
 	else
@@ -291,7 +291,7 @@ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::print(std::ostream &
 		throwErr("Error: could not allocate " + std::to_string(num_elem_slots)
 					+ " elements of type " + typeid(T).name() + "to temp_root");
 
-	if constexpr (num_IDs == 0)
+	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>::value)
 	{
 		gpuErrorCheck(cudaMemcpy(temp_root, root_d, tot_arr_size_num_datatype * sizeof(T), cudaMemcpyDefault),
 						"Error in copying array underlying StaticPSTGPU instance from device to host: ");
@@ -864,7 +864,7 @@ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::printRecur(std::ostr
 	os << prefix << '(' << getDim1ValsRoot(tree_root, num_elem_slots)[curr_ind]
 				<< ", " << getDim2ValsRoot(tree_root, num_elem_slots)[curr_ind]
 				<< "; " << getMedDim1ValsRoot(tree_root, num_elem_slots)[curr_ind];
-	if constexpr (num_IDs == 1)
+	if constexpr (HasID<PointStructTemplate<T, IDType, num_IDs>::value)
 		os << "; " << getIDsRoot(tree_root, num_elem_slots)[curr_ind];
 	os << ')';
 	const unsigned char curr_node_bitcode = getBitcodesRoot(tree_root, num_elem_slots)[curr_ind];

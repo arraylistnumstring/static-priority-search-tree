@@ -1,6 +1,7 @@
 #ifndef STATIC_PST_GPU_H
 #define STATIC_PST_GPU_H
 
+#include "class-member-checkers.h"
 #include "data-size-concepts.h"
 #include "dev-symbols.h"	// For global memory-scoped variable res_arr_ind_d
 #include "gpu-err-chk.h"
@@ -235,7 +236,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 			const size_t tot_arr_size_num_datatype = calcTotArrSizeNumDatatype(num_elems);
 
 			size_t global_mem_needed;
-			if constexpr (num_IDs == 0)
+			if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>::value)
 				// No IDs present
 				global_mem_needed = tot_arr_size_num_datatype * sizeof(T);
 			else
@@ -265,7 +266,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 			const size_t num_elem_slots = calcNumElemSlots(num_elems);
 
 			// constexpr if is a C++17 feature that only compiles the branch of code that evaluates to true at compile-time, saving executable space and execution runtime
-			if constexpr (num_IDs == 0)
+			if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>::value)
 				// No IDs present
 				return calcTotArrSizeNumTs(num_elem_slots, num_val_subarrs);
 			else
@@ -318,7 +319,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 			getDim1ValsRoot(root_d, num_elem_slots)[node_ind] = source_data.dim1_val;
 			getDim2ValsRoot(root_d, num_elem_slots)[node_ind] = source_data.dim2_val;
 			getMedDim1ValsRoot(root_d, num_elem_slots)[node_ind] = median_dim1_val;
-			if constexpr (num_IDs == 1)
+			if constexpr (HasID<PointStructTemplate<T, IDType, num_IDs>::value)
 				getIDsRoot(root_d, num_elem_slots)[node_ind] = source_data.id;
 		};
 
@@ -445,7 +446,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		__forceinline__ __host__ __device__ static unsigned char* getBitcodesRoot(T *const root, const size_t num_elem_slots)
 			// Use reinterpret_cast for pointer conversions
 			{
-				if constexpr (num_IDs == 0)
+				if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>::value)
 					// Argument of cast is of type T *
 					return reinterpret_cast<unsigned char*>(root + num_val_subarrs * num_elem_slots);
 				else

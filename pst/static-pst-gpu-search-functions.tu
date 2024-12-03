@@ -97,7 +97,7 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 				res_arr_d[res_ind_to_access].dim1_val = curr_node_dim1_val;
 				res_arr_d[res_ind_to_access].dim2_val = curr_node_dim2_val;
 				// As IDs are only accessed if the node is to be reported and if IDs exist, don't waste a register on it (and avoid compilation failures from attempting to instantiate a potential void variable)
-				if constexpr (num_IDs == 1)
+				if constexpr (HasID<PointStructTemplate<T, IDType, num_IDs>::value)
 					res_arr_d[res_ind_to_access].id
 						= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(root_d, num_elem_slots)[search_ind];
 			}
@@ -270,7 +270,7 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 			{
 				res_arr_d[res_ind_to_access].dim1_val = curr_node_dim1_val;
 				res_arr_d[res_ind_to_access].dim2_val = curr_node_dim2_val;
-				if constexpr (num_IDs == 1)
+				if constexpr (HasID<PointStructTemplate<T, IDType, num_IDs>::value)
 					res_arr_d[res_ind_to_access].id
 						= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(root_d, num_elem_slots)[search_ind];
 			}
@@ -413,7 +413,7 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 			{
 				res_arr_d[res_ind_to_access].dim1_val = curr_node_dim1_val;
 				res_arr_d[res_ind_to_access].dim2_val = curr_node_dim2_val;
-				if constexpr (num_IDs == 1)
+				if constexpr (HasID<PointStructTemplate<T, IDType, num_IDs>::value)
 					res_arr_d[res_ind_to_access].id
 						= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(root_d, num_elem_slots)[search_ind];
 			}
@@ -550,7 +550,7 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 				res_arr_d[res_ind_to_access].dim1_val
 						= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getDim1ValsRoot(root_d, num_elem_slots)[search_ind];
 				res_arr_d[res_ind_to_access].dim2_val = curr_node_dim2_val;
-				if constexpr (num_IDs == 1)
+				if constexpr (HasID<PointStructTemplate<T, IDType, num_IDs>::value)
 					res_arr_d[res_ind_to_access].id
 						= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(root_d, num_elem_slots)[search_ind];
 			}
