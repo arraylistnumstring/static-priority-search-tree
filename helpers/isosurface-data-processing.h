@@ -6,6 +6,7 @@
 #include <type_traits>
 
 #include "class-member-checkers.h"
+#include "data-size-concepts.h"
 #include "dev-symbols.h"
 #include "exit-status-codes.h"
 #include "gpu-err-chk.h"
@@ -37,10 +38,11 @@ GridDimType lineariseID(const GridDimType x, const GridDimType y, const GridDimT
 						const GridDimType grid_dims_x, const GridDimType grid_dims_y);
 
 
-template <template<typename, typename, size_t> class PointStructTemplate,
-		 	size_t num_IDs, typename T, typename GridDimType>
-	requires std::is_integral<GridDimType>::value
-PointStructTemplate<T, GridDimType, num_IDs> *formMetacells(T *const vertex_arr_d, GridDimType pt_grid_dims[Dims::NUM_DIMS], GridDimType metacell_dims[Dims::NUM_DIMS], size_t &num_metacells, const int dev_ind, const int num_devs)
+template <class PointStruct, typename T, typename GridDimType>
+	requires IntSizeOfUAtLeastSizeOfV<GridDimType, int>
+PointStruct *formMetacells(T *const vertex_arr_d, GridDimType pt_grid_dims[Dims::NUM_DIMS],
+							GridDimType metacell_dims[Dims::NUM_DIMS], size_t &num_metacells,
+							const int dev_ind, const int num_devs, const int warp_size)
 {
 	// Total number of metacells is \Pi_{i=1}^Dims::NUM_DIMS ceil((pt_grid_dims[i] - 1) / metacell_dims[i])
 	// Note that the ceiling function is used because if metacell_dims[i] \not | (pt_grid_dims[i] - 1), then the last metacell(s) in dimension i will be nonempty, though not fully tiled
@@ -55,54 +57,80 @@ PointStructTemplate<T, GridDimType, num_IDs> *formMetacells(T *const vertex_arr_
 	}
 
 	// On-device memory allocations for metacell array
-	PointStructTemplate<T, GridDimType, num_IDs> *metacell_arr_d;
+	PointStruct *metacell_arr_d;
 
-	gpuErrorCheck(cudaMalloc(&metacell_arr_d, num_metacells * sizeof(PointStructTemplate<T, GridDimType, num_IDs>)),
+	gpuErrorCheck(cudaMalloc(&metacell_arr_d, num_metacells * sizeof(PointStruct)),
 					"Error in allocating metacell storage array on device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 					+ ": ");
 
 	// Set grid size to be equal to number of metacells, unless this exceeds the GPU's capabilities, as determined by its compute capability-associated technical specifications
 	// Use of decltype to allow for appropriate instantiation of template function std::min (as implicit casting does not take place among its parameters)
-	dim3 num_blocks(std::min(static_cast<decltype(MAX_X_DIM_NUM_BLOCKS)>(metacell_grid_dims[Dims::X_DIM_IND]),
-								MAX_X_DIM_NUM_BLOCKS),
-					std::min(static_cast<decltype(MAX_Y_DIM_NUM_BLOCKS)>(metacell_grid_dims[Dims::Y_DIM_IND]),
-								MAX_Y_DIM_NUM_BLOCKS),
-					std::min(static_cast<decltype(MAX_Z_DIM_NUM_BLOCKS)>(metacell_grid_dims[Dims::Z_DIM_IND]),
-								MAX_Z_DIM_NUM_BLOCKS)
+	dim3 num_blocks(std::min(metacell_grid_dims[Dims::X_DIM_IND], MAX_X_DIM_NUM_BLOCKS),
+						std::min(metacell_grid_dims[Dims::Y_DIM_IND], MAX_Y_DIM_NUM_BLOCKS),
+						std::min(metacell_grid_dims[Dims::Z_DIM_IND], MAX_Z_DIM_NUM_BLOCKS)
 					);
-	dim3 threads_per_block(std::min(static_cast<decltype(MAX_X_DIM_THREADS_PER_BLOCK)>(metacell_dims[Dims::X_DIM_IND]),
-										MAX_X_DIM_THREADS_PER_BLOCK),
-							std::min(static_cast<decltype(MAX_Y_DIM_THREADS_PER_BLOCK)>(metacell_dims[Dims::Y_DIM_IND]),
-										MAX_Y_DIM_THREADS_PER_BLOCK),
-							std::min(static_cast<decltype(MAX_Z_DIM_THREADS_PER_BLOCK)>(metacell_dims[Dims::Z_DIM_IND]),
-										MAX_Z_DIM_THREADS_PER_BLOCK)
+
+	// Array initialiser notation
+	GridDimType threads_per_block_dims[Dims::NUM_DIMS] = {
+															std::min(metacell_dims[Dims::X_DIM_IND],
+																		MAX_X_DIM_THREADS_PER_BLOCK),
+															std::min(metacell_dims[Dims::Y_DIM_IND],
+																		MAX_Y_DIM_THREADS_PER_BLOCK),
+															std::min(metacell_dims[Dims::Z_DIM_IND],
+																		MAX_Z_DIM_THREADS_PER_BLOCK)
+														};
+	
+
+	dim3 threads_per_block(threads_per_block_dims[Dims::X_DIM_IND],
+								threads_per_block_dims[Dims::Y_DIM_IND],
+								threads_per_block_dims[Dims::Z_DIM_IND]
 							);
 
-	/*
-		{} used here as array initialiser notation; based on Stack Overflow test case, this method is superior from a logical organisation perspective and likely also from a performance perspective, despite requiring storage in global memory
-		Source:
-			https://stackoverflow.com/a/65064081
-	*/
-	formMetacellsGlobal<<<num_blocks, threads_per_block/*, Some shared memory for inter-warp reduces(?) */>>>(vertex_arr_d, metacell_arr_d,
-					pt_grid_dims[Dims::X_DIM_IND], pt_grid_dims[Dims::Y_DIM_IND], pt_grid_dims[Dims::Z_DIM_IND],
-					metacell_grid_dims[Dims::X_DIM_IND], metacell_grid_dims[Dims::Y_DIM_IND], metacell_grid_dims[Dims::Z_DIM_IND],
-					metacell_dims[Dims::X_DIM_IND], metacell_dims[Dims::Y_DIM_IND], metacell_dims[Dims::Z_DIM_IND]
-				);
+	GridDimType warps_per_block = 1;
+	for (int i = 0; i < Dims::NUM_DIMS; i++)
+		warps_per_block *= threads_per_block_dims[i];
+	warps_per_block = warps_per_block / warp_size + (warps_per_block % warp_size == 0 ? 0 : 1);
+
+	// Shared memory requirement calculation; two arrays: one array for per-warp minimal vertex values, one array for per-warp maximal vertex values, each of length warps_per_block
+	if (warps_per_block > 1)
+	{
+		formMetacellsGlobal<true><<<num_blocks, threads_per_block, 2 * warps_per_block * sizeof(T)>>>
+					(
+						vertex_arr_d, metacell_arr_d, warps_per_block,
+						pt_grid_dims[Dims::X_DIM_IND], pt_grid_dims[Dims::Y_DIM_IND], pt_grid_dims[Dims::Z_DIM_IND],
+						metacell_grid_dims[Dims::X_DIM_IND], metacell_grid_dims[Dims::Y_DIM_IND], metacell_grid_dims[Dims::Z_DIM_IND],
+						metacell_dims[Dims::X_DIM_IND], metacell_dims[Dims::Y_DIM_IND], metacell_dims[Dims::Z_DIM_IND]
+					);
+	}
+	else
+	{
+		formMetacellsGlobal<false><<<num_blocks, threads_per_block>>>
+					(
+						vertex_arr_d, metacell_arr_d, warps_per_block,
+						pt_grid_dims[Dims::X_DIM_IND], pt_grid_dims[Dims::Y_DIM_IND], pt_grid_dims[Dims::Z_DIM_IND],
+						metacell_grid_dims[Dims::X_DIM_IND], metacell_grid_dims[Dims::Y_DIM_IND], metacell_grid_dims[Dims::Z_DIM_IND],
+						metacell_dims[Dims::X_DIM_IND], metacell_dims[Dims::Y_DIM_IND], metacell_dims[Dims::Z_DIM_IND]
+					);
+	}
 
 	return metacell_arr_d;
 };
 
 // Must have point grid and metacell grid dimension values available, in case there is a discrepancy between the maximal possible thread block size and actual metacell size; and/or maximal possible thread grid size and actual metacell grid size
 // To minimise global memory access time (and because the number of objects passed is relatively small for each set of dimensions), use explicitly passed scalar parameters for each dimension
-template <typename PointStruct, typename T, typename GridDimType>
-	requires std::is_integral<GridDimType>::value
+template <bool interwarp_reduce, typename PointStruct, typename T, typename GridDimType>
+	requires IntSizeOfUAtLeastSizeOfV<GridDimType, int>
 __global__ void formMetacellsGlobal(T *const vertex_arr_d, PointStruct *const metacell_arr_d,
+										const GridDimType warps_per_block,
 										GridDimType pt_grid_dims_x, GridDimType pt_grid_dims_y, GridDimType pt_grid_dims_z,
 										GridDimType metacell_grid_dims_x, GridDimType metacell_grid_dims_y, GridDimType metacell_grid_dims_z,
 										GridDimType metacell_dims_x, GridDimType metacell_dims_y, GridDimType metacell_dims_z
 									)
 {
+	extern __shared__ T s[];
+	T *warp_level_min_vert = s;
+	T *warp_level_max_vert = s + warps_per_block;
 
 	T min_vert_val, max_vert_val;
 	// Repeat over entire voxel grid
@@ -132,15 +160,24 @@ __global__ void formMetacellsGlobal(T *const vertex_arr_d, PointStruct *const me
 				}
 
 				// Intrawarp reduce for metacell min-max val determination
+
+				// Generate mask for threads active during intrawarp phase; all threads in warp run this (or else are exited, i.e. simply not running any code at all)
+				// Call to __ballot_sync() is necessary to determine the thread in warp with largest ID that is still active; this ensures correct delegation of reporting of intrawarp offset results to shared memory
+				// As of time of writing (compute capability 9.0), __ballot_sync() returns an unsigned int
+				const auto intrawarp_mask = __ballot_sync(0xffffffff, true);
+
+				min_vert_val = __reduce_min_sync(intrawarp_mask, min_vert_val);
+				max_vert_val = __reduce_max_sync(intrawarp_mask, max_vert_val);
+
 				// Interwarp reduce for metacell min-max val determination
 
 				// Single thread in block writes result to global memory array
-				if (threadIdx.x == 0)
+				if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0)
 				{
 					// Cast necessary, as an arithemtic operation (even of two types that are both small, e.g. GridDimType = char) effects an up-casting to a datatype at least as large as int, whereas directly supplied variables remain as the previous type, causing the overall template instantiation of lineariseID to fail
-					GridDimType metacellID = lineariseID(static_cast<GridDimType>(base_voxel_coord_x / metacell_dims_x),
-															static_cast<GridDimType>(base_voxel_coord_y / metacell_dims_y),
-															static_cast<GridDimType>(base_voxel_coord_z / metacell_dims_z),
+					GridDimType metacellID = lineariseID(base_voxel_coord_x / metacell_dims_x,
+															base_voxel_coord_y / metacell_dims_y,
+															base_voxel_coord_z / metacell_dims_z,
 															metacell_grid_dims_x,
 															metacell_grid_dims_y
 														);
@@ -174,9 +211,9 @@ __forceinline__ __device__ void getVoxelMinMax(T *const vertex_arr_d, T &min, T 
 		{
 			for (GridDimType i = 0; i < 2; i++)
 			{
-				T curr_vert = vertex_arr_d[lineariseID(static_cast<GridDimType>(base_voxel_coord_x + i),
-															static_cast<GridDimType>(base_voxel_coord_y + j),
-															static_cast<GridDimType>(base_voxel_coord_z + k),
+				T curr_vert = vertex_arr_d[lineariseID(base_voxel_coord_x + i,
+															base_voxel_coord_y + j,
+															base_voxel_coord_z + k,
 															pt_grid_dims_x, pt_grid_dims_y
 														)];
 				min = min <= curr_vert ? min : curr_vert;

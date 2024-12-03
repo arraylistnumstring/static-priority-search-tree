@@ -10,11 +10,9 @@ __forceinline__ __device__ T fls(T val);
 
 template <typename T, typename U>
 	requires std::conjunction<
-						std::conjunction<
 								std::is_integral<T>,
-								std::is_unsigned<T>
-							>,
-						std::is_arithmetic<U>
+								std::is_unsigned<T>,
+								std::is_arithmetic<U>
 			>::value
 __forceinline__ __device__ void warpPrefixSum(const T mask, U &num);
 
@@ -155,12 +153,10 @@ __forceinline__ __device__ T fls(T val)	// Equivalent to truncate(log_2(val))
 // Calculates inclusive prefix sum using thread-local variables and intra-warp shuffle; returns result in reference variable num
 template <typename T, typename U>
 	requires std::conjunction<
-						// As std::unsigned_integral<T> evaluates to true/false instead of a type name, instead use its constituent parts separately to achieve the same effect
-						std::conjunction<
+								// As std::unsigned_integral<T> evaluates to true/false instead of a type name, instead use its constituent parts separately to achieve the same effect
 								std::is_integral<T>,
-								std::is_unsigned<T>
-							>,
-						std::is_arithmetic<U>
+								std::is_unsigned<T>,
+								std::is_arithmetic<U>
 			>::value
 __forceinline__ __device__ void warpPrefixSum(const T mask, U &num)
 {

@@ -221,15 +221,7 @@ struct PSTTestInfoStruct
 	template <class PSTTesterDataTreeTypesNumIDsInstantiated>
 	void IDTypeWrap(PSTTesterDataTreeTypesNumIDsInstantiated pst_tester)
 	{
-		if (id_type == DataType::CHAR)
-			IDTypeWrapInstantiator<std::uniform_int_distribution, char>(pst_tester,
-										static_cast<std::function<char(const std::string &)>>(
-													[](const std::string &str) -> char
-													{
-														return static_cast<char>(std::stoi(str));
-													})
-									);
-		else if (id_type == DataType::DOUBLE)
+		if (id_type == DataType::DOUBLE)
 			IDTypeWrapInstantiator<std::uniform_real_distribution, double>(pst_tester,
 										static_cast<std::function<double(const std::string &)>>(
 													[](const std::string &str) -> double

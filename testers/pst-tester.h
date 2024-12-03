@@ -9,6 +9,7 @@
 #include <random>		// To use std::mt19937
 #include <type_traits>
 
+#include "data-size-concepts.h"
 #include "err-chk.h"
 #include "gpu-err-chk.h"
 #include "helper-cuda--modified.h"
@@ -17,7 +18,7 @@
 #include "rand-data-pt-generator.h"
 
 
-enum DataType {CHAR, DOUBLE, FLOAT, INT, LONG, UNSIGNED_INT, UNSIGNED_LONG};
+enum DataType {DOUBLE, FLOAT, INT, LONG, UNSIGNED_INT, UNSIGNED_LONG};
 
 enum PSTTestCodes
 {
@@ -256,13 +257,16 @@ struct PSTTester
 									// Prior cudaMemcpy() is staged, if not already written through, so can free vertex_arr
 									delete[] vertex_arr;
 
-									pt_arr = formMetacells<PointStructTemplate, num_IDs>(vertex_arr_d,
-																id_type_wrapper.pt_grid_dims,
-																id_type_wrapper.metacell_dims,
-																num_elems,
-																id_type_wrapper.num_ids_wrapper.dev_ind,
-																id_type_wrapper.num_ids_wrapper.num_devs
-															);
+									pt_arr = formMetacells<PointStructTemplate<T, IDType, num_IDs>>
+																(
+																	vertex_arr_d,
+																	id_type_wrapper.pt_grid_dims,
+																	id_type_wrapper.metacell_dims,
+																	num_elems,
+																	id_type_wrapper.num_ids_wrapper.dev_ind,
+																	id_type_wrapper.num_ids_wrapper.num_devs,
+																	id_type_wrapper.num_ids_wrapper.dev_props.warpSize
+																);
 
 									if constexpr (pst_type != GPU)
 									{

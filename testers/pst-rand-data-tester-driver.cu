@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
 			std::cerr << "\t-b, --val-bounds MIN_VAL MAX_VAL [SIZE_BOUND_1] [SIZE_BOUND_2]\n";
 			std::cerr << "\t\t\t\tBounds of values (inclusive) to use when generating random values for PST; must be castable to chosen datatype; when non-negative values SIZE_BOUND_1 and SIZE_BOUND_2 are specified, the lower bound of the interval is drawn from the range [MIN_VAL, MAX_VAL], and the upper bound is equal to the lower bound plus a value drawn from the range [SIZE_BOUND_1, SIZE_BOUND_2]; when only SIZE_BOUND_1 is specified, the added value is drawn from the range [0, SIZE_BOUND_1]\n\n";
 
-			std::cerr << "\t-I, --ids ID_TYPE\tToggles assignment of IDs of data type ID_TYPE to the nodes of the tree; defaults to false; valid arguments for ID_TYPE are char, double, float, int, long, unsigned (equivalent to unsigned-int), unsigned-int, unsigned-long\n\n";
+			std::cerr << "\t-I, --ids ID_TYPE\tToggles assignment of IDs of data type ID_TYPE to the nodes of the tree; defaults to false; valid arguments for ID_TYPE are double, float, int, long, unsigned (equivalent to unsigned-int), unsigned-int, unsigned-long\n\n";
 
 			std::cerr << "\t-n, --num-elems NUM_ELEMS\n";
 			std::cerr << "\t\t\t\tNumber of elements to put in tree\n\n";
@@ -161,9 +161,7 @@ int main(int argc, char *argv[])
 							id_type_string.begin(),
 							[](unsigned char c){ return std::tolower(c); });
 
-			if (id_type_string == "char")
-				test_info.id_type = DataType::CHAR;
-			else if (id_type_string == "double")
+			if (id_type_string == "double")
 				test_info.id_type = DataType::DOUBLE;
 			else if (id_type_string == "float")
 				test_info.id_type = DataType::FLOAT;
