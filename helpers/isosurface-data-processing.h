@@ -155,14 +155,14 @@ __global__ void formMetacellsGlobal(T *const vertex_arr_d, PointStruct *const me
 										pt_grid_dims_x, pt_grid_dims_y);
 				}
 
-				// Intrawarp reduce for metacell min-max val determination
+				// Intrawarp reduction for metacell min-max val determination
 
 				// Generate mask for threads active during intrawarp phase; all threads in warp run this (or else are exited, i.e. simply not running any code at all)
-				// Call to __ballot_sync() is necessary to determine the thread in warp with largest ID that is still active; this ensures correct delegation of reporting of intrawarp offset results to shared memory
+				// Call to __ballot_sync() is necessary to determine the thread in warp with largest ID that is still active
 				// As of time of writing (compute capability 9.0), __ballot_sync() returns an unsigned int
 				const auto intrawarp_mask = __ballot_sync(0xffffffff, active_voxel);
 
-				// Neither CUDA math library-provided min() and max() functions nor host-only std::min() and std::max() compile when passed as parameters to device functions, so simply use lambdas and cast to correct nvstd::function type
+				// Neither CUDA math library-provided min() and max() functions nor host-only std::min() and std::max() compile when passed as parameters to device functions, so simply use lambdas (that implicitly cast to nvstd::function type when assigned to a variable of that type)
 				nvstd::function<T(const T &, const T &)> min_op
 						= [](const T &num1, const T &num2) -> T
 							{
@@ -179,13 +179,13 @@ __global__ void formMetacellsGlobal(T *const vertex_arr_d, PointStruct *const me
 				min_vert_val = warpReduce(intrawarp_mask, min_vert_val, min_op);
 				max_vert_val = warpReduce(intrawarp_mask, max_vert_val, max_op);
 
-				// Interwarp reduce for metacell min-max val determination
+				// Interwarp reduction for metacell min-max val determination
 				if constexpr (interwarp_reduce)
 				{
 					const GridDimType lin_thread_ID = lineariseID(threadIdx.x, threadIdx.y, threadIdx.z,
 																	blockDim.x, blockDim.y);
 
-					// First thread in warp writes result to shared memory
+					// First thread in each warp writes result to shared memory
 					if (lin_thread_ID % warpSize == 0)
 					{
 						warp_level_min_vert[lin_thread_ID / warpSize] = min_vert_val;
@@ -199,7 +199,7 @@ __global__ void formMetacellsGlobal(T *const vertex_arr_d, PointStruct *const me
 					if (lin_thread_ID / warpSize == 0)
 					{
 #pragma unroll
-						for (auto l = 0; l < warps_per_block; l += warpSize)
+						for (GridDimType l = 0; l < warps_per_block; l += warpSize)
 						{
 							const auto interwarp_mask = __ballot_sync(0xffffffff,
 																		l + lin_thread_ID < warps_per_block);
@@ -210,6 +210,9 @@ __global__ void formMetacellsGlobal(T *const vertex_arr_d, PointStruct *const me
 								// Get per-warp minimum and maximum vertex values
 								min_vert_val = warp_level_min_vert[lin_thread_ID / warpSize];
 								max_vert_val = warp_level_max_vert[lin_thread_ID / warpSize];
+
+								min_vert_val = warpReduce(interwarp_mask, min_vert_val);
+								max_vert_val = warpReduce(interwarp_mask, min_vert_val);
 							}
 						}
 					}
@@ -230,6 +233,8 @@ __global__ void formMetacellsGlobal(T *const vertex_arr_d, PointStruct *const me
 					if constexpr (HasID<PointStruct>::value)
 						metacell_arr_d[metacellID].id = metacellID;
 				}
+
+				// No need for further synchronisation, as all consequent operations before the next interwarp reduction are independent and concurrency-safe
 			}
 		}
 	}
