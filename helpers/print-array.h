@@ -3,6 +3,28 @@
 
 #include <iostream>
 
+#include "linearise-id.h"
+
+template <typename T, typename GridDimType>
+std::ostream &print3DArray(std::ostream &os, T *const &T_arr,
+							const GridDimType start_inds[Dims::NUM_DIMS],
+							const GridDimType grid_dims[Dims::NUM_DIMS])
+{
+	for (GridDimType k = start_inds[Dims::Z_DIM_IND]; k < grid_dims[Dims::Z_DIM_IND]; k++)
+		for (GridDimType j = start_inds[Dims::Y_DIM_IND]; j < grid_dims[Dims::Y_DIM_IND]; j++)
+			for (GridDimType i = start_inds[Dims::X_DIM_IND]; i < grid_dims[Dims::X_DIM_IND]; i++)
+			{
+				os << 'V';
+				os << '[' << i << ']';
+				os << '[' << j << ']';
+				os << '[' << k << ']';
+				os << '=' << T_arr[lineariseID(i, j, k, grid_dims[Dims::X_DIM_IND], grid_dims[Dims::Y_DIM_IND])];
+				os << '\n';
+			}
+
+	return os;
+};
+
 template <typename T>
 std::ostream &printArray(std::ostream &os, T *const &T_arr, const size_t start_ind, const size_t num_elems)
 {

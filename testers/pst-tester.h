@@ -13,8 +13,8 @@
 #include "err-chk.h"
 #include "gpu-err-chk.h"
 #include "helper-cuda--modified.h"
-#include "isosurface-data-processing.h"		// For NUM_DIMS definition
-#include "linearise-id.h"
+#include "isosurface-data-processing.h"
+#include "linearise-id.h"					// For NUM_DIMS definition
 #include "print-array.h"
 #include "rand-data-pt-generator.h"
 
@@ -185,6 +185,7 @@ struct PSTTester
 
 							// Variables must be outside of conditionals to be accessible in later conditionals
 							// Place CPU timing here, as GPU -> CPU transfer time of metacells must be taken into consideration for the "construct" cost
+							std::clock_t construct_start_CPU, construct_stop_CPU, search_start_CPU, search_stop_CPU;
 							std::chrono::time_point<std::chrono::steady_clock> construct_start_wall, construct_stop_wall, search_start_wall, search_stop_wall;
 
 #ifdef DEBUG
@@ -222,20 +223,8 @@ struct PSTTester
 																		);
 
 #ifdef DEBUG
-									for (IDType k = 0; k < id_type_wrapper.pt_grid_dims[Dims::Z_DIM_IND]; k++)
-										for (IDType j = 0; j < id_type_wrapper.pt_grid_dims[Dims::Y_DIM_IND]; j++)
-											for (IDType i = 0; i < id_type_wrapper.pt_grid_dims[Dims::X_DIM_IND]; i++)
-											{
-												std::cout << 'V';
-												std::cout << '[' << i << ']';
-												std::cout << '[' << j << ']';
-												std::cout << '[' << k << ']';
-												std::cout << '=' << vertex_arr[lineariseID(i, j, k,
-																					id_type_wrapper.pt_grid_dims[Dims::X_DIM_IND],
-																					id_type_wrapper.pt_grid_dims[Dims::Y_DIM_IND]
-																				)];
-												std::cout << '\n';
-											}
+									print3DArray(std::cout, vertex_arr, {0, 0, 0},
+													id_type_wrapper.pt_grid_dims);
 #endif
 
 									// Copy vertex_arr to GPU so it's ready for metacell formation and marching cubes
@@ -244,7 +233,7 @@ struct PSTTester
 														+ std::to_string(id_type_wrapper.num_ids_wrapper.dev_ind)
 														+ " of "
 														+ std::to_string(id_type_wrapper.num_ids_wrapper.num_devs)
-														+ ": "
+														+ "total devices: "
 													);
 									// Implicitly synchronous from the host's point of view as only pinned memory can have truly asynchronous cudaMemcpy() calls
 									gpuErrorCheck(cudaMemcpy(vertex_arr_d, vertex_arr, num_verts * sizeof(T), cudaMemcpyDefault),
@@ -252,7 +241,7 @@ struct PSTTester
 														+ std::to_string(id_type_wrapper.num_ids_wrapper.dev_ind)
 														+ " of "
 														+ std::to_string(id_type_wrapper.num_ids_wrapper.num_devs)
-														+ ": "
+														+ "total devices: "
 													);
 
 									// Prior cudaMemcpy() is staged, if not already written through, so can free vertex_arr
@@ -269,9 +258,38 @@ struct PSTTester
 																	id_type_wrapper.num_ids_wrapper.dev_props.warpSize
 																);
 
-									if constexpr (pst_type != GPU)
+								}
+							}
+
+							if constexpr (pst_type != GPU)
+							{
+								// CPU PST-only construction cost of copying data to host must be timed
+								if constexpr (timed)
+								{
+									construct_start_CPU = std::clock();
+									construct_start_wall = std::chrono::steady_clock::now();
+								}
+								if constexpr (std::is_integral<IDType>::value)
+								{
+									if (id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.input_file != "")
 									{
 										// Copy metacell array to CPU for iterative and recursive PSTs to process
+										PointStructTemplate<T, IDType, num_IDs> *pt_arr_host
+											= new PointStructTemplate<T, IDType, num_IDs>[num_elems];
+										gpuErrorCheck(cudaMemcpy(pt_arr_host, pt_arr, num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>), cudaMemcpyDefault),
+														"Error in copying on-device array of metacell PointStructs to host from device "
+														+ std::to_string(id_type_wrapper.num_ids_wrapper.dev_ind)
+														+ " of "
+														+ std::to_string(id_type_wrapper.num_ids_wrapper.num_devs)
+														+ "total devices: ");
+										gpuErrorCheck(cudaFree(pt_arr),
+														"Error in freeing on-device array of metacell PointStructs on device "
+														+ std::to_string(id_type_wrapper.num_ids_wrapper.dev_ind)
+														+ " of "
+														+ std::to_string(id_type_wrapper.num_ids_wrapper.num_devs)
+														+ "total devices: ");
+
+										pt_arr = pt_arr_host;
 									}
 								}
 							}
@@ -290,7 +308,8 @@ struct PSTTester
 												+ " B on device "
 												+ std::to_string(id_type_wrapper.num_ids_wrapper.dev_ind)
 												+ " of "
-												+ std::to_string(id_type_wrapper.num_ids_wrapper.num_devs));
+												+ std::to_string(id_type_wrapper.num_ids_wrapper.num_devs)
+												+ "total devices: ");
 								}
 							}
 
@@ -303,35 +322,28 @@ struct PSTTester
 													"Error in increasing pending kernel queue size to "
 													+ std::to_string(num_elems/2) + " on device "
 													+ std::to_string(id_type_wrapper.num_ids_wrapper.dev_ind)
-													+ " of " + std::to_string(id_type_wrapper.num_ids_wrapper.num_devs));
+													+ " of " + std::to_string(id_type_wrapper.num_ids_wrapper.num_devs)
+													+ "total devices: ");
 							}
 
 							cudaEvent_t construct_start_CUDA, construct_stop_CUDA, search_start_CUDA, search_stop_CUDA;
-							std::clock_t construct_start_CPU, construct_stop_CPU, search_start_CPU, search_stop_CPU;
 
-							if constexpr (timed)
+							// Construction has already started for CPU (because it includes copying of metacells to host), so just start timing GPU construction here
+							if constexpr (timed && pst_type == GPU)
 							{
-								if constexpr (pst_type == GPU)
-								{
-									gpuErrorCheck(cudaEventCreate(&construct_start_CUDA),
-													"Error in creating start event for timing CUDA PST construction code");
-									gpuErrorCheck(cudaEventCreate(&construct_stop_CUDA),
-													"Error in creating stop event for timing CUDA PST construction code");
-									// For accuracy of measurement of search speeds, create and place search events in stream, even if this is a construction-only test
-									gpuErrorCheck(cudaEventCreate(&search_start_CUDA),
-													"Error in creating start event for timing CUDA search code");
-									gpuErrorCheck(cudaEventCreate(&search_stop_CUDA),
-													"Error in creating stop event for timing CUDA search code");
+								gpuErrorCheck(cudaEventCreate(&construct_start_CUDA),
+												"Error in creating start event for timing CUDA PST construction code");
+								gpuErrorCheck(cudaEventCreate(&construct_stop_CUDA),
+												"Error in creating stop event for timing CUDA PST construction code");
+								// For accuracy of measurement of search speeds, create and place search events in stream, even if this is a construction-only test
+								gpuErrorCheck(cudaEventCreate(&search_start_CUDA),
+												"Error in creating start event for timing CUDA search code");
+								gpuErrorCheck(cudaEventCreate(&search_stop_CUDA),
+												"Error in creating stop event for timing CUDA search code");
 
-									// Start CUDA construction timer (i.e. place this event into default stream)
-									gpuErrorCheck(cudaEventRecord(construct_start_CUDA),
-												"Error in recording start event for timing CUDA PST construction code");
-								}
-								else
-								{
-									construct_start_CPU = std::clock();
-									construct_start_wall = std::chrono::steady_clock::now();
-								}
+								// Start CUDA construction timer (i.e. place this event into default stream)
+								gpuErrorCheck(cudaEventRecord(construct_start_CUDA),
+											"Error in recording start event for timing CUDA PST construction code");
 							}
 
 							StaticPSTTemplate<T, PointStructTemplate, IDType, num_IDs> *tree;
@@ -591,7 +603,8 @@ struct PSTTester
 											+ " B required for data structure and processing exceeds limit of global memory = "
 											+ std::to_string(num_ids_wrapper.dev_props.totalGlobalMem)
 											+ " B on device " + std::to_string(num_ids_wrapper.dev_ind)
-											+ " of " + std::to_string(num_ids_wrapper.num_devs));
+											+ " of " + std::to_string(num_ids_wrapper.num_devs)
+											+ "total devices: ");
 							}
 						}
 
@@ -603,7 +616,8 @@ struct PSTTester
 												"Error in increasing pending kernel queue size to "
 												+ std::to_string(num_elems/2) + " on device "
 												+ std::to_string(num_ids_wrapper.dev_ind)
-												+ " of " + std::to_string(num_ids_wrapper.num_devs));
+												+ " of " + std::to_string(num_ids_wrapper.num_devs)
+												+ "total devices: ");
 						}
 
 

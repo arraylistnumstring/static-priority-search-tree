@@ -9,7 +9,7 @@
 
 #include "exit-status-codes.h"
 #include "ips-tester.h"
-#include "isosurface-data-processing.h"		// For NUM_DIMS definition
+#include "linearise-id.h"		// For NUM_DIMS definition
 #include "point-struct.h"
 
 

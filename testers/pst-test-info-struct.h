@@ -8,7 +8,7 @@
 #include <string>
 
 #include "exit-status-codes.h"
-#include "isosurface-data-processing.h"		// For NUM_DIMS definition
+#include "linearise-id.h"			// For NUM_DIMS definition
 #include "point-struct.h"
 #include "pst-tester.h"
 #include "static-pst-cpu-iter.h"

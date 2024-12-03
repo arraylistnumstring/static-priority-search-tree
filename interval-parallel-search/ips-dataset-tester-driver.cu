@@ -4,7 +4,7 @@
 #include "exit-status-codes.h"		// For consistent exit status codes
 #include "ips-tester.h"
 #include "ips-test-info-struct.h"
-#include "isosurface-data-processing.h"		// For NUM_DIMS definition
+#include "linearise-id.h"			// For NUM_DIMS definition
 
 int main(int argc, char *argv[])
 {

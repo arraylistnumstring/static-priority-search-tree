@@ -2,7 +2,7 @@
 #include <string>		// To use stoi() and string operators for command-line argument parsing
 
 #include "exit-status-codes.h"				// For consistent exit status codes
-#include "isosurface-data-processing.h"		// For NUM_DIMS definition
+#include "linearise-id.h"		// For NUM_DIMS definition
 #include "pst-tester.h"
 #include "pst-test-info-struct.h"
 

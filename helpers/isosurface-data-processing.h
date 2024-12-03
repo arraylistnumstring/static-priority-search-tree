@@ -15,9 +15,6 @@
 #include "linearise-id.h"
 #include "warp-shuffles.h"
 
-// For enums, first value (if unspecified) is guaranteed to be 0, and all other unspecified values have value (previous enum's value) + 1
-enum Dims { X_DIM_IND, Y_DIM_IND, Z_DIM_IND, NUM_DIMS };
-
 // Forward declarations
 template <typename T, typename GridDimType>
 	requires std::is_integral<GridDimType>::value
@@ -211,8 +208,8 @@ __global__ void formMetacellsGlobal(T *const vertex_arr_d, PointStruct *const me
 								min_vert_val = warp_level_min_vert[lin_thread_ID / warpSize];
 								max_vert_val = warp_level_max_vert[lin_thread_ID / warpSize];
 
-								min_vert_val = warpReduce(interwarp_mask, min_vert_val);
-								max_vert_val = warpReduce(interwarp_mask, min_vert_val);
+								min_vert_val = warpReduce(interwarp_mask, min_vert_val, min_op);
+								max_vert_val = warpReduce(interwarp_mask, min_vert_val, max_op);
 							}
 						}
 					}

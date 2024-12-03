@@ -11,7 +11,8 @@
 #include "gpu-err-chk.h"
 #include "helper-cuda--modified.h"
 #include "interval-parallel-search.h"
-#include "isosurface-data-processing.h"		// For NUM_DIMS definition
+#include "isosurface-data-processing.h"
+#include "linearise-id.h"					// For NUM_DIMS definition
 #include "print-array.h"
 #include "rand-data-pt-generator.h"
 
