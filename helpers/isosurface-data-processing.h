@@ -57,7 +57,7 @@ PointStruct *formMetacells(T *const vertex_arr_d, GridDimType pt_grid_dims[Dims:
 					+ ": ");
 
 	// Set grid size to be equal to number of metacells, unless this exceeds the GPU's capabilities, as determined by its compute capability-associated technical specifications
-	// Use of decltype to allow for appropriate instantiation of template function std::min (as implicit casting does not take place among its parameters)
+	// Use of decltype to allow for appropriate instantiation of template function std::min (as implicit casting does not take place among its parameters); preprocessor constants here are either sufficiently large to hold GridDimType or at least to avoid type narrowing warnings
 	dim3 num_blocks(std::min(static_cast<decltype(MAX_X_DIM_NUM_BLOCKS)>(metacell_grid_dims[Dims::X_DIM_IND]),
 								MAX_X_DIM_NUM_BLOCKS),
 					std::min(static_cast<decltype(MAX_Y_DIM_NUM_BLOCKS)>(metacell_grid_dims[Dims::Y_DIM_IND]),
@@ -66,7 +66,7 @@ PointStruct *formMetacells(T *const vertex_arr_d, GridDimType pt_grid_dims[Dims:
 								MAX_Z_DIM_NUM_BLOCKS)
 					);
 
-	// Array initialiser notation
+	// Array initialiser notation; cast is put on preprocessor constants as they have small values and will fit in GridDimType (whereas metacell_dims values, of type GridDimType, may not fit in the datatypes automatically assigned to these small constants, and can produce a warning regarding value narrowing)
 	GridDimType threads_per_block_dims[Dims::NUM_DIMS] = {
 															std::min(metacell_dims[Dims::X_DIM_IND],
 																		static_cast<GridDimType>(MAX_X_DIM_THREADS_PER_BLOCK)),
@@ -163,22 +163,17 @@ __global__ void formMetacellsGlobal(T *const vertex_arr_d, PointStruct *const me
 				const auto intrawarp_mask = __ballot_sync(0xffffffff, active_voxel);
 
 				// Neither CUDA math library-provided min() and max() functions nor host-only std::min() and std::max() compile when passed as parameters to device functions, so simply use lambdas and cast to correct nvstd::function type
-				// Casting necessary as compiler fails to recognise a lambda as an nvstd::function of the same signature and return type (instead recognising it as a lambda [](<params>)->ret-type), thereby failing to instantiate template function; being declared in on-device code, lambda is automatically a __device__ lambda
 				nvstd::function<T(const T &, const T &)> min_op
-						= static_cast<nvstd::function<T(const T &, const T &)>>(
-									[](const T &num1, const T &num2) -> T
-									{
-										return num1 <= num2 ? num1 : num2;
-									}
-								);
+						= [](const T &num1, const T &num2) -> T
+							{
+								return num1 <= num2 ? num1 : num2;
+							};
 
 				nvstd::function<T(const T &, const T &)> max_op
-						= static_cast<nvstd::function<T(const T &, const T &)>>(
-									[](const T &num1, const T &num2) -> T
-									{
-										return num1 >= num2 ? num1 : num2;
-									}
-								);
+						= [](const T &num1, const T &num2) -> T
+							{
+								return num1 >= num2 ? num1 : num2;
+							};
 
 				// CUDA-supplied __reduce_*_sync() is only defined for types unsigned and int, and isn't even found for some reason when compiling, so use user-defined warpReduce() instead
 				min_vert_val = warpReduce(intrawarp_mask, min_vert_val, min_op);
