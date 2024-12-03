@@ -23,9 +23,10 @@ __device__ unsigned int num_active_grids_d;
 	#define MAX_NUM_ACTIVE_GRIDS 16
 #endif
 
-#define MAX_X_DIM_NUM_BLOCKS ((1 << 31) - 1)
-#define MAX_Y_DIM_NUM_BLOCKS ((1 << 16) - 1)
-#define MAX_Z_DIM_NUM_BLOCKS ((1 << 16) - 1)
+// Avoid compiler-issued signed int underflow warnings by attaching a "u" postfix to indicate unsigned values
+#define MAX_X_DIM_NUM_BLOCKS ((1u << 31) - 1)
+#define MAX_Y_DIM_NUM_BLOCKS ((1u << 16) - 1)
+#define MAX_Z_DIM_NUM_BLOCKS ((1u << 16) - 1)
 
 #define MAX_X_DIM_THREADS_PER_BLOCK 1024
 #define MAX_Y_DIM_THREADS_PER_BLOCK 1024

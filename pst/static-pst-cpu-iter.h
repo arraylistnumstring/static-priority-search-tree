@@ -3,8 +3,8 @@
 
 #include <stack>
 
+#include "data-size-concepts.h"
 #include "static-priority-search-tree.h"
-#include "static-pst-concepts.h"
 
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,

@@ -1,10 +1,10 @@
 #ifndef STATIC_PST_GPU_H
 #define STATIC_PST_GPU_H
 
+#include "data-size-concepts.h"
 #include "dev-symbols.h"	// For global memory-scoped variable res_arr_ind_d
 #include "gpu-err-chk.h"
 #include "static-priority-search-tree.h"
-#include "static-pst-concepts.h"
 #include "warp-shuffles.h"
 
 

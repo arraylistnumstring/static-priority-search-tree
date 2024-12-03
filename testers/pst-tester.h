@@ -228,7 +228,7 @@ struct PSTTester
 												std::cout << '[' << i << ']';
 												std::cout << '[' << j << ']';
 												std::cout << '[' << k << ']';
-												std::cout << '=' << vertex_arr[linearVertID(i, j, k, id_type_wrapper.pt_grid_dims)];
+												std::cout << '=' << vertex_arr[lineariseID(i, j, k, id_type_wrapper.pt_grid_dims)];
 												std::cout << '\n';
 											}
 #endif
@@ -256,13 +256,14 @@ struct PSTTester
 									pt_arr = formMetacells<PointStructTemplate, num_IDs>(vertex_arr_d,
 																id_type_wrapper.pt_grid_dims,
 																id_type_wrapper.metacell_dims,
+																num_elems,
 																id_type_wrapper.num_ids_wrapper.dev_ind,
 																id_type_wrapper.num_ids_wrapper.num_devs
 															);
 
 									if constexpr (pst_type != GPU)
 									{
-										// Copy metacell array back to CPU for iterative and recursive PSTs to process
+										// Copy metacell array to CPU for iterative and recursive PSTs to process
 									}
 								}
 							}
