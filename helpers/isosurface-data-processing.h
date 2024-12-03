@@ -3,6 +3,8 @@
 
 #include <fstream>
 #include <iostream>
+// Allows use of nvstd::function, an equivalent to std::function that functions on both host and device (but not across the host-device boundary)
+#include <nvfunctional>
 #include <type_traits>
 
 #include "class-member-checkers.h"
@@ -154,9 +156,10 @@ __global__ void formMetacellsGlobal(T *const vertex_arr_d, PointStruct *const me
 				GridDimType base_voxel_coord_y = j + blockIdx.y * blockDim.y + threadIdx.y;
 				GridDimType base_voxel_coord_z = k + blockIdx.z * blockDim.z + threadIdx.z;
 				// One voxel is associated with each vertex, with the exception of the last vertices in each dimension (i.e. those vertices with at least one coordinate of value pt_grid_dims_[x-z] - 1)
-				if (base_voxel_coord_x < pt_grid_dims_x - 1
-						&& base_voxel_coord_y < pt_grid_dims_y - 1
-						&& base_voxel_coord_z < pt_grid_dims_z - 1)
+				bool active_voxel = base_voxel_coord_x < pt_grid_dims_x - 1
+										&& base_voxel_coord_y < pt_grid_dims_y - 1
+										&& base_voxel_coord_z < pt_grid_dims_z - 1;
+				if (active_voxel)
 				{
 					getVoxelMinMax(vertex_arr_d, min_vert_val, max_vert_val,
 										base_voxel_coord_x, base_voxel_coord_y, base_voxel_coord_z,
@@ -168,33 +171,35 @@ __global__ void formMetacellsGlobal(T *const vertex_arr_d, PointStruct *const me
 				// Generate mask for threads active during intrawarp phase; all threads in warp run this (or else are exited, i.e. simply not running any code at all)
 				// Call to __ballot_sync() is necessary to determine the thread in warp with largest ID that is still active; this ensures correct delegation of reporting of intrawarp offset results to shared memory
 				// As of time of writing (compute capability 9.0), __ballot_sync() returns an unsigned int
-				const auto intrawarp_mask = __ballot_sync(0xffffffff, true);
+				const auto intrawarp_mask = __ballot_sync(0xffffffff, active_voxel);
 
 				// CUDA-supplied __reduce_*_sync() only defined for integral types
 				if constexpr(std::is_integral<T>::value)
 				{
+					/*
 					min_vert_val = __reduce_min_sync(intrawarp_mask, min_vert_val);
 					max_vert_val = __reduce_max_sync(intrawarp_mask, max_vert_val);
+					*/
 				}
 				else
 				{
-					// Casting necessary as compiler fails to recognise a lambda as an std::function of the same signature and return type (instead recognising it as a lambda [](const std::string &)->double), thereby failing to instantiate template function
-					// Direct passing of std::min() and std::max() fails because there are two template functions that satisfy a two-argument call
+					// Neither CUDA math library-provided min() and max() functions nor host-only std::min() and std::max() work here, so simply use lambdas and cast to correct nvstd::function type
+					// Casting necessary as compiler fails to recognise a lambda as an nvstd::function of the same signature and return type (instead recognising it as a lambda [](<params>)->ret-type), thereby failing to instantiate template function; being declared in on-device code, lambda is automatically a __device__ lambda
 					min_vert_val = warpReduce(intrawarp_mask, min_vert_val,
-												static_cast<std::function<T(const T &, const T &)>>(
-													[](const T &num1, const T &num2) -> T
-													{
-														return num1 <= num2 ? num1 : num2;
-													}
-												)
+												static_cast<nvstd::function<T(const T &, const T &)>>(
+														[](const T &num1, const T &num2) -> T
+														{
+															return num1 <= num2 ? num1 : num2;
+														}
+													)
 											);
 					max_vert_val = warpReduce(intrawarp_mask, max_vert_val,
-												static_cast<std::function<T(const T &, const T &)>>(
-													[](const T &num1, const T &num2) -> T
-													{
-														return num1 >= num2 ? num1 : num2;
-													}
-												)
+												static_cast<nvstd::function<T(const T &, const T &)>>(
+														[](const T &num1, const T &num2) -> T
+														{
+															return num1 >= num2 ? num1 : num2;
+														}
+													)
 											);
 				}
 

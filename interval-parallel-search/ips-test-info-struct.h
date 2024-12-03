@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cstdlib>		// To use std::exit()
+#include <functional>
 #include <random>
 #include <string>
 

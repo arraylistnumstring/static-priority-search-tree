@@ -1,7 +1,8 @@
 #ifndef WARP_SHUFFLES_H
 #define WARP_SHUFFLES_H
 
-#include <functional>
+// Allows use of nvstd::function, an equivalent to std::function that functions on both host and device (but not across the host-device boundary)
+#include <nvfunctional>
 
 #include "dev-symbols.h"	// Need access to __device__ (global memory) variable res_arr_ind_d
 
@@ -187,7 +188,7 @@ __forceinline__ __device__ U warpPrefixSum(const T mask, U num)
 // Demonstrates same behavior as __reduce_*_sync(), but for arbitrary data type T and arbitrary operation
 template <typename T, typename U>
 	requires std::conjunction<std::is_integral<T>, std::is_unsigned<T>, std::is_arithmetic<U>>::value
-__forceinline__ __device__ U warpReduce(const T mask, U num, std::function<U(const U &, const U &)> op)
+__forceinline__ __device__ U warpReduce(const T mask, U num, nvstd::function<U(const U &, const U &)> op)
 {
 	const T shfl_offset_lim = fls(mask) + 1;
 #pragma unroll
