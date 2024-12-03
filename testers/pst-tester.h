@@ -228,7 +228,10 @@ struct PSTTester
 												std::cout << '[' << i << ']';
 												std::cout << '[' << j << ']';
 												std::cout << '[' << k << ']';
-												std::cout << '=' << vertex_arr[lineariseID(i, j, k, id_type_wrapper.pt_grid_dims)];
+												std::cout << '=' << vertex_arr[lineariseID(i, j, k,
+																					id_type_wrapper.pt_grid_dims[Dims::X_DIM_IND],
+																					id_type_wrapper.pt_grid_dims[Dims::Y_DIM_IND]
+																				)];
 												std::cout << '\n';
 											}
 #endif
