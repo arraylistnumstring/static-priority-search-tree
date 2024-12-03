@@ -1,7 +1,6 @@
-#ifndef STATIC_PST_CONCEPTS_H
-#define STATIC_PST_CONCEPTS_H
+#ifndef DATA_SIZE_CONCEPTS_H
+#define DATA_SIZE_CONCEPTS_H
 
-// Helper concept for calcTotArrSizeNumUs()
 template <typename U, typename V>
 concept SizeOfUAtLeastSizeOfV = requires (U u, V v) {sizeof(u) >= sizeof(v);};
 
