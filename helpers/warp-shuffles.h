@@ -5,6 +5,7 @@
 #include <nvfunctional>
 
 #include "dev-symbols.h"	// Need access to __device__ (global memory) variable res_arr_ind_d
+#include "linearise-id.h"
 
 // Forward declarations
 template <typename T>
@@ -178,7 +179,8 @@ __forceinline__ __device__ U warpPrefixSum(const T mask, U num)
 		U addend = __shfl_up_sync(mask, num, shfl_offset);
 
 		// Only modify num if data came from another thread
-		if (threadIdx.x % warpSize >= shfl_offset)
+		if (lineariseID(threadIdx.x, threadIdx.y, threadIdx.z, blockDim.x, blockDim.y) % warpSize
+				>= shfl_offset)
 			num += addend;
 	}
 
@@ -188,20 +190,24 @@ __forceinline__ __device__ U warpPrefixSum(const T mask, U num)
 // Demonstrates same behavior as __reduce_*_sync(), but for arbitrary data type T and arbitrary operation
 template <typename T, typename U>
 	requires std::conjunction<std::is_integral<T>, std::is_unsigned<T>, std::is_arithmetic<U>>::value
-__forceinline__ __device__ U warpReduce(const T mask, U num, nvstd::function<U(const U &, const U &)> op)
+__forceinline__ __device__ U warpReduce(const T mask, U num,
+										nvstd::function<U(const U &, const U &)> op)
 {
-	const T shfl_offset_lim = fls(mask) + 1;
+	const T last_active_lane = fls(mask);
 #pragma unroll
-	for (T shfl_offset = 1; shfl_offset < shfl_offset_lim; shfl_offset <<= 1)
+	for (T shfl_offset = warpSize / 2; shfl_offset > 0; shfl_offset >>= 1)
 	{
-		U operand = __shfl_up_sync(mask, num, shfl_offset);
+		// When the fourth parameter, width, is equal to warpSize (the default value), xor pulls data from the lane with ID equal to (current thread's lane ID XOR shfl_offset), interpreting the result as an int, rather than looking for a particular indexed bit as in mask; this results in threads accessing (own lane ID + shfl_offset) mod warpSize
+		U operand = __shfl_xor_sync(mask, num, shfl_offset);
 
-		if (threadIdx.x % warpSize >= shfl_offset)
+		// Check that value came from a valid thread
+		if (lineariseID(threadIdx.x, threadIdx.y, threadIdx.z, blockDim.x, blockDim.y) % warpSize ^ shfl_offset
+				<= last_active_lane)
 			num = op(operand, num);
 	}
 
 	// All warps get final result from last active thread
-	return __shfl_sync(mask, num, shfl_offset_lim - 1);
+	return num;
 }
 
 #endif

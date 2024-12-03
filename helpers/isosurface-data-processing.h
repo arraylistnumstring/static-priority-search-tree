@@ -12,6 +12,7 @@
 #include "dev-symbols.h"
 #include "exit-status-codes.h"
 #include "gpu-err-chk.h"
+#include "linearise-id.h"
 #include "warp-shuffles.h"
 
 // For enums, first value (if unspecified) is guaranteed to be 0, and all other unspecified values have value (previous enum's value) + 1
@@ -27,18 +28,6 @@ __forceinline__ __device__ void getVoxelMinMax(T *const vertex_arr_d, T &min, T 
 													const GridDimType pt_grid_dims_x,
 													const GridDimType pt_grid_dims_y
 												);
-
-template <typename GridDimType>
-	requires std::is_integral<GridDimType>::value
-// Preprocessor directives to add keywords based on whether CUDA GPU support is available; __CUDA_ARCH__ is either undefined or defined as 0 in host code
-#if (defined(__CUDA_ARCH__) && (__CUDA_ARCH__ > 0))
-__forceinline__ __host__ __device__
-#else
-inline
-#endif
-// grid_dims split into 3 separate variables for compatability with on-device code
-GridDimType lineariseID(const GridDimType x, const GridDimType y, const GridDimType z,
-						const GridDimType grid_dims_x, const GridDimType grid_dims_y);
 
 
 template <class PointStruct, typename T, typename GridDimType>
@@ -254,20 +243,6 @@ __forceinline__ __device__ void getVoxelMinMax(T *const vertex_arr_d, T &min, T 
 			}
 		}
 	}
-}
-
-template <typename GridDimType>
-	requires std::is_integral<GridDimType>::value
-// Preprocessor directives to add keywords based on whether CUDA GPU support is available; __CUDA_ARCH__ is either undefined or defined as 0 in host code
-#if (defined(__CUDA_ARCH__) && (__CUDA_ARCH__ > 0))
-__forceinline__ __host__ __device__
-#else
-inline
-#endif
-GridDimType lineariseID(const GridDimType x, const GridDimType y, const GridDimType z,
-						GridDimType grid_dims_x, const GridDimType grid_dims_y)
-{
-	return x + (y + z * grid_dims_y) * grid_dims_x;
 }
 
 template <typename T, typename GridDimType>
