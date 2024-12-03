@@ -23,7 +23,7 @@ StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::StaticPSTCPUIter(Poin
 
 	// Use of () after new and new[] causes value-initialisation (to 0) starting in C++03; needed for any nodes that technically contain no data
 	// constexpr if is a C++17 feature that only compiles the branch of code that evaluates to true at compile-time, saving executable space and execution runtime
-	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>::value)
+	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
 	{
 		// No IDs present
 		size_t tot_arr_size_num_Ts = calcTotArrSizeNumTs(num_elem_slots, num_val_subarrs);
@@ -183,7 +183,7 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::threeSidedSearch
 					res_arr[num_res_elems].dim1_val = curr_node_dim1_val;
 					res_arr[num_res_elems].dim2_val = curr_node_dim2_val;
 					// As IDs are only accessed if the node is to be reported and if IDs exist, don't waste a register on it (and avoid compilation failures from attempting to instantiate a potential void variable)
-					if constexpr (HasID<PointStructTemplate<T, IDType, num_IDs>::value)
+					if constexpr (HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
 						res_arr[num_res_elems].id = getIDsRoot(root, num_elem_slots)[search_ind];
 				}
 				num_res_elems++;
@@ -290,7 +290,7 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSear
 				{
 					res_arr[num_res_elems].dim1_val = curr_node_dim1_val;
 					res_arr[num_res_elems].dim2_val = curr_node_dim2_val;
-					if constexpr (HasID<PointStructTemplate<T, IDType, num_IDs>::value)
+					if constexpr (HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
 						res_arr[num_res_elems].id = getIDsRoot(root, num_elem_slots)[search_ind];
 				}
 				num_res_elems++;
@@ -382,7 +382,7 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::twoSidedRightSea
 				{
 					res_arr[num_res_elems].dim1_val = curr_node_dim1_val;
 					res_arr[num_res_elems].dim2_val = curr_node_dim2_val;
-					if constexpr (HasID<PointStructTemplate<T, IDType, num_IDs>::value)
+					if constexpr (HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
 						res_arr[num_res_elems].id = getIDsRoot(root, num_elem_slots)[search_ind];
 				}
 				num_res_elems++;
@@ -727,7 +727,7 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::printRecur(std::
 	os << prefix << '(' << getDim1ValsRoot(tree_root, num_elem_slots)[curr_ind]
 				<< ", " << getDim2ValsRoot(tree_root, num_elem_slots)[curr_ind]
 				<< "; " << getMedDim1ValsRoot(tree_root, num_elem_slots)[curr_ind];
-	if constexpr (HasID<PointStructTemplate<T, IDType, num_IDs>::value)
+	if constexpr (HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
 		os << "; " << getIDsRoot(tree_root, num_elem_slots)[curr_ind];
 	os << ')';
 	const unsigned char curr_node_bitcode = getBitcodesRoot(tree_root, num_elem_slots)[curr_ind];

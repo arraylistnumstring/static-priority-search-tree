@@ -105,22 +105,22 @@ __global__ void formMetacellsGlobal(T *const vertex_arr_d, PointStruct *const me
 {
 
 	T min_vert_val, max_vert_val;
-	// Repeat over entire metacell grid
+	// Repeat over entire voxel grid
 	// Data is z-major, then y-major, then x-major (i.e. x-dimension index changes the fastest, followed by y-index, then z-index)
 #pragma unroll
-	for (GridDimType k = 0; k < metacell_grid_dims_z; k += gridDim.z)
+	for (GridDimType k = 0; k < pt_grid_dims_z; k += gridDim.z * blockDim.z)
 	{
 #pragma unroll
-		for (GridDimType j = 0; j < metacell_grid_dims_y; j += gridDim.y)
+		for (GridDimType j = 0; j < pt_grid_dims_y; j += gridDim.y * blockDim.y)
 		{
 #pragma unroll
-			for (GridDimType i = 0; i < metacell_grid_dims_x; i += gridDim.x)
+			for (GridDimType i = 0; i < pt_grid_dims_x; i += gridDim.x * blockDim.x)
 			{
 				// Check that voxel in question exists
-				GridDimType base_voxel_coord_x = i * gridDim.x * blockDim.x + blockIdx.x * blockDim.x + threadIdx.x;
-				GridDimType base_voxel_coord_y = j * gridDim.y * blockDim.y + blockIdx.y * blockDim.y + threadIdx.y;
-				GridDimType base_voxel_coord_z = k * gridDim.z * blockDim.z + blockIdx.z * blockDim.z + threadIdx.z;
-				// One voxel is associated with each vertex, with the exception of the last voxels in each dimension (i.e. those vertices with at least one coordinate of value pt_grid_dims_[x-z] - 1)
+				GridDimType base_voxel_coord_x = i + blockIdx.x * blockDim.x + threadIdx.x;
+				GridDimType base_voxel_coord_y = j + blockIdx.y * blockDim.y + threadIdx.y;
+				GridDimType base_voxel_coord_z = k + blockIdx.z * blockDim.z + threadIdx.z;
+				// One voxel is associated with each vertex, with the exception of the last vertices in each dimension (i.e. those vertices with at least one coordinate of value pt_grid_dims_[x-z] - 1)
 				if (base_voxel_coord_x < pt_grid_dims_x - 1
 						&& base_voxel_coord_y < pt_grid_dims_y - 1
 						&& base_voxel_coord_z < pt_grid_dims_z - 1)
@@ -136,14 +136,17 @@ __global__ void formMetacellsGlobal(T *const vertex_arr_d, PointStruct *const me
 				// Single thread in block writes result to global memory array
 				if (threadIdx.x == 0)
 				{
-					GridDimType metacellID = lineariseID(base_voxel_coord_x / metacell_dims_x,
-															base_voxel_coord_y / metacell_dims_y,
-															base_voxel_coord_z / metacell_dims_z
+					// Cast necessary, as an arithemtic operation (even of two types that are both small, e.g. GridDimType = char) effects an up-casting to a datatype at least as large as int, whereas directly supplied variables remain as the previous type, causing the overall template instantiation of lineariseID to fail
+					GridDimType metacellID = lineariseID(static_cast<GridDimType>(base_voxel_coord_x / metacell_dims_x),
+															static_cast<GridDimType>(base_voxel_coord_y / metacell_dims_y),
+															static_cast<GridDimType>(base_voxel_coord_z / metacell_dims_z),
+															metacell_grid_dims_x,
+															metacell_grid_dims_y
 														);
-					pt_arr[metacellID].dim1_val = min_vert_val;
-					pt_arr[metacellID].dim2_val = max_vert_val;
+					metacell_arr_d[metacellID].dim1_val = min_vert_val;
+					metacell_arr_d[metacellID].dim2_val = max_vert_val;
 					if constexpr (HasID<PointStruct>::value)
-						pt_arr[metacellID].id = metacellID;
+						metacell_arr_d[metacellID].id = metacellID;
 				}
 			}
 		}
@@ -170,7 +173,6 @@ __forceinline__ __device__ void getVoxelMinMax(T *const vertex_arr_d, T &min, T 
 		{
 			for (GridDimType i = 0; i < 2; i++)
 			{
-				// Cast necessary, as the addition (even of two types that are both small, e.g. GridDimType = char) effects an up-casting to int, whereas pt_grid_dims variables remain as the previous type, causing the overall instantiation of lineariseID to fail
 				T curr_vert = vertex_arr_d[lineariseID(static_cast<GridDimType>(base_voxel_coord_x + i),
 															static_cast<GridDimType>(base_voxel_coord_y + j),
 															static_cast<GridDimType>(base_voxel_coord_z + k),

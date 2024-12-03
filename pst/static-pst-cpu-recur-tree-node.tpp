@@ -17,7 +17,7 @@ class StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::TreeNode
 		virtual void print(std::ostream &os) const
 		{
 			os << '(' << pt.dim1_val << ", " << pt.dim2_val  << "; " << median_dim1_val;
-			if constexpr (HasID<PointStructTemplate<T, IDType, num_IDs>::value)
+			if constexpr (HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
 				os << "; " << pt.id;
 			os << ')';
 		};

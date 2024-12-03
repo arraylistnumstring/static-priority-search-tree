@@ -61,7 +61,7 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T, PointStructTemplate,
 			getDim1ValsRoot(root, num_elem_slots)[node_ind] = source_data.dim1_val;
 			getDim2ValsRoot(root, num_elem_slots)[node_ind] = source_data.dim2_val;
 			getMedDim1ValsRoot(root, num_elem_slots)[node_ind] = median_dim1_val;
-			if constexpr (HasID<PointStructTemplate<T, IDType, num_IDs>::value)
+			if constexpr (HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
 				getIDsRoot(root, num_elem_slots)[node_ind] = source_data.id;
 		};
 
@@ -98,7 +98,7 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T, PointStructTemplate,
 		static unsigned char* getBitcodesRoot(T *const root, const size_t num_elem_slots)
 			// Use reinterpret_cast for pointer conversions
 			{
-				if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>::value)
+				if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
 					// Argument of cast is of type T *
 					return reinterpret_cast<unsigned char*>(root + num_val_subarrs * num_elem_slots);
 				else
