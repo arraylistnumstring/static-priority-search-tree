@@ -10,6 +10,7 @@
 #include "dev-symbols.h"
 #include "exit-status-codes.h"
 #include "gpu-err-chk.h"
+#include "warp-shuffles.h"
 
 // For enums, first value (if unspecified) is guaranteed to be 0, and all other unspecified values have value (previous enum's value) + 1
 enum Dims { X_DIM_IND, Y_DIM_IND, Z_DIM_IND, NUM_DIMS };
@@ -18,12 +19,12 @@ enum Dims { X_DIM_IND, Y_DIM_IND, Z_DIM_IND, NUM_DIMS };
 template <typename T, typename GridDimType>
 	requires std::is_integral<GridDimType>::value
 __forceinline__ __device__ void getVoxelMinMax(T *const vertex_arr_d, T &min, T &max,
-									const GridDimType base_voxel_coord_x,
-									const GridDimType base_voxel_coord_y,
-									const GridDimType base_voxel_coord_z,
-									const GridDimType pt_grid_dims_x,
-									const GridDimType pt_grid_dims_y
-									);
+													const GridDimType base_voxel_coord_x,
+													const GridDimType base_voxel_coord_y,
+													const GridDimType base_voxel_coord_z,
+													const GridDimType pt_grid_dims_x,
+													const GridDimType pt_grid_dims_y
+												);
 
 template <typename GridDimType>
 	requires std::is_integral<GridDimType>::value
@@ -66,19 +67,22 @@ PointStruct *formMetacells(T *const vertex_arr_d, GridDimType pt_grid_dims[Dims:
 
 	// Set grid size to be equal to number of metacells, unless this exceeds the GPU's capabilities, as determined by its compute capability-associated technical specifications
 	// Use of decltype to allow for appropriate instantiation of template function std::min (as implicit casting does not take place among its parameters)
-	dim3 num_blocks(std::min(metacell_grid_dims[Dims::X_DIM_IND], MAX_X_DIM_NUM_BLOCKS),
-						std::min(metacell_grid_dims[Dims::Y_DIM_IND], MAX_Y_DIM_NUM_BLOCKS),
-						std::min(metacell_grid_dims[Dims::Z_DIM_IND], MAX_Z_DIM_NUM_BLOCKS)
+	dim3 num_blocks(std::min(static_cast<decltype(MAX_X_DIM_NUM_BLOCKS)>(metacell_grid_dims[Dims::X_DIM_IND]),
+								MAX_X_DIM_NUM_BLOCKS),
+					std::min(static_cast<decltype(MAX_Y_DIM_NUM_BLOCKS)>(metacell_grid_dims[Dims::Y_DIM_IND]),
+								MAX_Y_DIM_NUM_BLOCKS),
+					std::min(static_cast<decltype(MAX_Z_DIM_NUM_BLOCKS)>(metacell_grid_dims[Dims::Z_DIM_IND]),
+								MAX_Z_DIM_NUM_BLOCKS)
 					);
 
 	// Array initialiser notation
 	GridDimType threads_per_block_dims[Dims::NUM_DIMS] = {
 															std::min(metacell_dims[Dims::X_DIM_IND],
-																		MAX_X_DIM_THREADS_PER_BLOCK),
+																		static_cast<GridDimType>(MAX_X_DIM_THREADS_PER_BLOCK)),
 															std::min(metacell_dims[Dims::Y_DIM_IND],
-																		MAX_Y_DIM_THREADS_PER_BLOCK),
+																		static_cast<GridDimType>(MAX_Y_DIM_THREADS_PER_BLOCK)),
 															std::min(metacell_dims[Dims::Z_DIM_IND],
-																		MAX_Z_DIM_THREADS_PER_BLOCK)
+																		static_cast<GridDimType>(MAX_Z_DIM_THREADS_PER_BLOCK))
 														};
 	
 
@@ -128,9 +132,9 @@ __global__ void formMetacellsGlobal(T *const vertex_arr_d, PointStruct *const me
 										GridDimType metacell_dims_x, GridDimType metacell_dims_y, GridDimType metacell_dims_z
 									)
 {
-	extern __shared__ T s[];
-	T *warp_level_min_vert = s;
-	T *warp_level_max_vert = s + warps_per_block;
+	extern __shared__ char s[];
+	T *warp_level_min_vert = reinterpret_cast<T *>(s);
+	T *warp_level_max_vert = reinterpret_cast<T *>(s) + warps_per_block;
 
 	T min_vert_val, max_vert_val;
 	// Repeat over entire voxel grid
@@ -166,8 +170,39 @@ __global__ void formMetacellsGlobal(T *const vertex_arr_d, PointStruct *const me
 				// As of time of writing (compute capability 9.0), __ballot_sync() returns an unsigned int
 				const auto intrawarp_mask = __ballot_sync(0xffffffff, true);
 
-				min_vert_val = __reduce_min_sync(intrawarp_mask, min_vert_val);
-				max_vert_val = __reduce_max_sync(intrawarp_mask, max_vert_val);
+				// CUDA-supplied __reduce_*_sync() only defined for integral types
+				if constexpr(std::is_integral<T>::value)
+				{
+					min_vert_val = __reduce_min_sync(intrawarp_mask, min_vert_val);
+					max_vert_val = __reduce_max_sync(intrawarp_mask, max_vert_val);
+				}
+				else
+				{
+					// Casting necessary as compiler fails to recognise a lambda as an std::function of the same signature and return type (instead recognising it as a lambda [](const std::string &)->double), thereby failing to instantiate template function
+					// Direct passing of std::min() and std::max() fails because there are two template functions that satisfy a two-argument call
+					min_vert_val = warpReduce(intrawarp_mask, min_vert_val,
+												static_cast<std::function<T(const T &, const T &)>>(
+													[](const T &num1, const T &num2) -> T
+													{
+														return num1 <= num2 ? num1 : num2;
+													}
+												)
+											);
+					max_vert_val = warpReduce(intrawarp_mask, max_vert_val,
+												static_cast<std::function<T(const T &, const T &)>>(
+													[](const T &num1, const T &num2) -> T
+													{
+														return num1 >= num2 ? num1 : num2;
+													}
+												)
+											);
+				}
+
+				if constexpr (interwarp_reduce)
+				{
+					warp_level_min_vert[lineariseID(threadIdx.x, threadIdx.y, threadIdx.z, blockDim.x, blockDim.y) / warpSize] = min_vert_val;
+					warp_level_max_vert[lineariseID(threadIdx.x, threadIdx.y, threadIdx.z, blockDim.x, blockDim.y) / warpSize] = max_vert_val;
+				}
 
 				// Interwarp reduce for metacell min-max val determination
 
@@ -194,12 +229,12 @@ __global__ void formMetacellsGlobal(T *const vertex_arr_d, PointStruct *const me
 template <typename T, typename GridDimType>
 	requires std::is_integral<GridDimType>::value
 __forceinline__ __device__ void getVoxelMinMax(T *const vertex_arr_d, T &min, T &max,
-									const GridDimType base_voxel_coord_x,
-									const GridDimType base_voxel_coord_y,
-									const GridDimType base_voxel_coord_z,
-									const GridDimType pt_grid_dims_x,
-									const GridDimType pt_grid_dims_y
-								)
+													const GridDimType base_voxel_coord_x,
+													const GridDimType base_voxel_coord_y,
+													const GridDimType base_voxel_coord_z,
+													const GridDimType pt_grid_dims_x,
+													const GridDimType pt_grid_dims_y
+												)
 {
 	// Each thread accesses the vertex of its voxel with the lowest indices in each dimension and uses this scalar value as the initial value with which future values are compared
 	max = min = vertex_arr_d[lineariseID(base_voxel_coord_x, base_voxel_coord_y, base_voxel_coord_z, pt_grid_dims_x, pt_grid_dims_y)];

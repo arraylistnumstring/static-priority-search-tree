@@ -1,6 +1,8 @@
 #ifndef WARP_SHUFFLES_H
 #define WARP_SHUFFLES_H
 
+#include <functional>
+
 #include "dev-symbols.h"	// Need access to __device__ (global memory) variable res_arr_ind_d
 
 // Forward declarations
@@ -14,7 +16,7 @@ template <typename T, typename U>
 								std::is_unsigned<T>,
 								std::is_arithmetic<U>
 			>::value
-__forceinline__ __device__ void warpPrefixSum(const T mask, U &num);
+__forceinline__ __device__ U warpPrefixSum(const T mask, U num);
 
 // To be applicable to both IPS and PST, logic that is based on number-of-elements boundary conditions has been removed; instead, the entire block does all calculations, with each thread deciding (in the scope that calls calcAllocReportIndOffset()) whether or not to report a result based on its value of cell_active
 /*
@@ -42,7 +44,8 @@ __forceinline__ __device__ T calcAllocReportIndOffset(const bool cell_active, T 
 	// As of time of writing (compute capability 9.0), __ballot_sync() returns an unsigned int
 	const auto intrawarp_mask = __ballot_sync(0xffffffff, true);
 
-	warpPrefixSum(intrawarp_mask, thread_level_num_elems);	// Intrawarp prefix sum
+	// Intrawarp prefix sum
+	thread_level_num_elems = warpPrefixSum(intrawarp_mask, thread_level_num_elems);
 
 	// Exclusive prefix sum result is simply the element in the preceding index of the result of the inclusive prefix sum; note that as each thread is responsible for at most 1 output element, this is effectively thread_level_num_elems - 1_{cell_active}, where 1_{cell_active} is the indicator function for whether the thread's own value of cell_active is true
 	// Use of __shfl_up_sync() in this instance is for generality and for ease of calculation
@@ -104,7 +107,7 @@ __forceinline__ __device__ T calcAllocReportIndOffset(const bool cell_active, T 
 
 					// Do inclusive prefix sum on warp-level values
 					// Interwarp prefix sum
-					warpPrefixSum(interwarp_mask, warp_level_num_elems);
+					warp_level_num_elems = warpPrefixSum(interwarp_mask, warp_level_num_elems);
 
 					// Store result in shared memory, including the effect of the offset
 					warp_level_num_elems_arr[i + threadIdx.x] = warp_gp_offset + warp_level_num_elems;
@@ -158,7 +161,7 @@ template <typename T, typename U>
 								std::is_unsigned<T>,
 								std::is_arithmetic<U>
 			>::value
-__forceinline__ __device__ void warpPrefixSum(const T mask, U &num)
+__forceinline__ __device__ U warpPrefixSum(const T mask, U num)
 {
 	// As a comma-delimited declaration does not allow declarations of different types (including variables of different const-ness), create the const-valued shfl_offset_lim outside of the loop initialiser, i.e. before shfl_offset
 	// At time of writing (compute capability 9.0), warp size is 32; hence, fls() will always be at most warpSize - 1 (32 bits, with the leftmost 0-indexed as bit 31), so shfl_offset_lim will evaluate to warpSize if the entire warp is active
@@ -177,6 +180,27 @@ __forceinline__ __device__ void warpPrefixSum(const T mask, U &num)
 		if (threadIdx.x % warpSize >= shfl_offset)
 			num += addend;
 	}
+
+	return num;
+}
+
+// Demonstrates same behavior as __reduce_*_sync(), but for arbitrary data type T and arbitrary operation
+template <typename T, typename U>
+	requires std::conjunction<std::is_integral<T>, std::is_unsigned<T>, std::is_arithmetic<U>>::value
+__forceinline__ __device__ U warpReduce(const T mask, U num, std::function<U(const U &, const U &)> op)
+{
+	const T shfl_offset_lim = fls(mask) + 1;
+#pragma unroll
+	for (T shfl_offset = 1; shfl_offset < shfl_offset_lim; shfl_offset <<= 1)
+	{
+		U operand = __shfl_up_sync(mask, num, shfl_offset);
+
+		if (threadIdx.x % warpSize >= shfl_offset)
+			num = op(operand, num);
+	}
+
+	// All warps get final result from last active thread
+	return __shfl_sync(mask, num, shfl_offset_lim - 1);
 }
 
 #endif

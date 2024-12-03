@@ -58,9 +58,10 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 												const size_t num_elems, RetType *const res_arr_d,
 												const T search_val)
 {
-	extern __shared__ unsigned long long s[];
-	unsigned long long &block_level_start_ind = *s;
-	unsigned long long *warp_level_num_elems_arr = s + 1;
+	// Use char datatype because extern variables must be consistent across all declarations and because char is the smallest possible datatype
+	extern __shared__ char s[];
+	unsigned long long &block_level_start_ind = *reinterpret_cast<unsigned long long *>(s);
+	unsigned long long *warp_level_num_elems_arr = reinterpret_cast<unsigned long long *>(s) + 1;
 
 	// Liu et al. kernel; iterate over all PointStructTemplate<T, IDType, num_IDs> elements in pt_arr_d
 	// Due to presence of __syncthreads() calls within for loop (specifically, in calcAllocReportIndOffset()), whole block must iterate if at least one thread has an element to process
