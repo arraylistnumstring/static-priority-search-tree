@@ -162,38 +162,65 @@ __global__ void formMetacellsGlobal(T *const vertex_arr_d, PointStruct *const me
 				// As of time of writing (compute capability 9.0), __ballot_sync() returns an unsigned int
 				const auto intrawarp_mask = __ballot_sync(0xffffffff, active_voxel);
 
-				// CUDA-supplied __reduce_*_sync() is only defined for types unsigned and int, and isn't even found for some reason when compiling, so use user-defined warpReduce() instead
-				// Neither CUDA math library-provided min() and max() functions nor host-only std::min() and std::max() work here, so simply use lambdas and cast to correct nvstd::function type
+				// Neither CUDA math library-provided min() and max() functions nor host-only std::min() and std::max() compile when passed as parameters to device functions, so simply use lambdas and cast to correct nvstd::function type
 				// Casting necessary as compiler fails to recognise a lambda as an nvstd::function of the same signature and return type (instead recognising it as a lambda [](<params>)->ret-type), thereby failing to instantiate template function; being declared in on-device code, lambda is automatically a __device__ lambda
-				min_vert_val = warpReduce(intrawarp_mask, min_vert_val,
-											static_cast<nvstd::function<T(const T &, const T &)>>(
-													[](const T &num1, const T &num2) -> T
-													{
-														return num1 <= num2 ? num1 : num2;
-													}
-												)
-										);
-				max_vert_val = warpReduce(intrawarp_mask, max_vert_val,
-											static_cast<nvstd::function<T(const T &, const T &)>>(
-													[](const T &num1, const T &num2) -> T
-													{
-														return num1 >= num2 ? num1 : num2;
-													}
-												)
-										);
+				nvstd::function<T(const T &, const T &)> min_op
+						= static_cast<nvstd::function<T(const T &, const T &)>>(
+									[](const T &num1, const T &num2) -> T
+									{
+										return num1 <= num2 ? num1 : num2;
+									}
+								);
 
-				if constexpr (!interwarp_reduce)
-				{
-				}
-				else
-				{
-					warp_level_min_vert[lineariseID(threadIdx.x, threadIdx.y, threadIdx.z, blockDim.x, blockDim.y) / warpSize] = min_vert_val;
-					warp_level_max_vert[lineariseID(threadIdx.x, threadIdx.y, threadIdx.z, blockDim.x, blockDim.y) / warpSize] = max_vert_val;
-				}
+				nvstd::function<T(const T &, const T &)> max_op
+						= static_cast<nvstd::function<T(const T &, const T &)>>(
+									[](const T &num1, const T &num2) -> T
+									{
+										return num1 >= num2 ? num1 : num2;
+									}
+								);
+
+				// CUDA-supplied __reduce_*_sync() is only defined for types unsigned and int, and isn't even found for some reason when compiling, so use user-defined warpReduce() instead
+				min_vert_val = warpReduce(intrawarp_mask, min_vert_val, min_op);
+				max_vert_val = warpReduce(intrawarp_mask, max_vert_val, max_op);
 
 				// Interwarp reduce for metacell min-max val determination
+				if constexpr (interwarp_reduce)
+				{
+					const GridDimType lin_thread_ID = lineariseID(threadIdx.x, threadIdx.y, threadIdx.z,
+																	blockDim.x, blockDim.y);
 
-				// Single thread in block writes result to global memory array
+					// First thread in warp writes result to shared memory
+					if (lin_thread_ID % warpSize == 0)
+					{
+						warp_level_min_vert[lin_thread_ID / warpSize] = min_vert_val;
+						warp_level_max_vert[lin_thread_ID / warpSize] = max_vert_val;
+					}
+
+					// Warp-level info must be ready to use at the block level
+					__syncthreads();
+
+					// Only one warp should be active for speed and correctness
+					if (lin_thread_ID / warpSize == 0)
+					{
+#pragma unroll
+						for (auto l = 0; l < warps_per_block; l += warpSize)
+						{
+							const auto interwarp_mask = __ballot_sync(0xffffffff,
+																		l + lin_thread_ID < warps_per_block);
+
+							// Inter-warp condition
+							if (l + lin_thread_ID < warps_per_block)
+							{
+								// Get per-warp minimum and maximum vertex values
+								min_vert_val = warp_level_min_vert[lin_thread_ID / warpSize];
+								max_vert_val = warp_level_max_vert[lin_thread_ID / warpSize];
+							}
+						}
+					}
+				}
+
+				// All threads in first warp have the correct overall result for the metacell; single thread in block writes result to global memory array
 				if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0)
 				{
 					// Cast necessary, as an arithemtic operation (even of two types that are both small, e.g. GridDimType = char) effects an up-casting to a datatype at least as large as int, whereas directly supplied variables remain as the previous type, causing the overall template instantiation of lineariseID to fail
