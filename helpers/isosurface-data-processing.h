@@ -107,6 +107,7 @@ __global__ void formMetacellsGlobal(T *const vertex_arr_d, PointStruct *const me
 	T min_vert_val, max_vert_val;
 	// Repeat over entire voxel grid
 	// Data is z-major, then y-major, then x-major (i.e. x-dimension index changes the fastest, followed by y-index, then z-index)
+	// Entire block is active if at least one thread is active
 #pragma unroll
 	for (GridDimType k = 0; k < pt_grid_dims_z; k += gridDim.z * blockDim.z)
 	{
