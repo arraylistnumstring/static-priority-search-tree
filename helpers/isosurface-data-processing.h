@@ -169,7 +169,7 @@ __forceinline__ __device__ void getVoxelMinMax(T *const vertex_arr_d, T &min, T 
 			}
 		}
 	}
-};
+}
 
 template <typename GridDimType>
 	requires std::is_integral<GridDimType>::value
@@ -183,7 +183,7 @@ GridDimType lineariseID(const GridDimType x, const GridDimType y, const GridDimT
 						GridDimType grid_dims_x, const GridDimType grid_dims_y)
 {
 	return x + (y + z * grid_dims_y) * grid_dims_x;
-};
+}
 
 template <typename T, typename GridDimType>
 	requires std::is_integral<GridDimType>::value
