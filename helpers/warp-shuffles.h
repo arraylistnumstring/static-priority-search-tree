@@ -26,7 +26,7 @@ __forceinline__ __device__ void warpPrefixSum(const T mask, U &num);
 
 	When doing intrawarp and interwarp shuffles, calcAllocReportIndOffset():
 		- Allocates space in the output array;
-		- Stores the first index allocated for the block in *block_level_start_ind_ptr (in a concurrency-safe way such that this variable can safely be a location in shared memory); and
+		- Stores the first index allocated for the block in *block_level_start_ind_ptr (in a safely concurrent way such that this variable can be a location in shared memory); and
 		- Returns for each thread the offset from the first index allocated for the block in the output array, such that a thread can safely write to index (*block_level_start_ind_ptr + block_level_offset) in the output array.
 
 	Pre-conditions:

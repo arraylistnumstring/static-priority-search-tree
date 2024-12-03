@@ -131,8 +131,8 @@ __global__ void formMetacellsGlobal(T *const vertex_arr_d, PointStruct *const me
 										pt_grid_dims_x, pt_grid_dims_y);
 				}
 
-				// Intrawarp shuffle for metacell min-max val determination
-				// Interwarp shuffle for metacell min-max val determination
+				// Intrawarp reduce for metacell min-max val determination
+				// Interwarp reduce for metacell min-max val determination
 
 				// Single thread in block writes result to global memory array
 				if (threadIdx.x == 0)
