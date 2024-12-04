@@ -232,7 +232,7 @@ struct PSTTester
 														+ std::to_string(id_type_wrapper.num_ids_wrapper.dev_ind)
 														+ " of "
 														+ std::to_string(id_type_wrapper.num_ids_wrapper.num_devs)
-														+ "total devices: "
+														+ " total devices: "
 													);
 									// Implicitly synchronous from the host's point of view as only pinned memory can have truly asynchronous cudaMemcpy() calls
 									gpuErrorCheck(cudaMemcpy(vertex_arr_d, vertex_arr, num_verts * sizeof(T), cudaMemcpyDefault),
@@ -240,7 +240,7 @@ struct PSTTester
 														+ std::to_string(id_type_wrapper.num_ids_wrapper.dev_ind)
 														+ " of "
 														+ std::to_string(id_type_wrapper.num_ids_wrapper.num_devs)
-														+ "total devices: "
+														+ " total devices: "
 													);
 
 									// Prior cudaMemcpy() is staged, if not already written through, so can free vertex_arr
@@ -280,13 +280,13 @@ struct PSTTester
 														+ std::to_string(id_type_wrapper.num_ids_wrapper.dev_ind)
 														+ " of "
 														+ std::to_string(id_type_wrapper.num_ids_wrapper.num_devs)
-														+ "total devices: ");
+														+ " total devices: ");
 										gpuErrorCheck(cudaFree(pt_arr),
 														"Error in freeing on-device array of metacell PointStructs on device "
 														+ std::to_string(id_type_wrapper.num_ids_wrapper.dev_ind)
 														+ " of "
 														+ std::to_string(id_type_wrapper.num_ids_wrapper.num_devs)
-														+ "total devices: ");
+														+ " total devices: ");
 
 										pt_arr = pt_arr_host;
 									}
@@ -308,7 +308,7 @@ struct PSTTester
 												+ std::to_string(id_type_wrapper.num_ids_wrapper.dev_ind)
 												+ " of "
 												+ std::to_string(id_type_wrapper.num_ids_wrapper.num_devs)
-												+ "total devices: ");
+												+ " total devices: ");
 								}
 							}
 
@@ -322,7 +322,7 @@ struct PSTTester
 													+ std::to_string(num_elems/2) + " on device "
 													+ std::to_string(id_type_wrapper.num_ids_wrapper.dev_ind)
 													+ " of " + std::to_string(id_type_wrapper.num_ids_wrapper.num_devs)
-													+ "total devices: ");
+													+ " total devices: ");
 							}
 
 							cudaEvent_t construct_start_CUDA, construct_stop_CUDA, search_start_CUDA, search_stop_CUDA;
@@ -603,7 +603,7 @@ struct PSTTester
 											+ std::to_string(num_ids_wrapper.dev_props.totalGlobalMem)
 											+ " B on device " + std::to_string(num_ids_wrapper.dev_ind)
 											+ " of " + std::to_string(num_ids_wrapper.num_devs)
-											+ "total devices: ");
+											+ " total devices: ");
 							}
 						}
 
@@ -616,7 +616,7 @@ struct PSTTester
 												+ std::to_string(num_elems/2) + " on device "
 												+ std::to_string(num_ids_wrapper.dev_ind)
 												+ " of " + std::to_string(num_ids_wrapper.num_devs)
-												+ "total devices: ");
+												+ " total devices: ");
 						}
 
 

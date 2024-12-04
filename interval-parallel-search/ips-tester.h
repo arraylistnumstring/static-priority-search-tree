@@ -190,7 +190,7 @@ struct IPSTester
 													+ std::to_string(id_type_wrapper.num_ids_wrapper.dev_ind)
 													+ " of "
 													+ std::to_string(id_type_wrapper.num_ids_wrapper.num_devs)
-													+ "total devices: "
+													+ " total devices: "
 												);
 								// Implicitly synchronous from the host's point of view as only pinned memory can have truly asynchronous cudaMemcpy() calls
 								gpuErrorCheck(cudaMemcpy(vertex_arr_d, vertex_arr, num_verts * sizeof(T), cudaMemcpyDefault),
@@ -198,7 +198,7 @@ struct IPSTester
 													+ std::to_string(id_type_wrapper.num_ids_wrapper.dev_ind)
 													+ " of "
 													+ std::to_string(id_type_wrapper.num_ids_wrapper.num_devs)
-													+ "total devices: "
+													+ " total devices: "
 												);
 
 								// Prior cudaMemcpy() is staged, if not already written through, so can free vertex_arr
