@@ -173,6 +173,9 @@ __forceinline__ __device__ U warpPrefixSum(const T mask, U num)
 #pragma unroll
 	for (T shfl_offset = 1; shfl_offset < shfl_offset_lim; shfl_offset <<= 1)
 	{
+#ifdef DEBUG
+		std::cout << "About to begin shfl_offset = " << shfl_offset << " reduction\n";
+#endif
 		// Copies value of variable thread_level_num_elems from thread with lane ID that is shfl_offset less than current thread's lane ID
 		// Threads can only receive data from other threads participating in the __shfl_*sync() call
 		// Attempting to read from an invalid lane ID or non-participating lane causes a thread to read from its own variable
@@ -182,6 +185,10 @@ __forceinline__ __device__ U warpPrefixSum(const T mask, U num)
 		if (lineariseID(threadIdx.x, threadIdx.y, threadIdx.z, blockDim.x, blockDim.y) % warpSize
 				>= shfl_offset)
 			num += addend;
+
+#ifdef DEBUG
+		std::cout << "Completed shfl_offset = " << shfl_offset << " reduction\n\n";
+#endif
 	}
 
 	return num;
