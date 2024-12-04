@@ -17,7 +17,7 @@
 #include "rand-data-pt-generator.h"
 
 
-enum DataType {CHAR, DOUBLE, FLOAT, INT, LONG, UNSIGNED_INT, UNSIGNED_LONG};
+enum DataType {DOUBLE, FLOAT, INT, LONG, UNSIGNED_INT, UNSIGNED_LONG};
 
 
 template <bool timed_CUDA>
@@ -142,7 +142,7 @@ struct IPSTester
 						PointStructTemplate<T, IDType, num_IDs> *pt_arr;
 
 						// Will only be non-nullptr-valued if reading from an input file
-						T *vertex_arr = nullptr;
+						T *vertex_arr_d = nullptr;
 
 #ifdef DEBUG
 						std::cout << "Input file: " << id_type_wrapper.num_ids_wrapper.ips_tester.input_file << '\n';
@@ -169,34 +169,51 @@ struct IPSTester
 						{
 							if (id_type_wrapper.num_ids_wrapper.ips_tester.input_file != "")
 							{
+								IDType num_verts = 1;
+								for (int i = 0; i < Dims::NUM_DIMS; i++)
+									num_verts *= id_type_wrapper.pt_grid_dims[i];
 								// Read in vertex array from binary file
-								vertex_arr = readInVertices<T>(id_type_wrapper.num_ids_wrapper.ips_tester.input_file,
-																id_type_wrapper.pt_grid_dims);
+								T *vertex_arr = readInVertices<T>(id_type_wrapper.num_ids_wrapper.ips_tester.input_file,
+																		num_verts
+																	);
 
 #ifdef DEBUG
-								for (IDType k = 0; k < id_type_wrapper.pt_grid_dims[Dims::Z_DIM_IND]; k++)
-									for (IDType j = 0; j < id_type_wrapper.pt_grid_dims[Dims::Y_DIM_IND]; j++)
-										for (IDType i = 0; i < id_type_wrapper.pt_grid_dims[Dims::X_DIM_IND]; i++)
-										{
-											std::cout << 'V';
-											std::cout << '[' << i << ']';
-											std::cout << '[' << j << ']';
-											std::cout << '[' << k << ']';
-											std::cout << '=' << vertex_arr[linearVertID(i, j, k, id_type_wrapper.pt_grid_dims)];
-											std::cout << '\n';
-										}
+								print3DArray(std::cout, vertex_arr, {0, 0, 0},
+												id_type_wrapper.pt_grid_dims);
 #endif
 
-								// TODO: Copy vertex_arr to GPU so it's ready for metacell formation and marching cubes
+								// Copy vertex_arr to GPU so it's ready for metacell formation and marching cubes
+								gpuErrorCheck(cudaMalloc(&vertex_arr_d, num_verts * sizeof(T)),
+													"Error in allocating vertex storage array on device "
+													+ std::to_string(id_type_wrapper.num_ids_wrapper.dev_ind)
+													+ " of "
+													+ std::to_string(id_type_wrapper.num_ids_wrapper.num_devs)
+													+ "total devices: "
+												);
+								// Implicitly synchronous from the host's point of view as only pinned memory can have truly asynchronous cudaMemcpy() calls
+								gpuErrorCheck(cudaMemcpy(vertex_arr_d, vertex_arr, num_verts * sizeof(T), cudaMemcpyDefault),
+													"Error in copying array of vertices to device "
+													+ std::to_string(id_type_wrapper.num_ids_wrapper.dev_ind)
+													+ " of "
+													+ std::to_string(id_type_wrapper.num_ids_wrapper.num_devs)
+													+ "total devices: "
+												);
 
-								pt_arr = formMetacells<PointStructTemplate, num_IDs>(vertex_arr,
-															id_type_wrapper.pt_grid_dims,
-															id_type_wrapper.metacell_dims);
+								// Prior cudaMemcpy() is staged, if not already written through, so can free vertex_arr
+								delete[] vertex_arr;
+
+								pt_arr = formMetacells<PointStructTemplate<T, IDType, num_IDs>>
+															(
+															 	vertex_arr_d,
+																id_type_wrapper.pt_grid_dims,
+																id_type_wrapper.metacell_dims,
+																num_elems,
+																id_type_wrapper.num_ids_wrapper.dev_ind,
+																id_type_wrapper.num_ids_wrapper.num_devs,
+																id_type_wrapper.num_ids_wrapper.dev_props.warpSize
+															);
 							}
 						}
-
-						size_t num_res_elems = 0;
-						RetType *res_arr;
 
 						// Variables must be outside of conditionals to be accessible in later conditionals
 						cudaEvent_t construct_start, construct_stop, search_start, search_stop;
@@ -233,7 +250,14 @@ struct IPSTester
 							// End CUDA search set-up timer
 							gpuErrorCheck(cudaEventRecord(construct_stop),
 											"Error in recording stop event for timing CUDA search set-up code");
+						}
 
+
+						size_t num_res_elems = 0;
+						RetType *res_arr;
+
+						if constexpr (timed_CUDA)
+						{
 							// Start CUDA search timer (i.e. place this event in default stream)
 							gpuErrorCheck(cudaEventRecord(search_start),
 											"Error in recording start event for timing CUDA search code");

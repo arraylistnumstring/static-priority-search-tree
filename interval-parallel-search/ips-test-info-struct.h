@@ -169,15 +169,7 @@ struct IPSTestInfoStruct
 	template <class IPSTesterDataTypeNumIDsInstantiated>
 	void IDTypeWrap(IPSTesterDataTypeNumIDsInstantiated ips_tester)
 	{
-		if (id_type == DataType::CHAR)
-			IDTypeWrapInstantiator<std::uniform_int_distribution, char>(ips_tester,
-										static_cast<std::function<char(const std::string &)>>(
-													[](const std::string &str) -> char
-													{
-														return static_cast<char>(std::stoi(str));
-													})
-									);
-		else if (id_type == DataType::DOUBLE)
+		if (id_type == DataType::DOUBLE)
 			IDTypeWrapInstantiator<std::uniform_real_distribution, double>(ips_tester,
 										static_cast<std::function<double(const std::string &)>>(
 													[](const std::string &str) -> double
@@ -258,7 +250,8 @@ struct IPSTestInfoStruct
 					std::cerr << "Invalid value of " << pt_grid_dims[i] << " for point grid dimension " << i << '\n';
 					std::exit(ExitStatusCodes::INVALID_ARG_ERR);
 				}
-				if ( (i == 0  && metacell_dims[i] == 0)
+				// If first metacell dimension is 0, return an error
+				if ( (i == Dims::X_DIM_IND  && metacell_dims[i] == 0)
 						// Check whether IDType is unsigned to silence "meaningless comparison with 0" warnings
 						|| (!std::is_unsigned<IDType>::value && metacell_dims[i] < 0) )
 				{

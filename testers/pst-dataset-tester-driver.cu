@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
 			std::cerr << "\t-t, --timed\tToggles timing of the construction and search portion of the code; uses on-device functions for GPU PST; defaults to false\n\n";
 
 			std::cerr << "\t-w, --warps-per-block WARPS_PER_BLOCK\n";
-			std::cerr << "\t\t\tNumber of warps to use in a CUDA thread block; only relevant when -g option is invoked; defaults to 1\n\n";
+			std::cerr << "\t\t\tNumber of warps to use in a CUDA thread block for PST operations; only relevant when -g option is invoked; defaults to 1\n\n";
 
 			return ExitStatusCodes::SUCCESS;
 		}

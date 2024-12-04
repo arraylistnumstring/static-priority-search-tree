@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
 			std::cerr << "\t\t-l, --long\tUse longs as values\n\n";
 
 			std::cerr << "\t-B, --num-blocks NUM_BLOCKS\n";
-			std::cerr << "\t\t\t\tNumber of blocks to use in grid for CUDA kernel\n\n";
+			std::cerr << "\t\t\t\tNumber of blocks to use in grid for IPS operations\n\n";
 
 			std::cerr << "\t-I, --ids\t\tToggles assignment of IDs of data type DIM_TYPE to input points; defaults to false\n\n";
 
@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
 			std::cerr << "\t\t\t\tValue to search for in all intervals; interval bounds are treated as inclusive\n\n";
 
 			std::cerr << "\t-T, --threads-per-block THREADS_PER_BLOCK\n";
-			std::cerr << "\t\t\t\tNumber of threads to use in a thread block; defaults to 128, the number of threads originally used by Liu et al. for the interval parallel search (compaction) portion of their procedure\n\n";
+			std::cerr << "\t\t\t\tNumber of threads to use in a thread block for IPS operations; defaults to 128, the number of threads originally used by Liu et al. for the interval parallel search (compaction) portion of their procedure\n\n";
 
 			std::cerr << "\t-t, --timed-CUDA\tToggles timing of the CUDA portion of the code using on-device functions; defaults to false\n\n";
 

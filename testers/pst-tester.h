@@ -271,7 +271,7 @@ struct PSTTester
 								}
 								if constexpr (std::is_integral<IDType>::value)
 								{
-									if (id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.input_file != "")
+									if (vertex_arr_d != nullptr)
 									{
 										// Copy metacell array to CPU for iterative and recursive PSTs to process
 										PointStructTemplate<T, IDType, num_IDs> *pt_arr_host

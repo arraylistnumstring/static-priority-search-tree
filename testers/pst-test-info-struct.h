@@ -303,7 +303,7 @@ struct PSTTestInfoStruct
 					std::exit(ExitStatusCodes::INVALID_ARG_ERR);
 				}
 				// If first metacell dimension is 0, return an error
-				if ( (i == 0  && metacell_dims[i] == 0)
+				if ( (i == Dims::X_DIM_IND  && metacell_dims[i] == 0)
 						// Check whether IDType is unsigned to silence "meaningless comparison with 0" warnings
 						|| (!std::is_unsigned<IDType>::value && metacell_dims[i] < 0) )
 				{
