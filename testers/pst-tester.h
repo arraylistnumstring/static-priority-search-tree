@@ -223,7 +223,9 @@ struct PSTTester
 																		);
 
 #ifdef DEBUG
-									print3DArray(std::cout, vertex_arr, {0, 0, 0},
+									// Instantiate as separate variable, as attempting a direct substitution of an array initialiser doesn't compile, even if statically cast to an appropriate type
+									IDType start_inds[Dims::NUM_DIMS] = {0, 0, 0};
+									print3DArray(std::cout, vertex_arr, start_inds,
 													id_type_wrapper.pt_grid_dims);
 #endif
 
