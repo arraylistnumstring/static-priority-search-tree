@@ -173,7 +173,7 @@ __global__ void formMetacellsGlobal(T *const vertex_arr_d, PointStruct *const me
 							};
 
 #ifdef DEBUG
-				std::cout << "About to begin metacell intrawarp reduce\n";
+				printf("About to begin metacell intrawarp reduce\n");
 #endif
 
 				// CUDA-supplied __reduce_*_sync() is only defined for types unsigned and int, and isn't even found for some reason when compiling, so use user-defined warpReduce() instead
@@ -181,7 +181,7 @@ __global__ void formMetacellsGlobal(T *const vertex_arr_d, PointStruct *const me
 				max_vert_val = warpReduce(intrawarp_mask, max_vert_val, max_op);
 
 #ifdef DEBUG
-				std::cout << "Completed metacell intrawarp reduce\n";
+				printf("Completed metacell intrawarp reduce\n");
 #endif
 
 				// Interwarp reduction for metacell min-max val determination
