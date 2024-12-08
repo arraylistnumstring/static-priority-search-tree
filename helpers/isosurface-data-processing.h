@@ -23,7 +23,8 @@ __forceinline__ __device__ void getVoxelMinMax(T *const vertex_arr_d, T &min, T 
 													const GridDimType base_voxel_coord_y,
 													const GridDimType base_voxel_coord_z,
 													const GridDimType pt_grid_dims_x,
-													const GridDimType pt_grid_dims_y
+													const GridDimType pt_grid_dims_y,
+													const GridDimType pt_grid_dims_z
 												);
 
 
@@ -149,7 +150,7 @@ __global__ void formMetacellsGlobal(T *const vertex_arr_d, PointStruct *const me
 				{
 					getVoxelMinMax(vertex_arr_d, min_vert_val, max_vert_val,
 										base_voxel_coord_x, base_voxel_coord_y, base_voxel_coord_z,
-										pt_grid_dims_x, pt_grid_dims_y);
+										pt_grid_dims_x, pt_grid_dims_y, pt_grid_dims_z);
 				}
 
 				// Intrawarp reduction for metacell min-max val determination
@@ -252,7 +253,8 @@ __forceinline__ __device__ void getVoxelMinMax(T *const vertex_arr_d, T &min, T 
 													const GridDimType base_voxel_coord_y,
 													const GridDimType base_voxel_coord_z,
 													const GridDimType pt_grid_dims_x,
-													const GridDimType pt_grid_dims_y
+													const GridDimType pt_grid_dims_y,
+													const GridDimType pt_grid_dims_z
 												)
 {
 	// Each thread accesses the vertex of its voxel with the lowest indices in each dimension and uses this scalar value as the initial value with which future values are compared
@@ -265,13 +267,19 @@ __forceinline__ __device__ void getVoxelMinMax(T *const vertex_arr_d, T &min, T 
 		{
 			for (GridDimType i = 0; i < 2; i++)
 			{
-				T curr_vert = vertex_arr_d[lineariseID(base_voxel_coord_x + i,
-															base_voxel_coord_y + j,
-															base_voxel_coord_z + k,
-															pt_grid_dims_x, pt_grid_dims_y
-														)];
-				min = min <= curr_vert ? min : curr_vert;
-				max = max >= curr_vert ? max : curr_vert;
+				// Boundary condition: update with new vertex info only if there is a new vertex to update with
+				if (base_voxel_coord_x + i < pt_grid_dims_x
+						&& base_voxel_coord_y + j < pt_grid_dims_y
+						&& base_voxel_coord_z + k < pt_grid_dims_z)
+				{
+					T curr_vert = vertex_arr_d[lineariseID(base_voxel_coord_x + i,
+																base_voxel_coord_y + j,
+																base_voxel_coord_z + k,
+																pt_grid_dims_x, pt_grid_dims_y
+															)];
+					min = min <= curr_vert ? min : curr_vert;
+					max = max >= curr_vert ? max : curr_vert;
+				}
 			}
 		}
 	}
