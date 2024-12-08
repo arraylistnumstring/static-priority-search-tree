@@ -28,6 +28,7 @@ __forceinline__ __device__ void getVoxelMinMax(T *const vertex_arr_d, T &min, T 
 												);
 
 
+// Returns number of metacells in reference num_metacells
 template <class PointStruct, typename T, typename GridDimType>
 	requires IntSizeOfUAtLeastSizeOfV<GridDimType, int>
 PointStruct *formMetacells(T *const vertex_arr_d, GridDimType pt_grid_dims[Dims::NUM_DIMS],
