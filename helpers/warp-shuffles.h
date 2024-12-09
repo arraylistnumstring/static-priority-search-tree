@@ -182,8 +182,7 @@ __forceinline__ __device__ U warpPrefixSum(const T mask, U num)
 		U addend = __shfl_up_sync(mask, num, shfl_offset);
 
 		// Only modify num if data came from another thread
-		if (lineariseID(threadIdx.x, threadIdx.y, threadIdx.z, blockDim.x, blockDim.y) % warpSize
-				>= shfl_offset)
+		if (linThreadIDInBlock() % warpSize >= shfl_offset)
 			num += addend;
 
 #ifdef DEBUG
@@ -201,6 +200,8 @@ __forceinline__ __device__ U warpReduce(const T mask, U num,
 										nvstd::function<U(const U &, const U &)> op)
 {
 	const T last_active_lane = fls(mask);
+	// Start with shfl_offset warpSize / 2, then go downwards in powers of 2, as this order of butterfly reduction guarantees that the first m elements will all have the correct result, for m = \max{2^l : 2^l <= n}
+	// The alternative, to go upwards from a shfl_offset of 1, only guarantees correct results for the first (m - k) elements in each group of size m, where k is equal to 2m - n (i.e. the number of elements necessary to reach the next power of 2)
 #pragma unroll
 	for (T shfl_offset = warpSize / 2; shfl_offset > 0; shfl_offset >>= 1)
 	{
@@ -211,8 +212,7 @@ __forceinline__ __device__ U warpReduce(const T mask, U num,
 		U operand = __shfl_xor_sync(mask, num, shfl_offset);
 
 		// Check that value came from a valid thread
-		if (lineariseID(threadIdx.x, threadIdx.y, threadIdx.z, blockDim.x, blockDim.y) % warpSize ^ shfl_offset
-				<= last_active_lane)
+		if (linThreadIDInBlock() % warpSize ^ shfl_offset <= last_active_lane)
 			num = op(operand, num);
 
 #ifdef DEBUG
