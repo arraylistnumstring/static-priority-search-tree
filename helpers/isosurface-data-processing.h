@@ -47,6 +47,10 @@ PointStruct *formMetacells(T *const vertex_arr_d, GridDimType pt_grid_dims[Dims:
 		num_metacells *= metacell_grid_dims[i];
 	}
 
+#ifdef DEBUG
+	std::cout << "Number of metacells: " << num_metacells << '\n';
+#endif
+
 	// On-device memory allocations for metacell array
 	PointStruct *metacell_arr_d;
 
