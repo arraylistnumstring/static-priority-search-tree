@@ -139,7 +139,7 @@ struct IPSTester
 
 					void operator()(size_t num_elems, const unsigned num_thread_blocks, const unsigned threads_per_block)
 					{
-						PointStructTemplate<T, IDType, num_IDs> *pt_arr;
+						PointStructTemplate<T, IDType, num_IDs> *pt_arr_d;
 
 						// Will only be non-nullptr-valued if reading from an input file
 						T *vertex_arr_d = nullptr;
@@ -148,11 +148,27 @@ struct IPSTester
 						std::cout << "Input file: " << id_type_wrapper.num_ids_wrapper.ips_tester.input_file << '\n';
 #endif
 
+						// Variables must be outside of conditionals to be accessible in later conditionals
+						cudaEvent_t construct_start, construct_stop, search_start, search_stop;
+
+						if constexpr (timed_CUDA)
+						{
+							gpuErrorCheck(cudaEventCreate(&construct_start),
+											"Error in creating start event for timing CUDA search set-up code");
+							gpuErrorCheck(cudaEventCreate(&construct_stop),
+											"Error in creating stop event for timing CUDA search set-up code");
+							gpuErrorCheck(cudaEventCreate(&search_start),
+											"Error in creating start event for timing CUDA search code");
+							gpuErrorCheck(cudaEventCreate(&search_stop),
+											"Error in creating stop event for timing CUDA search code");
+						}
+
 						// Place random data generation condition before data input reading so that any timing mechanism for the latter will not be impacted by the evaluation of this conditional
 						if (!std::is_integral<IDType>::value ||
 								id_type_wrapper.num_ids_wrapper.ips_tester.input_file == "")
 						{
-							pt_arr = generateRandPts<PointStructTemplate<T, IDType, num_IDs>, T>(num_elems,
+							PointStructTemplate<T, IDType, num_IDs>* pt_arr
+									= generateRandPts<PointStructTemplate<T, IDType, num_IDs>, T>(num_elems,
 														id_type_wrapper.num_ids_wrapper.ips_tester.distr,
 														id_type_wrapper.num_ids_wrapper.ips_tester.rand_num_eng,
 														true,
@@ -163,6 +179,33 @@ struct IPSTester
 							printArray(std::cout, pt_arr, 0, num_elems);
 							std::cout << '\n';
 #endif
+
+							if constexpr (timed_CUDA)
+							{
+								// Start CUDA search set-up timer (i.e. place this event into default stream)
+								gpuErrorCheck(cudaEventRecord(construct_start),
+												"Error in recording start event for timing CUDA search set-up code");
+							}
+
+							// Allocate space on GPU for random data and copy to device
+							gpuErrorCheck(cudaMalloc(&pt_arr_d, num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>)),
+											"Error in allocating array to store initial PointStructs on device "
+											+ std::to_string(id_type_wrapper.num_ids_wrapper.dev_ind) + " of "
+											+ std::to_string(id_type_wrapper.num_ids_wrapper.num_devs) + ": ");
+							gpuErrorCheck(cudaMemcpy(pt_arr_d, pt_arr, num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>), cudaMemcpyDefault),
+											"Error in copying array of PointStructTemplate<T, IDType, num_IDs> objects to device "
+											+ std::to_string(id_type_wrapper.num_ids_wrapper.dev_ind) + " of "
+											+ std::to_string(id_type_wrapper.num_ids_wrapper.num_devs) + ": ");
+
+							// Place before deletion of pt_arr to ensure timing is strictly for that of on-GPU construction
+							if constexpr (timed_CUDA)
+							{
+								// End CUDA search set-up timer
+								gpuErrorCheck(cudaEventRecord(construct_stop),
+												"Error in recording stop event for timing CUDA search set-up code");
+							}
+
+							delete[] pt_arr;
 						}
 						// Wrap readInVertices in an if constexpr type check (so that it will only be compiled if it succeeds), as pt_grid_dims will be used to allocate memory, and thus must be of integral type
 						if constexpr (std::is_integral<IDType>::value)
@@ -204,7 +247,14 @@ struct IPSTester
 								// Prior cudaMemcpy() is staged, if not already written through, so can free vertex_arr
 								delete[] vertex_arr;
 
-								pt_arr = formMetacells<PointStructTemplate<T, IDType, num_IDs>>
+								if constexpr (timed_CUDA)
+								{
+									// Start CUDA search set-up timer (i.e. place this event into default stream)
+									gpuErrorCheck(cudaEventRecord(construct_start),
+													"Error in recording start event for timing CUDA search set-up code");
+								}
+
+								pt_arr_d = formMetacells<PointStructTemplate<T, IDType, num_IDs>>
 															(
 															 	vertex_arr_d,
 																id_type_wrapper.pt_grid_dims,
@@ -214,44 +264,15 @@ struct IPSTester
 																id_type_wrapper.num_ids_wrapper.num_devs,
 																id_type_wrapper.num_ids_wrapper.dev_props.warpSize
 															);
+
+								// Construction end timing placed in conditional to prevent random data instance from recording construct_stop twice (and thereby getting an incorrect timing measurement)
+								if constexpr (timed_CUDA)
+								{
+									// End CUDA search set-up timer
+									gpuErrorCheck(cudaEventRecord(construct_stop),
+													"Error in recording stop event for timing CUDA search set-up code");
+								}
 							}
-						}
-
-						// Variables must be outside of conditionals to be accessible in later conditionals
-						cudaEvent_t construct_start, construct_stop, search_start, search_stop;
-
-						if constexpr (timed_CUDA)
-						{
-							gpuErrorCheck(cudaEventCreate(&construct_start),
-											"Error in creating start event for timing CUDA search set-up code");
-							gpuErrorCheck(cudaEventCreate(&construct_stop),
-											"Error in creating stop event for timing CUDA search set-up code");
-							gpuErrorCheck(cudaEventCreate(&search_start),
-											"Error in creating start event for timing CUDA search code");
-							gpuErrorCheck(cudaEventCreate(&search_stop),
-											"Error in creating stop event for timing CUDA search code");
-
-							// Start CUDA search set-up timer (i.e. place this event into default stream)
-							gpuErrorCheck(cudaEventRecord(construct_start),
-											"Error in recording start event for timing CUDA search set-up code");
-						}
-
-						// Allocate space on GPU for input metacell tag array and copy to device
-						PointStructTemplate<T, IDType, num_IDs>* pt_arr_d;
-						gpuErrorCheck(cudaMalloc(&pt_arr_d, num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>)),
-										"Error in allocating array to store initial PointStructs on device "
-										+ std::to_string(id_type_wrapper.num_ids_wrapper.dev_ind) + " of "
-										+ std::to_string(id_type_wrapper.num_ids_wrapper.num_devs) + ": ");
-						gpuErrorCheck(cudaMemcpy(pt_arr_d, pt_arr, num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>), cudaMemcpyDefault),
-										"Error in copying array of PointStructTemplate<T, IDType, num_IDs> objects to device "
-										+ std::to_string(id_type_wrapper.num_ids_wrapper.dev_ind) + " of "
-										+ std::to_string(id_type_wrapper.num_ids_wrapper.num_devs) + ": ");
-
-						if constexpr (timed_CUDA)
-						{
-							// End CUDA search set-up timer
-							gpuErrorCheck(cudaEventRecord(construct_stop),
-											"Error in recording stop event for timing CUDA search set-up code");
 						}
 
 
@@ -352,7 +373,6 @@ struct IPSTester
 						printArray(std::cout, res_arr, 0, num_res_elems);
 						std::cout << '\n';
 
-						delete[] pt_arr;
 						delete[] res_arr;
 					};
 				};
@@ -370,20 +390,7 @@ struct IPSTester
 
 				void operator()(size_t num_elems, const unsigned num_thread_blocks, const unsigned threads_per_block)
 				{
-					PointStructTemplate<T, void, num_IDs> *pt_arr
-						= generateRandPts<PointStructTemplate<T, void, num_IDs>, T, void>(num_elems,
-													num_ids_wrapper.ips_tester.distr,
-													num_ids_wrapper.ips_tester.rand_num_eng,
-													true,
-													num_ids_wrapper.ips_tester.inter_size_distr_active ? &(num_ids_wrapper.ips_tester.inter_size_distr) : nullptr);
-
-#ifdef DEBUG
-					printArray(std::cout, pt_arr, 0, num_elems);
-					std::cout << '\n';
-#endif
-
-					size_t num_res_elems = 0;
-					PointStructTemplate<T, void, num_IDs> *res_pt_arr;
+					PointStructTemplate<T, void, num_IDs> *pt_arr_d;
 
 					// Variables must be outside of conditionals to be accessible in later conditionals
 					cudaEvent_t construct_start, construct_stop, search_start, search_stop;
@@ -398,14 +405,28 @@ struct IPSTester
 										"Error in creating start event for timing CUDA search code");
 						gpuErrorCheck(cudaEventCreate(&search_stop),
 										"Error in creating stop event for timing CUDA search code");
-						
+					}
+
+					PointStructTemplate<T, void, num_IDs> *pt_arr
+						= generateRandPts<PointStructTemplate<T, void, num_IDs>, T, void>(num_elems,
+													num_ids_wrapper.ips_tester.distr,
+													num_ids_wrapper.ips_tester.rand_num_eng,
+													true,
+													num_ids_wrapper.ips_tester.inter_size_distr_active ? &(num_ids_wrapper.ips_tester.inter_size_distr) : nullptr);
+
+#ifdef DEBUG
+					printArray(std::cout, pt_arr, 0, num_elems);
+					std::cout << '\n';
+#endif
+
+					if constexpr (timed_CUDA)
+					{
 						// Start CUDA search set-up timer (i.e. place this event into default stream)
 						gpuErrorCheck(cudaEventRecord(construct_start),
 										"Error in recording start event for timing CUDA search set-up code");
 					}
 
 					// Allocate space on GPU for input metacell tag array and copy to device
-					PointStructTemplate<T, void, num_IDs>* pt_arr_d;
 					gpuErrorCheck(cudaMalloc(&pt_arr_d, num_elems * sizeof(PointStructTemplate<T, void, num_IDs>)),
 									"Error in allocating array to store initial PointStructs on device "
 									+ std::to_string(num_ids_wrapper.dev_ind) + " of "
@@ -420,7 +441,15 @@ struct IPSTester
 						// End CUDA search set-up timer
 						gpuErrorCheck(cudaEventRecord(construct_stop),
 										"Error in recording stop event for timing CUDA search set-up code");
+					}
 
+					delete[] pt_arr;
+
+					size_t num_res_elems = 0;
+					PointStructTemplate<T, void, num_IDs> *res_pt_arr;
+
+					if constexpr (timed_CUDA)
+					{
 						// Start CUDA search timer (i.e. place this event in default stream)
 						gpuErrorCheck(cudaEventRecord(search_start),
 										"Error in recording start event for timing CUDA search code");
@@ -506,7 +535,6 @@ struct IPSTester
 					printArray(std::cout, res_pt_arr, 0, num_res_elems);
 					std::cout << '\n';
 
-					delete[] pt_arr;
 					delete[] res_pt_arr;
 				};
 			};
