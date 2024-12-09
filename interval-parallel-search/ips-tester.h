@@ -197,15 +197,15 @@ struct IPSTester
 											+ std::to_string(id_type_wrapper.num_ids_wrapper.dev_ind) + " of "
 											+ std::to_string(id_type_wrapper.num_ids_wrapper.num_devs) + ": ");
 
-							// Place before deletion of pt_arr to ensure timing is strictly for that of on-GPU construction
+							delete[] pt_arr;
+
+							// Place after deletion of pt_arr for parity with PST construction timing method
 							if constexpr (timed_CUDA)
 							{
 								// End CUDA search set-up timer
 								gpuErrorCheck(cudaEventRecord(construct_stop),
 												"Error in recording stop event for timing CUDA search set-up code");
 							}
-
-							delete[] pt_arr;
 						}
 						// Wrap readInVertices in an if constexpr type check (so that it will only be compiled if it succeeds), as pt_grid_dims will be used to allocate memory, and thus must be of integral type
 						if constexpr (std::is_integral<IDType>::value)

@@ -72,7 +72,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 {
 	public:
 		// {} is value-initialisation; for structs, this is zero-initialisation
-		StaticPSTGPU(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr, size_t num_elems, const int warp_multiplier=1, int dev_ind=0, int num_devs=1, cudaDeviceProp dev_props={});
+		StaticPSTGPU(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr_d, size_t num_elems, const int warp_multiplier=1, int dev_ind=0, int num_devs=1, cudaDeviceProp dev_props={});
 		// Since arrays were allocated continguously, only need to free one of the array pointers
 		virtual ~StaticPSTGPU()
 		{
