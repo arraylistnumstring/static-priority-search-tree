@@ -154,13 +154,13 @@ struct IPSTester
 						if constexpr (timed_CUDA)
 						{
 							gpuErrorCheck(cudaEventCreate(&construct_start),
-											"Error in creating start event for timing CUDA search set-up code");
+											"Error in creating start event for timing CUDA search set-up code: ");
 							gpuErrorCheck(cudaEventCreate(&construct_stop),
-											"Error in creating stop event for timing CUDA search set-up code");
+											"Error in creating stop event for timing CUDA search set-up code: ");
 							gpuErrorCheck(cudaEventCreate(&search_start),
-											"Error in creating start event for timing CUDA search code");
+											"Error in creating start event for timing CUDA search code: ");
 							gpuErrorCheck(cudaEventCreate(&search_stop),
-											"Error in creating stop event for timing CUDA search code");
+											"Error in creating stop event for timing CUDA search code: ");
 						}
 
 						// Place random data generation condition before data input reading so that any timing mechanism for the latter will not be impacted by the evaluation of this conditional
@@ -184,7 +184,7 @@ struct IPSTester
 							{
 								// Start CUDA search set-up timer (i.e. place this event into default stream)
 								gpuErrorCheck(cudaEventRecord(construct_start),
-												"Error in recording start event for timing CUDA search set-up code");
+												"Error in recording start event for timing CUDA search set-up code: ");
 							}
 
 							// Allocate space on GPU for random data and copy to device
@@ -204,7 +204,7 @@ struct IPSTester
 							{
 								// End CUDA search set-up timer
 								gpuErrorCheck(cudaEventRecord(construct_stop),
-												"Error in recording stop event for timing CUDA search set-up code");
+												"Error in recording stop event for timing CUDA search set-up code: ");
 							}
 						}
 						// Wrap readInVertices in an if constexpr type check (so that it will only be compiled if it succeeds), as pt_grid_dims will be used to allocate memory, and thus must be of integral type
@@ -251,7 +251,7 @@ struct IPSTester
 								{
 									// Start CUDA search set-up timer (i.e. place this event into default stream)
 									gpuErrorCheck(cudaEventRecord(construct_start),
-													"Error in recording start event for timing CUDA search set-up code");
+													"Error in recording start event for timing CUDA search set-up code: ");
 								}
 
 								pt_arr_d = formMetacells<PointStructTemplate<T, IDType, num_IDs>>
@@ -270,7 +270,7 @@ struct IPSTester
 								{
 									// End CUDA search set-up timer
 									gpuErrorCheck(cudaEventRecord(construct_stop),
-													"Error in recording stop event for timing CUDA search set-up code");
+													"Error in recording stop event for timing CUDA search set-up code: ");
 								}
 							}
 						}
@@ -283,7 +283,7 @@ struct IPSTester
 						{
 							// Start CUDA search timer (i.e. place this event in default stream)
 							gpuErrorCheck(cudaEventRecord(search_start),
-											"Error in recording start event for timing CUDA search code");
+											"Error in recording start event for timing CUDA search code: ");
 						}
 
 						intervalParallelSearch(pt_arr_d, num_elems, res_arr, num_res_elems,
@@ -297,36 +297,36 @@ struct IPSTester
 						{
 							// End CUDA search timer
 							gpuErrorCheck(cudaEventRecord(search_stop),
-											"Error in recording stop event for timing CUDA search code");
+											"Error in recording stop event for timing CUDA search code: ");
 
 							// Block CPU execution until search stop event has been recorded
 							gpuErrorCheck(cudaEventSynchronize(search_stop),
-											"Error in blocking CPU execution until completion of stop event for timing CUDA search code");
+											"Error in blocking CPU execution until completion of stop event for timing CUDA search code: ");
 
 							// Report construction and search timing
 							float ms = 0;	// milliseconds
 							gpuErrorCheck(cudaEventElapsedTime(&ms, construct_start, construct_stop),
-											"Error in calculating time elapsed for CUDA search set-up code");
+											"Error in calculating time elapsed for CUDA search set-up code: ");
 							std::cout << "CUDA interval parallel search set-up time: " << ms << " ms\n";
 
 							gpuErrorCheck(cudaEventElapsedTime(&ms, search_start, search_stop),
-											"Error in calculating time elapsed for CUDA search code");
+											"Error in calculating time elapsed for CUDA search code: ");
 							std::cout << "CUDA interval parallel search time: " << ms << " ms\n";
 
 							gpuErrorCheck(cudaEventDestroy(construct_start),
-											"Error in destroying start event for timing CUDA search set-up code");
+											"Error in destroying start event for timing CUDA search set-up code: ");
 							gpuErrorCheck(cudaEventDestroy(construct_stop),
-											"Error in destroying stop event for timing CUDA search set-up code");
+											"Error in destroying stop event for timing CUDA search set-up code: ");
 							gpuErrorCheck(cudaEventDestroy(search_start),
-											"Error in destroying start event for timing CUDA search code");
+											"Error in destroying start event for timing CUDA search code: ");
 							gpuErrorCheck(cudaEventDestroy(search_stop),
-											"Error in destroying stop event for timing CUDA search code");
+											"Error in destroying stop event for timing CUDA search code: ");
 						}
 
 						// If result pointer array is on GPU, copy it to CPU and print
 						cudaPointerAttributes ptr_info;
 						gpuErrorCheck(cudaPointerGetAttributes(&ptr_info, res_arr),
-										"Error in determining location type of memory address of result PointStruct array (i.e. whether on host or device)");
+										"Error in determining location type of memory address of result PointStruct array (i.e. whether on host or device): ");
 
 						// res_arr is on device; copy to CPU
 						if (ptr_info.type == cudaMemoryTypeDevice)
@@ -398,13 +398,13 @@ struct IPSTester
 					if constexpr (timed_CUDA)
 					{
 						gpuErrorCheck(cudaEventCreate(&construct_start),
-										"Error in creating start event for timing CUDA search set-up code");
+										"Error in creating start event for timing CUDA search set-up code: ");
 						gpuErrorCheck(cudaEventCreate(&construct_stop),
-										"Error in creating stop event for timing CUDA search set-up code");
+										"Error in creating stop event for timing CUDA search set-up code: ");
 						gpuErrorCheck(cudaEventCreate(&search_start),
-										"Error in creating start event for timing CUDA search code");
+										"Error in creating start event for timing CUDA search code: ");
 						gpuErrorCheck(cudaEventCreate(&search_stop),
-										"Error in creating stop event for timing CUDA search code");
+										"Error in creating stop event for timing CUDA search code: ");
 					}
 
 					PointStructTemplate<T, void, num_IDs> *pt_arr
@@ -423,7 +423,7 @@ struct IPSTester
 					{
 						// Start CUDA search set-up timer (i.e. place this event into default stream)
 						gpuErrorCheck(cudaEventRecord(construct_start),
-										"Error in recording start event for timing CUDA search set-up code");
+										"Error in recording start event for timing CUDA search set-up code: ");
 					}
 
 					// Allocate space on GPU for input metacell tag array and copy to device
@@ -440,7 +440,7 @@ struct IPSTester
 					{
 						// End CUDA search set-up timer
 						gpuErrorCheck(cudaEventRecord(construct_stop),
-										"Error in recording stop event for timing CUDA search set-up code");
+										"Error in recording stop event for timing CUDA search set-up code: ");
 					}
 
 					delete[] pt_arr;
@@ -466,36 +466,36 @@ struct IPSTester
 					{
 						// End CUDA search timer
 						gpuErrorCheck(cudaEventRecord(search_stop),
-										"Error in recording stop event for timing CUDA search code");
+										"Error in recording stop event for timing CUDA search code: ");
 
 						// Block CPU execution until search stop event has been recorded
 						gpuErrorCheck(cudaEventSynchronize(search_stop),
-										"Error in blocking CPU execution until completion of stop event for timing CUDA search code");
+										"Error in blocking CPU execution until completion of stop event for timing CUDA search code: ");
 
 						// Report construction and search timing
 						float ms = 0;	// milliseconds
 						gpuErrorCheck(cudaEventElapsedTime(&ms, construct_start, construct_stop),
-										"Error in calculating time elapsed for CUDA search set-up code");
+										"Error in calculating time elapsed for CUDA search set-up code: ");
 						std::cout << "CUDA interval parallel search set-up time: " << ms << " ms\n";
 
 						gpuErrorCheck(cudaEventElapsedTime(&ms, search_start, search_stop),
-										"Error in calculating time elapsed for CUDA search code");
+										"Error in calculating time elapsed for CUDA search code: ");
 						std::cout << "CUDA interval parallel search time: " << ms << " ms\n";
 
 						gpuErrorCheck(cudaEventDestroy(construct_start),
-										"Error in destroying start event for timing CUDA search set-up code");
+										"Error in destroying start event for timing CUDA search set-up code: ");
 						gpuErrorCheck(cudaEventDestroy(construct_stop),
-										"Error in destroying stop event for timing CUDA search set-up code");
+										"Error in destroying stop event for timing CUDA search set-up code: ");
 						gpuErrorCheck(cudaEventDestroy(search_start),
-										"Error in destroying start event for timing CUDA search code");
+										"Error in destroying start event for timing CUDA search code: ");
 						gpuErrorCheck(cudaEventDestroy(search_stop),
-										"Error in destroying stop event for timing CUDA search code");
+										"Error in destroying stop event for timing CUDA search code: ");
 					}
 
 					// If result pointer array is on GPU, copy it to CPU and print
 					cudaPointerAttributes ptr_info;
 					gpuErrorCheck(cudaPointerGetAttributes(&ptr_info, res_pt_arr),
-							"Error in determining location type of memory address of result PointStruct array (i.e. whether on host or device)");
+							"Error in determining location type of memory address of result PointStruct array (i.e. whether on host or device): ");
 
 					// res_pt_arr is on device; copy to CPU
 					if (ptr_info.type == cudaMemoryTypeDevice)

@@ -195,14 +195,14 @@ struct PSTTester
 							if constexpr (timed && pst_type == GPU)
 							{
 								gpuErrorCheck(cudaEventCreate(&construct_start_CUDA),
-												"Error in creating start event for timing CUDA PST construction code");
+												"Error in creating start event for timing CUDA PST construction code: ");
 								gpuErrorCheck(cudaEventCreate(&construct_stop_CUDA),
-												"Error in creating stop event for timing CUDA PST construction code");
+												"Error in creating stop event for timing CUDA PST construction code: ");
 								// For accuracy of measurement of search speeds, create and place search events in stream, even if this is a construction-only test
 								gpuErrorCheck(cudaEventCreate(&search_start_CUDA),
-												"Error in creating start event for timing CUDA search code");
+												"Error in creating start event for timing CUDA search code: ");
 								gpuErrorCheck(cudaEventCreate(&search_stop_CUDA),
-												"Error in creating stop event for timing CUDA search code");
+												"Error in creating stop event for timing CUDA search code: ");
 							}
 
 							// Wrap readInVertices in an if constexpr type check (so that it will only be compiled if it succeeds), as pt_grid_dims will be used to allocate memory, and thus must be of integral type
@@ -314,7 +314,7 @@ struct PSTTester
 									{
 										// Start CUDA construction timer (i.e. place this event into default stream)
 										gpuErrorCheck(cudaEventRecord(construct_start_CUDA),
-													"Error in recording start event for timing CUDA PST construction code");
+													"Error in recording start event for timing CUDA PST construction code: ");
 									}
 
 									// Allocate space on GPU for random data and copy to device
@@ -381,7 +381,7 @@ struct PSTTester
 								{
 									// End CUDA construction timer
 									gpuErrorCheck(cudaEventRecord(construct_stop_CUDA),
-													"Error in recording stop event for timing CUDA PST construction code");
+													"Error in recording stop event for timing CUDA PST construction code: ");
 								}
 								else
 								{
@@ -407,7 +407,7 @@ struct PSTTester
 								{
 									// Start CUDA search timer (i.e. place this event in default stream)
 									gpuErrorCheck(cudaEventRecord(search_start_CUDA),
-													"Error in recording start event for timing CUDA search code");
+													"Error in recording start event for timing CUDA search code: ");
 								}
 								else
 								{
@@ -472,35 +472,35 @@ struct PSTTester
 								{
 									// End CUDA search timer
 									gpuErrorCheck(cudaEventRecord(search_stop_CUDA),
-													"Error in recording stop event for timing CUDA search code");
+													"Error in recording stop event for timing CUDA search code: ");
 
 									// Block CPU execution until search stop event has been recorded
 									gpuErrorCheck(cudaEventSynchronize(search_stop_CUDA),
-												"Error in blocking CPU execution until completion of stop event for timing CUDA search code");
+												"Error in blocking CPU execution until completion of stop event for timing CUDA search code: ");
 
 									// Report construction and search timing
 									// Type chosen because of type of parameter of cudaEventElapsedTime
 									float ms = 0;	// milliseconds
 
 									gpuErrorCheck(cudaEventElapsedTime(&ms, construct_start_CUDA, construct_stop_CUDA),
-													"Error in calculating time elapsed for CUDA PST construction code");
+													"Error in calculating time elapsed for CUDA PST construction code: ");
 									std::cout << "CUDA PST construction time: " << ms << " ms\n";
 
 									if (test_type != CONSTRUCT)
 									{
 										gpuErrorCheck(cudaEventElapsedTime(&ms, search_start_CUDA, search_stop_CUDA),
-														"Error in calculating time elapsed for CUDA search code");
+														"Error in calculating time elapsed for CUDA search code: ");
 										std::cout << "CUDA PST search time: " << ms << " ms\n";
 									}
 
 									gpuErrorCheck(cudaEventDestroy(construct_start_CUDA),
-													"Error in destroying start event for timing CUDA PST construction code");
+													"Error in destroying start event for timing CUDA PST construction code: ");
 									gpuErrorCheck(cudaEventDestroy(construct_stop_CUDA),
-													"Error in destroying stop event for timing CUDA PST construction code");
+													"Error in destroying stop event for timing CUDA PST construction code: ");
 									gpuErrorCheck(cudaEventDestroy(search_start_CUDA),
-													"Error in destroying start event for timing CUDA search code");
+													"Error in destroying start event for timing CUDA search code: ");
 									gpuErrorCheck(cudaEventDestroy(search_stop_CUDA),
-													"Error in destroying stop event for timing CUDA search code");
+													"Error in destroying stop event for timing CUDA search code: ");
 								}
 								else
 								{
@@ -532,7 +532,7 @@ struct PSTTester
 							{
 								cudaPointerAttributes ptr_info;
 								gpuErrorCheck(cudaPointerGetAttributes(&ptr_info, res_arr),
-												"Error in determining location type of memory address of result RetType array (i.e. whether on host or device)");
+												"Error in determining location type of memory address of result RetType array (i.e. whether on host or device): ");
 
 								// res_arr is on device; copy to CPU
 								if (ptr_info.type == cudaMemoryTypeDevice)
@@ -586,8 +586,8 @@ struct PSTTester
 							// Delete pt_arr, whether it's on host or device
 							cudaPointerAttributes ptr_info;
 							gpuErrorCheck(cudaPointerGetAttributes(&ptr_info, pt_arr),
-											"Error in determining location type of memory address of input PointStruct array (i.e. whether on host or device)");
-							if (ptr_info == cudaMemoryTypeDevice)
+											"Error in determining location type of memory address of input PointStruct array (i.e. whether on host or device): ");
+							if (ptr_info.type == cudaMemoryTypeDevice)
 							{
 								gpuErrorCheck(cudaFree(pt_arr),
 												"Error in freeing on-device array of PointStructs on device "
