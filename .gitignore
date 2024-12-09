@@ -13,6 +13,7 @@ archival/
 compilation-testing/
 cuda-debugger/
 cuda-dbg/
+debug-testing/
 slurm-output/
 
 # Symbolic links
