@@ -193,34 +193,34 @@ __global__ void formMetacellsGlobal(T *const vertex_arr_d, PointStruct *const me
 				// Interwarp reduction for metacell min-max val determination
 				if constexpr (interwarp_reduce)
 				{
-					const GridDimType lin_thread_ID = lineariseID(threadIdx.x, threadIdx.y, threadIdx.z,
-																	blockDim.x, blockDim.y);
+					// Note: nvcc does not use more or fewer registers when lin_thread_ID_in_block is replaced with linThreadIDInBlock; however, generally speaking, saving the result to a const variable like this is more performant than repeating a function call
+					const auto lin_thread_ID_in_block = linThreadIDInBlock();
 
 					// First thread in each warp writes result to shared memory
-					if (lin_thread_ID % warpSize == 0)
+					if (lin_thread_ID_in_block % warpSize == 0)
 					{
-						warp_level_min_vert[lin_thread_ID / warpSize] = min_vert_val;
-						warp_level_max_vert[lin_thread_ID / warpSize] = max_vert_val;
+						warp_level_min_vert[lin_thread_ID_in_block / warpSize] = min_vert_val;
+						warp_level_max_vert[lin_thread_ID_in_block / warpSize] = max_vert_val;
 					}
 
 					// Warp-level info must be ready to use at the block level
 					__syncthreads();
 
 					// Only one warp should be active for speed and correctness
-					if (lin_thread_ID / warpSize == 0)
+					if (lin_thread_ID_in_block / warpSize == 0)
 					{
 #pragma unroll
 						for (GridDimType l = 0; l < warps_per_block; l += warpSize)
 						{
 							const auto interwarp_mask = __ballot_sync(0xffffffff,
-																		l + lin_thread_ID < warps_per_block);
+																		l + lin_thread_ID_in_block < warps_per_block);
 
 							// Inter-warp condition
-							if (l + lin_thread_ID < warps_per_block)
+							if (l + lin_thread_ID_in_block < warps_per_block)
 							{
 								// Get per-warp minimum and maximum vertex values
-								min_vert_val = warp_level_min_vert[lin_thread_ID / warpSize];
-								max_vert_val = warp_level_max_vert[lin_thread_ID / warpSize];
+								min_vert_val = warp_level_min_vert[lin_thread_ID_in_block / warpSize];
+								max_vert_val = warp_level_max_vert[lin_thread_ID_in_block / warpSize];
 
 								min_vert_val = warpReduce(interwarp_mask, min_vert_val, min_op);
 								max_vert_val = warpReduce(interwarp_mask, min_vert_val, max_op);
