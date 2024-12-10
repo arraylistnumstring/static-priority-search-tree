@@ -212,7 +212,7 @@ __forceinline__ __device__ U warpReduce(const T mask, U num,
 		U operand = __shfl_xor_sync(mask, num, shfl_offset);
 
 		// Check that value came from a valid thread
-		if (linThreadIDInBlock() % warpSize ^ shfl_offset <= last_active_lane)
+		if ((linThreadIDInBlock() % warpSize ^ shfl_offset) <= last_active_lane)
 			num = op(operand, num);
 
 #ifdef DEBUG
