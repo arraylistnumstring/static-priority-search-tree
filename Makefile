@@ -56,6 +56,11 @@ $(foreach suffix_tpe,$(suffixes) .h,$(eval $(call vpath_func,%$(suffix_type),$(i
 
 
 
+# All prerequisites for a single target are put together, so adding new targets to .PHONY does not overwrite previous values
+.PHONY: clean
+clean:
+	rm -f $(object_files) $(executables)
+
 
 
 
@@ -115,8 +120,3 @@ ifeq (,$(filter clean,$(MAKECMDGOALS)))
 include $(foreach suffix,$(suffixes), \
 	$($(subst .c,.d,$(filter %.$(suffix),sources))))
 endif
-
-# All prerequisites for a single target are put together, so adding new targets to .PHONY does not overwrite previous values
-.PHONY: clean
-clean:
-	rm -f *.o $(sources:.cu=) $(sources:.cu=.du)
