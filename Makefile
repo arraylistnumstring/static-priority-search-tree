@@ -49,7 +49,7 @@ endef
 # Add include_dirs to the search path of all source files (files with suffix found in variable suffixes) as well as all header files
 # Use of eval allows for creation of non-constant Makefile syntax, including but not limited to targets, implicit or explicit rules, new make variables, etc.
 # Use of call is necessary for vpath_func to be evaluated as a function with the parameters listed, rather than as a variable
-$(foreach suffix_tpe,$(suffixes) .h,$(eval $(call vpath_func,%$(suffix_type),$(include_dirs))))
+$(foreach suffix_type,$(suffixes) .h,$(eval $(call vpath_func,%$(suffix_type),$(include_dirs))))
 
 
 
