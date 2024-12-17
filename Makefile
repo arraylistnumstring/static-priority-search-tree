@@ -21,7 +21,7 @@ suffixes := .c .cpp .cu
 
 # Set all directories that do not begin with a period to be an include directory
 # As maxdepth is a global option, the shell issues a complaint if it is not placed before non-global options
-include_dirs := $(shell find . -maxdepth 1 ! -name '.*' -type d)
+include_dirs := $(shell find . -maxdepth 1 ! -name '.*' \( -type d -o -type l \))
 libraries := GL GLU
 # Find all source files by finding all filenames ending in one of the suffixes found in variable suffixes
 source_files := $(foreach suffix_type,$(suffixes),$(shell find . -name '*$(suffix_type)' -type f))
