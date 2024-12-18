@@ -1,17 +1,25 @@
 # ?= defines variables if they have not already been defined
 CXX ?= g++
+# Standard is set to C++20 because:
+#	Thrust has deprecated versions of C++ older than C++14
+#	C++14 allows use of simpler auto return types
+#	C++17 introduced constexpr if (compile-time-evaluated conditionals that may optimise away unused code)
+#	C++20 introduced requires (allows specification of additional restrictions on template parameters)
 CXXFLAGS := -std=c++20
 # := is simple expansion (imperative-like definition)
 # -ccbin specifies host compiler executable
 NVCC := nvcc
+# -rdc true allows for dynamic parallelism, as well as optimisable linkage across multiple translation units
 NVCC_FLAGS := -ccbin $(CXX) $(CXXFLAGS) -rdc true
 
 # COMMON_FLAGS for flags used at both compile-time and link-time
 # -dlto: link-time optimisation of device code; requires usage at both compile and link time
 COMMON_FLAGS := -dlto
+# For debugging flags, including those specified in preprocessor commands in the body of the code; to be overridden from the command line, as some of the debugging flags disable optimisations
+DEBUG_FLAGS :=
 # -dc: compile input files into object files containing relocatable device code; equivalent to -rdc true --compile
 # Recursive assignment necessary for contained recursively assigned variables to be properly expanded, no matter the use location of such contained variables relative to their definitions
-COMPILE_FLAGS = $(COMMON_FLAGS) $(INCLUDE) -dc
+COMPILE_FLAGS = $(COMMON_FLAGS) $(DEBUG_FLAGS) $(INCLUDE) -dc
 LINK_FLAGS = $(COMMON_FLAGS) $(LIBRARIES)
 
 # Recursive assignment (essentially like call by name parameters, where the text assigned to the variable is substituted in its entirety each time it is called and evaluated only when used) so that all capital-letter variables can be grouped together, even though the following capital-letter variables depend on variables with lowercase names that are defined later
@@ -85,10 +93,11 @@ $(foreach depend_file,$(depend_files),$\
 		)$\
 	)$\
 )
+# To be exact with dependency file generation (as only filenames found in $(depend_files) are used in include directives or cleaned up by make clean), specify $(depend_files) as target instead of %$(depend_suffix) (though in this particular case, both work)
 # Double quotes allow for interpolation of content contained within (whereas single quotes preserve the literal value of everything they contain, including $,\, etc.); use either to preserve the presence of literal backslashes
 # -MM: generate prerequisites for object file created from input source file; overridden by actual compilation into an object file if -o option is specified
 # As -MM option automatically places object file target in current directory, prepend the directory of the source file to match the names specified in object_files
-%$(depend_suffix):
+$(depend_files):
 	$(call gen-prereqs,'$(dir $<)$(shell $(NVCC) $(NVCC_FLAGS) $(COMPILE_FLAGS) -MM $<)')
 
 define gen-prereqs
