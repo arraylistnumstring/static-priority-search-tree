@@ -1,3 +1,8 @@
+# Minimal maintenance Makefile that automatically searches for source files, compiles them into object files, and links those into executables, all with auto-determined dependencies; only the choice of compiler, flags and file-type suffixes need to be updated for new projects
+# Object files are constructed from each source file; dependencies are determined with the help of the compiler's -MM option
+# Executables are constructed from any object files whose source files contain a main function; an executable file's dependencies are the object file versions of any source files found in the set of dependencies for the executable's input object file
+# Author: Brian H. Chiang
+
 # ?= defines variables if they have not already been defined
 CXX ?= g++
 # Standard is set to C++20 because:
