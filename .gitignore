@@ -10,12 +10,12 @@
 *.sw[a-z]
 *.d
 
-archival/
-compilation-testing/
-cuda-debugger/
-cuda-dbg/
-debug-testing/
-slurm-output/
+[.]archival/
+[.]compilation-testing/
+[.]cuda-debugger/
+[.]cuda-dbg/
+[.]debug-testing/
+[.]slurm-output/
 
 # Symbolic links
 Common
