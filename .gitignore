@@ -10,12 +10,10 @@
 *.sw[a-z]
 *.d
 
-[.]archival/
-[.]compilation-testing/
-[.]cuda-debugger/
-[.]cuda-dbg/
-[.]debug-testing/
-[.]slurm-output/
+# Ignore all pathnames starting with a .
+.*
+# Do not ignore file .gitignore
+!.gitignore
 
 # Symbolic links
 Common
