@@ -17,8 +17,7 @@ CXXFLAGS := -std=c++20
 # := is simple expansion (imperative-like definition)
 # -ccbin specifies host compiler executable
 NVCC := nvcc
-# -rdc true allows for dynamic parallelism, as well as optimisable linkage across multiple translation units
-NVCC_FLAGS := -ccbin $(CXX) $(CXXFLAGS) -rdc true
+NVCC_FLAGS := -ccbin $(CXX) $(CXXFLAGS)
 
 # COMMON_FLAGS for flags used at both compile-time and link-time
 # -dlto: link-time optimisation of device code; requires usage at both compile and link time
@@ -26,6 +25,7 @@ COMMON_FLAGS := -dlto
 # For debugging flags, including those specified in preprocessor commands in the body of the code; to be overridden from the command line, as some of the debugging flags disable optimisations
 DEBUG_FLAGS :=
 # -dc: compile input files into object files containing relocatable device code; equivalent to -rdc true --compile
+# -rdc true allows for dynamic parallelism, as well as optimisable linkage across multiple translation units
 # Recursive assignment necessary for contained recursively assigned variables to be properly expanded, no matter the use location of such contained variables relative to their definitions
 COMPILE_FLAGS = $(COMMON_FLAGS) $(DEBUG_FLAGS) $(INCLUDE) -dc
 LINK_FLAGS = $(COMMON_FLAGS) $(LIBRARIES)

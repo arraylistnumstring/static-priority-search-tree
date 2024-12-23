@@ -254,7 +254,7 @@ struct IPSTester
 													"Error in recording start event for timing CUDA search set-up code: ");
 								}
 
-								pt_arr_d = formMetacells<PointStructTemplate<T, IDType, num_IDs>>
+								pt_arr_d = formMetacellTags<PointStructTemplate<T, IDType, num_IDs>>
 															(
 															 	vertex_arr_d,
 																id_type_wrapper.pt_grid_dims,

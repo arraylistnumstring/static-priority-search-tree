@@ -31,7 +31,7 @@ __forceinline__ __device__ void getVoxelMinMax(T *const vertex_arr_d, T &min, T 
 // Returns number of metacells in reference num_metacells
 template <class PointStruct, typename T, typename GridDimType>
 	requires IntSizeOfUAtLeastSizeOfV<GridDimType, int>
-PointStruct *formMetacells(T *const vertex_arr_d, GridDimType pt_grid_dims[Dims::NUM_DIMS],
+PointStruct *formMetacellTags(T *const vertex_arr_d, GridDimType pt_grid_dims[Dims::NUM_DIMS],
 							GridDimType metacell_dims[Dims::NUM_DIMS], size_t &num_metacells,
 							const int dev_ind, const int num_devs, const int warp_size)
 {
@@ -93,7 +93,7 @@ PointStruct *formMetacells(T *const vertex_arr_d, GridDimType pt_grid_dims[Dims:
 	// Shared memory requirement calculation; two arrays: one array for per-warp minimal vertex values, one array for per-warp maximal vertex values, each of length warps_per_block
 	if (warps_per_block > 1)
 	{
-		formMetacellsGlobal<true><<<num_blocks, threads_per_block, 2 * warps_per_block * sizeof(T)>>>
+		formMetacellTagsGlobal<true><<<num_blocks, threads_per_block, 2 * warps_per_block * sizeof(T)>>>
 					(
 						vertex_arr_d, metacell_arr_d, warps_per_block,
 						pt_grid_dims[Dims::X_DIM_IND], pt_grid_dims[Dims::Y_DIM_IND], pt_grid_dims[Dims::Z_DIM_IND],
@@ -103,7 +103,7 @@ PointStruct *formMetacells(T *const vertex_arr_d, GridDimType pt_grid_dims[Dims:
 	}
 	else
 	{
-		formMetacellsGlobal<false><<<num_blocks, threads_per_block>>>
+		formMetacellTagsGlobal<false><<<num_blocks, threads_per_block>>>
 					(
 						vertex_arr_d, metacell_arr_d, warps_per_block,
 						pt_grid_dims[Dims::X_DIM_IND], pt_grid_dims[Dims::Y_DIM_IND], pt_grid_dims[Dims::Z_DIM_IND],
@@ -119,7 +119,7 @@ PointStruct *formMetacells(T *const vertex_arr_d, GridDimType pt_grid_dims[Dims:
 // To minimise global memory access time (and because the number of objects passed is relatively small for each set of dimensions), use explicitly passed scalar parameters for each dimension
 template <bool interwarp_reduce, typename PointStruct, typename T, typename GridDimType>
 	requires IntSizeOfUAtLeastSizeOfV<GridDimType, int>
-__global__ void formMetacellsGlobal(T *const vertex_arr_d, PointStruct *const metacell_arr_d,
+__global__ void formMetacellTagsGlobal(T *const vertex_arr_d, PointStruct *const metacell_arr_d,
 										const GridDimType warps_per_block,
 										GridDimType pt_grid_dims_x, GridDimType pt_grid_dims_y, GridDimType pt_grid_dims_z,
 										GridDimType metacell_grid_dims_x, GridDimType metacell_grid_dims_y, GridDimType metacell_grid_dims_z,
