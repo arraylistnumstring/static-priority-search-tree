@@ -149,7 +149,9 @@ $(object_files):
 
 .PHONY: clean
 clean:
-	rm -f $(depend_files) $(executables) $(object_files)
+	rm -f $(depend_files)
+	rm -f $(executables)
+	rm -f $(object_files)
 
 
 # Only include dependency files if not running make clean (as such files would be generated because of the include directive just to be immediately removed afterwards by the recipe in target clean)
