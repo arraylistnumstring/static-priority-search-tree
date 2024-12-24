@@ -103,37 +103,33 @@ $(foreach depend_file,$(depend_files),$\
 )
 # To be exact with dependency file generation (as only filenames found in $(depend_files) are used in include directives or cleaned up by make clean), specify $(depend_files) as target instead of %$(depend_suffix) (though in this particular case, both work)
 # Double quotes allow for interpolation of content contained within (whereas single quotes preserve the literal value of everything they contain, including $,\, etc.); use either to preserve the presence of literal backslashes
-# -MM: generate prerequisites for object file created from input source file; overridden by actual compilation into an object file if -o option is specified
-# As -MM option automatically places object file target in current directory, prepend the directory of the source file to match the names specified in object_files
+# As make uses whitespace as a token separator, generate the desired regex (which requires a replacement of whitespace with the or operator (|)) by using shell functions
 $(depend_files):
-	$(call gen-prereqs,'$(dir $<)$(shell $(NVCC) $(NVCC_FLAGS) $(COMPILE_FLAGS) -MM $<)')
+	$(call gen-prereqs,$(shell echo -n "($$(echo -n $(addprefix \\,$(source_suffixes)) | tr ' ' '|'))\\>"))
 
 define gen-prereqs
 @# @ prefix in a recipe prevents echoing of that line (i.e. outputting the contents of a command before executing it)
 @# Generate and place object file prerequisites in the associated source file's dependency file
-@# Passing shell output into a make variable (here, $(1)), doesn't preserve newlines, so restore backslash-newline combos via sed
-@# Square brackets necessary to prevent backslashes from interfering with parsing of capturing parentheses; sed supports literal newlines, but not the interpretation of \n as a newline character
-echo $(1) | sed "s,\([\\]\)\s*,\1\\
-\t,g" > $@
+@# Generate list of prerequisites with a direct command, rather than saving its result as a function parameter; this is because as a function parameter, it may exceed MAX_ARG_STRLEN (the maximal length of a single argument to the shell, e.g. when passed to echo) and fail to properly write to the dependencies file
+@# -MM: generate prerequisites for object file created from input source file; overridden by actual compilation into an object file if -o option is specified
+@# As -MM option automatically places object file target in current directory, prepend the directory of the source file to match the names specified in object_files
+echo -n $(dir $<) > $@
+$(NVCC) $(NVCC_FLAGS) $(COMPILE_FLAGS) -MM $< >> $@
+echo >> $@
 
 @# If source file prerequisite is a driver source file, add the object file prerequisites for the associated executable; additionally, as each executable depends on different object files, write rules and recipes for target executables in the corresponding dependency file
 @# -n checks for the non-nullity of a string
 @# By default, make evaluates each line of a recipe in a different shell (and the .ONESHELL variable forces all recipes to use a single shell per recipe throughout the makefile), so use shell newlines to force use of the same shell and thereby keep values of instantiated shell variables, while not causing unforseen consequences by modifying the globally effective variable .ONESHELL
 @# Build executable in top-level directory
-@# strip command is necessary because functions contained within evaluate to give a leading whitespace
 if [ -n "$(filter $<,$(driver_files))" ]; \
 then \
 	echo >> $@; \
 	executable=$(notdir $(@:$(depend_suffix)=)); \
-	echo -n "$$executable: " >> $@; \
-	prereq_objs=$(strip
-					$(foreach suffix_type,$(source_suffixes),$\
-						$(patsubst %$(suffix_type),%$(object_suffix),$\
-							$(filter %$(suffix_type),$(1))$\
-						)$\
-					)$\
-				); \
-	echo $$prereq_objs >> $@; \
+	echo "$$executable: \\" >> $@; \
+	prereq_objs=$$($(NVCC) $(NVCC_FLAGS) $(COMPILE_FLAGS) -MM $< | \
+		grep -E "$(1)" | \
+		sed -E 's/.*([[:space:]][^[:space:]]*)$(1) \\/\1$(object_suffix)/'); \
+	echo "\t$$prereq_objs" >> $@; \
 	echo "\t\$$(NVCC) \$$(NVCC_FLAGS) \$$(LINK_FLAGS) $$prereq_objs -o $$executable" >> $@; \
 fi
 endef
