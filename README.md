@@ -68,4 +68,4 @@ According to HPC support staff, CUDA Singularity image version 12.3.2 may still 
 
 	Error in initialising global result array index to 0 on device 0 of 1: the provided PTX was compiled with an unsupported toolchain
 
-(a quick online search suggests this is due to NVIDIA drivers not being up-to-date).
+(A quick online search suggests this is due to NVIDIA drivers not being up-to-date).
