@@ -1,16 +1,22 @@
 # Static Priority Search Tree on GPU
 
 To compile, run:
+
 	make
+
 which defaults to make all. Other options include
+
 	make <source_file_path>.o
 	make <source_file_path>.d
 	make <source_file_name>
+
 where `source_file_path` is the full pathname of a source file without its file suffix, and `source_file_name` is the name of a source file without its file suffix or path prefix
 
 
 For debugging options, run:
+
 	make <target> DEBUG_FLAGS="<flags>"
+
 where `<flags>` can be any combination of:
 - `-D<preproc-flag>` to toggle various preprocessor variables that delineate debugging print statements in the code. Possible values of `<preproc-flag>`:
 	- `DEBUG`: toggles print output to aid with debugging variables that are inaccessible via gdb
