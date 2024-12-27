@@ -205,20 +205,14 @@ __forceinline__ __device__ void getVoxelMinMax(T *const vertex_arr_d, T &min, T 
 		{
 			for (GridDimType i = 0; i < 2; i++)
 			{
-				// Boundary condition: update with new vertex info only if there is a new vertex to update with
-				if (base_voxel_coord_x + i < pt_grid_dims_x
-						&& base_voxel_coord_y + j < pt_grid_dims_y
-						&& base_voxel_coord_z + k < pt_grid_dims_z)
-				{
-					// Voxel grid has one less element in each dimension than the point grid
-					T curr_vert_val = vertex_arr_d[lineariseID(base_voxel_coord_x + i,
-																base_voxel_coord_y + j,
-																base_voxel_coord_z + k,
-																pt_grid_dims_x - 1, pt_grid_dims_y - 1
-															)];
-					min = min <= curr_vert_val ? min : curr_vert_val;
-					max = max >= curr_vert_val ? max : curr_vert_val;
-				}
+				// Base voxel coordinate is equal to vertex of lowest dimension
+				T curr_vert_val = vertex_arr_d[lineariseID(base_voxel_coord_x + i,
+															base_voxel_coord_y + j,
+															base_voxel_coord_z + k,
+															pt_grid_dims_x, pt_grid_dims_y
+														)];
+				min = min <= curr_vert_val ? min : curr_vert_val;
+				max = max >= curr_vert_val ? max : curr_vert_val;
 			}
 		}
 	}
