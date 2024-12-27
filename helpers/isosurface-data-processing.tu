@@ -31,10 +31,10 @@ __global__ void formMetacellTagsGlobal(T *const vertex_arr_d, PointStruct *const
 				GridDimType base_voxel_coord_y = j + blockIdx.y * blockDim.y + threadIdx.y;
 				GridDimType base_voxel_coord_z = k + blockIdx.z * blockDim.z + threadIdx.z;
 				// One voxel is associated with each vertex, with the exception of the last vertices in each dimension (i.e. those vertices with at least one coordinate of value pt_grid_dims_[x-z] - 1)
-				bool active_voxel = base_voxel_coord_x < pt_grid_dims_x - 1
+				bool valid_voxel = base_voxel_coord_x < pt_grid_dims_x - 1
 										&& base_voxel_coord_y < pt_grid_dims_y - 1
 										&& base_voxel_coord_z < pt_grid_dims_z - 1;
-				if (active_voxel)
+				if (valid_voxel)
 				{
 					getVoxelMinMax(vertex_arr_d, min_vert_val, max_vert_val,
 										base_voxel_coord_x, base_voxel_coord_y, base_voxel_coord_z,
@@ -46,7 +46,7 @@ __global__ void formMetacellTagsGlobal(T *const vertex_arr_d, PointStruct *const
 				// Generate mask for threads active during intrawarp phase; all threads in warp run this (or else are exited, i.e. simply not running any code at all)
 				// Call to __ballot_sync() is necessary to determine the thread in warp with largest ID that is still active
 				// As of time of writing (compute capability 9.0), __ballot_sync() returns an unsigned int
-				const auto intrawarp_mask = __ballot_sync(0xffffffff, active_voxel);
+				const auto intrawarp_mask = __ballot_sync(0xffffffff, valid_voxel);
 
 				// Neither CUDA math library-provided min() and max() functions nor host-only std::min() and std::max() compile when passed as parameters to device functions, so simply use lambdas (that implicitly cast to nvstd::function type when assigned to a variable of that type)
 				nvstd::function<T(const T &, const T &)> min_op
@@ -115,20 +115,70 @@ __global__ void formMetacellTagsGlobal(T *const vertex_arr_d, PointStruct *const
 				// All threads in first warp have the correct overall result for the metacell; single thread in block writes result to global memory array
 				if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0)
 				{
-					// Cast necessary, as an arithemtic operation (even of two types that are both small, e.g. GridDimType = char) effects an up-casting to a datatype at least as large as int, whereas directly supplied variables remain as the previous type, causing the overall template instantiation of lineariseID to fail
-					GridDimType metacellID = lineariseID(base_voxel_coord_x / metacell_dims_x,
+					// Cast necessary, as an arithmetic operation (even of two types that are both small, e.g. GridDimType = char) effects an up-casting to a datatype at least as large as int, whereas directly supplied variables remain as the previous type, causing the overall template instantiation of lineariseID to fail
+					GridDimType metacell_ID = lineariseID(base_voxel_coord_x / metacell_dims_x,
 															base_voxel_coord_y / metacell_dims_y,
 															base_voxel_coord_z / metacell_dims_z,
 															metacell_grid_dims_x,
 															metacell_grid_dims_y
 														);
-					metacell_arr_d[metacellID].dim1_val = min_vert_val;
-					metacell_arr_d[metacellID].dim2_val = max_vert_val;
+					metacell_arr_d[metacell_ID].dim1_val = min_vert_val;
+					metacell_arr_d[metacell_ID].dim2_val = max_vert_val;
 					if constexpr (HasID<PointStruct>::value)
-						metacell_arr_d[metacellID].id = metacellID;
+						metacell_arr_d[metacell_ID].id = metacell_ID;
 				}
 
 				// No need for further synchronisation, as all consequent operations before the next interwarp reduction are independent and concurrency-safe
+			}
+		}
+	}
+}
+
+template <typename PointStruct, typename T, typename GridDimType>
+	requires IntSizeOfUAtLeastSizeOfV<GridDimType, int>
+__global__ void formVoxelTagsGlobal(T *const vertex_arr_d, PointStruct *const voxel_arr_d,
+										GridDimType pt_grid_dims_x, GridDimType pt_grid_dims_y, GridDimType pt_grid_dims_z
+									)
+{
+	T min_vert_val, max_vert_val;
+	// Repeat over entire voxel grid
+	// Data is z-major, then y-major, then x-major (i.e. x-dimension index changes the fastest, followed by y-index, then z-index)
+	// Entire block is active if at least one thread is active
+#pragma unroll
+	for (GridDimType k = 0; k < pt_grid_dims_z; k += gridDim.z * blockDim.z)
+	{
+#pragma unroll
+		for (GridDimType j = 0; j < pt_grid_dims_y; j += gridDim.y * blockDim.y)
+		{
+#pragma unroll
+			for (GridDimType i = 0; i < pt_grid_dims_x; i += gridDim.x * blockDim.x)
+			{
+				// Check that voxel in question exists
+				GridDimType base_voxel_coord_x = i + blockIdx.x * blockDim.x + threadIdx.x;
+				GridDimType base_voxel_coord_y = j + blockIdx.y * blockDim.y + threadIdx.y;
+				GridDimType base_voxel_coord_z = k + blockIdx.z * blockDim.z + threadIdx.z;
+				// One voxel is associated with each vertex, with the exception of the last vertices in each dimension (i.e. those vertices with at least one coordinate of value pt_grid_dims_[x-z] - 1)
+				bool valid_voxel = base_voxel_coord_x < pt_grid_dims_x - 1
+										&& base_voxel_coord_y < pt_grid_dims_y - 1
+										&& base_voxel_coord_z < pt_grid_dims_z - 1;
+				if (valid_voxel)
+				{
+					getVoxelMinMax(vertex_arr_d, min_vert_val, max_vert_val,
+										base_voxel_coord_x, base_voxel_coord_y, base_voxel_coord_z,
+										pt_grid_dims_x, pt_grid_dims_y, pt_grid_dims_z);
+
+					// Voxel-specific processing to save to a PointStruct
+					// Cast necessary, as an arithmetic operation (even of two types that are both small, e.g. GridDimType = char) effects an up-casting to a datatype at least as large as int, whereas directly supplied variables remain as the previous type, causing the overall template instantiation of lineariseID to fail
+					GridDimType voxel_ID = lineariseID(base_voxel_coord_x,
+														base_voxel_coord_y,
+														base_voxel_coord_z,
+														pt_grid_dims_x - 1, pt_grid_dims_y - 1
+													);
+					voxel_arr_d[voxel_ID].dim1_val = min_vert_val;
+					voxel_arr_d[voxel_ID].dim2_val = max_vert_val;
+					if constexpr (HasID<PointStruct>::value)
+						voxel_arr_d[voxel_ID].id = voxel_ID;
+				}
 			}
 		}
 	}
@@ -160,13 +210,14 @@ __forceinline__ __device__ void getVoxelMinMax(T *const vertex_arr_d, T &min, T 
 						&& base_voxel_coord_y + j < pt_grid_dims_y
 						&& base_voxel_coord_z + k < pt_grid_dims_z)
 				{
-					T curr_vert = vertex_arr_d[lineariseID(base_voxel_coord_x + i,
+					// Voxel grid has one less element in each dimension than the point grid
+					T curr_vert_val = vertex_arr_d[lineariseID(base_voxel_coord_x + i,
 																base_voxel_coord_y + j,
 																base_voxel_coord_z + k,
-																pt_grid_dims_x, pt_grid_dims_y
+																pt_grid_dims_x - 1, pt_grid_dims_y - 1
 															)];
-					min = min <= curr_vert ? min : curr_vert;
-					max = max >= curr_vert ? max : curr_vert;
+					min = min <= curr_vert_val ? min : curr_vert_val;
+					max = max >= curr_vert_val ? max : curr_vert_val;
 				}
 			}
 		}

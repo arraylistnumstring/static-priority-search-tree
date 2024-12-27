@@ -253,7 +253,7 @@ struct IPSTester
 									gpuErrorCheck(cudaEventRecord(construct_start),
 													"Error in recording start event for timing CUDA search set-up code: ");
 								}
-
+/*
 								pt_arr_d = formMetacellTags<PointStructTemplate<T, IDType, num_IDs>>
 															(
 															 	vertex_arr_d,
@@ -264,7 +264,16 @@ struct IPSTester
 																id_type_wrapper.num_ids_wrapper.num_devs,
 																id_type_wrapper.num_ids_wrapper.dev_props.warpSize
 															);
-
+*/
+								pt_arr_d = formVoxelTags<PointStructTemplate<T, IDType, num_IDs>>
+															(
+																vertex_arr_d,
+																id_type_wrapper.pt_grid_dims,
+																id_type_wrapper.metacell_dims,
+																num_elems,
+																id_type_wrapper.num_ids_wrapper.dev_ind,
+																id_type_wrapper.num_ids_wrapper.num_devs
+															);
 								// Construction end timing placed in conditional to prevent random data instance from recording construct_stop twice (and thereby getting an incorrect timing measurement)
 								if constexpr (timed_CUDA)
 								{
@@ -272,9 +281,26 @@ struct IPSTester
 									gpuErrorCheck(cudaEventRecord(construct_stop),
 													"Error in recording stop event for timing CUDA search set-up code: ");
 								}
+
+#ifdef DEBUG
+								std::cout << "num_elems = " << num_elems << '\n';
+								PointStructTemplate<T, IDType, num_IDs> *pt_arr = new PointStructTemplate<T, IDType, num_IDs>[num_elems];
+								gpuErrorCheck(cudaMemcpy(pt_arr, pt_arr_d, num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>), cudaMemcpyDefault),
+												"Error in copying cell array from device "
+												+ std::to_string(id_type_wrapper.num_ids_wrapper.dev_ind) + " of "
+												+ std::to_string(id_type_wrapper.num_ids_wrapper.num_devs) + ": ");
+								// Instantiate as separate variable, as attempting a direct substitution of an array initialiser doesn't compile, even if statically cast to an appropriate type
+								IDType voxel_grid_dims[Dims::NUM_DIMS] = {
+																			id_type_wrapper.pt_grid_dims[Dims::X_DIM_IND] - 1,
+																			id_type_wrapper.pt_grid_dims[Dims::Y_DIM_IND] - 1,
+																			id_type_wrapper.pt_grid_dims[Dims::Z_DIM_IND] - 1
+																		};
+								print3DArray(std::cout, pt_arr, start_inds, voxel_grid_dims);
+
+								delete[] pt_arr;
+#endif
 							}
 						}
-
 
 						size_t num_res_elems = 0;
 						RetType *res_arr;

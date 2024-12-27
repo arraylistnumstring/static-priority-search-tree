@@ -24,6 +24,12 @@ __global__ void formMetacellTagsGlobal(T *const vertex_arr_d, PointStruct *const
 										GridDimType metacell_dims_x, GridDimType metacell_dims_y, GridDimType metacell_dims_z
 									);
 
+template <typename PointStruct, typename T, typename GridDimType>
+	requires IntSizeOfUAtLeastSizeOfV<GridDimType, int>
+__global__ void formVoxelTagsGlobal(T *const vertex_arr_d, PointStruct *const voxel_arr_d,
+										GridDimType pt_grid_dims_x, GridDimType pt_grid_dims_y, GridDimType pt_grid_dims_z
+									);
+
 template <typename T, typename GridDimType>
 	requires std::is_integral<GridDimType>::value
 __forceinline__ __device__ void getVoxelMinMax(T *const vertex_arr_d, T &min, T &max,
@@ -63,7 +69,7 @@ PointStruct *formMetacellTags(T *const vertex_arr_d, GridDimType pt_grid_dims[Di
 	PointStruct *metacell_arr_d;
 
 	gpuErrorCheck(cudaMalloc(&metacell_arr_d, num_metacells * sizeof(PointStruct)),
-					"Error in allocating metacell storage array on device "
+					"Error in allocating metacell tag storage array on device "
 					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 					+ ": ");
 
@@ -121,6 +127,71 @@ PointStruct *formMetacellTags(T *const vertex_arr_d, GridDimType pt_grid_dims[Di
 	}
 
 	return metacell_arr_d;
+};
+
+// Returns number of voxels in reference num_voxels
+template <class PointStruct, typename T, typename GridDimType>
+	requires IntSizeOfUAtLeastSizeOfV<GridDimType, int>
+PointStruct *formVoxelTags(T *const vertex_arr_d, GridDimType pt_grid_dims[Dims::NUM_DIMS],
+							GridDimType metacell_dims[Dims::NUM_DIMS], size_t &num_voxels,
+							const int dev_ind, const int num_devs)
+{
+	// Total number of voxels is \prod_{i=1}^Dims::NUM_DIMS (pt_grid_dims[i] - 1)
+	// The -1 addend arises because if one surjectively assigns to each metacell the vertex on its volume that has the smallest indices in each dimension, the edges of the point grid where indices are largest in a given direction will have no metacells, as there are no further points to which to interpolate or draw such a metacell
+	num_voxels = 1;
+	for (int i = 0; i < Dims::NUM_DIMS; i++)
+	{
+		num_voxels *= pt_grid_dims[i] - 1;
+#ifdef DEBUG
+		std::cout << "Number of voxels in dimension " << i << ": " << pt_grid_dims[i] - 1 << '\n';
+#endif
+	}
+
+#ifdef DEBUG
+	std::cout << "Number of voxels: " << num_voxels << '\n';
+#endif
+
+	// On-device memory allocations for voxel array
+	PointStruct *voxel_arr_d;
+
+	gpuErrorCheck(cudaMalloc(&voxel_arr_d, num_voxels * sizeof(PointStruct)),
+					"Error in allocating voxel tag storage array on device "
+					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+					+ ": ");
+
+	// Set grid size to be equal to number of voxels, unless this exceeds the GPU's capabilities, as determined by its compute capability-associated technical specifications
+	// Use of decltype to allow for appropriate instantiation of template function std::min (as implicit casting does not take place among its parameters); preprocessor constants here are either sufficiently large to hold GridDimType or at least to avoid type narrowing warnings
+	dim3 num_blocks(std::min(static_cast<decltype(MAX_X_DIM_NUM_BLOCKS)>(pt_grid_dims[Dims::X_DIM_IND]),
+								MAX_X_DIM_NUM_BLOCKS),
+					std::min(static_cast<decltype(MAX_Y_DIM_NUM_BLOCKS)>(pt_grid_dims[Dims::Y_DIM_IND]),
+								MAX_Y_DIM_NUM_BLOCKS),
+					std::min(static_cast<decltype(MAX_Z_DIM_NUM_BLOCKS)>(pt_grid_dims[Dims::Z_DIM_IND]),
+								MAX_Z_DIM_NUM_BLOCKS)
+					);
+
+	// Array initialiser notation; cast is put on preprocessor constants as they have small values and will fit in GridDimType (whereas metacell_dims values, of type GridDimType, may not fit in the datatypes automatically assigned to these small constants, and can produce a warning regarding value narrowing)
+	// Despite metacells being largely irrelevant to this function, use metacell_dims to determine dimensionality of a thread block for ease of use and consistency of testing in comparison to formMetacellTags()
+	GridDimType threads_per_block_dims[Dims::NUM_DIMS] = {
+															std::min(metacell_dims[Dims::X_DIM_IND],
+																		static_cast<GridDimType>(MAX_X_DIM_THREADS_PER_BLOCK)),
+															std::min(metacell_dims[Dims::Y_DIM_IND],
+																		static_cast<GridDimType>(MAX_Y_DIM_THREADS_PER_BLOCK)),
+															std::min(metacell_dims[Dims::Z_DIM_IND],
+																		static_cast<GridDimType>(MAX_Z_DIM_THREADS_PER_BLOCK))
+														};
+
+	dim3 threads_per_block(threads_per_block_dims[Dims::X_DIM_IND],
+								threads_per_block_dims[Dims::Y_DIM_IND],
+								threads_per_block_dims[Dims::Z_DIM_IND]
+							);
+
+	formVoxelTagsGlobal<<<num_blocks, threads_per_block>>>
+				(
+					vertex_arr_d, voxel_arr_d,
+					pt_grid_dims[Dims::X_DIM_IND], pt_grid_dims[Dims::Y_DIM_IND], pt_grid_dims[Dims::Z_DIM_IND]
+				);
+
+	return voxel_arr_d;
 };
 
 template <typename T, typename GridDimType>
