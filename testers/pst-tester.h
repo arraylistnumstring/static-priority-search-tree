@@ -15,6 +15,8 @@
 #include "helper-cuda--modified.h"
 #include "isosurface-data-processing.h"
 #include "linearise-id.h"					// For NUM_DIMS definition
+
+// To be removed:
 #include "print-array.h"
 #include "rand-data-pt-generator.h"
 
@@ -30,6 +32,16 @@ enum PSTTestCodes
 };
 
 enum PSTType {CPU_ITER, CPU_RECUR, GPU};
+
+
+template <typename PointStruct, typename T, typename IDType, typename StaticPST,
+			PSTType pst_type, bool timed, typename Distrib, typename RandNumEng,
+			typename IDDistrib
+		>
+void randDataTest(const size_t num_elems, Distrib &distr, RandNumEng &rand_num_eng,
+					bool vals_inc_ordered, Distrib *const inter_size_distr_ptr,
+					IDDistrib *const id_distr_ptr, cudaDeviceProp &dev_props,
+					const int num_devs, const int dev_ind);
 
 
 template <bool timed>
@@ -614,6 +626,7 @@ struct PSTTester
 
 					void operator()(size_t num_elems, const unsigned warps_per_block, PSTTestCodes test_type=CONSTRUCT)
 					{
+
 						PointStructTemplate<T, void, num_IDs> *pt_arr
 							= generateRandPts<PointStructTemplate<T, void, num_IDs>, T, void>(num_elems,
 												num_ids_wrapper.tree_type_wrapper.pst_tester.distr,
@@ -894,11 +907,23 @@ struct PSTTester
 						delete[] pt_arr;
 						delete[] res_pt_arr;
 					};
+
+					// Declare a particular full specification of randDataTest() as a friend to this struct; requires a declaration of the template function before this use as well
+					friend void randDataTest<PointStructTemplate<T, void, num_IDs>, T, void,
+						   						StaticPSTTemplate<T, PointStructTemplate, void, num_IDs>,
+												pst_type, timed
+											>
+												(const size_t num_elems, Distrib<T> &distr, RandNumEng &rand_num_eng,
+													bool vals_inc_ordered, Distrib<T> *const inter_size_distr_ptr,
+													IDDistrib<void> *const id_distr_ptr, cudaDeviceProp &dev_props,
+													const int num_devs, const int dev_ind
+												);
 				};
 			};
 		};
 	};
 };
 
+#include "pst-tester-functions.tu"
 
 #endif
