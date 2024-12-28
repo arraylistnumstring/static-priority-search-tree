@@ -38,7 +38,8 @@ template <typename PointStruct, typename T, typename IDType, typename StaticPST,
 			PSTType pst_type, bool timed, typename Distrib, typename RandNumEng,
 			typename IDDistrib
 		>
-void randDataTest(const size_t num_elems, Distrib &distr, RandNumEng &rand_num_eng,
+void randDataTest(const size_t num_elems, const unsigned warps_per_block,
+					Distrib &distr, RandNumEng &rand_num_eng,
 					bool vals_inc_ordered, Distrib *const inter_size_distr_ptr,
 					IDDistrib *const id_distr_ptr, cudaDeviceProp &dev_props,
 					const int num_devs, const int dev_ind);
@@ -913,7 +914,8 @@ struct PSTTester
 						   						StaticPSTTemplate<T, PointStructTemplate, void, num_IDs>,
 												pst_type, timed
 											>
-												(const size_t num_elems, Distrib<T> &distr, RandNumEng &rand_num_eng,
+												(const size_t num_elems, const unsigned warps_per_block,
+												 	Distrib<T> &distr, RandNumEng &rand_num_eng,
 													bool vals_inc_ordered, Distrib<T> *const inter_size_distr_ptr,
 													IDDistrib<void> *const id_distr_ptr, cudaDeviceProp &dev_props,
 													const int num_devs, const int dev_ind

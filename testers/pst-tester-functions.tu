@@ -11,7 +11,8 @@ template <typename PointStruct, typename T, typename IDType, typename StaticPST,
 			PSTType pst_type, bool timed, typename Distrib, typename RandNumEng,
 			typename IDDistrib
 		>
-void randDataTest(const size_t num_elems, Distrib &distr, RandNumEng &rand_num_eng,
+void randDataTest(const size_t num_elems, const unsigned warps_per_block,
+					Distrib &distr, RandNumEng &rand_num_eng,
 					bool vals_inc_ordered, Distrib *const inter_size_distr_ptr,
 					IDDistrib *const id_distr_ptr, cudaDeviceProp &dev_props,
 					const int num_devs, const int dev_ind)
@@ -58,4 +59,76 @@ void randDataTest(const size_t num_elems, Distrib &distr, RandNumEng &rand_num_e
 	std::clock_t construct_start_CPU, construct_stop_CPU, search_start_CPU, search_stop_CPU;
 	std::chrono::time_point<std::chrono::steady_clock> construct_start_wall, construct_stop_wall,
 														search_start_wall, search_stop_wall;
+
+	if constexpr (timed)
+	{
+		if constexpr (pst_type == GPU)
+		{
+			gpuErrorCheck(cudaEventCreate(&construct_start_CUDA),
+							"Error in creating start event for timing CUDA PST construction code");
+			gpuErrorCheck(cudaEventCreate(&construct_stop_CUDA),
+							"Error in creating stop event for timing CUDA PST construction code");
+			// For accuracy of measurement of search speeds, create and place search events in stream, even if this is a construction-only test
+			gpuErrorCheck(cudaEventCreate(&search_start_CUDA),
+							"Error in creating start event for timing CUDA search code");
+			gpuErrorCheck(cudaEventCreate(&search_stop_CUDA),
+							"Error in creating stop event for timing CUDA search code");
+
+			// Start CUDA construction timer (i.e. place this event into default stream)
+			gpuErrorCheck(cudaEventRecord(construct_start_CUDA),
+						"Error in recording start event for timing CUDA PST construction code");
+		}
+		else
+		{
+			construct_start_CPU = std::clock();
+			construct_start_wall = std::chrono::steady_clock::now();
+		}
+	}
+
+	StaticPST *tree;
+	if constexpr (pst_type == GPU)
+		tree = new StaticPST(pt_arr, num_elems, warps_per_block, dev_ind, num_devs, dev_props);
+	else
+		tree = new StaticPST(pt_arr, num_elems);
+
+	if constexpr (timed)
+	{
+		if constexpr (pst_type == GPU)
+		{
+			// End CUDA construction timer
+			gpuErrorCheck(cudaEventRecord(construct_stop_CUDA),
+							"Error in recording stop event for timing CUDA PST construction code");
+		}
+		else
+		{
+			construct_stop_CPU = std::clock();
+			construct_stop_wall = std::chrono::steady_clock::now();
+		}
+	}
+
+	if (tree == nullptr)
+	{
+		throwErr("Error: Could not allocate memory for priority search tree");
+		return;
+	}
+
+	std::cout << *tree << '\n';
+
+	size_t num_res_elems = 0;
+	PointStruct *res_pt_arr;
+
+	if constexpr (timed)
+	{
+		if constexpr (pst_type == GPU)
+		{
+			// Start CUDA search timer (i.e. place this event in default stream)
+			gpuErrorCheck(cudaEventRecord(search_start_CUDA),
+							"Error in recording start event for timing CUDA search code");
+		}
+		else
+		{
+			search_start_CPU = std::clock();
+			search_start_wall = std::chrono::steady_clock::now();
+		}
+	}
 }
