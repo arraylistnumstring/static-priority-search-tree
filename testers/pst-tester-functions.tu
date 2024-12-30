@@ -172,4 +172,67 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 		}
 	}
 	// If test_type == CONSTRUCT, do nothing for the search/report phase
+
+	if constexpr (timed)
+	{
+		if constexpr (pst_type == GPU)
+		{
+			// End CUDA search timer
+			gpuErrorCheck(cudaEventRecord(search_stop_CUDA),
+							"Error in recording stop event for timing CUDA search code");
+
+			// Block CPU execution until search stop event has been recorded
+			gpuErrorCheck(cudaEventSynchronize(search_stop_CUDA),
+							"Error in blocking CPU execution until completion of stop event for timing CUDA search code");
+
+			// Report construction and search timing
+			// Type chosen because of type of parameter of cudaEventElapsedTime
+			float ms = 0;	// milliseconds
+
+			gpuErrorCheck(cudaEventElapsedTime(&ms, construct_start_CUDA, construct_stop_CUDA),
+							"Error in calculating time elapsed for CUDA PST construction code");
+			std::cout << "CUDA PST construction time: " << ms << " ms\n";
+
+			if (test_type != CONSTRUCT)
+			{
+				gpuErrorCheck(cudaEventElapsedTime(&ms, search_start_CUDA, search_stop_CUDA),
+							"Error in calculating time elapsed for CUDA search code");
+				std::cout << "CUDA PST search time: " << ms << " ms\n";
+			}
+
+			gpuErrorCheck(cudaEventDestroy(construct_start_CUDA),
+							"Error in destroying start event for timing CUDA PST construction code");
+			gpuErrorCheck(cudaEventDestroy(construct_stop_CUDA),
+							"Error in destroying stop event for timing CUDA PST construction code");
+			gpuErrorCheck(cudaEventDestroy(search_start_CUDA),
+							"Error in destroying start event for timing CUDA search code");
+			gpuErrorCheck(cudaEventDestroy(search_stop_CUDA),
+							"Error in destroying stop event for timing CUDA search code");
+		}
+		else
+		{
+			search_stop_CPU = std::clock();
+			search_stop_wall = std::chrono::steady_clock::now();
+
+			std::cout << "CPU PST construction time:\n"
+					  << "\tCPU clock time used:\t"
+					  << 1000.0 * (construct_stop_CPU - construct_start_CPU) / CLOCKS_PER_SEC << " ms\n"
+					  << "\tWall clock time passed:\t"
+					  << std::chrono::duration<double, std::milli>(construct_stop_wall - construct_start_wall).count()
+					  << " ms\n";
+
+
+			if (test_type != CONSTRUCT)
+			{
+				std::cout << "CPU PST search time:\n"
+						  << "\tCPU clock time used:\t"
+						  << 1000.0 * (search_stop_CPU - search_start_CPU) / CLOCKS_PER_SEC << " ms\n"
+						  << "\tWall clock time passed:\t"
+						  << std::chrono::duration<double, std::milli>(search_stop_wall - search_start_wall).count()
+						  << " ms\n";
+			}
+		}
+	}
+
+
 }
