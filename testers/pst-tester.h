@@ -35,8 +35,8 @@ enum PSTType {CPU_ITER, CPU_RECUR, GPU};
 
 
 template <typename PointStruct, typename T, typename IDType, typename StaticPST,
-		 	typename RetType, PSTType pst_type, bool timed, typename PSTTester,
-			typename IDDistrib
+		 	PSTType pst_type, bool timed, typename PSTTester,
+			typename IDDistrib, typename RetType
 		>
 void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 					PSTTestCodes test_type, PSTTester &pst_tester,
@@ -626,15 +626,21 @@ struct PSTTester
 					void operator()(size_t num_elems, const unsigned warps_per_block, PSTTestCodes test_type=CONSTRUCT)
 					{
 						// Points without IDs can only run randDataTest()
-						/*randDataTest(num_elems, warps_per_block, test_type,
+						/*
+						randDataTest<PointStructTemplate<T, void, num_IDs>, T, void,
+										StaticPSTTemplate<T, PointStructTemplate, void, num_IDs>,
+										pst_type, timed
+									>
+										(num_elems, warps_per_block, test_type,
 										num_ids_wrapper.tree_type_wrapper.pst_tester,
-										num_ids_wrapper.tree_type_wrapper.pst_tester.)*/
+										nullptr, num_ids_wrapper.dev_props,
+										num_ids_wrapper.num_devs, num_ids_wrapper.dev_ind);
+										*/
 					};
 
 					// Declare a particular full specification of randDataTest() as a friend to this struct; requires a declaration of the template function before this use as well
 					friend void randDataTest<PointStructTemplate<T, void, num_IDs>, T, void,
 						   						StaticPSTTemplate<T, PointStructTemplate, void, num_IDs>,
-												/* RetType = */PointStructTemplate<T, void, num_IDs>,
 												pst_type, timed
 											>
 												(const size_t num_elems, const unsigned warps_per_block,

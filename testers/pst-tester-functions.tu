@@ -8,8 +8,8 @@
 //void datasetTest()
 
 template <typename PointStruct, typename T, typename IDType, typename StaticPST,
-			typename RetType, PSTType pst_type, bool timed, typename PSTTester,
-			typename IDDistrib
+			PSTType pst_type, bool timed, typename PSTTester,
+			typename IDDistrib, typename RetType=PointStruct
 		>
 void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 					PSTTestCodes test_type, PSTTester &pst_tester,
