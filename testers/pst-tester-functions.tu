@@ -8,19 +8,18 @@
 //void datasetTest()
 
 template <typename PointStruct, typename T, typename IDType, typename StaticPST,
-			typename RetType, PSTType pst_type, bool timed, typename Distrib,
-			typename RandNumEng, typename IDDistrib, typename PSTTester
+			typename RetType, PSTType pst_type, bool timed, typename PSTTester,
+			typename IDDistrib
 		>
 void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 					PSTTestCodes test_type, PSTTester &pst_tester,
-					Distrib &distr, RandNumEng &rand_num_eng,
-					bool vals_inc_ordered, Distrib *const inter_size_distr_ptr,
 					IDDistrib *const id_distr_ptr, cudaDeviceProp &dev_props,
 					const int num_devs, const int dev_ind)
 {
-	PointStruct *pt_arr = generateRandPts<PointStruct, T, IDType>(num_elems, distr, rand_num_eng,
-																	vals_inc_ordered,
-																	inter_size_distr_ptr,
+	PointStruct *pt_arr = generateRandPts<PointStruct, T, IDType>(num_elems, pst_tester.distr,
+																	pst_tester.rand_num_eng,
+																	pst_tester.vals_inc_ordered,
+																	pst_tester.inter_size_distr_active ? &(pst_tester.inter_size_distr) : nullptr,
 																	id_distr_ptr
 																);
 
