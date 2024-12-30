@@ -234,5 +234,34 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 		}
 	}
 
+	// If result pointer array is on GPU, copy it to CPU and print
+	cudaPointerAttributes ptr_info;
+	gpuErrorCheck(cudaPointerGetAttributes(&ptr_info, res_pt_arr),
+					"Error in determining location type of memory address of result PointStruct array (i.e. whether on host or device)");
 
+	// res_pt_arr is on device; copy to CPU
+	if (ptr_info.type == cudaMemoryTypeDevice)
+	{
+		// Differentiate on-device and on-host pointers
+		PointStruct *res_pt_arr_d = res_pt_arr;
+
+		res_pt_arr = nullptr;
+
+		// Allocate space on host for data
+		res_pt_arr = new PointStruct[num_res_elems];
+
+		if (res_pt_arr == nullptr)
+			throwErr("Error: could not allocate PointStruct array of size "
+						+ std::to_string(num_res_elems) + " on host");
+
+		// Copy data from res_pt_arr_d to res_pt_arr
+		gpuErrorCheck(cudaMemcpy(res_pt_arr, res_pt_arr_d, num_res_elems * sizeof(PointStruct),
+									cudaMemcpyDefault), 
+						"Error in copying array of PointStruct objects from device "
+						+ std::to_string(ptr_info.device) + ": ");
+
+		// Free on-device array of PointStructTemplates
+		gpuErrorCheck(cudaFree(res_pt_arr_d), "Error in freeing on-device array of result PointStructs on device "
+						+ std::to_string(ptr_info.device) + ": ");
+	}
 }
