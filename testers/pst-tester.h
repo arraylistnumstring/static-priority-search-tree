@@ -35,8 +35,8 @@ enum PSTType {CPU_ITER, CPU_RECUR, GPU};
 
 
 template <typename PointStruct, typename T, typename IDType, typename StaticPST,
-			PSTType pst_type, bool timed, typename Distrib, typename RandNumEng,
-			typename IDDistrib, typename PSTTester
+		 	typename RetType, PSTType pst_type, bool timed, typename Distrib,
+			typename RandNumEng, typename IDDistrib, typename PSTTester
 		>
 void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 					PSTTestCodes test_type, PSTTester &pst_tester,
@@ -590,7 +590,6 @@ struct PSTTester
 											return pt_1.compareDim1(pt_2) < 0;
 										});
 
-							// For some reason, the offending line is the access of ptstr.print()
 							printArray(std::cout, res_arr, 0, num_res_elems);
 							std::cout << '\n';
 
@@ -901,7 +900,6 @@ struct PSTTester
 									return pt_1.compareDim1(pt_2) < 0;
 								});
 
-						// For some reason, the offending line is the access of ptstr.print()
 						printArray(std::cout, res_pt_arr, 0, num_res_elems);
 						std::cout << '\n';
 
@@ -913,6 +911,7 @@ struct PSTTester
 					// Declare a particular full specification of randDataTest() as a friend to this struct; requires a declaration of the template function before this use as well
 					friend void randDataTest<PointStructTemplate<T, void, num_IDs>, T, void,
 						   						StaticPSTTemplate<T, PointStructTemplate, void, num_IDs>,
+												/* RetType = */PointStructTemplate<T, void, num_IDs>,
 												pst_type, timed
 											>
 												(const size_t num_elems, const unsigned warps_per_block,

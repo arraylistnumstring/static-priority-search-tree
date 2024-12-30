@@ -8,8 +8,8 @@
 //void datasetTest()
 
 template <typename PointStruct, typename T, typename IDType, typename StaticPST,
-			PSTType pst_type, bool timed, typename Distrib, typename RandNumEng,
-			typename IDDistrib, typename PSTTester
+			typename RetType, PSTType pst_type, bool timed, typename Distrib,
+			typename RandNumEng, typename IDDistrib, typename PSTTester
 		>
 void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 					PSTTestCodes test_type, PSTTester &pst_tester,
@@ -116,7 +116,7 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 	std::cout << *tree << '\n';
 
 	size_t num_res_elems = 0;
-	PointStruct *res_pt_arr;
+	RetType *res_arr;
 
 	if constexpr (timed)
 	{
@@ -138,17 +138,17 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 	{
 		if (test_type == LEFT_SEARCH)
 		{
-			tree->twoSidedLeftSearch(num_res_elems, res_pt_arr, pst_tester.dim1_val_bound1,
+			tree->twoSidedLeftSearch(num_res_elems, res_arr, pst_tester.dim1_val_bound1,
 										pst_tester.min_dim2_val, warps_per_block);
 		}
 		else if (test_type == RIGHT_SEARCH)
 		{
-			tree->twoSidedRightSearch(num_res_elems, res_pt_arr, pst_tester.dim1_val_bound1,
+			tree->twoSidedRightSearch(num_res_elems, res_arr, pst_tester.dim1_val_bound1,
 										pst_tester.min_dim2_val, warps_per_block);
 		}
 		else if (test_type == THREE_SEARCH)
 		{
-			tree->threeSidedSearch(num_res_elems, res_pt_arr, pst_tester.dim1_val_bound1,
+			tree->threeSidedSearch(num_res_elems, res_arr, pst_tester.dim1_val_bound1,
 									pst_tester.dim1_val_bound2, pst_tester.min_dim2_val,
 									warps_per_block);
 		}
@@ -157,17 +157,17 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 	{
 		if (test_type == LEFT_SEARCH)
 		{
-			tree->twoSidedLeftSearch(num_res_elems, res_pt_arr, pst_tester.dim1_val_bound1,
+			tree->twoSidedLeftSearch(num_res_elems, res_arr, pst_tester.dim1_val_bound1,
 										pst_tester.min_dim2_val);
 		}
 		else if (test_type == RIGHT_SEARCH)
 		{
-			tree->twoSidedRightSearch(num_res_elems, res_pt_arr, pst_tester.dim1_val_bound1,
+			tree->twoSidedRightSearch(num_res_elems, res_arr, pst_tester.dim1_val_bound1,
 										pst_tester.min_dim2_val);
 		}
 		else if (test_type == THREE_SEARCH)
 		{
-			tree->threeSidedSearch(num_res_elems, res_pt_arr, pst_tester.dim1_val_bound1,
+			tree->threeSidedSearch(num_res_elems, res_arr, pst_tester.dim1_val_bound1,
 									pst_tester.dim1_val_bound2, pst_tester.min_dim2_val);
 		}
 	}
@@ -236,32 +236,53 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 
 	// If result pointer array is on GPU, copy it to CPU and print
 	cudaPointerAttributes ptr_info;
-	gpuErrorCheck(cudaPointerGetAttributes(&ptr_info, res_pt_arr),
+	gpuErrorCheck(cudaPointerGetAttributes(&ptr_info, res_arr),
 					"Error in determining location type of memory address of result PointStruct array (i.e. whether on host or device)");
 
-	// res_pt_arr is on device; copy to CPU
+	// res_arr is on device; copy to CPU
 	if (ptr_info.type == cudaMemoryTypeDevice)
 	{
 		// Differentiate on-device and on-host pointers
-		PointStruct *res_pt_arr_d = res_pt_arr;
+		PointStruct *res_arr_d = res_arr;
 
-		res_pt_arr = nullptr;
+		res_arr = nullptr;
 
 		// Allocate space on host for data
-		res_pt_arr = new PointStruct[num_res_elems];
+		res_arr = new PointStruct[num_res_elems];
 
-		if (res_pt_arr == nullptr)
+		if (res_arr == nullptr)
 			throwErr("Error: could not allocate PointStruct array of size "
 						+ std::to_string(num_res_elems) + " on host");
 
-		// Copy data from res_pt_arr_d to res_pt_arr
-		gpuErrorCheck(cudaMemcpy(res_pt_arr, res_pt_arr_d, num_res_elems * sizeof(PointStruct),
+		// Copy data from res_arr_d to res_arr
+		gpuErrorCheck(cudaMemcpy(res_arr, res_arr_d, num_res_elems * sizeof(PointStruct),
 									cudaMemcpyDefault), 
 						"Error in copying array of PointStruct objects from device "
 						+ std::to_string(ptr_info.device) + ": ");
 
 		// Free on-device array of PointStructTemplates
-		gpuErrorCheck(cudaFree(res_pt_arr_d), "Error in freeing on-device array of result PointStructs on device "
+		gpuErrorCheck(cudaFree(res_arr_d), "Error in freeing on-device array of result PointStructs on device "
 						+ std::to_string(ptr_info.device) + ": ");
 	}
+
+	// Sort output for consistency (specifically for GPU-reported outputs, which may be randomly ordered and therefore must be sorted for easy comparison of results)
+	if constexpr (std::is_same<RetType, IDType>::value)
+		std::sort(res_arr, res_arr + num_res_elems,
+				[](const IDType &id_1, const IDType &id_2)
+				{
+					return id_1 < id_2;
+				});
+	else
+		std::sort(res_arr, res_arr + num_res_elems,
+				[](const PointStruct &pt_1, const PointStruct &pt_2)
+				{
+					return pt_1.compareDim1(pt_2) < 0;
+				});
+
+	printArray(std::cout, res_arr, 0, num_res_elems);
+	std::cout << '\n';
+
+	delete tree;
+	delete[] res_arr;
+	delete[] pt_arr;
 }
