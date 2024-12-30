@@ -36,9 +36,10 @@ enum PSTType {CPU_ITER, CPU_RECUR, GPU};
 
 template <typename PointStruct, typename T, typename IDType, typename StaticPST,
 			PSTType pst_type, bool timed, typename Distrib, typename RandNumEng,
-			typename IDDistrib
+			typename IDDistrib, typename PSTTester
 		>
 void randDataTest(const size_t num_elems, const unsigned warps_per_block,
+					PSTTestCodes test_type, PSTTester &pst_tester,
 					Distrib &distr, RandNumEng &rand_num_eng,
 					bool vals_inc_ordered, Distrib *const inter_size_distr_ptr,
 					IDDistrib *const id_distr_ptr, cudaDeviceProp &dev_props,
@@ -915,6 +916,7 @@ struct PSTTester
 												pst_type, timed
 											>
 												(const size_t num_elems, const unsigned warps_per_block,
+													PSTTestCodes test_type, PSTTester &pst_tester,
 												 	Distrib<T> &distr, RandNumEng &rand_num_eng,
 													bool vals_inc_ordered, Distrib<T> *const inter_size_distr_ptr,
 													IDDistrib<void> *const id_distr_ptr, cudaDeviceProp &dev_props,

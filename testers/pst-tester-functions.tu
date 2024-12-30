@@ -9,9 +9,10 @@
 
 template <typename PointStruct, typename T, typename IDType, typename StaticPST,
 			PSTType pst_type, bool timed, typename Distrib, typename RandNumEng,
-			typename IDDistrib
+			typename IDDistrib, typename PSTTester
 		>
 void randDataTest(const size_t num_elems, const unsigned warps_per_block,
+					PSTTestCodes test_type, PSTTester &pst_tester,
 					Distrib &distr, RandNumEng &rand_num_eng,
 					bool vals_inc_ordered, Distrib *const inter_size_distr_ptr,
 					IDDistrib *const id_distr_ptr, cudaDeviceProp &dev_props,
@@ -131,4 +132,44 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 			search_start_wall = std::chrono::steady_clock::now();
 		}
 	}
+
+	// Search/report test phase
+	if constexpr (pst_type == GPU)
+	{
+		if (test_type == LEFT_SEARCH)
+		{
+			tree->twoSidedLeftSearch(num_res_elems, res_pt_arr, pst_tester.dim1_val_bound1,
+										pst_tester.min_dim2_val, warps_per_block);
+		}
+		else if (test_type == RIGHT_SEARCH)
+		{
+			tree->twoSidedRightSearch(num_res_elems, res_pt_arr, pst_tester.dim1_val_bound1,
+										pst_tester.min_dim2_val, warps_per_block);
+		}
+		else if (test_type == THREE_SEARCH)
+		{
+			tree->threeSidedSearch(num_res_elems, res_pt_arr, pst_tester.dim1_val_bound1,
+									pst_tester.dim1_val_bound2, pst_tester.min_dim2_val,
+									warps_per_block);
+		}
+	}
+	else
+	{
+		if (test_type == LEFT_SEARCH)
+		{
+			tree->twoSidedLeftSearch(num_res_elems, res_pt_arr, pst_tester.dim1_val_bound1,
+										pst_tester.min_dim2_val);
+		}
+		else if (test_type == RIGHT_SEARCH)
+		{
+			tree->twoSidedRightSearch(num_res_elems, res_pt_arr, pst_tester.dim1_val_bound1,
+										pst_tester.min_dim2_val);
+		}
+		else if (test_type == THREE_SEARCH)
+		{
+			tree->threeSidedSearch(num_res_elems, res_pt_arr, pst_tester.dim1_val_bound1,
+									pst_tester.dim1_val_bound2, pst_tester.min_dim2_val);
+		}
+	}
+	// If test_type == CONSTRUCT, do nothing for the search/report phase
 }
