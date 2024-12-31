@@ -34,14 +34,14 @@ enum PSTTestCodes
 enum PSTType {CPU_ITER, CPU_RECUR, GPU};
 
 
+// Use void * type for id_distr_ptr, as IDDistr<void> results in substitution failures when plugging into distribution template template parameters, and simply supplying IDDistr<T> in that case fails when the distribution expects a floating datatype and receives an integral one (and potentially vice versa)
 template <typename PointStruct, typename T, typename IDType, typename StaticPST,
-		 	PSTType pst_type, bool timed, typename RetType=PointStruct,
-			typename PSTTester, typename IDDistrib
+		 	PSTType pst_type, bool timed, typename RetType=PointStruct, typename PSTTester
 		>
 void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 					PSTTestCodes test_type, PSTTester &pst_tester,
-					IDDistrib *const id_distr_ptr, cudaDeviceProp &dev_props,
-					const int num_devs, const int dev_ind);
+					cudaDeviceProp &dev_props, const int num_devs, const int dev_ind,
+					void *const id_distr_ptr=nullptr);
 
 
 template <bool timed>
@@ -626,16 +626,14 @@ struct PSTTester
 					void operator()(size_t num_elems, const unsigned warps_per_block, PSTTestCodes test_type=CONSTRUCT)
 					{
 						// Points without IDs can only run randDataTest()
-						/*
 						randDataTest<PointStructTemplate<T, void, num_IDs>, T, void,
 										StaticPSTTemplate<T, PointStructTemplate, void, num_IDs>,
 										pst_type, timed
 									>
 										(num_elems, warps_per_block, test_type,
-										num_ids_wrapper.tree_type_wrapper.pst_tester,
-										nullptr, num_ids_wrapper.dev_props,
-										num_ids_wrapper.num_devs, num_ids_wrapper.dev_ind);
-										*/
+											num_ids_wrapper.tree_type_wrapper.pst_tester,
+											num_ids_wrapper.dev_props,
+											num_ids_wrapper.num_devs, num_ids_wrapper.dev_ind);
 					};
 
 					// Declare a particular full specification of randDataTest() as a friend to this struct; requires a declaration of the template function before this use as well
@@ -646,9 +644,9 @@ struct PSTTester
 												(const size_t num_elems, const unsigned warps_per_block,
 													PSTTestCodes test_type,
 													DataTypeWrapper<T, Distrib, RandNumEng> &pst_tester,
-													IDDistrib<void> *const id_distr_ptr,
 													cudaDeviceProp &dev_props,
-													const int num_devs, const int dev_ind
+													const int num_devs, const int dev_ind,
+													void *const id_distr_ptr
 												);
 				};
 			};
