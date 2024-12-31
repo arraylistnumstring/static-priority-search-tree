@@ -74,6 +74,7 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 														);
 
 	// Check that GPU memory is sufficiently big for the necessary calculations; num_metacells is now known because of formMetacellTags()
+	// TODO: May need to put this before vertex read-in so that total memory consumption is known and not attempted to be allocated if insufficient
 }
 
 template <typename PointStruct, typename T, typename IDType, typename StaticPST,
