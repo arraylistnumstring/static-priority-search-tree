@@ -5,11 +5,42 @@
 #endif
 
 
-template <typename PointStruct>
+template <typename PointStruct, typename T, typename StaticPST,
+			 PSTType pst_type, bool timed, typename RetType, typename GridDimType
+		 >
 void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per_block,
+					GridDimType pt_grid_dims[Dims::NUM_DIMS],
 					cudaDeviceProp &dev_props, const int num_devs, const int dev_ind)
 {
+#ifdef DEBUG
+	std::cout << "Input file: " << input_file << '\n';
+#endif
+
+	// Variables must be outside of conditionals to be accessible in later conditionals
+	// For CPU PSTs, GPU -> CPU transfer time of metacells must be taken into consideration for the "construct" cost
+	std::clock_t construct_start_CPU, construct_stop_CPU, search_start_CPU, search_stop_CPU;
+	std::chrono::time_point<std::chrono::steady_clock> construct_start_wall, construct_stop_wall, search_start_wall, search_stop_wall;
+
+	cudaEvent_t construct_start_CUDA, construct_stop_CUDA, search_start_CUDA, search_stop_CUDA;
+
+	if constexpr (timed && pst_type == GPU)
+	{
+		gpuErrorCheck(cudaEventCreate(&construct_start_CUDA),
+						"Error in creating start event for timing CUDA PST construction code");
+		gpuErrorCheck(cudaEventCreate(&construct_stop_CUDA),
+						"Error in creating stop event for timing CUDA PST construction code");
+		gpuErrorCheck(cudaEventCreate(&search_start_CUDA),
+						"Error in creating start event for timing CUDA search code");
+		gpuErrorCheck(cudaEventCreate(&search_stop_CUDA),
+						"Error in creating stop event for timing CUDA search code");
+	}
+
+	GridDimType num_verts = 1;
+	for (int i = 0; i < Dims::NUM_DIMS; i++)
+		num_verts *= pt_grid_dims[i];
+
 	PointStruct *pt_arr;
+
 }
 
 template <typename PointStruct, typename T, typename IDType, typename StaticPST,
@@ -87,7 +118,7 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 							"Error in creating start event for timing CUDA PST construction code");
 			gpuErrorCheck(cudaEventCreate(&construct_stop_CUDA),
 							"Error in creating stop event for timing CUDA PST construction code");
-			// For accuracy of measurement of search speeds, create and place search events in stream, even if this is a construction-only test
+			// For accuracy of measurement of search speeds, create search events here, even if this is a construction-only test
 			gpuErrorCheck(cudaEventCreate(&search_start_CUDA),
 							"Error in creating start event for timing CUDA search code");
 			gpuErrorCheck(cudaEventCreate(&search_stop_CUDA),

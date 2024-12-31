@@ -33,8 +33,12 @@ enum PSTTestCodes
 
 enum PSTType {CPU_ITER, CPU_RECUR, GPU};
 
-template <typename PointStruct>
+// No integral requirement is imposed on GridDimType, as datasetTest() is still declared as a friend for non-integral IDTypes and would thus result in compilation failure
+template <typename PointStruct, typename T, typename StaticPST,
+		 	PSTType pst_type, bool timed, typename RetType, typename GridDimType
+		>
 void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per_block,
+					GridDimType pt_grid_dims[Dims::NUM_DIMS],
 					cudaDeviceProp &dev_props, const int num_devs, const int dev_ind);
 
 template <typename PointStruct, typename T, typename IDType, typename StaticPST,
@@ -194,7 +198,21 @@ struct PSTTester
 
 						void operator()(size_t num_elems, const unsigned warps_per_block, PSTTestCodes test_type=CONSTRUCT)
 						{
-							if (id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.input_file == "")
+							if (std::is_integral<IDType>::value
+									&& id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.input_file != "")
+							{
+								datasetTest<PointStructTemplate<T, IDType, num_IDs>, T,
+												StaticPSTTemplate<T, PointStructTemplate, IDType, num_IDs>,
+												pst_type, timed, RetType
+											>
+												(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.input_file,
+													warps_per_block, id_type_wrapper.pt_grid_dims,
+													id_type_wrapper.num_ids_wrapper.dev_props,
+													id_type_wrapper.num_ids_wrapper.num_devs,
+													id_type_wrapper.num_ids_wrapper.dev_ind
+												);
+							}
+							else
 							{
 								randDataTest<PointStructTemplate<T, IDType, num_IDs>, T, IDType,
 												StaticPSTTemplate<T, PointStructTemplate, IDType, num_IDs>,
@@ -205,48 +223,31 @@ struct PSTTester
 												 id_type_wrapper.num_ids_wrapper.dev_props,
 												 id_type_wrapper.num_ids_wrapper.num_devs,
 												 id_type_wrapper.num_ids_wrapper.dev_ind,
-												 &(id_type_wrapper.id_distr));
-							}
-							else
-							{
-								datasetTest<PointStructTemplate<T, IDType, num_IDs>>
-												(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.input_file,
-													warps_per_block,
-													id_type_wrapper.num_ids_wrapper.dev_props,
-													id_type_wrapper.num_ids_wrapper.num_devs,
-													id_type_wrapper.num_ids_wrapper.dev_ind
+												 &(id_type_wrapper.id_distr)
 												);
 							}
+
 							PointStructTemplate<T, IDType, num_IDs> *pt_arr;
 
 							// Will only be non-nullptr-valued if reading from an input file
 							T *vertex_arr_d = nullptr;
 
-#ifdef DEBUG
-							std::cout << "Input file: " << id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.input_file << '\n';
-#endif
-
-							// Variables must be outside of conditionals to be accessible in later conditionals
-							// Place CPU timing here, as GPU -> CPU transfer time of metacells must be taken into consideration for the "construct" cost
 							std::clock_t construct_start_CPU, construct_stop_CPU, search_start_CPU, search_stop_CPU;
 							std::chrono::time_point<std::chrono::steady_clock> construct_start_wall, construct_stop_wall, search_start_wall, search_stop_wall;
 
 							cudaEvent_t construct_start_CUDA, construct_stop_CUDA, search_start_CUDA, search_stop_CUDA;
 
-							// Construction has already started for CPU (because it includes copying of metacells to host), so just start timing GPU construction here
 							if constexpr (timed && pst_type == GPU)
 							{
 								gpuErrorCheck(cudaEventCreate(&construct_start_CUDA),
-												"Error in creating start event for timing CUDA PST construction code: ");
+												"Error in creating start event for timing CUDA PST construction code");
 								gpuErrorCheck(cudaEventCreate(&construct_stop_CUDA),
-												"Error in creating stop event for timing CUDA PST construction code: ");
-								// For accuracy of measurement of search speeds, create and place search events in stream, even if this is a construction-only test
+												"Error in creating stop event for timing CUDA PST construction code");
 								gpuErrorCheck(cudaEventCreate(&search_start_CUDA),
-												"Error in creating start event for timing CUDA search code: ");
+												"Error in creating start event for timing CUDA search code");
 								gpuErrorCheck(cudaEventCreate(&search_stop_CUDA),
-												"Error in creating stop event for timing CUDA search code: ");
+												"Error in creating stop event for timing CUDA search code");
 							}
-
 							// Wrap readInVertices in an if constexpr type check (so that it will only be compiled if it succeeds), as pt_grid_dims will be used to allocate memory, and thus must be of integral type
 							if constexpr (std::is_integral<IDType>::value)
 							{
@@ -641,9 +642,14 @@ struct PSTTester
 								delete[] pt_arr;
 						};
 
-						friend void datasetTest<PointStructTemplate<T, IDType, num_IDs>>
+						friend void datasetTest<PointStructTemplate<T, IDType, num_IDs>, T,
+													StaticPSTTemplate<T, PointStructTemplate, IDType, num_IDs>,
+													pst_type, timed, RetType
+												>
 													(const std::string input_file, const unsigned tree_ops_warps_per_block,
-														cudaDeviceProp &dev_props, const int num_devs, const int dev_ind
+														IDType pt_grid_dims[Dims::NUM_DIMS],
+														cudaDeviceProp &dev_props, const int num_devs,
+														const int dev_ind
 													);
 
 						friend void randDataTest<PointStructTemplate<T, IDType, num_IDs>, T, IDType,
