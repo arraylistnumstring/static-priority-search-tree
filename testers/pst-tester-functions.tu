@@ -8,9 +8,8 @@
 template <typename PointStruct, typename T, typename StaticPST,
 			 PSTType pst_type, bool timed, typename RetType, typename GridDimType
 		 >
-	requires std::is_integral<GridDimType>::value
 void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per_block,
-					GridDimType pt_grid_dims[Dims::NUM_DIMS],
+					GridDimType pt_grid_dims[Dims::NUM_DIMS], GridDimType metacell_dims[Dims::NUM_DIMS],
 					cudaDeviceProp &dev_props, const int num_devs, const int dev_ind)
 {
 #ifdef DEBUG
@@ -64,9 +63,17 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 						+ " total devices: "
 					);
 
+	// Prior cudaMemcpy() is staged, if not already written through, so can free vertex_arr
+	delete[] vertex_arr;
 
-	PointStruct *pt_arr;
+	size_t num_metacells;
 
+	PointStruct *pt_arr = formMetacellTags<PointStruct>(vertex_arr_d, pt_grid_dims,
+															metacell_dims, num_metacells,
+															dev_ind, num_devs, dev_props.warpSize
+														);
+
+	// Check that GPU memory is sufficiently big for the necessary calculations; num_metacells is now known because of formMetacellTags()
 }
 
 template <typename PointStruct, typename T, typename IDType, typename StaticPST,

@@ -38,7 +38,7 @@ template <typename PointStruct, typename T, typename StaticPST,
 		 	PSTType pst_type, bool timed, typename RetType, typename GridDimType
 		>
 void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per_block,
-					GridDimType pt_grid_dims[Dims::NUM_DIMS],
+					GridDimType pt_grid_dims[Dims::NUM_DIMS], GridDimType metacell_dims[Dims::NUM_DIMS],
 					cudaDeviceProp &dev_props, const int num_devs, const int dev_ind);
 
 template <typename PointStruct, typename T, typename IDType, typename StaticPST,
@@ -209,6 +209,7 @@ struct PSTTester
 												>
 													(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.input_file,
 														warps_per_block, id_type_wrapper.pt_grid_dims,
+														id_type_wrapper.metacell_dims,
 														id_type_wrapper.num_ids_wrapper.dev_props,
 														id_type_wrapper.num_ids_wrapper.num_devs,
 														id_type_wrapper.num_ids_wrapper.dev_ind
@@ -652,6 +653,7 @@ struct PSTTester
 												>
 													(const std::string input_file, const unsigned tree_ops_warps_per_block,
 														IDType pt_grid_dims[Dims::NUM_DIMS],
+														IDType metacell_dims[Dims::NUM_DIMS],
 														cudaDeviceProp &dev_props, const int num_devs,
 														const int dev_ind
 													);
