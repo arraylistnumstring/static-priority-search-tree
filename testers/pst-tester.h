@@ -35,8 +35,8 @@ enum PSTType {CPU_ITER, CPU_RECUR, GPU};
 
 
 template <typename PointStruct, typename T, typename IDType, typename StaticPST,
-		 	PSTType pst_type, bool timed, typename PSTTester,
-			typename IDDistrib, typename RetType
+		 	PSTType pst_type, bool timed, typename RetType=PointStruct,
+			typename PSTTester, typename IDDistrib
 		>
 void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 					PSTTestCodes test_type, PSTTester &pst_tester,
