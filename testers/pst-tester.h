@@ -34,9 +34,9 @@ enum PSTTestCodes
 enum PSTType {CPU_ITER, CPU_RECUR, GPU};
 
 
-// Use void * type for id_distr_ptr, as IDDistr<void> results in substitution failures when plugging into distribution template template parameters, and simply supplying IDDistr<T> in that case fails when the distribution expects a floating datatype and receives an integral one (and potentially vice versa)
 template <typename PointStruct, typename T, typename IDType, typename StaticPST,
-		 	PSTType pst_type, bool timed, typename RetType=PointStruct, typename PSTTester
+		 	PSTType pst_type, bool timed, typename RetType=PointStruct, typename IDDistribInstan,
+			typename PSTTester
 		>
 	requires std::disjunction<
 						std::is_same<RetType, IDType>,
@@ -45,7 +45,7 @@ template <typename PointStruct, typename T, typename IDType, typename StaticPST,
 void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 					PSTTestCodes test_type, PSTTester &pst_tester,
 					cudaDeviceProp &dev_props, const int num_devs, const int dev_ind,
-					void *const id_distr_ptr=nullptr);
+					IDDistribInstan *const id_distr_ptr=nullptr);
 
 
 template <bool timed>
@@ -191,11 +191,10 @@ struct PSTTester
 
 						void operator()(size_t num_elems, const unsigned warps_per_block, PSTTestCodes test_type=CONSTRUCT)
 						{
-							/*
 							if (id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.input_file == "")
 							{
-								randDataTest<PointStructTemplate<T, void, num_IDs>, T, void,
-												StaticPSTTemplate<T, PointStructTemplate, void, num_IDs>,
+								randDataTest<PointStructTemplate<T, IDType, num_IDs>, T, IDType,
+												StaticPSTTemplate<T, PointStructTemplate, IDType, num_IDs>,
 												pst_type, timed, RetType
 											>
 												(num_elems, warps_per_block, test_type,
@@ -205,7 +204,6 @@ struct PSTTester
 												 id_type_wrapper.num_ids_wrapper.dev_ind,
 												 &(id_type_wrapper.id_distr));
 							}
-							*/
 							PointStructTemplate<T, IDType, num_IDs> *pt_arr;
 
 							// Will only be non-nullptr-valued if reading from an input file
@@ -631,7 +629,7 @@ struct PSTTester
 						};
 
 						friend void randDataTest<PointStructTemplate<T, IDType, num_IDs>, T, IDType,
-							   						StaticPSTTemplate<T, PointStructTemplate, void, num_IDs>,
+							   						StaticPSTTemplate<T, PointStructTemplate, IDType, num_IDs>,
 													pst_type, timed, RetType
 												>
 													(const size_t num_elems,
@@ -640,7 +638,7 @@ struct PSTTester
 														DataTypeWrapper<T, Distrib, RandNumEng> &pst_tester,
 														cudaDeviceProp &dev_props,
 														const int num_devs, const int dev_ind,
-														void *const id_distr_ptr
+														IDDistrib<IDType> *const id_distr_ptr
 													);
 					};
 				};
@@ -660,7 +658,9 @@ struct PSTTester
 						// Points without IDs can only run randDataTest()
 						randDataTest<PointStructTemplate<T, void, num_IDs>, T, void,
 										StaticPSTTemplate<T, PointStructTemplate, void, num_IDs>,
-										pst_type, timed
+										pst_type, timed,
+										PointStructTemplate<T, void, num_IDs>,
+										IDDistrib<void>
 									>
 										(num_elems, warps_per_block, test_type,
 											num_ids_wrapper.tree_type_wrapper.pst_tester,
@@ -678,7 +678,7 @@ struct PSTTester
 													DataTypeWrapper<T, Distrib, RandNumEng> &pst_tester,
 													cudaDeviceProp &dev_props,
 													const int num_devs, const int dev_ind,
-													void *const id_distr_ptr
+													IDDistrib<void> *const id_distr_ptr
 												);
 				};
 			};

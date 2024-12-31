@@ -8,7 +8,8 @@
 //void datasetTest()
 
 template <typename PointStruct, typename T, typename IDType, typename StaticPST,
-			PSTType pst_type, bool timed, typename RetType, typename PSTTester
+			PSTType pst_type, bool timed, typename RetType, typename IDDistribInstan,
+			typename PSTTester
 		>
 	requires std::disjunction<
 						std::is_same<RetType, IDType>,
@@ -17,14 +18,24 @@ template <typename PointStruct, typename T, typename IDType, typename StaticPST,
 void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 					PSTTestCodes test_type, PSTTester &pst_tester,
 					cudaDeviceProp &dev_props, const int num_devs, const int dev_ind,
-					void *const id_distr_ptr)
+					IDDistribInstan *const id_distr_ptr)
 {
-	PointStruct *pt_arr = generateRandPts<PointStruct, T, IDType>(num_elems, pst_tester.distr,
-																	pst_tester.rand_num_eng,
-																	pst_tester.vals_inc_ordered,
-																	pst_tester.inter_size_distr_active ? &(pst_tester.inter_size_distr) : nullptr,
-																	id_distr_ptr
-																);
+	PointStruct *pt_arr;
+
+	// Because of instantiation failure when the distribution template template parameter contains void as a type parameter, avoid invoking id_distr_ptr if IDType is void
+	if constexpr (std::is_void<IDType>::value)
+		pt_arr = generateRandPts<PointStruct, T, void>(num_elems, pst_tester.distr,
+														pst_tester.rand_num_eng,
+														pst_tester.vals_inc_ordered,
+														pst_tester.inter_size_distr_active ? &(pst_tester.inter_size_distr) : nullptr
+													);
+		else
+		pt_arr = generateRandPts<PointStruct, T>(num_elems, pst_tester.distr,
+													pst_tester.rand_num_eng,
+													pst_tester.vals_inc_ordered,
+													pst_tester.inter_size_distr_active ? &(pst_tester.inter_size_distr) : nullptr,
+													id_distr_ptr
+												);
 
 #ifdef DEBUG
 	printArray(std::cout, pt_arr, 0, num_elems);
@@ -245,7 +256,7 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 	if (ptr_info.type == cudaMemoryTypeDevice)
 	{
 		// Differentiate on-device and on-host pointers
-		PointStruct *res_arr_d = res_arr;
+		RetType *res_arr_d = res_arr;
 
 		res_arr = nullptr;
 
