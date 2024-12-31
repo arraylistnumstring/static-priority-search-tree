@@ -5,7 +5,10 @@
 #endif
 
 
-//void datasetTest()
+void datasetTest(const unsigned tree_ops_warps_per_block,
+					cudaDeviceProp &dev_props, const int num_devs, const int dev_ind)
+{
+}
 
 template <typename PointStruct, typename T, typename IDType, typename StaticPST,
 			PSTType pst_type, bool timed, typename RetType, typename IDDistribInstan,

@@ -33,6 +33,8 @@ enum PSTTestCodes
 
 enum PSTType {CPU_ITER, CPU_RECUR, GPU};
 
+void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per_block,
+					cudaDeviceProp &dev_props, const int num_devs, const int dev_ind);
 
 template <typename PointStruct, typename T, typename IDType, typename StaticPST,
 		 	PSTType pst_type, bool timed, typename RetType=PointStruct, typename IDDistribInstan,
@@ -627,6 +629,9 @@ struct PSTTester
 							else
 								delete[] pt_arr;
 						};
+
+						friend void dataSetTest(const std::string input_file, const unsigned tree_ops_warps_per_block,
+												cudaDeviceProp &dev_props, const int num_devs, const int dev_ind);
 
 						friend void randDataTest<PointStructTemplate<T, IDType, num_IDs>, T, IDType,
 							   						StaticPSTTemplate<T, PointStructTemplate, IDType, num_IDs>,
