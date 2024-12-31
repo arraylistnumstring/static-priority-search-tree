@@ -38,6 +38,10 @@ enum PSTType {CPU_ITER, CPU_RECUR, GPU};
 template <typename PointStruct, typename T, typename IDType, typename StaticPST,
 		 	PSTType pst_type, bool timed, typename RetType=PointStruct, typename PSTTester
 		>
+	requires std::disjunction<
+						std::is_same<RetType, IDType>,
+						std::is_same<RetType, PointStruct>
+		>::value
 void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 					PSTTestCodes test_type, PSTTester &pst_tester,
 					cudaDeviceProp &dev_props, const int num_devs, const int dev_ind,
@@ -187,6 +191,21 @@ struct PSTTester
 
 						void operator()(size_t num_elems, const unsigned warps_per_block, PSTTestCodes test_type=CONSTRUCT)
 						{
+							/*
+							if (id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.input_file == "")
+							{
+								randDataTest<PointStructTemplate<T, void, num_IDs>, T, void,
+												StaticPSTTemplate<T, PointStructTemplate, void, num_IDs>,
+												pst_type, timed, RetType
+											>
+												(num_elems, warps_per_block, test_type,
+												 id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester,
+												 id_type_wrapper.num_ids_wrapper.dev_props,
+												 id_type_wrapper.num_ids_wrapper.num_devs,
+												 id_type_wrapper.num_ids_wrapper.dev_ind,
+												 &(id_type_wrapper.id_distr));
+							}
+							*/
 							PointStructTemplate<T, IDType, num_IDs> *pt_arr;
 
 							// Will only be non-nullptr-valued if reading from an input file

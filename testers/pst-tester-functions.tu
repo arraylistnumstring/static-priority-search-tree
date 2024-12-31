@@ -10,6 +10,10 @@
 template <typename PointStruct, typename T, typename IDType, typename StaticPST,
 			PSTType pst_type, bool timed, typename RetType, typename PSTTester
 		>
+	requires std::disjunction<
+						std::is_same<RetType, IDType>,
+						std::is_same<RetType, PointStruct>
+		>::value
 void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 					PSTTestCodes test_type, PSTTester &pst_tester,
 					cudaDeviceProp &dev_props, const int num_devs, const int dev_ind,
@@ -246,7 +250,7 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 		res_arr = nullptr;
 
 		// Allocate space on host for data
-		res_arr = new PointStruct[num_res_elems];
+		res_arr = new RetType[num_res_elems];
 
 		if (res_arr == nullptr)
 			throwErr("Error: could not allocate PointStruct array of size "
