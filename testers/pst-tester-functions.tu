@@ -8,6 +8,7 @@
 template <typename PointStruct, typename T, typename StaticPST,
 			 PSTType pst_type, bool timed, typename RetType, typename GridDimType
 		 >
+	requires std::is_integral<GridDimType>::value
 void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per_block,
 					GridDimType pt_grid_dims[Dims::NUM_DIMS],
 					cudaDeviceProp &dev_props, const int num_devs, const int dev_ind)
@@ -38,6 +39,31 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 	GridDimType num_verts = 1;
 	for (int i = 0; i < Dims::NUM_DIMS; i++)
 		num_verts *= pt_grid_dims[i];
+
+	// Read in vertex array from binary file
+	T *vertex_arr = readInVertices<T>(input_file, num_verts);
+
+#ifdef DEBUG
+	// Instantiate as separate variable, as attempting a direct substitution of an array initialiser doesn't compile, even if statically cast to an appropriate type
+	IDType start_inds[Dims::NUM_DIMS] = {0, 0, 0};
+	print3DArray(std::cout, vertex_arr, start_inds, pt_grid_dims);
+#endif
+
+	T *vertex_arr_d;
+
+	// Copy vertex_arr to GPU so it's ready for metacell formation and marching cubes
+	gpuErrorCheck(cudaMalloc(&vertex_arr_d, num_verts * sizeof(T)),
+						"Error in allocating vertex storage array on device "
+						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+						+ " total devices: "
+					);
+	// Implicitly synchronous from the host's point of view as only pinned memory can have truly asynchronous cudaMemcpy() calls
+	gpuErrorCheck(cudaMemcpy(vertex_arr_d, vertex_arr, num_verts * sizeof(T), cudaMemcpyDefault),
+						"Error in copying array of vertices to device "
+						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+						+ " total devices: "
+					);
+
 
 	PointStruct *pt_arr;
 

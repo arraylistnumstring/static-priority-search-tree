@@ -198,21 +198,25 @@ struct PSTTester
 
 						void operator()(size_t num_elems, const unsigned warps_per_block, PSTTestCodes test_type=CONSTRUCT)
 						{
-							if (std::is_integral<IDType>::value
-									&& id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.input_file != "")
+							// To avoid instantiating a float-type GridDimType in datasetTest(), construct the two complimentary conditions explicitly
+							if constexpr (std::is_integral<IDType>::value)
 							{
-								datasetTest<PointStructTemplate<T, IDType, num_IDs>, T,
-												StaticPSTTemplate<T, PointStructTemplate, IDType, num_IDs>,
-												pst_type, timed, RetType
-											>
-												(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.input_file,
-													warps_per_block, id_type_wrapper.pt_grid_dims,
-													id_type_wrapper.num_ids_wrapper.dev_props,
-													id_type_wrapper.num_ids_wrapper.num_devs,
-													id_type_wrapper.num_ids_wrapper.dev_ind
-												);
+								if (id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.input_file != "")
+								{
+									datasetTest<PointStructTemplate<T, IDType, num_IDs>, T,
+													StaticPSTTemplate<T, PointStructTemplate, IDType, num_IDs>,
+													pst_type, timed, RetType
+												>
+													(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.input_file,
+														warps_per_block, id_type_wrapper.pt_grid_dims,
+														id_type_wrapper.num_ids_wrapper.dev_props,
+														id_type_wrapper.num_ids_wrapper.num_devs,
+														id_type_wrapper.num_ids_wrapper.dev_ind
+													);
+								}
 							}
-							else
+							if (!std::is_integral<IDType>::value
+									|| id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.input_file != "")
 							{
 								randDataTest<PointStructTemplate<T, IDType, num_IDs>, T, IDType,
 												StaticPSTTemplate<T, PointStructTemplate, IDType, num_IDs>,
