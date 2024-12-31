@@ -629,6 +629,19 @@ struct PSTTester
 							else
 								delete[] pt_arr;
 						};
+
+						friend void randDataTest<PointStructTemplate<T, IDType, num_IDs>, T, IDType,
+							   						StaticPSTTemplate<T, PointStructTemplate, void, num_IDs>,
+													pst_type, timed, RetType
+												>
+													(const size_t num_elems,
+													 	const unsigned warps_per_block,
+													 	PSTTestCodes test_type,
+														DataTypeWrapper<T, Distrib, RandNumEng> &pst_tester,
+														cudaDeviceProp &dev_props,
+														const int num_devs, const int dev_ind,
+														void *const id_distr_ptr
+													);
 					};
 				};
 
