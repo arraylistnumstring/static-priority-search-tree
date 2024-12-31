@@ -33,6 +33,7 @@ enum PSTTestCodes
 
 enum PSTType {CPU_ITER, CPU_RECUR, GPU};
 
+template <typename PointStruct>
 void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per_block,
 					cudaDeviceProp &dev_props, const int num_devs, const int dev_ind);
 
@@ -205,6 +206,16 @@ struct PSTTester
 												 id_type_wrapper.num_ids_wrapper.num_devs,
 												 id_type_wrapper.num_ids_wrapper.dev_ind,
 												 &(id_type_wrapper.id_distr));
+							}
+							else
+							{
+								datasetTest<PointStructTemplate<T, IDType, num_IDs>>
+												(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.input_file,
+													warps_per_block,
+													id_type_wrapper.num_ids_wrapper.dev_props,
+													id_type_wrapper.num_ids_wrapper.num_devs,
+													id_type_wrapper.num_ids_wrapper.dev_ind
+												);
 							}
 							PointStructTemplate<T, IDType, num_IDs> *pt_arr;
 
@@ -630,8 +641,10 @@ struct PSTTester
 								delete[] pt_arr;
 						};
 
-						friend void dataSetTest(const std::string input_file, const unsigned tree_ops_warps_per_block,
-												cudaDeviceProp &dev_props, const int num_devs, const int dev_ind);
+						friend void datasetTest<PointStructTemplate<T, IDType, num_IDs>>
+													(const std::string input_file, const unsigned tree_ops_warps_per_block,
+														cudaDeviceProp &dev_props, const int num_devs, const int dev_ind
+													);
 
 						friend void randDataTest<PointStructTemplate<T, IDType, num_IDs>, T, IDType,
 							   						StaticPSTTemplate<T, PointStructTemplate, IDType, num_IDs>,
