@@ -194,9 +194,96 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 
 	// Search/report test phase
 	if constexpr (pst_type == GPU)
-	{
 		tree->twoSidedLeftSearch(num_res_elems, res_arr, pst_tester.dim1_val_bound1,
 									pst_tester.min_dim2_val, tree_ops_warps_per_block);
+	else
+		tree->twoSidedLeftSearch(num_res_elems, res_arr, pst_tester.dim1_val_bound1,
+									pst_tester.min_dim2_val);
+
+	if constexpr (timed)
+	{
+		if constexpr (pst_type == GPU)
+		{
+			// End CUDA search timer
+			gpuErrorCheck(cudaEventRecord(search_stop_CUDA),
+							"Error in recording stop event for timing CUDA search code: ");
+
+			// Block CPU execution until search stop event has been recorded
+			gpuErrorCheck(cudaEventSynchronize(search_stop_CUDA),
+							"Error in blocking CPU execution until completion of stop event for timing CUDA search code: ");
+
+			// Report construction and search timing
+			// Type chosen because of type of parameter of cudaEventElapsedTime
+			float ms = 0;	// milliseconds
+
+			gpuErrorCheck(cudaEventElapsedTime(&ms, construct_start_CUDA, construct_stop_CUDA),
+							"Error in calculating time elapsed for CUDA PST construction code: ");
+			std::cout << "CUDA PST construction time: " << ms << " ms\n";
+
+			gpuErrorCheck(cudaEventElapsedTime(&ms, search_start_CUDA, search_stop_CUDA),
+							"Error in calculating time elapsed for CUDA search code: ");
+			std::cout << "CUDA PST search time: " << ms << " ms\n";
+
+			gpuErrorCheck(cudaEventDestroy(construct_start_CUDA),
+							"Error in destroying start event for timing CUDA PST construction code: ");
+			gpuErrorCheck(cudaEventDestroy(construct_stop_CUDA),
+							"Error in destroying stop event for timing CUDA PST construction code: ");
+			gpuErrorCheck(cudaEventDestroy(search_start_CUDA),
+							"Error in destroying start event for timing CUDA search code: ");
+			gpuErrorCheck(cudaEventDestroy(search_stop_CUDA),
+							"Error in destroying stop event for timing CUDA search code: ");
+		}
+		else
+		{
+			search_stop_CPU = std::clock();
+			search_stop_wall = std::chrono::steady_clock::now();
+
+			std::cout << "CPU PST construction time:\n"
+					  << "\tCPU clock time used:\t"
+					  << 1000.0 * (construct_stop_CPU - construct_start_CPU) / CLOCKS_PER_SEC << " ms\n"
+					  << "\tWall clock time passed:\t"
+					  << std::chrono::duration<double, std::milli>(construct_stop_wall - construct_start_wall).count()
+					  << " ms\n";
+
+			std::cout << "CPU PST search time:\n"
+					  << "\tCPU clock time used:\t"
+					  << 1000.0 * (search_stop_CPU - search_start_CPU) / CLOCKS_PER_SEC << " ms\n"
+					  << "\tWall clock time passed:\t"
+					  << std::chrono::duration<double, std::milli>(search_stop_wall - search_start_wall).count()
+					  << " ms\n";
+		}
+	}
+
+	// If result array is on GPU, copy to CPU and print
+	cudaPointerAttributes ptr_info;
+	gpuErrorCheck(cudaPointerGetAttributes(&ptr_info, res_arr),
+					"Error in determining location type of memory address of result PointStruct array (i.e. whether on host or device)");
+
+	// res_arr is on device; copy to CPU
+	if (ptr_info.type == cudaMemoryTypeDevice)
+	{
+		// Differentiate on-device and on-host pointers
+		RetType *res_arr_d = res_arr;
+
+		res_arr = nullptr;
+
+		// Allocate space on host for data
+		res_arr = new RetType[num_res_elems];
+
+		if (res_arr == nullptr)
+			throwErr("Error: could not allocate PointStruct array of size "
+						+ std::to_string(num_res_elems) + " on host");
+
+		// Copy data from res_arr_d to res_arr
+		gpuErrorCheck(cudaMemcpy(res_arr, res_arr_d, num_res_elems * sizeof(PointStruct),
+									cudaMemcpyDefault), 
+						"Error in copying array of PointStruct objects from device "
+						+ std::to_string(ptr_info.device) + ": ");
+
+		// Free on-device array of PointStructs
+		gpuErrorCheck(cudaFree(res_arr_d),
+						"Error in freeing on-device array of result PointStructs on device "
+						+ std::to_string(ptr_info.device) + ": ");
 	}
 }
 
@@ -404,7 +491,7 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 			if (test_type != CONSTRUCT)
 			{
 				gpuErrorCheck(cudaEventElapsedTime(&ms, search_start_CUDA, search_stop_CUDA),
-							"Error in calculating time elapsed for CUDA search code");
+								"Error in calculating time elapsed for CUDA search code");
 				std::cout << "CUDA PST search time: " << ms << " ms\n";
 			}
 
@@ -442,7 +529,7 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 		}
 	}
 
-	// If result pointer array is on GPU, copy it to CPU and print
+	// If result array is on GPU, copy to CPU and print
 	cudaPointerAttributes ptr_info;
 	gpuErrorCheck(cudaPointerGetAttributes(&ptr_info, res_arr),
 					"Error in determining location type of memory address of result PointStruct array (i.e. whether on host or device)");
@@ -469,7 +556,8 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 						+ std::to_string(ptr_info.device) + ": ");
 
 		// Free on-device array of PointStructTemplates
-		gpuErrorCheck(cudaFree(res_arr_d), "Error in freeing on-device array of result PointStructs on device "
+		gpuErrorCheck(cudaFree(res_arr_d),
+						"Error in freeing on-device array of result PointStructs on device "
 						+ std::to_string(ptr_info.device) + ": ");
 	}
 
