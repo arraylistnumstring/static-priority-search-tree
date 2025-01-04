@@ -293,7 +293,7 @@ struct PSTTester
 
 									// Prior cudaMemcpy() is staged, if not already written through, so can free vertex_arr
 									delete[] vertex_arr;
-
+/*
 									pt_arr = formMetacellTags<PointStructTemplate<T, IDType, num_IDs>>
 																(
 																	vertex_arr_d,
@@ -303,7 +303,7 @@ struct PSTTester
 																	id_type_wrapper.num_ids_wrapper.dev_ind,
 																	id_type_wrapper.num_ids_wrapper.num_devs,
 																	id_type_wrapper.num_ids_wrapper.dev_props.warpSize
-																);
+																);*/
 
 								}
 							}

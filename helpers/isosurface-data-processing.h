@@ -15,6 +15,26 @@
 #include "linearise-id.h"
 #include "warp-shuffles.h"
 
+
+// Calculates metacell grid dimensions and total number of metacells, returning them using the supplied pointer and reference parameters and using inputs of vertex grid dimensions and metacell dimensions
+template <typename GridDimType>
+	requires std::is_integral<GridDimType>::value
+void calcNumMetacells(GridDimType pt_grid_dims[Dims::NUM_DIMS], GridDimType metacell_dims[Dims::NUM_DIMS],
+						GridDimType metacell_grid_dims[Dims::NUM_DIMS], size_t &num_metacells)
+{
+	// Total number of metacells is \prod_{i=1}^Dims::NUM_DIMS ceil((pt_grid_dims[i] - 1) / metacell_dims[i])
+	// Note that the ceiling function is used because if metacell_dims[i] \not | (pt_grid_dims[i] - 1), then the last metacell(s) in dimension i will be nonempty, though not fully tiled
+	// The -1 addend arises because if one surjectively assigns to each metacell the vertex on its volume that has the smallest indices in each dimension, the edges of the point grid where indices are largest in a given direction will have no metacells, as there are no further points to which to interpolate or draw such a metacell
+	num_metacells = 1;
+	for (int i = 0; i < Dims::NUM_DIMS; i++)
+	{
+		metacell_grid_dims[i] = (pt_grid_dims[i] - 1) / metacell_dims[i]
+								+ ( (pt_grid_dims[i] - 1) % metacell_dims[i] == 0 ? 0 : 1);
+		num_metacells *= metacell_grid_dims[i];
+	}
+};
+
+
 template <bool interwarp_reduce, typename PointStruct, typename T, typename GridDimType>
 	requires IntSizeOfUAtLeastSizeOfV<GridDimType, int>
 __global__ void formMetacellTagsGlobal(T *const vertex_arr_d, PointStruct *const metacell_arr_d,
@@ -46,25 +66,10 @@ __forceinline__ __device__ void getVoxelMinMax(T *const vertex_arr_d, T &min, T 
 template <class PointStruct, typename T, typename GridDimType>
 	requires IntSizeOfUAtLeastSizeOfV<GridDimType, int>
 PointStruct *formMetacellTags(T *const vertex_arr_d, GridDimType pt_grid_dims[Dims::NUM_DIMS],
-								GridDimType metacell_dims[Dims::NUM_DIMS], size_t &num_metacells,
+								GridDimType metacell_dims[Dims::NUM_DIMS],
+								GridDimType metacell_grid_dims[NUM_DIMS], const size_t num_metacells,
 								const int dev_ind, const int num_devs, const int warp_size)
 {
-	// Total number of metacells is \prod_{i=1}^Dims::NUM_DIMS ceil((pt_grid_dims[i] - 1) / metacell_dims[i])
-	// Note that the ceiling function is used because if metacell_dims[i] \not | (pt_grid_dims[i] - 1), then the last metacell(s) in dimension i will be nonempty, though not fully tiled
-	// The -1 addend arises because if one surjectively assigns to each metacell the vertex on its volume that has the smallest indices in each dimension, the edges of the point grid where indices are largest in a given direction will have no metacells, as there are no further points to which to interpolate or draw such a metacell
-	GridDimType metacell_grid_dims[NUM_DIMS];
-	num_metacells = 1;
-	for (int i = 0; i < Dims::NUM_DIMS; i++)
-	{
-		metacell_grid_dims[i] = (pt_grid_dims[i] - 1) / metacell_dims[i]
-								+ ( (pt_grid_dims[i] - 1) % metacell_dims[i] == 0 ? 0 : 1);
-		num_metacells *= metacell_grid_dims[i];
-	}
-
-#ifdef DEBUG
-	std::cout << "Number of metacells: " << num_metacells << '\n';
-#endif
-
 	// On-device memory allocations for metacell array
 	PointStruct *metacell_arr_d;
 

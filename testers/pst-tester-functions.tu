@@ -39,6 +39,34 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 	for (int i = 0; i < Dims::NUM_DIMS; i++)
 		num_verts *= pt_grid_dims[i];
 
+
+	GridDimType metacell_grid_dims[Dims::NUM_DIMS];
+	size_t num_metacells;
+
+	calcNumMetacells(pt_grid_dims, metacell_dims, metacell_grid_dims, num_metacells);
+
+#ifdef DEBUG
+	std::cout << "Number of metacells: " << num_metacells << '\n';
+#endif
+
+	// Check that GPU memory is sufficiently big for the necessary calculations; num_metacells is now known because of formMetacellTags()
+	// Put this before vertex read-in so that total global memory consumption is known and not attempted to be allocated if insufficient
+	if constexpr (pst_type == GPU)
+	{
+		// Space needed for input vertex array, metacell tag array and PST operations (construction and search)
+		const size_t global_mem_needed = num_verts * sizeof(T) + num_metacells * sizeof(PointStruct)
+											+ StaticPST::calcGlobalMemNeeded(num_metacells);
+
+		if (global_mem_needed > dev_props.totalGlobalMem)
+		{
+			throwErr("Error: needed global memory space of " + std::to_string(global_mem_needed)
+						+ " B required for data structure and processing exceeds limit of global memory = "
+						+ std::to_string(dev_props.totalGlobalMem) + " B on device "
+						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+						+ " total devices: ");
+		}
+	}
+
 	// Read in vertex array from binary file
 	T *vertex_arr = readInVertices<T>(input_file, num_verts);
 
@@ -66,15 +94,11 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 	// Prior cudaMemcpy() is staged, if not already written through, so can free vertex_arr
 	delete[] vertex_arr;
 
-	size_t num_metacells;
-
 	PointStruct *pt_arr = formMetacellTags<PointStruct>(vertex_arr_d, pt_grid_dims,
-															metacell_dims, num_metacells,
-															dev_ind, num_devs, dev_props.warpSize
+															metacell_dims, metacell_grid_dims,
+															num_metacells, dev_ind, num_devs,
+															dev_props.warpSize
 														);
-
-	// Check that GPU memory is sufficiently big for the necessary calculations; num_metacells is now known because of formMetacellTags()
-	// TODO: May need to put this before vertex read-in so that total memory consumption is known and not attempted to be allocated if insufficient
 }
 
 template <typename PointStruct, typename T, typename IDType, typename StaticPST,
