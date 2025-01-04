@@ -100,8 +100,8 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 	// Prior cudaMemcpy() is staged, if not already written through, so can free vertex_arr
 	delete[] vertex_arr;
 
-	// metacell_arr is on device
-	PointStruct *metacell_arr = formMetacellTags<PointStruct>(vertex_arr_d, pt_grid_dims,
+	// metacell_tag_arr is on device
+	PointStruct *metacell_tag_arr = formMetacellTags<PointStruct>(vertex_arr_d, pt_grid_dims,
 																metacell_dims, metacell_grid_dims,
 																num_metacells, dev_ind, num_devs,
 																dev_props.warpSize
@@ -128,22 +128,22 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 			construct_start_wall = std::chrono::steady_clock::now();
 		}
 		// Copy metacell array to CPU for iterative and recursive PSTs to process
-		PointStruct *metacell_arr_host = new PointStruct[num_metacells];
-		gpuErrorCheck(cudaMemcpy(metacell_arr_host, metacell_arr, num_metacells * sizeof(PointStruct),
+		PointStruct *metacell_tag_arr_host = new PointStruct[num_metacells];
+		gpuErrorCheck(cudaMemcpy(metacell_tag_arr_host, metacell_tag_arr, num_metacells * sizeof(PointStruct),
 									cudaMemcpyDefault),
 						"Error in copying on-device array of metacell PointStructs to host from device "
 						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 						+ " total devices: "
 					);
-		gpuErrorCheck(cudaFree(metacell_arr),
+		gpuErrorCheck(cudaFree(metacell_tag_arr),
 						"Error in freeing on-device array of metacell PointStructs on device "
 						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 						+ " total devices: "
 					);
 
-		metacell_arr = metacell_arr_host;
+		metacell_tag_arr = metacell_tag_arr_host;
 	}
-	// metacell_arr is now on host if StaticPST is a CPU PST, and on device if StaticPST is a GPU PST
+	// metacell_tag_arr is now on host if StaticPST is a CPU PST, and on device if StaticPST is a GPU PST
 }
 
 template <typename PointStruct, typename T, typename IDType, typename StaticPST,
