@@ -100,11 +100,12 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 	// Prior cudaMemcpy() is staged, if not already written through, so can free vertex_arr
 	delete[] vertex_arr;
 
-	PointStruct *metacell_arr_d = formMetacellTags<PointStruct>(vertex_arr_d, pt_grid_dims,
-															metacell_dims, metacell_grid_dims,
-															num_metacells, dev_ind, num_devs,
-															dev_props.warpSize
-														);
+	// metacell_arr is on device
+	PointStruct *metacell_arr = formMetacellTags<PointStruct>(vertex_arr_d, pt_grid_dims,
+																metacell_dims, metacell_grid_dims,
+																num_metacells, dev_ind, num_devs,
+																dev_props.warpSize
+															);
 
 	// Set GPU pending kernel queue size limit; note that the queue takes up global memory, hence why a kernel launch that exceeds the queue's capacity may cause an "Invalid __global__ write of n bytes" error message in compute-sanitizer that points to the line of one of its function parameters
 	if constexpr (pst_type == GPU)
@@ -114,17 +115,35 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 							"Error in increasing pending kernel queue size to "
 							+ std::to_string(num_metacells/2) + " on device "
 							+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-							+ " total devices: ");
+							+ " total devices: "
+						);
 	}
 
-	if constexpr (pst_type != GPU)
+	// CPU PST-only construction cost of copying data to host must be timed
+	if constexpr (pst_type == CPU_ITER || pst_type == CPU_RECUR)
 	{
-		// CPU PST-only construction cost of copying data to host must be timed
+		if constexpr (timed)
 		{
 			construct_start_CPU = std::clock();
 			construct_start_wall = std::chrono::steady_clock::now();
 		}
+		// Copy metacell array to CPU for iterative and recursive PSTs to process
+		PointStruct *metacell_arr_host = new PointStruct[num_metacells];
+		gpuErrorCheck(cudaMemcpy(metacell_arr_host, metacell_arr, num_metacells * sizeof(PointStruct),
+									cudaMemcpyDefault),
+						"Error in copying on-device array of metacell PointStructs to host from device "
+						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+						+ " total devices: "
+					);
+		gpuErrorCheck(cudaFree(metacell_arr),
+						"Error in freeing on-device array of metacell PointStructs on device "
+						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+						+ " total devices: "
+					);
+
+		metacell_arr = metacell_arr_host;
 	}
+	// metacell_arr is now on host if StaticPST is a CPU PST, and on device if StaticPST is a GPU PST
 }
 
 template <typename PointStruct, typename T, typename IDType, typename StaticPST,
