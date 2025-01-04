@@ -24,25 +24,6 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 	std::cout << "Input file: " << input_file << '\n';
 #endif
 
-	// Variables must be outside of conditionals to be accessible in later conditionals
-	// For CPU PSTs, GPU -> CPU transfer time of metacells must be taken into consideration for the "construct" cost
-	std::clock_t construct_start_CPU, construct_stop_CPU, search_start_CPU, search_stop_CPU;
-	std::chrono::time_point<std::chrono::steady_clock> construct_start_wall, construct_stop_wall, search_start_wall, search_stop_wall;
-
-	cudaEvent_t construct_start_CUDA, construct_stop_CUDA, search_start_CUDA, search_stop_CUDA;
-
-	if constexpr (timed && pst_type == GPU)
-	{
-		gpuErrorCheck(cudaEventCreate(&construct_start_CUDA),
-						"Error in creating start event for timing CUDA PST construction code");
-		gpuErrorCheck(cudaEventCreate(&construct_stop_CUDA),
-						"Error in creating stop event for timing CUDA PST construction code");
-		gpuErrorCheck(cudaEventCreate(&search_start_CUDA),
-						"Error in creating start event for timing CUDA search code");
-		gpuErrorCheck(cudaEventCreate(&search_stop_CUDA),
-						"Error in creating stop event for timing CUDA search code");
-	}
-
 	GridDimType num_verts = 1;
 	for (int i = 0; i < Dims::NUM_DIMS; i++)
 		num_verts *= pt_grid_dims[i];
@@ -73,6 +54,35 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 						+ " total devices: ");
 		}
+
+
+		// Set GPU pending kernel queue size limit; note that the queue takes up global memory, hence why a kernel launch that exceeds the queue's capacity may cause an "Invalid __global__ write of n bytes" error message in compute-sanitizer that points to the line of one of its function parameters
+		if (num_metacells/2 > 2048)		// Default value: 2048
+			gpuErrorCheck(cudaDeviceSetLimit(cudaLimitDevRuntimePendingLaunchCount, num_metacells/2),
+							"Error in increasing pending kernel queue size to "
+							+ std::to_string(num_metacells/2) + " on device "
+							+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+							+ " total devices: "
+						);
+	}
+
+	// Variables must be outside of conditionals to be accessible in later conditionals
+	// For CPU PSTs, GPU -> CPU transfer time of metacells must be taken into consideration for the "construct" cost
+	std::clock_t construct_start_CPU, construct_stop_CPU, search_start_CPU, search_stop_CPU;
+	std::chrono::time_point<std::chrono::steady_clock> construct_start_wall, construct_stop_wall, search_start_wall, search_stop_wall;
+
+	cudaEvent_t construct_start_CUDA, construct_stop_CUDA, search_start_CUDA, search_stop_CUDA;
+
+	if constexpr (timed && pst_type == GPU)
+	{
+		gpuErrorCheck(cudaEventCreate(&construct_start_CUDA),
+						"Error in creating start event for timing CUDA PST construction code");
+		gpuErrorCheck(cudaEventCreate(&construct_stop_CUDA),
+						"Error in creating stop event for timing CUDA PST construction code");
+		gpuErrorCheck(cudaEventCreate(&search_start_CUDA),
+						"Error in creating start event for timing CUDA search code");
+		gpuErrorCheck(cudaEventCreate(&search_stop_CUDA),
+						"Error in creating stop event for timing CUDA search code");
 	}
 
 	// Read in vertex array from binary file
@@ -104,22 +114,10 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 
 	// metacell_tag_arr is on device
 	PointStruct *metacell_tag_arr = formMetacellTags<PointStruct>(vertex_arr_d, pt_grid_dims,
-																metacell_dims, metacell_grid_dims,
-																num_metacells, dev_ind, num_devs,
-																dev_props.warpSize
-															);
-
-	// Set GPU pending kernel queue size limit; note that the queue takes up global memory, hence why a kernel launch that exceeds the queue's capacity may cause an "Invalid __global__ write of n bytes" error message in compute-sanitizer that points to the line of one of its function parameters
-	if constexpr (pst_type == GPU)
-	{
-		if (num_metacells/2 > 2048)		// Default value: 2048
-			gpuErrorCheck(cudaDeviceSetLimit(cudaLimitDevRuntimePendingLaunchCount, num_metacells/2),
-							"Error in increasing pending kernel queue size to "
-							+ std::to_string(num_metacells/2) + " on device "
-							+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-							+ " total devices: "
-						);
-	}
+																	metacell_dims, metacell_grid_dims,
+																	num_metacells, dev_ind, num_devs,
+																	dev_props.warpSize
+																);
 
 	// CPU PST-only construction cost of copying data to host must be timed
 	if constexpr (pst_type == CPU_ITER || pst_type == CPU_RECUR)
@@ -129,23 +127,28 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 			construct_start_CPU = std::clock();
 			construct_start_wall = std::chrono::steady_clock::now();
 		}
-		// Copy metacell array to CPU for iterative and recursive PSTs to process
+		// Copy metacell tag array to CPU for iterative and recursive PSTs to process
 		PointStruct *metacell_tag_arr_host = new PointStruct[num_metacells];
 		gpuErrorCheck(cudaMemcpy(metacell_tag_arr_host, metacell_tag_arr, num_metacells * sizeof(PointStruct),
 									cudaMemcpyDefault),
-						"Error in copying on-device array of metacell PointStructs to host from device "
+						"Error in copying array of metacell tag PointStructs to host from device "
 						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 						+ " total devices: "
 					);
 		gpuErrorCheck(cudaFree(metacell_tag_arr),
-						"Error in freeing on-device array of metacell PointStructs on device "
+						"Error in freeing array of metacell tag PointStructs on device "
 						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
 						+ " total devices: "
 					);
 
 		metacell_tag_arr = metacell_tag_arr_host;
+		// metacell_tag_arr is now on host if StaticPST is a CPU PST, and on device if StaticPST is a GPU PST
 	}
-	// metacell_tag_arr is now on host if StaticPST is a CPU PST, and on device if StaticPST is a GPU PST
+	else if constexpr (timed)	// i.e. timed && pst_type == GPU
+		// Start CUDA construction timer (i.e. place this event into default stream)
+		gpuErrorCheck(cudaEventRecord(construct_start_CUDA),
+						"Error in recording start event for timing CUDA PST construction code");
+
 
 	StaticPST *tree;
 	if constexpr (pst_type == GPU)
@@ -282,10 +285,41 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 
 		// Free on-device array of PointStructs
 		gpuErrorCheck(cudaFree(res_arr_d),
-						"Error in freeing on-device array of result PointStructs on device "
+						"Error in freeing array of result PointStructs on device "
 						+ std::to_string(ptr_info.device) + ": ");
 	}
+
+	// Sort output for consistency (specifically compared to GPU-reported outputs, which may be randomly ordered and must therefore be sorted for easy comparisons)
+	if constexpr (std::is_same<RetType, GridDimType>::value)
+		std::sort(res_arr, res_arr + num_res_elems,
+				[](const GridDimType &gd_1, const GridDimType &gd_2)
+				{
+					return gd_1 < gd_2;
+				});
+	else
+		std::sort(res_arr, res_arr + num_res_elems,
+				[](const PointStruct &pt_1, const PointStruct &pt_2)
+				{
+					return pt_1.compareDim1(pt_2) < 0;
+				});
+
+
+	printArray(std::cout, res_arr, 0, num_res_elems);
+	std::cout << '\n';
+
+
+	gpuErrorCheck(cudaPointerGetAttributes(&ptr_info, metacell_tag_arr),
+					"Error in determining location type of memory address of input metacell tag array (i.e. whether on host or device): ");
+	if (ptr_info.type == cudaMemoryTypeDevice)
+		gpuErrorCheck(cudaFree(metacell_tag_arr),
+						"Error in freeing array of metacell tags on device "
+						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+						+ " total devices: "
+					);
+	else
+		delete[] metacell_tag_arr;
 }
+
 
 template <typename PointStruct, typename T, typename IDType, typename StaticPST,
 			PSTType pst_type, bool timed, typename RetType, typename IDDistribInstan,
@@ -300,16 +334,45 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 					cudaDeviceProp &dev_props, const int num_devs, const int dev_ind,
 					IDDistribInstan *const id_distr_ptr)
 {
+	// Check that GPU memory is sufficiently big for the necessary calculations
+	if constexpr (pst_type == GPU)
+	{
+		const size_t global_mem_needed = StaticPST::calcGlobalMemNeeded(num_elems)
+											+ num_elems * sizeof(PointStruct);
+
+		if (global_mem_needed > dev_props.totalGlobalMem)
+		{
+			throwErr("Error: needed global memory space of "
+						+ std::to_string(global_mem_needed)
+						+ " B required for data structure and processing exceeds limit of global memory = "
+						+ std::to_string(dev_props.totalGlobalMem) + " B on device "
+						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+						+ " total devices: ");
+		}
+
+
+		// Set GPU pending kernel queue size limit; note that the queue takes up global memory, hence why a kernel launch that exceeds the queue's capacity may cause an "Invalid __global__ write of n bytes" error message in compute-sanitizer that points to the line of one of its function parameters
+		if (num_elems/2 > 2048)		// Default value: 2048
+		{
+			gpuErrorCheck(cudaDeviceSetLimit(cudaLimitDevRuntimePendingLaunchCount, num_elems/2),
+							"Error in increasing pending kernel queue size to "
+							+ std::to_string(num_elems/2) + " on device "
+							+ std::to_string(dev_ind) + " of "
+							+ std::to_string(num_devs) + " total devices: ");
+		}
+	}
+
 	PointStruct *pt_arr;
 
 	// Because of instantiation failure when the distribution template template parameter contains void as a type parameter, avoid invoking id_distr_ptr if IDType is void
+	// pt_arr is on host
 	if constexpr (std::is_void<IDType>::value)
 		pt_arr = generateRandPts<PointStruct, T, void>(num_elems, pst_tester.distr,
 														pst_tester.rand_num_eng,
 														pst_tester.vals_inc_ordered,
 														pst_tester.inter_size_distr_active ? &(pst_tester.inter_size_distr) : nullptr
 													);
-		else
+	else
 		pt_arr = generateRandPts<PointStruct, T>(num_elems, pst_tester.distr,
 													pst_tester.rand_num_eng,
 													pst_tester.vals_inc_ordered,
@@ -321,32 +384,6 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 	printArray(std::cout, pt_arr, 0, num_elems);
 	std::cout << '\n';
 #endif
-
-	// Check that GPU memory is sufficiently big for the necessary calculations
-	if constexpr (pst_type == GPU)
-	{
-		const size_t global_mem_needed = StaticPST::calcGlobalMemNeeded(num_elems);
-
-		if (global_mem_needed > dev_props.totalGlobalMem)
-		{
-			throwErr("Error: needed global memory space of "
-						+ std::to_string(global_mem_needed)
-						+ " B required for data structure and processing exceeds limit of global memory = "
-						+ std::to_string(dev_props.totalGlobalMem) + " B on device "
-						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-						+ " total devices: ");
-		}
-		
-		// Set GPU pending kernel queue size limit; note that the queue takes up global memory, hence why a kernel launch that exceeds the queue's capacity may cause an "Invalid __global__ write of n bytes" error message in compute-sanitizer that points to the line of one of its function parameters
-		if (num_elems/2 > 2048)		// Default value: 2048
-		{
-			gpuErrorCheck(cudaDeviceSetLimit(cudaLimitDevRuntimePendingLaunchCount, num_elems/2),
-							"Error in increasing pending kernel queue size to "
-							+ std::to_string(num_elems/2) + " on device "
-							+ std::to_string(dev_ind) + " of "
-							+ std::to_string(num_devs) + " total devices: ");
-		}
-	}
 
 	// Variables must be outside of conditionals to be accessible in later conditionals
 	cudaEvent_t construct_start_CUDA, construct_stop_CUDA, search_start_CUDA, search_stop_CUDA;
@@ -367,16 +404,40 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 							"Error in creating start event for timing CUDA search code");
 			gpuErrorCheck(cudaEventCreate(&search_stop_CUDA),
 							"Error in creating stop event for timing CUDA search code");
-
-			// Start CUDA construction timer (i.e. place this event into default stream)
-			gpuErrorCheck(cudaEventRecord(construct_start_CUDA),
-						"Error in recording start event for timing CUDA PST construction code");
 		}
 		else
 		{
 			construct_start_CPU = std::clock();
 			construct_start_wall = std::chrono::steady_clock::now();
 		}
+	}
+	
+	// GPU PST-only construction cost of copying data to device must be timed
+	if constexpr (pst_type == GPU)
+	{
+		if constexpr (timed)
+		{
+			// Start CUDA construction timer (i.e. place this event into default stream)
+			gpuErrorCheck(cudaEventRecord(construct_start_CUDA),
+							"Error in recording start event for timing CUDA PST construction code");
+		}
+		// Copy PointStruct array to GPU for PST to process
+		PointStruct *pt_arr_d;
+		gpuErrorCheck(cudaMalloc(&pt_arr_d, num_elems * sizeof(PointStruct)),
+						"Error in allocating PointStruct storage array on device "
+						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+						+ " total devices: "
+					);
+		gpuErrorCheck(cudaMemcpy(pt_arr_d, pt_arr, num_elems * sizeof(PointStruct),
+									cudaMemcpyDefault),
+						"Error in copying array of PointStructs from host to device "
+						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+						+ " total devices: "
+					);
+		delete[] pt_arr;
+
+		pt_arr = pt_arr_d;
+		// pt_arr is now on host if StaticPST is a CPU PST, and on device if StaticPST is a GPU PST
 	}
 
 	StaticPST *tree;
@@ -557,7 +618,7 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 
 		// Free on-device array of PointStructTemplates
 		gpuErrorCheck(cudaFree(res_arr_d),
-						"Error in freeing on-device array of result PointStructs on device "
+						"Error in freeing array of result PointStructs on device "
 						+ std::to_string(ptr_info.device) + ": ");
 	}
 
@@ -580,5 +641,15 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 
 	delete tree;
 	delete[] res_arr;
-	delete[] pt_arr;
+	
+	gpuErrorCheck(cudaPointerGetAttributes(&ptr_info, pt_arr),
+					"Error in determining location type of memory address of input PointStruct array (i.e. whether on host or device): ");
+	if (ptr_info.type == cudaMemoryTypeDevice)
+		gpuErrorCheck(cudaFree(pt_arr),
+						"Error in freeing array of PointStructs on device "
+						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+						+ " total devices: "
+					);
+	else
+		delete[] pt_arr;
 }
