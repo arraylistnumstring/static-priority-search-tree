@@ -90,7 +90,7 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 
 #ifdef DEBUG
 	// Instantiate as separate variable, as attempting a direct substitution of an array initialiser doesn't compile, even if statically cast to an appropriate type
-	IDType start_inds[Dims::NUM_DIMS] = {0, 0, 0};
+	GridDimType start_inds[Dims::NUM_DIMS] = {0, 0, 0};
 	print3DArray(std::cout, vertex_arr, start_inds, pt_grid_dims);
 #endif
 

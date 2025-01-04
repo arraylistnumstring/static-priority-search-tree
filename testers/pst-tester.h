@@ -10,15 +10,6 @@
 #include "helper-cuda--modified.h"
 #include "linearise-id.h"					// For NUM_DIMS definition
 
-// To be moved to .tu file:
-#include <algorithm>	// To use sort()
-#include <chrono>		// To use std::chrono::steady_clock (a monotonic clock suitable for interval measurements) and related functions
-#include <ctime>		// To use std::clock_t (CPU timer; pauses when CPU pauses, etc.)
-#include <iostream>
-#include "isosurface-data-processing.h"
-#include "print-array.h"
-#include "rand-data-pt-generator.h"
-
 
 enum DataType {DOUBLE, FLOAT, INT, LONG, UNSIGNED_INT, UNSIGNED_LONG};
 
@@ -220,7 +211,7 @@ struct PSTTester
 								}
 							}
 							if (!std::is_integral<IDType>::value
-									|| id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.input_file != "")
+									|| id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.input_file == "")
 							{
 								randDataTest<PointStructTemplate<T, IDType, num_IDs>, T, IDType,
 												StaticPSTTemplate<T, PointStructTemplate, IDType, num_IDs>,
