@@ -173,6 +173,30 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 #endif
 
 	size_t num_res_elems = 0;
+	RetType *res_arr;
+
+	if constexpr (timed)
+	{
+		if constexpr (pst_type == GPU)
+		{
+			// Start CUDA search timer (i.e. place this event in default stream)
+			gpuErrorCheck(cudaEventRecord(search_start_CUDA),
+							"Error in recording start event for timing CUDA search code: ");
+		}
+		else
+		{
+			search_start_CPU = std::clock();
+			search_start_wall = std::chrono::steady_clock::now();
+		}
+	}
+/*
+	// Search/report test phase
+	if constexpr (pst_type == GPU)
+	{
+		tree->twoSidedLeftSearch(num_res_elems, res_arr, pst_tester.dim1_val_bound1,
+									pst_tester.min_dim2_val, tree_ops_warps_per_block);
+	}
+*/
 }
 
 template <typename PointStruct, typename T, typename IDType, typename StaticPST,
