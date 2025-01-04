@@ -1,3 +1,9 @@
+#include <algorithm>	// To use sort()
+#include <chrono>		// To use std::chrono::steady_clock (a monotonic clock suitable for interval measurements) and related functions
+#include <ctime>		// To use std::clock_t (CPU timer; pauses when CPU pauses, etc.)
+#include <iostream>
+
+#include "isosurface-data-processing.h"
 #include "rand-data-pt-generator.h"
 
 #ifdef DEBUG
@@ -94,11 +100,31 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 	// Prior cudaMemcpy() is staged, if not already written through, so can free vertex_arr
 	delete[] vertex_arr;
 
-	PointStruct *pt_arr = formMetacellTags<PointStruct>(vertex_arr_d, pt_grid_dims,
+	PointStruct *metacell_arr_d = formMetacellTags<PointStruct>(vertex_arr_d, pt_grid_dims,
 															metacell_dims, metacell_grid_dims,
 															num_metacells, dev_ind, num_devs,
 															dev_props.warpSize
 														);
+
+	// Set GPU pending kernel queue size limit; note that the queue takes up global memory, hence why a kernel launch that exceeds the queue's capacity may cause an "Invalid __global__ write of n bytes" error message in compute-sanitizer that points to the line of one of its function parameters
+	if constexpr (pst_type == GPU)
+	{
+		if (num_metacells/2 > 2048)		// Default value: 2048
+			gpuErrorCheck(cudaDeviceSetLimit(cudaLimitDevRuntimePendingLaunchCount, num_metacells/2),
+							"Error in increasing pending kernel queue size to "
+							+ std::to_string(num_metacells/2) + " on device "
+							+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+							+ " total devices: ");
+	}
+
+	if constexpr (pst_type != GPU)
+	{
+		// CPU PST-only construction cost of copying data to host must be timed
+		{
+			construct_start_CPU = std::clock();
+			construct_start_wall = std::chrono::steady_clock::now();
+		}
+	}
 }
 
 template <typename PointStruct, typename T, typename IDType, typename StaticPST,

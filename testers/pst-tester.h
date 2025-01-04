@@ -1,22 +1,21 @@
 #ifndef PST_TESTER_H
 #define PST_TESTER_H
 
-#include <algorithm>	// To use sort()
-#include <chrono>		// To use std::chrono::steady_clock (a monotonic clock suitable for interval measurements) and related functions
-#include <ctime>		// To use std::clock_t (CPU timer; pauses when CPU pauses, etc.)
-#include <iostream>
 #include <limits>		// To get numeric limits of each datatype
 #include <random>		// To use std::mt19937
 #include <type_traits>
 
-#include "data-size-concepts.h"
 #include "err-chk.h"
 #include "gpu-err-chk.h"
 #include "helper-cuda--modified.h"
-#include "isosurface-data-processing.h"
 #include "linearise-id.h"					// For NUM_DIMS definition
 
-// To be removed:
+// To be moved to .tu file:
+#include <algorithm>	// To use sort()
+#include <chrono>		// To use std::chrono::steady_clock (a monotonic clock suitable for interval measurements) and related functions
+#include <ctime>		// To use std::clock_t (CPU timer; pauses when CPU pauses, etc.)
+#include <iostream>
+#include "isosurface-data-processing.h"
 #include "print-array.h"
 #include "rand-data-pt-generator.h"
 
@@ -305,79 +304,6 @@ struct PSTTester
 																	id_type_wrapper.num_ids_wrapper.dev_props.warpSize
 																);*/
 
-								}
-							}
-
-							// Check that GPU memory is sufficiently big for the necessary calculations; must be placed after metacell formation so that num_elems is known
-							if constexpr (pst_type == GPU)
-							{
-								const size_t global_mem_needed = StaticPSTTemplate<T, PointStructTemplate, IDType, num_IDs>::calcGlobalMemNeeded(num_elems);
-
-								if (global_mem_needed > id_type_wrapper.num_ids_wrapper.dev_props.totalGlobalMem)
-								{
-									throwErr("Error: needed global memory space of "
-												+ std::to_string(global_mem_needed)
-												+ " B required for data structure and processing exceeds limit of global memory = "
-												+ std::to_string(id_type_wrapper.num_ids_wrapper.dev_props.totalGlobalMem)
-												+ " B on device "
-												+ std::to_string(id_type_wrapper.num_ids_wrapper.dev_ind)
-												+ " of "
-												+ std::to_string(id_type_wrapper.num_ids_wrapper.num_devs)
-												+ " total devices: ");
-								}
-							}
-
-							// Set GPU pending kernel queue size limit; note that the queue takes up global memory, hence why a kernel launch that exceeds the queue's capacity may cause an "Invalid __global__ write of n bytes" error message in compute-sanitizer that points to the line of one of its function parameters
-							if constexpr (pst_type == GPU)
-							{
-								if (num_elems/2 > 2048)		// Default value: 2048
-									gpuErrorCheck(cudaDeviceSetLimit(cudaLimitDevRuntimePendingLaunchCount, num_elems/2),
-													"Error in increasing pending kernel queue size to "
-													+ std::to_string(num_elems/2) + " on device "
-													+ std::to_string(id_type_wrapper.num_ids_wrapper.dev_ind)
-													+ " of " + std::to_string(id_type_wrapper.num_ids_wrapper.num_devs)
-													+ " total devices: ");
-							}
-
-							// Place random data generation condition before data input reading so that any timing mechanism for the latter will not be impacted by the evaluation of this conditional
-							if (!std::is_integral<IDType>::value ||
-									id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.input_file == "")
-							{
-								pt_arr = generateRandPts<PointStructTemplate<T, IDType, num_IDs>, T>(num_elems,
-															id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.distr,
-															id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.rand_num_eng,
-															id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.vals_inc_ordered,
-															id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr_active ? &(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.inter_size_distr) : nullptr,
-															&(id_type_wrapper.id_distr));
-
-#ifdef DEBUG
-								printArray(std::cout, pt_arr, 0, num_elems);
-								std::cout << '\n';
-#endif
-								if constexpr (pst_type == GPU)
-								{
-									PointStructTemplate<T, IDType, num_IDs> *pt_arr_d;
-
-									if constexpr (timed)
-									{
-										// Start CUDA construction timer (i.e. place this event into default stream)
-										gpuErrorCheck(cudaEventRecord(construct_start_CUDA),
-													"Error in recording start event for timing CUDA PST construction code: ");
-									}
-
-									// Allocate space on GPU for random data and copy to device
-									gpuErrorCheck(cudaMalloc(&pt_arr_d, num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>)),
-													"Error in allocating array to store initial PointStructs on device "
-													+ std::to_string(id_type_wrapper.num_ids_wrapper.dev_ind) + " of "
-													+ std::to_string(id_type_wrapper.num_ids_wrapper.num_devs) + ": ");
-									gpuErrorCheck(cudaMemcpy(pt_arr_d, pt_arr, num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>), cudaMemcpyDefault),
-													"Error in copying array of PointStructTemplate<T, IDType, num_IDs> objects to device "
-													+ std::to_string(id_type_wrapper.num_ids_wrapper.dev_ind) + " of "
-													+ std::to_string(id_type_wrapper.num_ids_wrapper.num_devs) + ": ");
-
-									delete[] pt_arr;
-
-									pt_arr = pt_arr_d;
 								}
 							}
 
