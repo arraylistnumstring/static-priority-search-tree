@@ -12,10 +12,12 @@
 
 
 template <typename PointStruct, typename T, typename StaticPST,
-			 PSTType pst_type, bool timed, typename RetType, typename GridDimType
+			 PSTType pst_type, bool timed, typename RetType, typename GridDimType,
+			 typename PSTTester
 		 >
 void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per_block,
-					GridDimType pt_grid_dims[Dims::NUM_DIMS], GridDimType metacell_dims[Dims::NUM_DIMS],
+					PSTTester &pst_tester, GridDimType pt_grid_dims[Dims::NUM_DIMS],
+					GridDimType metacell_dims[Dims::NUM_DIMS],
 					cudaDeviceProp &dev_props, const int num_devs, const int dev_ind)
 {
 #ifdef DEBUG
@@ -189,14 +191,13 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 			search_start_wall = std::chrono::steady_clock::now();
 		}
 	}
-/*
+
 	// Search/report test phase
 	if constexpr (pst_type == GPU)
 	{
 		tree->twoSidedLeftSearch(num_res_elems, res_arr, pst_tester.dim1_val_bound1,
 									pst_tester.min_dim2_val, tree_ops_warps_per_block);
 	}
-*/
 }
 
 template <typename PointStruct, typename T, typename IDType, typename StaticPST,

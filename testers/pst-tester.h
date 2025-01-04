@@ -34,10 +34,12 @@ enum PSTType {CPU_ITER, CPU_RECUR, GPU};
 
 // No integral requirement is imposed on GridDimType, as datasetTest() is still declared as a friend for non-integral IDTypes and would thus result in compilation failure
 template <typename PointStruct, typename T, typename StaticPST,
-		 	PSTType pst_type, bool timed, typename RetType, typename GridDimType
+		 	PSTType pst_type, bool timed, typename RetType, typename GridDimType,
+			typename PSTTester
 		>
 void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per_block,
-					GridDimType pt_grid_dims[Dims::NUM_DIMS], GridDimType metacell_dims[Dims::NUM_DIMS],
+					PSTTester &pst_tester, GridDimType pt_grid_dims[Dims::NUM_DIMS],
+					GridDimType metacell_dims[Dims::NUM_DIMS],
 					cudaDeviceProp &dev_props, const int num_devs, const int dev_ind);
 
 template <typename PointStruct, typename T, typename IDType, typename StaticPST,
@@ -207,7 +209,9 @@ struct PSTTester
 													pst_type, timed, RetType
 												>
 													(id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.input_file,
-														warps_per_block, id_type_wrapper.pt_grid_dims,
+														warps_per_block,
+														id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester,
+														id_type_wrapper.pt_grid_dims,
 														id_type_wrapper.metacell_dims,
 														id_type_wrapper.num_ids_wrapper.dev_props,
 														id_type_wrapper.num_ids_wrapper.num_devs,
@@ -578,6 +582,7 @@ struct PSTTester
 													pst_type, timed, RetType
 												>
 													(const std::string input_file, const unsigned tree_ops_warps_per_block,
+														DataTypeWrapper<T, Distrib, RandNumEng> &pst_tester,
 														IDType pt_grid_dims[Dims::NUM_DIMS],
 														IDType metacell_dims[Dims::NUM_DIMS],
 														cudaDeviceProp &dev_props, const int num_devs,
