@@ -300,10 +300,16 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 					return pt_1.compareDim1(pt_2) < 0;
 				});
 
+#ifdef DEBUG
+	std::cout << "About to report search results\n";
+#endif
 
 	printArray(std::cout, res_arr, 0, num_res_elems);
 	std::cout << '\n';
 
+#ifdef DEBUG
+	std::cout << "Completed reporting of results\n";
+#endif
 
 	gpuErrorCheck(cudaPointerGetAttributes(&ptr_info, metacell_tag_arr),
 					"Error in determining location type of memory address of input metacell tag array (i.e. whether on host or device): ");
@@ -633,12 +639,20 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 					return pt_1.compareDim1(pt_2) < 0;
 				});
 
+#ifdef DEBUG
+	std::cout << "About to report search results\n";
+#endif
+
 	printArray(std::cout, res_arr, 0, num_res_elems);
 	std::cout << '\n';
 
+#ifdef DEBUG
+	std::cout << "Completed reporting of results\n";
+#endif
+
 	delete tree;
 	delete[] res_arr;
-	
+
 	gpuErrorCheck(cudaPointerGetAttributes(&ptr_info, pt_arr),
 					"Error in determining location type of memory address of input PointStruct array (i.e. whether on host or device): ");
 	if (ptr_info.type == cudaMemoryTypeDevice)
