@@ -4,11 +4,8 @@
 #include <iostream>
 
 #include "isosurface-data-processing.h"
-#include "rand-data-pt-generator.h"
-
-#ifdef DEBUG
 #include "print-array.h"
-#endif
+#include "rand-data-pt-generator.h"
 
 
 template <typename PointStruct, typename T, typename StaticPST,
