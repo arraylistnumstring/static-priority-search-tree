@@ -22,6 +22,7 @@ where `<flags>` can be any combination of:
 	- `DEBUG`: toggles print output to aid with debugging variables that are inaccessible via gdb
 	- `DEBUG_CONSTR`: toggle constructor-internal debugging print statements
 	- `DEBUG_TEST`: toggle test driver-internal debugging print statements
+	- `DEBUG_TREE`: toggle printing of PST structure (only meaningful for PST code)
 	- `DEBUG_WRAP`: toggle \*test-info.h debugging print statements
 	- `CUDA_FORCE_CDP1_IF_SUPPORTED`: allow debugging of dynamic parallelism even with legacy debugger backend; not supported on devices of compute capability 9.0 or greater
 		- Note: use of `cudaStreamFireAndForget` within the program is not compatible with this option

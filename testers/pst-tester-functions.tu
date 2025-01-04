@@ -144,6 +144,35 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 		metacell_tag_arr = metacell_tag_arr_host;
 	}
 	// metacell_tag_arr is now on host if StaticPST is a CPU PST, and on device if StaticPST is a GPU PST
+
+	StaticPST *tree;
+	if constexpr (pst_type == GPU)
+		tree = new StaticPST(metacell_tag_arr, num_metacells, tree_ops_warps_per_block,
+								dev_ind, num_devs, dev_props
+							);
+	else
+		tree = new StaticPST(metacell_tag_arr, num_metacells);
+
+	if constexpr (timed)
+	{
+		if constexpr (pst_type == GPU)
+		{
+			// End CUDA construction timer
+			gpuErrorCheck(cudaEventRecord(construct_stop_CUDA),
+							"Error in recording stop event for timing CUDA PST construction code: ");
+		}
+		else
+		{
+			construct_stop_CPU = std::clock();
+			construct_stop_wall = std::chrono::steady_clock::now();
+		}
+	}
+
+#ifdef DEBUG_TREE
+	std::cout << *tree << '\n';
+#endif
+
+	size_t num_res_elems = 0;
 }
 
 template <typename PointStruct, typename T, typename IDType, typename StaticPST,
@@ -259,13 +288,15 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 		}
 	}
 
-	if (tree == nullptr)
+	if (num_elems == 0)
 	{
-		throwErr("Error: Could not allocate memory for priority search tree");
+		std::cout << "num_elems = 0; nothing to do\n";
 		return;
 	}
 
+#ifdef DEBUG_TREE
 	std::cout << *tree << '\n';
+#endif
 
 	size_t num_res_elems = 0;
 	RetType *res_arr;
