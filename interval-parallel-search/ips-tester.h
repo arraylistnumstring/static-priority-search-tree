@@ -219,8 +219,8 @@ struct IPSTester
 								T *vertex_arr = readInVertices<T>(id_type_wrapper.num_ids_wrapper.ips_tester.input_file,
 																		num_verts
 																	);
-
-#ifdef DEBUG || DEBUG_VERTS
+// #ifdef only allows for single conditionals, while if defined allows for multiple conditionals
+#if defined DEBUG || defined DEBUG_VERTS
 								// Instantiate as separate variable, as attempting a direct substitution of an array initialiser doesn't compile, even if statically cast to an appropriate type
 								IDType start_inds[Dims::NUM_DIMS] = {0, 0, 0};
 #endif
