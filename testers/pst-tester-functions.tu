@@ -271,19 +271,20 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 		res_arr = new RetType[num_res_elems];
 
 		if (res_arr == nullptr)
-			throwErr("Error: could not allocate PointStruct array of size "
+			throwErr("Error: could not allocate result object array of size "
 						+ std::to_string(num_res_elems) + " on host");
 
 		// Copy data from res_arr_d to res_arr
-		gpuErrorCheck(cudaMemcpy(res_arr, res_arr_d, num_res_elems * sizeof(PointStruct),
+		gpuErrorCheck(cudaMemcpy(res_arr, res_arr_d, num_res_elems * sizeof(RetType),
 									cudaMemcpyDefault), 
-						"Error in copying array of PointStruct objects from device "
+						"Error in copying array of result objects from device "
 						+ std::to_string(ptr_info.device) + ": ");
 
-		// Free on-device array of PointStructs
+		// Free on-device array of RetType elements
 		gpuErrorCheck(cudaFree(res_arr_d),
-						"Error in freeing array of result PointStructs on device "
+						"Error in freeing array of result objects on device "
 						+ std::to_string(ptr_info.device) + ": ");
+
 	}
 
 	// Sort output for consistency (specifically compared to GPU-reported outputs, which may be randomly ordered and must therefore be sorted for easy comparisons)
@@ -610,18 +611,18 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 		res_arr = new RetType[num_res_elems];
 
 		if (res_arr == nullptr)
-			throwErr("Error: could not allocate PointStruct array of size "
+			throwErr("Error: could not allocate result object array of size "
 						+ std::to_string(num_res_elems) + " on host");
 
 		// Copy data from res_arr_d to res_arr
-		gpuErrorCheck(cudaMemcpy(res_arr, res_arr_d, num_res_elems * sizeof(PointStruct),
+		gpuErrorCheck(cudaMemcpy(res_arr, res_arr_d, num_res_elems * sizeof(RetType),
 									cudaMemcpyDefault), 
-						"Error in copying array of PointStruct objects from device "
+						"Error in copying array of result objects from device "
 						+ std::to_string(ptr_info.device) + ": ");
 
-		// Free on-device array of PointStructTemplates
+		// Free on-device array of RetType elements
 		gpuErrorCheck(cudaFree(res_arr_d),
-						"Error in freeing array of result PointStructs on device "
+						"Error in freeing array of result objects on device "
 						+ std::to_string(ptr_info.device) + ": ");
 	}
 
