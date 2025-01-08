@@ -110,11 +110,18 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 	delete[] vertex_arr;
 
 	// metacell_tag_arr is on device
+	/*
 	PointStruct *metacell_tag_arr = formMetacellTags<PointStruct>(vertex_arr_d, pt_grid_dims,
 																	metacell_dims, metacell_grid_dims,
 																	num_metacells, dev_ind, num_devs,
 																	dev_props.warpSize
 																);
+	*/
+
+	PointStruct *metacell_tag_arr = formVoxelTags<PointStruct>(vertex_arr_d, pt_grid_dims,
+																metacell_dims, num_metacells,
+																dev_ind, num_devs
+															);
 
 	// CPU PST-only construction cost of copying data to host must be timed
 	if constexpr (pst_type == CPU_ITER || pst_type == CPU_RECUR)
@@ -311,6 +318,9 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 #ifdef DEBUG
 	std::cout << "Completed reporting of results\n";
 #endif
+
+	delete tree;
+	delete[] res_arr;
 
 	gpuErrorCheck(cudaPointerGetAttributes(&ptr_info, metacell_tag_arr),
 					"Error in determining location type of memory address of input metacell tag array (i.e. whether on host or device): ");
