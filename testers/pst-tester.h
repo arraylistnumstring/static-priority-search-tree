@@ -190,7 +190,7 @@ struct PSTTester
 
 						void operator()(size_t num_elems, const unsigned warps_per_block, PSTTestCodes test_type=CONSTRUCT)
 						{
-							// To avoid instantiating a float-type GridDimType in datasetTest(), construct the two complimentary conditions explicitly
+							// To avoid instantiating a float-type GridDimType in datasetTest(), construct the two complimentary conditions explicitly (with one being a constexpr)
 							if constexpr (std::is_integral<IDType>::value)
 							{
 								if (id_type_wrapper.num_ids_wrapper.tree_type_wrapper.pst_tester.input_file != "")
@@ -227,6 +227,7 @@ struct PSTTester
 							}
 						};
 
+						// Declare a particular full specification of the test functions as friends to this struct; requires a declaration of the template function before this use as well
 						friend void datasetTest<PointStructTemplate<T, IDType, num_IDs>, T,
 													StaticPSTTemplate<T, PointStructTemplate, IDType, num_IDs>,
 													pst_type, timed, RetType
@@ -279,7 +280,6 @@ struct PSTTester
 											num_ids_wrapper.num_devs, num_ids_wrapper.dev_ind);
 					};
 
-					// Declare a particular full specification of randDataTest() as a friend to this struct; requires a declaration of the template function before this use as well
 					friend void randDataTest<PointStructTemplate<T, void, num_IDs>, T, void,
 						   						StaticPSTTemplate<T, PointStructTemplate, void, num_IDs>,
 												pst_type, timed

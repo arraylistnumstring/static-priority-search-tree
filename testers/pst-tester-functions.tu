@@ -109,6 +109,20 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 	// Prior cudaMemcpy() is staged, if not already written through, so can free vertex_arr
 	delete[] vertex_arr;
 
+	if constexpr (timed)
+	{
+		if constexpr (pst_type == GPU)
+			// Start CUDA construction timer (i.e. place this event into default stream)
+			gpuErrorCheck(cudaEventRecord(construct_start_CUDA),
+							"Error in recording start event for timing CUDA PST construction code");
+		else
+		{
+			construct_start_CPU = std::clock();
+			construct_start_wall = std::chrono::steady_clock::now();
+		}
+	}
+
+	// For consistency of comparison with IPS, include metacell formation time in construction cost
 	// metacell_tag_arr is on device
 	/*
 	PointStruct *metacell_tag_arr = formMetacellTags<PointStruct>(vertex_arr_d, pt_grid_dims,
@@ -123,14 +137,9 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 																dev_ind, num_devs
 															);
 
-	// CPU PST-only construction cost of copying data to host must be timed
+	// CPU PST-only construction cost of copying data to host must be included in construction timing
 	if constexpr (pst_type == CPU_ITER || pst_type == CPU_RECUR)
 	{
-		if constexpr (timed)
-		{
-			construct_start_CPU = std::clock();
-			construct_start_wall = std::chrono::steady_clock::now();
-		}
 		// Copy metacell tag array to CPU for iterative and recursive PSTs to process
 		PointStruct *metacell_tag_arr_host = new PointStruct[num_metacells];
 		gpuErrorCheck(cudaMemcpy(metacell_tag_arr_host, metacell_tag_arr, num_metacells * sizeof(PointStruct),
@@ -148,11 +157,6 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 		metacell_tag_arr = metacell_tag_arr_host;
 		// metacell_tag_arr is now on host if StaticPST is a CPU PST, and on device if StaticPST is a GPU PST
 	}
-	else if constexpr (timed)	// i.e. timed && pst_type == GPU
-		// Start CUDA construction timer (i.e. place this event into default stream)
-		gpuErrorCheck(cudaEventRecord(construct_start_CUDA),
-						"Error in recording start event for timing CUDA PST construction code");
-
 
 	StaticPST *tree;
 	if constexpr (pst_type == GPU)
