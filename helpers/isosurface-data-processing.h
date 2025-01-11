@@ -16,7 +16,7 @@
 #include "warp-shuffles.h"
 
 
-// Calculates metacell grid dimensions and total number of metacells, returning them using the supplied pointer and reference parameters and using inputs of vertex grid dimensions and metacell dimensions
+// Calculates metacell grid dimensions and total number of metacells, returning them using the supplied pointer and reference parameters, calculated from inputs of vertex grid dimensions and metacell dimensions
 template <typename GridDimType>
 	requires std::is_integral<GridDimType>::value
 void calcNumMetacells(GridDimType pt_grid_dims[Dims::NUM_DIMS], GridDimType metacell_dims[Dims::NUM_DIMS],
