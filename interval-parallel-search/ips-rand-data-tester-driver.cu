@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
 			std::cerr << "[-S RAND_SEED] ";
 			std::cerr << "[-T THREADS_PER_BLOCK] ";
 			std::cerr << "[-t] ";
-			std::cerr << "-B NUM_BLOCKS";
+			std::cerr << "-B NUM_BLOCKS ";
 			std::cerr << "-b MIN_VAL MAX_VAL [SIZE_BOUND_1] [SIZE_BOUND_2] ";
 			std::cerr << "-n NUM_ELEMS ";
 			std::cerr << "-s SEARCH_VAL";
