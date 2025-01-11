@@ -21,6 +21,7 @@ where `<flags>` can be any combination of:
 - `-D<preproc-flag>` to toggle various preprocessor variables that delineate debugging print statements in the code. Possible values of `<preproc-flag>`:
 	- `DEBUG`: toggles print output to aid with debugging variables that are inaccessible via gdb
 	- `DEBUG_CONSTR`: toggle constructor-internal debugging print statements
+	- `DEBUG_SHFL`: toggle warp shuffle-internal debugging print statements
 	- `DEBUG_TEST`: toggle test driver-internal debugging print statements
 	- `DEBUG_TREE`: toggle printing of PST structure (only meaningful for PST code)
 	- `DEBUG_VERTS`: toggle printing of vertex array values

@@ -173,7 +173,7 @@ __forceinline__ __device__ U warpPrefixSum(const T mask, U num)
 #pragma unroll
 	for (T shfl_offset = 1; shfl_offset < shfl_offset_lim; shfl_offset <<= 1)
 	{
-#ifdef DEBUG
+#ifdef DEBUG_SHFL
 		printf("About to begin shfl_offset = %u prefix sum\n\n", shfl_offset);
 #endif
 		// Copies value of variable thread_level_num_elems from thread with lane ID that is shfl_offset less than current thread's lane ID
@@ -185,7 +185,7 @@ __forceinline__ __device__ U warpPrefixSum(const T mask, U num)
 		if (linThreadIDInBlock() % warpSize >= shfl_offset)
 			num += addend;
 
-#ifdef DEBUG
+#ifdef DEBUG_SHFL
 		printf("Completed shfl_offset = %u prefix sum\n\n", shfl_offset);
 #endif
 	}
@@ -205,7 +205,7 @@ __forceinline__ __device__ U warpReduce(const T mask, U num,
 #pragma unroll
 	for (T shfl_offset = warpSize / 2; shfl_offset > 0; shfl_offset >>= 1)
 	{
-#ifdef DEBUG
+#ifdef DEBUG_SHFL
 		printf("About to begin shfl_offset = %u reduction\n\n", shfl_offset);
 #endif
 		// When the fourth parameter, width, is equal to warpSize (the default value), xor pulls data from the lane with ID equal to (current thread's lane ID XOR shfl_offset), interpreting the result as an int, rather than looking for a particular indexed bit as in mask; this results in threads accessing (own lane ID + shfl_offset) mod warpSize
@@ -215,7 +215,7 @@ __forceinline__ __device__ U warpReduce(const T mask, U num,
 		if ((linThreadIDInBlock() % warpSize ^ shfl_offset) <= last_active_lane)
 			num = op(operand, num);
 
-#ifdef DEBUG
+#ifdef DEBUG_SHFL
 		printf("Completed shfl_offset = %u reduction\n\n", shfl_offset);
 #endif
 	}
