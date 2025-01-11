@@ -303,10 +303,6 @@ void randDataTest(const size_t num_elems, const unsigned num_thread_blocks,
 		return;
 	}
 
-#ifdef DEBUG_TREE
-	std::cout << *tree << '\n';
-#endif
-
 	size_t num_res_elems = 0;
 	RetType *res_arr;
 
