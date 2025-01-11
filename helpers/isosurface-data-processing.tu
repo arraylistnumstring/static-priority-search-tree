@@ -27,17 +27,17 @@ __global__ void formMetacellTagsGlobal(T *const vertex_arr_d, PointStruct *const
 			for (GridDimType i = 0; i < pt_grid_dims_x; i += gridDim.x * blockDim.x)
 			{
 				// Check that voxel in question exists
-				GridDimType base_voxel_coord_x = i + blockIdx.x * blockDim.x + threadIdx.x;
-				GridDimType base_voxel_coord_y = j + blockIdx.y * blockDim.y + threadIdx.y;
-				GridDimType base_voxel_coord_z = k + blockIdx.z * blockDim.z + threadIdx.z;
+				GridDimType base_vertex_coord_x = i + blockIdx.x * blockDim.x + threadIdx.x;
+				GridDimType base_vertex_coord_y = j + blockIdx.y * blockDim.y + threadIdx.y;
+				GridDimType base_vertex_coord_z = k + blockIdx.z * blockDim.z + threadIdx.z;
 				// One voxel is associated with each vertex, with the exception of the last vertices in each dimension (i.e. those vertices with at least one coordinate of value pt_grid_dims_[x-z] - 1)
-				bool valid_voxel = base_voxel_coord_x < pt_grid_dims_x - 1
-										&& base_voxel_coord_y < pt_grid_dims_y - 1
-										&& base_voxel_coord_z < pt_grid_dims_z - 1;
+				bool valid_voxel = base_vertex_coord_x < pt_grid_dims_x - 1
+										&& base_vertex_coord_y < pt_grid_dims_y - 1
+										&& base_vertex_coord_z < pt_grid_dims_z - 1;
 				if (valid_voxel)
 				{
 					getVoxelMinMax(vertex_arr_d, min_vert_val, max_vert_val,
-										base_voxel_coord_x, base_voxel_coord_y, base_voxel_coord_z,
+										base_vertex_coord_x, base_vertex_coord_y, base_vertex_coord_z,
 										pt_grid_dims_x, pt_grid_dims_y, pt_grid_dims_z);
 				}
 
@@ -116,9 +116,9 @@ __global__ void formMetacellTagsGlobal(T *const vertex_arr_d, PointStruct *const
 				if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0)
 				{
 					// Cast necessary, as an arithmetic operation (even of two types that are both small, e.g. GridDimType = char) effects an up-casting to a datatype at least as large as int, whereas directly supplied variables remain as the previous type, causing the overall template instantiation of lineariseID to fail
-					GridDimType metacell_ID = lineariseID(base_voxel_coord_x / metacell_dims_x,
-															base_voxel_coord_y / metacell_dims_y,
-															base_voxel_coord_z / metacell_dims_z,
+					GridDimType metacell_ID = lineariseID(base_vertex_coord_x / metacell_dims_x,
+															base_vertex_coord_y / metacell_dims_y,
+															base_vertex_coord_z / metacell_dims_z,
 															metacell_grid_dims_x,
 															metacell_grid_dims_y
 														);
@@ -154,24 +154,24 @@ __global__ void formVoxelTagsGlobal(T *const vertex_arr_d, PointStruct *const vo
 			for (GridDimType i = 0; i < pt_grid_dims_x; i += gridDim.x * blockDim.x)
 			{
 				// Check that voxel in question exists
-				GridDimType base_voxel_coord_x = i + blockIdx.x * blockDim.x + threadIdx.x;
-				GridDimType base_voxel_coord_y = j + blockIdx.y * blockDim.y + threadIdx.y;
-				GridDimType base_voxel_coord_z = k + blockIdx.z * blockDim.z + threadIdx.z;
+				GridDimType base_vertex_coord_x = i + blockIdx.x * blockDim.x + threadIdx.x;
+				GridDimType base_vertex_coord_y = j + blockIdx.y * blockDim.y + threadIdx.y;
+				GridDimType base_vertex_coord_z = k + blockIdx.z * blockDim.z + threadIdx.z;
 				// One voxel is associated with each vertex, with the exception of the last vertices in each dimension (i.e. those vertices with at least one coordinate of value pt_grid_dims_[x-z] - 1)
-				bool valid_voxel = base_voxel_coord_x < pt_grid_dims_x - 1
-										&& base_voxel_coord_y < pt_grid_dims_y - 1
-										&& base_voxel_coord_z < pt_grid_dims_z - 1;
+				bool valid_voxel = base_vertex_coord_x < pt_grid_dims_x - 1
+										&& base_vertex_coord_y < pt_grid_dims_y - 1
+										&& base_vertex_coord_z < pt_grid_dims_z - 1;
 				if (valid_voxel)
 				{
 					getVoxelMinMax(vertex_arr_d, min_vert_val, max_vert_val,
-										base_voxel_coord_x, base_voxel_coord_y, base_voxel_coord_z,
+										base_vertex_coord_x, base_vertex_coord_y, base_vertex_coord_z,
 										pt_grid_dims_x, pt_grid_dims_y, pt_grid_dims_z);
 
 					// Voxel-specific processing to save to a PointStruct
 					// Cast necessary, as an arithmetic operation (even of two types that are both small, e.g. GridDimType = char) effects an up-casting to a datatype at least as large as int, whereas directly supplied variables remain as the previous type, causing the overall template instantiation of lineariseID to fail
-					GridDimType voxel_ID = lineariseID(base_voxel_coord_x,
-														base_voxel_coord_y,
-														base_voxel_coord_z,
+					GridDimType voxel_ID = lineariseID(base_vertex_coord_x,
+														base_vertex_coord_y,
+														base_vertex_coord_z,
 														pt_grid_dims_x - 1, pt_grid_dims_y - 1
 													);
 					voxel_arr_d[voxel_ID].dim1_val = min_vert_val;
@@ -187,16 +187,16 @@ __global__ void formVoxelTagsGlobal(T *const vertex_arr_d, PointStruct *const vo
 template <typename T, typename GridDimType>
 	requires std::is_integral<GridDimType>::value
 __forceinline__ __device__ void getVoxelMinMax(T *const vertex_arr_d, T &min, T &max,
-													const GridDimType base_voxel_coord_x,
-													const GridDimType base_voxel_coord_y,
-													const GridDimType base_voxel_coord_z,
+													const GridDimType base_vertex_coord_x,
+													const GridDimType base_vertex_coord_y,
+													const GridDimType base_vertex_coord_z,
 													const GridDimType pt_grid_dims_x,
 													const GridDimType pt_grid_dims_y,
 													const GridDimType pt_grid_dims_z
 												)
 {
 	// Each thread accesses the vertex of its voxel with the lowest indices in each dimension and uses this scalar value as the initial value with which future values are compared
-	max = min = vertex_arr_d[lineariseID(base_voxel_coord_x, base_voxel_coord_y, base_voxel_coord_z, pt_grid_dims_x, pt_grid_dims_y)];
+	max = min = vertex_arr_d[lineariseID(base_vertex_coord_x, base_vertex_coord_y, base_vertex_coord_z, pt_grid_dims_x, pt_grid_dims_y)];
 
 	// Check each vertex of the voxel and get the maximum and minimum values achieved at those vertices
 	for (GridDimType k = 0; k < 2; k++)
@@ -206,9 +206,9 @@ __forceinline__ __device__ void getVoxelMinMax(T *const vertex_arr_d, T &min, T 
 			for (GridDimType i = 0; i < 2; i++)
 			{
 				// Base voxel coordinate is equal to vertex of lowest dimension
-				T curr_vert_val = vertex_arr_d[lineariseID(base_voxel_coord_x + i,
-															base_voxel_coord_y + j,
-															base_voxel_coord_z + k,
+				T curr_vert_val = vertex_arr_d[lineariseID(base_vertex_coord_x + i,
+															base_vertex_coord_y + j,
+															base_vertex_coord_z + k,
 															pt_grid_dims_x, pt_grid_dims_y
 														)];
 				min = min <= curr_vert_val ? min : curr_vert_val;
