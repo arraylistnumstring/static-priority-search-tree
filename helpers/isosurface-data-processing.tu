@@ -40,24 +40,24 @@ __global__ void formMetacellTagsGlobal(T *const vertex_arr_d, PointStruct *const
 				// As of time of writing (compute capability 9.0), __ballot_sync() returns an unsigned int
 				const auto intrawarp_mask = __ballot_sync(0xffffffff, valid_voxel);
 
+				// Neither CUDA math library-provided min() and max() functions nor host-only std::min() and std::max() compile when passed as parameters to device functions, so simply use lambdas (that implicitly cast to nvstd::function type when assigned to a variable of that type)
+				nvstd::function<T(const T &, const T &)> min_op
+						= [](const T &num1, const T &num2) -> T
+							{
+								return num1 <= num2 ? num1 : num2;
+							};
+
+				nvstd::function<T(const T &, const T &)> max_op
+						= [](const T &num1, const T &num2) -> T
+							{
+								return num1 >= num2 ? num1 : num2;
+							};
+
 				if (valid_voxel)
 				{
 					getVoxelMinMax(vertex_arr_d, min_vert_val, max_vert_val,
 										base_vertex_coord_x, base_vertex_coord_y, base_vertex_coord_z,
 										pt_grid_dims_x, pt_grid_dims_y, pt_grid_dims_z);
-
-					// Neither CUDA math library-provided min() and max() functions nor host-only std::min() and std::max() compile when passed as parameters to device functions, so simply use lambdas (that implicitly cast to nvstd::function type when assigned to a variable of that type)
-					nvstd::function<T(const T &, const T &)> min_op
-							= [](const T &num1, const T &num2) -> T
-								{
-									return num1 <= num2 ? num1 : num2;
-								};
-
-					nvstd::function<T(const T &, const T &)> max_op
-							= [](const T &num1, const T &num2) -> T
-								{
-									return num1 >= num2 ? num1 : num2;
-								};
 
 
 					// Intrawarp reduction for metacell min-max val determination
