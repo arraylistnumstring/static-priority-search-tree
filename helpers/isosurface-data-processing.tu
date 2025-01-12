@@ -34,44 +34,45 @@ __global__ void formMetacellTagsGlobal(T *const vertex_arr_d, PointStruct *const
 				bool valid_voxel = base_vertex_coord_x < pt_grid_dims_x - 1
 										&& base_vertex_coord_y < pt_grid_dims_y - 1
 										&& base_vertex_coord_z < pt_grid_dims_z - 1;
-				if (valid_voxel)
-				{
-					getVoxelMinMax(vertex_arr_d, min_vert_val, max_vert_val,
-										base_vertex_coord_x, base_vertex_coord_y, base_vertex_coord_z,
-										pt_grid_dims_x, pt_grid_dims_y, pt_grid_dims_z);
-				}
-
-				// Intrawarp reduction for metacell min-max val determination
 
 				// Generate mask for threads active during intrawarp phase; all threads in warp run this (or else are exited, i.e. simply not running any code at all)
 				// Call to __ballot_sync() is necessary to determine the thread in warp with largest ID that is still active
 				// As of time of writing (compute capability 9.0), __ballot_sync() returns an unsigned int
 				const auto intrawarp_mask = __ballot_sync(0xffffffff, valid_voxel);
 
-				// Neither CUDA math library-provided min() and max() functions nor host-only std::min() and std::max() compile when passed as parameters to device functions, so simply use lambdas (that implicitly cast to nvstd::function type when assigned to a variable of that type)
-				nvstd::function<T(const T &, const T &)> min_op
-						= [](const T &num1, const T &num2) -> T
-							{
-								return num1 <= num2 ? num1 : num2;
-							};
+				if (valid_voxel)
+				{
+					getVoxelMinMax(vertex_arr_d, min_vert_val, max_vert_val,
+										base_vertex_coord_x, base_vertex_coord_y, base_vertex_coord_z,
+										pt_grid_dims_x, pt_grid_dims_y, pt_grid_dims_z);
 
-				nvstd::function<T(const T &, const T &)> max_op
-						= [](const T &num1, const T &num2) -> T
-							{
-								return num1 >= num2 ? num1 : num2;
-							};
+					// Neither CUDA math library-provided min() and max() functions nor host-only std::min() and std::max() compile when passed as parameters to device functions, so simply use lambdas (that implicitly cast to nvstd::function type when assigned to a variable of that type)
+					nvstd::function<T(const T &, const T &)> min_op
+							= [](const T &num1, const T &num2) -> T
+								{
+									return num1 <= num2 ? num1 : num2;
+								};
 
+					nvstd::function<T(const T &, const T &)> max_op
+							= [](const T &num1, const T &num2) -> T
+								{
+									return num1 >= num2 ? num1 : num2;
+								};
+
+
+					// Intrawarp reduction for metacell min-max val determination
 #ifdef DEBUG
-				printf("About to begin metacell intrawarp reduce\n");
+					printf("About to begin metacell intrawarp reduce\n");
 #endif
 
-				// CUDA-supplied __reduce_*_sync() is only defined for types unsigned and int, and isn't even found for some reason when compiling, so use user-defined warpReduce() instead
-				min_vert_val = warpReduce(intrawarp_mask, min_vert_val, min_op);
-				max_vert_val = warpReduce(intrawarp_mask, max_vert_val, max_op);
+					// CUDA-supplied __reduce_*_sync() is only defined for types unsigned and int, and isn't even found for some reason when compiling, so use user-defined warpReduce() instead
+					min_vert_val = warpReduce(intrawarp_mask, min_vert_val, min_op);
+					max_vert_val = warpReduce(intrawarp_mask, max_vert_val, max_op);
 
 #ifdef DEBUG
-				printf("Completed metacell intrawarp reduce\n");
+					printf("Completed metacell intrawarp reduce\n");
 #endif
+				}
 
 				// Interwarp reduction for metacell min-max val determination
 				if constexpr (interwarp_reduce)

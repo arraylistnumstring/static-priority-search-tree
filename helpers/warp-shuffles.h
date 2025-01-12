@@ -100,7 +100,7 @@ __forceinline__ __device__ T calcAllocReportIndOffset(const bool cell_active, T 
 				const auto interwarp_mask = __ballot_sync(0xffffffff, i + threadIdx.x < warps_per_block);
 
 				// Inter-warp condition
-				if (threadIdx.x < warps_per_block)
+				if (i + threadIdx.x < warps_per_block)
 				{
 					// If this is not the first set of warps being processed, set the warp group's offset to be the largest result of the previous iteration's interwarp prefix sum
 					T warp_gp_offset = (i == 0) ? 0 : warp_level_num_elems_arr[i - 1];
@@ -156,6 +156,7 @@ __forceinline__ __device__ T fls(T val)	// Equivalent to truncate(log_2(val))
 }
 
 // Calculates inclusive prefix sum using thread-local variables and intra-warp shuffle; returns result in reference variable num
+//	Precondition: inactive threads, if any, are located in one contiguous group that ends at the highest-indexed thread (when ordering by increasing linearised ID)
 template <typename T, typename U>
 	requires std::conjunction<
 								// As std::unsigned_integral<T> evaluates to true/false instead of a type name, instead use its constituent parts separately to achieve the same effect
@@ -199,9 +200,18 @@ template <typename T, typename U>
 __forceinline__ __device__ U warpReduce(const T mask, U num,
 										nvstd::function<U(const U &, const U &)> op)
 {
-	const T last_active_lane = fls(mask);
-	// Start with shfl_offset warpSize / 2, then go downwards in powers of 2, as this order of butterfly reduction guarantees that the first m elements will all have the correct result, for m = \max{2^l : 2^l <= n}
-	// The alternative, to go upwards from a shfl_offset of 1, only guarantees correct results for the first (m - k) elements in each group of size m, where k is equal to 2m - n (i.e. the number of elements necessary to reach the next power of 2)
+	/*
+		For data with m non-empty elements followed by n-m empty elements, where n is the next largest power of 2 (i.e. n = \min{2^l : 2^l >= m}):
+			Start with shfl_offset warpSize / 2, then go downwards in powers of 2, as this order of butterfly reduction guarantees that if the last n-m elements are empty (i.e. their corresponding threads are inactive), the first m elements will all have the correct result.
+				The alternative, to go upwards from a shfl_offset of 1, only guarantees correct results for the first n/2 - (m mod n/2) elements in each group of size n/2, as the remaining elements in the first half of the data do not have any elements in the second half with which to communicate to get the result produced by the second half.
+
+		Note that if n is a power of 2, and in each subgroup, the last m elements are empty (for m < n), the reduce procedure also works correctly (for m = n, the entire array would be empty and a reduce would be pointless).
+		TODO: investigate whether this still holds true when:
+			- n is not a power of 2
+			- the metacell is not a cube
+			- the metacell intersects the boundary first in one dimension, then in another (then in another?) such that beyond investigating different periodicities of inactive threads in a warp, the periodicity may not start at the beginning of a warp either
+			- metacell size such that inactive threads are periodic, but is not period away from the warp's lane ID 0 thread (due to difference between warpSize and periodicity of inactive threads)
+	*/
 #pragma unroll
 	for (T shfl_offset = warpSize / 2; shfl_offset > 0; shfl_offset >>= 1)
 	{
@@ -211,8 +221,13 @@ __forceinline__ __device__ U warpReduce(const T mask, U num,
 		// When the fourth parameter, width, is equal to warpSize (the default value), xor pulls data from the lane with ID equal to (current thread's lane ID XOR shfl_offset), interpreting the result as an int, rather than looking for a particular indexed bit as in mask; this results in threads accessing (own lane ID + shfl_offset) mod warpSize
 		U operand = __shfl_xor_sync(mask, num, shfl_offset);
 
-		// Check that value came from a valid thread
-		if ((linThreadIDInBlock() % warpSize ^ shfl_offset) <= last_active_lane)
+		// Check that value came from a valid (active) thread
+		/*
+			linThreadIDInBlock() % warpSize ^ shfl_offset returns the numerical value of the in-warp ID (lane) of the thread from which operand was fetched
+			mask has the i'th bit (0-indexed, starting from the smallest place value) set to 1 iff the i'th thread in the warp is active
+			Hence, if the 
+		*/
+		if ( ((linThreadIDInBlock() % warpSize ^ shfl_offset) & mask) != 0)
 			num = op(operand, num);
 
 #ifdef DEBUG_SHFL
