@@ -206,11 +206,13 @@ __forceinline__ __device__ U warpReduce(const T mask, U num,
 				The alternative, to go upwards from a shfl_offset of 1, only guarantees correct results for the first n/2 - (m mod n/2) elements in each group of size n/2, as the remaining elements in the first half of the data do not have any elements in the second half with which to communicate to get the result produced by the second half.
 
 		Note that if n is a power of 2, and in each subgroup, the last m elements are empty (for m < n), the reduce procedure also works correctly (for m = n, the entire array would be empty and a reduce would be pointless).
-		TODO: investigate whether this still holds true when:
-			- n is not a power of 2
-			- the metacell is not a cube
-			- the metacell intersects the boundary first in one dimension, then in another (then in another?) such that beyond investigating different periodicities of inactive threads in a warp, the periodicity may not start at the beginning of a warp either
-			- metacell size such that inactive threads are periodic, but is not period away from the warp's lane ID 0 thread (due to difference between warpSize and periodicity of inactive threads)
+		TODO: investigate whether this reduce procedure still works true when:
+			- the metacell intersects the boundary first in one dimension, then in another (then in another?)
+
+			The remainder are less conceptually relevant (being largely about boundary conditions), and can be revisited at a later time:
+				- n is not a power of 2
+				- metacell is not a cube
+				- metacell size is such that inactive threads are still periodic, but are not a multiple of period away from the warp's lane ID 0 thread (due to difference between warpSize and periodicity of inactive threads)
 	*/
 #pragma unroll
 	for (T shfl_offset = warpSize / 2; shfl_offset > 0; shfl_offset >>= 1)
@@ -225,9 +227,9 @@ __forceinline__ __device__ U warpReduce(const T mask, U num,
 		/*
 			linThreadIDInBlock() % warpSize ^ shfl_offset returns the numerical value of the in-warp ID (lane) of the thread from which operand was fetched
 			mask has the i'th bit (0-indexed, starting from the smallest place value) set to 1 iff the i'th thread in the warp is active
-			Hence, if the 
+			Hence, if the (linThreadIDInBlock() % warpSize ^ shfl_offset)'th bit of mask is set, the source thread is a valid thread
 		*/
-		if ( ((linThreadIDInBlock() % warpSize ^ shfl_offset) & mask) != 0)
+		if ( ( 1 << (linThreadIDInBlock() % warpSize ^ shfl_offset) & mask ) != 0)
 			num = op(operand, num);
 
 #ifdef DEBUG_SHFL
