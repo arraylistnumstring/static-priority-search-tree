@@ -77,7 +77,7 @@ __global__ void formMetacellTagsGlobal(T *const vertex_arr_d, PointStruct *const
 				// Interwarp reduction for metacell min-max val determination
 				if constexpr (interwarp_reduce)
 				{
-					// Note: nvcc does not use more or fewer registers when lin_thread_ID_in_block is replaced with linThreadIDInBlock; however, generally speaking, saving the result to a const variable like this is more performant than repeating a function call
+					// Note: nvcc does not use more or fewer registers when lin_thread_ID_in_block is replaced with linThreadIDInBlock; however, based on tests, saving the result to a const variable like this is generally more performant than repeating a function call
 					const auto lin_thread_ID_in_block = linThreadIDInBlock();
 
 					// First thread in each warp writes result to shared memory
@@ -103,11 +103,11 @@ __global__ void formMetacellTagsGlobal(T *const vertex_arr_d, PointStruct *const
 							if (l + lin_thread_ID_in_block < warps_per_block)
 							{
 								// Get per-warp minimum and maximum vertex values
-								min_vert_val = warp_level_min_vert[lin_thread_ID_in_block / warpSize];
-								max_vert_val = warp_level_max_vert[lin_thread_ID_in_block / warpSize];
+								min_vert_val = warp_level_min_vert[l + lin_thread_ID_in_block];
+								max_vert_val = warp_level_max_vert[l + lin_thread_ID_in_block];
 
 								min_vert_val = warpReduce(interwarp_mask, min_vert_val, min_op);
-								max_vert_val = warpReduce(interwarp_mask, min_vert_val, max_op);
+								max_vert_val = warpReduce(interwarp_mask, max_vert_val, max_op);
 							}
 						}
 					}
