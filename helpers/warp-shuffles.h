@@ -205,14 +205,16 @@ __forceinline__ __device__ U warpReduce(const T mask, U num,
 			Start with shfl_offset warpSize / 2, then go downwards in powers of 2, as this order of butterfly reduction guarantees that if the last n-m elements are empty (i.e. their corresponding threads are inactive), the first m elements will all have the correct result.
 				The alternative, to go upwards from a shfl_offset of 1, only guarantees correct results for the first n/2 - (m mod n/2) elements in each group of size n/2, as the remaining elements in the first half of the data do not have any elements in the second half with which to communicate to get the result produced by the second half.
 
-		Note that if n is a power of 2, and in each subgroup, the last m elements are empty (for m < n), the reduce procedure also works correctly (for m = n, the entire array would be empty and a reduce would be pointless).
-		TODO: investigate whether this reduce procedure still works true when:
-			- the metacell intersects the boundary first in one dimension, then in another (then in another?)
+		Note that if n is a power of 2, and in each subgrouping, the last m elements are empty (for m < n), the reduce procedure also works correctly for the first k elements, where k = \max{2^l : 2^l <= n - m}, i.e. the largest power of 2 that fits within the contiguous set of active elements in each subgrouping. (For m = n, the entire array would be empty and a reduce would be pointless.)
 
-			The remainder are less conceptually relevant (being largely about boundary conditions), and can be revisited at a later time:
-				- n is not a power of 2
-				- metacell is not a cube
-				- metacell size is such that inactive threads are still periodic, but are not a multiple of period away from the warp's lane ID 0 thread (due to difference between warpSize and periodicity of inactive threads)
+		Additionally, for 4 * 4 * 4 metacells, warpReduce() is guaranteed to work for the lowest-indexed thread when the set of active threads in any particular subgrouping whose size is a power of 2 is left-aligned to the beginning of the subgrouping (e.g. if only threads 0 and 7 are active, there are no active threads at power-of-2 offsets through which these two threads can communicate their results). Some other threads in some set of the subgroupings will also get the correct result, though this varies on a case-by-case basis.
+			Note that this assumes that the overall voxel grid is a convex rectilinear prism, such that if the boundary of the voxel grid is somewhere within the metacell, the number of threads in a corresponding subgrouping decreases to 0 over the course of the lienar ordering of threads, rather than to any other nonzero number.
+
+
+		TODO (at a later date):
+			- robustness for arbitrary-dimension metacells (main issue is the difference in periodicity between a power of 2 and the arbitrary metacell side length, e.g. periodicity 7, such that only threads 0, 7, 14, 21, 28 are active in a warp and thus would never be able to communicate with each other because they don't meet the left alignment requirement and aren't a power of 2 away from any each other thread)
+				- Would have to simply pad inactive threads with the value of the lowest active thread's min and max values (to avoid annoying identity value determination functions) and run warpReduce over the entire warp
+					- Would guarantee that every thread gets the correct result, regardless of whether they are assigned to an active or inactive voxel
 	*/
 #pragma unroll
 	for (T shfl_offset = warpSize / 2; shfl_offset > 0; shfl_offset >>= 1)
