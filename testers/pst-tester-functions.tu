@@ -124,18 +124,18 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 
 	// For consistency of comparison with IPS, include metacell formation time in construction cost
 	// metacell_tag_arr is on device
-	/*
 	PointStruct *metacell_tag_arr = formMetacellTags<PointStruct>(vertex_arr_d, pt_grid_dims,
 																	metacell_dims, metacell_grid_dims,
 																	num_metacells, dev_ind, num_devs,
 																	dev_props.warpSize
 																);
-	*/
 
+	/*
 	PointStruct *metacell_tag_arr = formVoxelTags<PointStruct>(vertex_arr_d, pt_grid_dims,
 																metacell_dims, num_metacells,
 																dev_ind, num_devs
 															);
+	*/
 
 	// CPU PST-only construction cost of copying data to host must be included in construction timing
 	if constexpr (pst_type == CPU_ITER || pst_type == CPU_RECUR)

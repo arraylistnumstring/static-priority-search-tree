@@ -83,18 +83,18 @@ void datasetTest(const std::string input_file, const unsigned num_thread_blocks,
 						"Error in recording start event for timing CUDA IPS construction code");
 
 	// metacell_tag_arr is on device
-	/*
 	PointStruct *metacell_tag_arr = formMetacellTags<PointStruct>(vertex_arr_d, pt_grid_dims,
 																	metacell_dims, metacell_grid_dims,
 																	num_metacells, dev_ind, num_devs,
 																	dev_props.warpSize
 																);
-	*/
 
+	/*
 	PointStruct *metacell_tag_arr = formVoxelTags<PointStruct>(vertex_arr_d, pt_grid_dims,
 																metacell_dims, num_metacells,
 																dev_ind, num_devs
 															);
+	*/
 
 	if constexpr (timed)
 		// End CUDA construction timer
