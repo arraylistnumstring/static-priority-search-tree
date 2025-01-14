@@ -25,6 +25,7 @@ where `<flags>` can be any combination of:
 	- `DEBUG_TEST`: toggle test driver-internal debugging print statements
 	- `DEBUG_TREE`: toggle printing of PST structure (only meaningful for PST code)
 	- `DEBUG_VERTS`: toggle printing of vertex array values
+	- `DEBUG_VOXELS`: use voxel tags instead of metacell tags
 	- `DEBUG_WRAP`: toggle \*test-info.h debugging print statements
 	- `CUDA_FORCE_CDP1_IF_SUPPORTED`: allow debugging of dynamic parallelism even with legacy debugger backend; not supported on devices of compute capability 9.0 or greater
 		- Note: use of `cudaStreamFireAndForget` within the program is not compatible with this option

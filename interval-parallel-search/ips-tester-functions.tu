@@ -83,18 +83,18 @@ void datasetTest(const std::string input_file, const unsigned num_thread_blocks,
 						"Error in recording start event for timing CUDA IPS construction code");
 
 	// metacell_tag_arr is on device
+#ifndef DEBUG_VOXELS
 	PointStruct *metacell_tag_arr = formMetacellTags<PointStruct>(vertex_arr_d, pt_grid_dims,
 																	metacell_dims, metacell_grid_dims,
 																	num_metacells, dev_ind, num_devs,
 																	dev_props.warpSize
 																);
-
-	/*
+#else
 	PointStruct *metacell_tag_arr = formVoxelTags<PointStruct>(vertex_arr_d, pt_grid_dims,
 																metacell_dims, num_metacells,
 																dev_ind, num_devs
 															);
-	*/
+#endif
 
 	if constexpr (timed)
 		// End CUDA construction timer
@@ -197,6 +197,7 @@ void datasetTest(const std::string input_file, const unsigned num_thread_blocks,
 	std::cout << "About to report search results\n";
 #endif
 
+	std::cout << "num_res_elems = " << num_res_elems;
 	printArray(std::cout, res_arr, 0, num_res_elems);
 	std::cout << '\n';
 
@@ -399,6 +400,7 @@ void randDataTest(const size_t num_elems, const unsigned num_thread_blocks,
 	std::cout << "About to report search results\n";
 #endif
 
+	std::cout << "num_res_elems = " << num_res_elems;
 	printArray(std::cout, res_arr, 0, num_res_elems);
 	std::cout << '\n';
 
