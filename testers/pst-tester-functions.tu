@@ -316,7 +316,7 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 	std::cout << "About to report search results\n";
 #endif
 
-	std::cout << "num_res_elems = " << num_res_elems;
+	std::cout << "num_res_elems = " << num_res_elems << '\n';
 	printArray(std::cout, res_arr, 0, num_res_elems);
 	std::cout << '\n';
 
@@ -659,7 +659,7 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 	std::cout << "About to report search results\n";
 #endif
 
-	std::cout << "num_res_elems = " << num_res_elems;
+	std::cout << "num_res_elems = " << num_res_elems << '\n';
 	printArray(std::cout, res_arr, 0, num_res_elems);
 	std::cout << '\n';
 
