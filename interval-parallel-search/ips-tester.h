@@ -102,12 +102,15 @@ struct IPSTester
 				dev_ind = gpuGetMaxGflopsDeviceId();
 				gpuErrorCheck(cudaGetDeviceProperties(&dev_props, dev_ind),
 								"Error in getting device properties of device "
-								+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-								+ " total devices: ");
+								+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+								+ std::to_string(num_devs) + ": "
+							);
 
 				gpuErrorCheck(cudaSetDevice(dev_ind), "Error setting default device to device "
-								+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-								+ " total devices: ");
+								+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+								+ std::to_string(num_devs) + ": "
+							);
+
 			};
 
 			template <template <typename> typename IDDistrib, typename IDType>

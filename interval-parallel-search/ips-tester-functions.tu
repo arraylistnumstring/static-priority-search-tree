@@ -62,16 +62,16 @@ void datasetTest(const std::string input_file, const unsigned num_thread_blocks,
 
 	// Copy vertex_arr to GPU so it's ready for metacell formation and marching cubes
 	gpuErrorCheck(cudaMalloc(&vertex_arr_d, num_verts * sizeof(T)),
-						"Error in allocating vertex storage array on device "
-						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-						+ " total devices: "
-					);
+					"Error in allocating vertex storage array on device "
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+					+ std::to_string(num_devs) + ": "
+				);
 	// Implicitly synchronous from the host's point of view as only pinned memory can have truly asynchronous cudaMemcpy() calls
 	gpuErrorCheck(cudaMemcpy(vertex_arr_d, vertex_arr, num_verts * sizeof(T), cudaMemcpyDefault),
-						"Error in copying array of vertices to device "
-						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-						+ " total devices: "
-					);
+					"Error in copying array of vertices to device "
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+					+ std::to_string(num_devs) + ": "
+				);
 
 	// Prior cudaMemcpy() is staged, if not already written through, so can free vertex_arr
 	delete[] vertex_arr;
@@ -212,8 +212,8 @@ void datasetTest(const std::string input_file, const unsigned num_thread_blocks,
 	if (ptr_info.type == cudaMemoryTypeDevice)
 		gpuErrorCheck(cudaFree(metacell_tag_arr),
 						"Error in freeing array of metacell tags on device "
-						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-						+ " total devices: "
+						+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+						+ std::to_string(num_devs) + ": "
 					);
 	else
 		delete[] metacell_tag_arr;
@@ -280,14 +280,14 @@ void randDataTest(const size_t num_elems, const unsigned num_thread_blocks,
 	PointStruct *pt_arr_d;
 	gpuErrorCheck(cudaMalloc(&pt_arr_d, num_elems * sizeof(PointStruct)),
 					"Error in allocating PointStruct storage array on device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-					+ " total devices: "
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+					+ std::to_string(num_devs) + ": "
 				);
 	gpuErrorCheck(cudaMemcpy(pt_arr_d, pt_arr, num_elems * sizeof(PointStruct),
 								cudaMemcpyDefault),
 					"Error in copying array of PointStructs from host to device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-					+ " total devices: "
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+					+ std::to_string(num_devs) + ": "
 				);
 	delete[] pt_arr;
 
@@ -415,8 +415,8 @@ void randDataTest(const size_t num_elems, const unsigned num_thread_blocks,
 	if (ptr_info.type == cudaMemoryTypeDevice)
 		gpuErrorCheck(cudaFree(pt_arr),
 						"Error in freeing array of PointStructs on device "
-						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-						+ " total devices: "
+						+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+						+ std::to_string(num_devs) + ": "
 					);
 	else
 		delete[] pt_arr;

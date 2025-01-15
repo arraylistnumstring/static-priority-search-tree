@@ -48,8 +48,9 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 			throwErr("Error: needed global memory space of " + std::to_string(global_mem_needed)
 						+ " B required for data structure and processing exceeds limit of global memory = "
 						+ std::to_string(dev_props.totalGlobalMem) + " B on device "
-						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-						+ " total devices: ");
+						+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+						+ std::to_string(num_devs) + ": "
+					);
 		}
 
 
@@ -58,8 +59,8 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 			gpuErrorCheck(cudaDeviceSetLimit(cudaLimitDevRuntimePendingLaunchCount, num_metacells/2),
 							"Error in increasing pending kernel queue size to "
 							+ std::to_string(num_metacells/2) + " on device "
-							+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-							+ " total devices: "
+							+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+							+ std::to_string(num_devs) + ": "
 						);
 	}
 
@@ -96,15 +97,15 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 	// Copy vertex_arr to GPU so it's ready for metacell formation and marching cubes
 	gpuErrorCheck(cudaMalloc(&vertex_arr_d, num_verts * sizeof(T)),
 						"Error in allocating vertex storage array on device "
-						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-						+ " total devices: "
+						+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+						+ std::to_string(num_devs) + ": "
 					);
 	// Implicitly synchronous from the host's point of view as only pinned memory can have truly asynchronous cudaMemcpy() calls
 	gpuErrorCheck(cudaMemcpy(vertex_arr_d, vertex_arr, num_verts * sizeof(T), cudaMemcpyDefault),
-						"Error in copying array of vertices to device "
-						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-						+ " total devices: "
-					);
+					"Error in copying array of vertices to device "
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+					+ std::to_string(num_devs) + ": "
+				);
 
 	// Prior cudaMemcpy() is staged, if not already written through, so can free vertex_arr
 	delete[] vertex_arr;
@@ -145,13 +146,13 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 		gpuErrorCheck(cudaMemcpy(metacell_tag_arr_host, metacell_tag_arr, num_metacells * sizeof(PointStruct),
 									cudaMemcpyDefault),
 						"Error in copying array of metacell tag PointStructs to host from device "
-						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-						+ " total devices: "
+						+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+						+ std::to_string(num_devs) + ": "
 					);
 		gpuErrorCheck(cudaFree(metacell_tag_arr),
 						"Error in freeing array of metacell tag PointStructs on device "
-						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-						+ " total devices: "
+						+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+						+ std::to_string(num_devs) + ": "
 					);
 
 		metacell_tag_arr = metacell_tag_arr_host;
@@ -249,6 +250,12 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 			search_stop_CPU = std::clock();
 			search_stop_wall = std::chrono::steady_clock::now();
 
+			gpuErrorCheck(cudaFree(res_arr_d),
+							"Error in freeing copied array of result objects on device "
+							+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+							+ std::to_string(num_devs) + ": "
+						);
+
 			std::cout << "CPU PST construction time:\n"
 					  << "\tCPU clock time used:\t"
 					  << 1000.0 * (construct_stop_CPU - construct_start_CPU) / CLOCKS_PER_SEC << " ms\n"
@@ -332,8 +339,8 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 	if (ptr_info.type == cudaMemoryTypeDevice)
 		gpuErrorCheck(cudaFree(metacell_tag_arr),
 						"Error in freeing array of metacell tags on device "
-						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-						+ " total devices: "
+						+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+						+ std::to_string(num_devs) + ": "
 					);
 	else
 		delete[] metacell_tag_arr;
@@ -365,8 +372,9 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 						+ std::to_string(global_mem_needed)
 						+ " B required for data structure and processing exceeds limit of global memory = "
 						+ std::to_string(dev_props.totalGlobalMem) + " B on device "
-						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-						+ " total devices: ");
+						+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+						+ std::to_string(num_devs) + ": "
+					);
 		}
 
 
@@ -376,8 +384,9 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 			gpuErrorCheck(cudaDeviceSetLimit(cudaLimitDevRuntimePendingLaunchCount, num_elems/2),
 							"Error in increasing pending kernel queue size to "
 							+ std::to_string(num_elems/2) + " on device "
-							+ std::to_string(dev_ind) + " of "
-							+ std::to_string(num_devs) + " total devices: ");
+							+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+							+ std::to_string(num_devs) + ": "
+						);
 		}
 	}
 
@@ -444,14 +453,14 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 		PointStruct *pt_arr_d;
 		gpuErrorCheck(cudaMalloc(&pt_arr_d, num_elems * sizeof(PointStruct)),
 						"Error in allocating PointStruct storage array on device "
-						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-						+ " total devices: "
+						+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+						+ std::to_string(num_devs) + ": "
 					);
 		gpuErrorCheck(cudaMemcpy(pt_arr_d, pt_arr, num_elems * sizeof(PointStruct),
 									cudaMemcpyDefault),
 						"Error in copying array of PointStructs from host to device "
-						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-						+ " total devices: "
+						+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+						+ std::to_string(num_devs) + ": "
 					);
 		delete[] pt_arr;
 
@@ -675,8 +684,8 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 	if (ptr_info.type == cudaMemoryTypeDevice)
 		gpuErrorCheck(cudaFree(pt_arr),
 						"Error in freeing array of PointStructs on device "
-						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-						+ " total devices: "
+						+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+						+ std::to_string(num_devs) + ": "
 					);
 	else
 		delete[] pt_arr;
