@@ -247,6 +247,30 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 		}
 		else
 		{
+			// If timing CPU PST code, add the cost of transferring the search results back to GPU (for on-device marching cubes)
+			RetType *res_arr_d;
+
+			gpuErrorCheck(cudaMalloc(&res_arr_d, num_res_elems * sizeof(RetType)),
+							"Error in allocating array for copy of array of result objects on device "
+							+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+							+ std::to_string(num_devs) + ": "
+						);
+
+			gpuErrorCheck(cudaMemcpy(res_arr_d, res_arr, num_res_elems * sizeof(RetType),
+										cudaMemcpyDefault),
+							"Error in copying array of result objects to device "
+							+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+							+ std::to_string(num_devs) + ": "
+						);
+
+			// Memory copy from host to device is guaranteed to be staged, but not necessarily written through to global memory after calling cudaMemcpy(), so call cudaDeviceSynchronize() to assess the actual time taken for search results to become available to GPU
+			gpuErrorCheck(cudaDeviceSynchronize(),
+							"Error in synchronising with device "
+							+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+							+ std::to_string(num_devs)
+							+ " after copying array of result objects from host to device: "
+						);
+
 			search_stop_CPU = std::clock();
 			search_stop_wall = std::chrono::steady_clock::now();
 
@@ -595,8 +619,42 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 		}
 		else
 		{
+			// If timing CPU PST code, add the cost of transferring the search results back to GPU (for on-device marching cubes); value set to nullptr to allow for pointer introspection and avoid potential null-pointer dereference warnings
+			RetType *res_arr_d = nullptr;
+
+			if (test_type != CONSTRUCT)
+			{
+				gpuErrorCheck(cudaMalloc(&res_arr_d, num_res_elems * sizeof(RetType)),
+								"Error in allocating array for copy of array of result objects on device "
+								+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+								+ std::to_string(num_devs) + ": "
+							);
+
+				gpuErrorCheck(cudaMemcpy(res_arr_d, res_arr, num_res_elems * sizeof(RetType),
+											cudaMemcpyDefault),
+								"Error in copying array of result objects to device "
+								+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+								+ std::to_string(num_devs) + ": "
+							);
+
+				// Memory copy from host to device is guaranteed to be staged, but not necessarily written through to global memory after calling cudaMemcpy(), so call cudaDeviceSynchronize() to assess the actual time taken for search results to become available to GPU
+				gpuErrorCheck(cudaDeviceSynchronize(),
+								"Error in synchronising with device "
+								+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+								+ std::to_string(num_devs)
+								+ " after copying array of result objects from host to device: "
+							);
+			}
+
 			search_stop_CPU = std::clock();
 			search_stop_wall = std::chrono::steady_clock::now();
+
+			if (test_type != CONSTRUCT && res_arr_d != nullptr)
+				gpuErrorCheck(cudaFree(res_arr_d),
+								"Error in freeing copied array of result objects on device "
+								+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+								+ std::to_string(num_devs) + ": "
+							);
 
 			std::cout << "CPU PST construction time:\n"
 					  << "\tCPU clock time used:\t"
