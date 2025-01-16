@@ -64,7 +64,7 @@ StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::StaticPSTCPURecur(Po
 		exp++;
 
 	// Use of () after new and new[] causes value-initialisation (to 0) starting in C++03; needed for any nodes that technically contain no data
-	root = new CPURecurTreeNode[(1 << exp) - 1]();
+	root = new CPURecurTreeNode<T, PointStructTemplate, IDType, num_IDs>[(1 << exp) - 1]();
 
 	populateTreeRecur(*(root), dim1_val_ptr_arr, dim2_val_ptr_arr, num_elems);
 }
@@ -86,7 +86,7 @@ void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::print(std::ostr
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::populateTreeRecur(CPURecurTreeNode &subtree_root, PointStructTemplate<T, IDType, num_IDs> *const *const dim1_val_ptr_subarr, PointStructTemplate<T, IDType, num_IDs> *const *const dim2_val_ptr_subarr, const size_t num_elems)
+void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::populateTreeRecur(CPURecurTreeNode<T, PointStructTemplate, IDType, num_IDs> &subtree_root, PointStructTemplate<T, IDType, num_IDs> *const *const dim1_val_ptr_subarr, PointStructTemplate<T, IDType, num_IDs> *const *const dim2_val_ptr_subarr, const size_t num_elems)
 {
 	// Find index in dim1_val_ptr_subarr of PointStruct with maximal dim2_val 
 	size_t max_dim2_val_dim1_array_ind = binarySearch(dim1_val_ptr_subarr, *dim2_val_ptr_subarr[0], num_elems);
@@ -237,7 +237,7 @@ long long StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::binarySear
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::printRecur(std::ostream &os, const CPURecurTreeNode &subtree_root, std::string prefix, std::string child_prefix) const
+void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::printRecur(std::ostream &os, const CPURecurTreeNode<T, PointStructTemplate, IDType, num_IDs> &subtree_root, std::string prefix, std::string child_prefix) const
 {
 	os << prefix << subtree_root;
 	if (subtree_root.hasLeftChild() && subtree_root.hasRightChild())
@@ -264,7 +264,7 @@ template <typename RetType>
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 		>::value
-void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::threeSidedSearchRecur(RetType *&res_arr, size_t &num_res_elems, size_t &res_arr_size, CPURecurTreeNode &subtree_root, T min_dim1_val, T max_dim1_val, T min_dim2_val)
+void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::threeSidedSearchRecur(RetType *&res_arr, size_t &num_res_elems, size_t &res_arr_size, CPURecurTreeNode<T, PointStructTemplate, IDType, num_IDs> &subtree_root, T min_dim1_val, T max_dim1_val, T min_dim2_val)
 {
 	if (min_dim2_val > subtree_root.pt.dim2_val) return;	// No more nodes to report
 
@@ -307,7 +307,7 @@ template <typename RetType>
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 		>::value
-void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSearchRecur(RetType *&res_arr, size_t &num_res_elems, size_t &res_arr_size, CPURecurTreeNode &subtree_root, T max_dim1_val, T min_dim2_val)
+void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSearchRecur(RetType *&res_arr, size_t &num_res_elems, size_t &res_arr_size, CPURecurTreeNode<T, PointStructTemplate, IDType, num_IDs> &subtree_root, T max_dim1_val, T min_dim2_val)
 {
 	if (min_dim2_val > subtree_root.pt.dim2_val) return;	// No more nodes to report
 
@@ -347,7 +347,7 @@ template <typename RetType>
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 		>::value
-void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::twoSidedRightSearchRecur(RetType *&res_arr, size_t &num_res_elems, size_t &res_arr_size, CPURecurTreeNode &subtree_root, T min_dim1_val, T min_dim2_val)
+void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::twoSidedRightSearchRecur(RetType *&res_arr, size_t &num_res_elems, size_t &res_arr_size, CPURecurTreeNode<T, PointStructTemplate, IDType, num_IDs> &subtree_root, T min_dim1_val, T min_dim2_val)
 {
 	if (min_dim2_val > subtree_root.pt.dim2_val) return;	// No more nodes to report
 
@@ -387,7 +387,7 @@ template <typename RetType>
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 		>::value
-void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::reportAllNodes(RetType *&res_arr, size_t &num_res_elems, size_t &res_arr_size, CPURecurTreeNode &subtree_root, T min_dim2_val)
+void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::reportAllNodes(RetType *&res_arr, size_t &num_res_elems, size_t &res_arr_size, CPURecurTreeNode<T, PointStructTemplate, IDType, num_IDs> &subtree_root, T min_dim2_val)
 {
 	if (min_dim2_val > subtree_root.pt.dim2_val) return;	// No more nodes to report
 

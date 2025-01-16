@@ -81,6 +81,15 @@ class CPURecurTreeNode
 			HAS_LEFT_CHILD = 0x2,
 			HAS_RIGHT_CHILD = 0x1
 		};
+
+	// Allow printing operator << to be declared for CPURecurTreeNode<T, PointStructTemplate, IDType, num_IDs>
+	// For friend functions of template classes, for the compiler to recognise the function as a template function, it is necessary to either pre-declare each template friend function before the template class and modify the class-internal function declaration with an additional <> between the operator and the parameter list; or to simply define the friend function when it is declared
+	//	https://isocpp.org/wiki/faq/templates#template-friends
+	friend std::ostream &operator<<(std::ostream &os, const CPURecurTreeNode<T, PointStructTemplate, IDType, num_IDs> &tn)
+	{
+		tn.print(os);
+		return os;
+	};
 };
 
 #endif
