@@ -5,6 +5,7 @@
 #include "data-size-concepts.h"
 #include "dev-symbols.h"	// For global memory-scoped variable res_arr_ind_d
 #include "gpu-err-chk.h"
+#include "gpu-tree-node.h"
 #include "static-priority-search-tree.h"
 #include "warp-shuffles.h"
 
@@ -511,9 +512,6 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		// 1 subarray each for dim1_val, dim2_val and med_dim1_val
 		const static unsigned char num_val_subarrs = 3;
 
-		// Declare helper nested class for accessing specific nodes and define in implementation file; as nested class are not attached to any particular instance of the outer class by default (i.e. are like Java's static nested classes by default), only functions contained within need to be declared as static
-		class TreeNode;
-
 		// Without an explicit instantiation, enums don't take up any space
 		enum IndexCodes
 		{
@@ -589,7 +587,6 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 // Implementation file; for class templates, implementations must be in the same file as the declaration so that the compiler can access them
 #include "static-pst-gpu-construction-functions.tu"
 #include "static-pst-gpu-search-functions.tu"
-#include "static-pst-gpu-tree-node.tu"
 #include "static-pst-gpu.tu"
 
 #endif

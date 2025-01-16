@@ -78,11 +78,11 @@ __global__ void populateTree(T *const root_d, const size_t num_elem_slots,
 					subelems_start_inds_arr[threadIdx.x + nodes_per_level] = right_subarr_start_ind;
 					num_subelems_arr[threadIdx.x + nodes_per_level] = right_subarr_num_elems;
 					target_node_inds_arr[threadIdx.x + nodes_per_level] =
-						StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::getRightChild(target_node_inds_arr[threadIdx.x]);
+						GPUTreeNode::getRightChild(target_node_inds_arr[threadIdx.x]);
 
 					num_subelems_arr[threadIdx.x] = left_subarr_num_elems;
 					target_node_inds_arr[threadIdx.x] =
-						StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::getLeftChild(target_node_inds_arr[threadIdx.x]);
+						GPUTreeNode::getLeftChild(target_node_inds_arr[threadIdx.x]);
 				}
 				// Dynamic parallelism on the children of the level of the tree where all threads are active, or the one above, if blockDim.x is not a power of 2, and some threads have no existing threads to which to assign the children of its current node
 				// Use cudaStreamFireAndForget to allow children grids to be independent of each other
@@ -99,7 +99,7 @@ __global__ void populateTree(T *const root_d, const size_t num_elem_slots,
 						(root_d, num_elem_slots, pt_arr_d, dim1_val_ind_arr_d,
 							dim2_val_ind_arr_secondary_d, dim2_val_ind_arr_d,
 							right_subarr_start_ind, right_subarr_num_elems,
-							StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::getRightChild(target_node_inds_arr[threadIdx.x]));
+							GPUTreeNode::getRightChild(target_node_inds_arr[threadIdx.x]));
 
 					// If all threads were active, have all threads with ID other than 0 delegate their left child to a new grid
 					if (threadIdx.x != 0 && nodes_per_level >= blockDim.x)
@@ -112,7 +112,7 @@ __global__ void populateTree(T *const root_d, const size_t num_elem_slots,
 								dim2_val_ind_arr_secondary_d, dim2_val_ind_arr_d,
 								subelems_start_inds_arr[threadIdx.x],
 								left_subarr_num_elems,
-								StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::getLeftChild(target_node_inds_arr[threadIdx.x]));
+								GPUTreeNode::getLeftChild(target_node_inds_arr[threadIdx.x]));
 
 						// Reset to 0 in preparation for next iteration of branching construction
 						num_subelems_arr[threadIdx.x] = 0;
@@ -122,7 +122,7 @@ __global__ void populateTree(T *const root_d, const size_t num_elem_slots,
 					{
 						num_subelems_arr[threadIdx.x] = left_subarr_num_elems;
 						target_node_inds_arr[threadIdx.x] =
-							StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::getLeftChild(target_node_inds_arr[threadIdx.x]);
+							GPUTreeNode::getLeftChild(target_node_inds_arr[threadIdx.x]);
 					}
 				}
 			}

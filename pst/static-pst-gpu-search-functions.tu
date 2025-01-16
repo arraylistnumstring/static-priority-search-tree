@@ -107,11 +107,11 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 		// Entails an update to search_ind, so must come after report step, which uses search_ind to retrieve IDs to report
 		// Deactivation must occur on this side of the following syncthreads() call to avoid race conditions
 		if (search_ind != StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND
-				&& (!StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::hasChildren(curr_node_bitcode)
+				&& (!GPUTreeNode::hasChildren(curr_node_bitcode)
 					|| (max_dim1_val < curr_node_med_dim1_val
-							&& !StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::hasLeftChild(curr_node_bitcode))
+							&& !GPUTreeNode::hasLeftChild(curr_node_bitcode))
 					|| (curr_node_med_dim1_val < min_dim1_val
-							&& !StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::hasRightChild(curr_node_bitcode))
+							&& !GPUTreeNode::hasRightChild(curr_node_bitcode))
 					)
 			)
 		{
@@ -278,7 +278,7 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 
 		// Check if a currently active thread will become inactive because current node has no children
 		if (search_ind != StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND
-				&& !StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::hasChildren(curr_node_bitcode))
+				&& !GPUTreeNode::hasChildren(curr_node_bitcode))
 		{
 			search_inds_arr[threadIdx.x] = search_ind
 				= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
@@ -421,7 +421,7 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 
 		// Check if a currently active thread becomes inactive because current node has no children
 		if (search_ind != StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND
-				&& !StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::hasChildren(curr_node_bitcode))
+				&& !GPUTreeNode::hasChildren(curr_node_bitcode))
 		{
 			search_inds_arr[threadIdx.x] = search_ind
 				= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
@@ -558,7 +558,7 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 
 		// Check if thread becomes inactive because current node has no children
 		if (search_ind != StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND
-				&& !StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::hasChildren(curr_node_bitcode))
+				&& !GPUTreeNode::hasChildren(curr_node_bitcode))
 		{
 			search_inds_arr[threadIdx.x] = search_ind
 				= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
@@ -573,30 +573,30 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 		// If thread remains active, it must have at least one child
 		if (search_ind != StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND)
 		{
-			if (StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::hasLeftChild(curr_node_bitcode)
-					&& StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::hasRightChild(curr_node_bitcode))
+			if (GPUTreeNode::hasLeftChild(curr_node_bitcode)
+					&& GPUTreeNode::hasRightChild(curr_node_bitcode))
 			{
 				// Delegate reporting of all nodes in right child to another thread and/or block
 				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::splitReportAllNodesWork(root_d, num_elem_slots,
-															StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::getRightChild(search_ind),
+															GPUTreeNode::getRightChild(search_ind),
 															res_arr_d, min_dim2_val,
 															search_inds_arr);
 
 				// Prepare to report all nodes in the next iteration
 				search_inds_arr[threadIdx.x] = search_ind
-						= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::getLeftChild(search_ind);
+						= GPUTreeNode::getLeftChild(search_ind);
 			}
 			// Node only has a left child; report all on left child
-			else if (StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::hasLeftChild(curr_node_bitcode))
+			else if (GPUTreeNode::hasLeftChild(curr_node_bitcode))
 			{
 				search_inds_arr[threadIdx.x] = search_ind
-					= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::getLeftChild(search_ind);
+					= GPUTreeNode::getLeftChild(search_ind);
 			}
 			// Node only has a right child; report all on right child
-			else if (StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::hasRightChild(curr_node_bitcode))
+			else if (GPUTreeNode::hasRightChild(curr_node_bitcode))
 			{
 				search_inds_arr[threadIdx.x] = search_ind
-					= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode::getRightChild(search_ind);
+					= GPUTreeNode::getRightChild(search_ind);
 			}
 		}
 

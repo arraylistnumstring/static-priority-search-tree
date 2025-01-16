@@ -1,6 +1,7 @@
-template <typename T, template<typename, typename, size_t> class PointStructTemplate,
-			typename IDType, size_t num_IDs>
-class StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode
+#ifndef GPU_TREE_NODE_H
+#define GPU_TREE_NODE_H
+
+class GPUTreeNode
 {
 	public:
 		// Current index is this-root
@@ -29,10 +30,11 @@ class StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode
 			{bitcodes_root[index] &= ~HAS_RIGHT_CHILD;};
 
 	private:
-		TreeNode() {};
-		virtual ~TreeNode() {};
-		TreeNode& operator=(TreeNode &source) {};	// assignment operator
-		TreeNode(TreeNode &node) {};	// copy constructor
+		GPUTreeNode() {};
+		virtual ~GPUTreeNode() {};
+		// Explicitly deletes the copy assignment operator and copy constructor
+		GPUTreeNode& operator=(GPUTreeNode &source) = delete;	// assignment operator
+		GPUTreeNode(GPUTreeNode &node) = delete;	// copy constructor
 
 		// Bitcodes used to indicate presence of left/right children (and potentially other values as necessary) to save space, as bool actually takes up 1 byte, same as a char
 		// Without an explicit instantiation, enums don't take up any space
@@ -42,3 +44,5 @@ class StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::TreeNode
 			HAS_RIGHT_CHILD = 0x1
 		};
 };
+
+#endif

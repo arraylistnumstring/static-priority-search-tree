@@ -1,6 +1,8 @@
 #ifndef CPU_ITER_TREE_NODE_H
 #define CPU_ITER_TREE_NODE_H
 
+// Identical to GPUTreeNode, with the exception of missing __forceinline__, __host__ and __device__ keywords to allow for use of StaticPSTCPUIter on machines without CUDA or a GPU
+
 class CPUIterTreeNode
 {
 	public:
