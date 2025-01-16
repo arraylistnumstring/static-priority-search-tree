@@ -1,5 +1,5 @@
-#ifndef CPU_RECUR_TREE_NODE
-#define CPU_RECUR_TREE_NODE
+#ifndef CPU_RECUR_TREE_NODE_H
+#define CPU_RECUR_TREE_NODE_H
 
 #include "class-member-checkers.h"
 
