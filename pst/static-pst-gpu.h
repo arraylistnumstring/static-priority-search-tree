@@ -143,11 +143,6 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 				>::value
 		void twoSidedLeftSearch(size_t &num_res_elems, RetType *&res_arr_d, T max_dim1_val, T min_dim2_val, const int warp_multiplier=1)
 		{
-			static_assert(std::disjunction<
-								std::is_same<RetType, IDType>,
-								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-				>::value,
-							"RetType not of type PointStructTemplate<T, IDType, num_IDs> nor of type IDType");
 			if (num_elems == 0)
 			{
 				std::cout << "Tree is empty; nothing to search\n";
