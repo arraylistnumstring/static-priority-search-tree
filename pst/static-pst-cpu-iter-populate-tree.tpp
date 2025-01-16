@@ -78,27 +78,27 @@ void populateTree (T *const root, const size_t num_elem_slots,
 			Code that is only compiled when debugging; to define this preprocessor variable, compile with the option -DDEBUG, as in
 				nvcc -DDEBUG <source-code-file>
 
-			These variables are explicitly printed because gdb has access to all variables except those under the StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::TreeNode namespace (even when explicitly qualified like so); whitespace is meant to clearly separate output of different nodes
+			These variables are explicitly printed because gdb has access to all variables except those under the CPUIterTreeNode namespace (even when explicitly qualified like so); whitespace is meant to clearly separate output of different nodes
 		*/
 		for (size_t i = 0; i < 10; i++)
 			std::cout << '\n';
 
 		unsigned char curr_node_bitcode = StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::getBitcodesRoot(root, num_elem_slots)[curr_node_ind];
-		std::cout << "Current node has left child: " << StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::TreeNode::hasLeftChild(curr_node_bitcode) << '\n';
-		std::cout << "Current node has right child: " << StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::TreeNode::hasRightChild(curr_node_bitcode) << '\n';
-		std::cout << "Current node has children: " << StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::TreeNode::hasChildren(curr_node_bitcode) << '\n';
+		std::cout << "Current node has left child: " << CPUIterTreeNode::hasLeftChild(curr_node_bitcode) << '\n';
+		std::cout << "Current node has right child: " << CPUIterTreeNode::hasRightChild(curr_node_bitcode) << '\n';
+		std::cout << "Current node has children: " << CPUIterTreeNode::hasChildren(curr_node_bitcode) << '\n';
 	#endif
 
 		// Update information for next iteration
 		if (right_subarr_num_elems > 0)
 		{
-			target_node_inds.push(StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::TreeNode::getRightChild(curr_node_ind));
+			target_node_inds.push(CPUIterTreeNode::getRightChild(curr_node_ind));
 			subelems_start_inds.push(right_subarr_start_ind);
 			num_subelems_stack.push(right_subarr_num_elems);
 		}
 		if (left_subarr_num_elems > 0)
 		{
-			target_node_inds.push(StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::TreeNode::getLeftChild(curr_node_ind));
+			target_node_inds.push(CPUIterTreeNode::getLeftChild(curr_node_ind));
 			subelems_start_inds.push(left_subarr_start_ind);
 			num_subelems_stack.push(left_subarr_num_elems);
 		}

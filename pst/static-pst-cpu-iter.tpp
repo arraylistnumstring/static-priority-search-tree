@@ -190,7 +190,7 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::threeSidedSearch
 			}
 
 			// Delegation/further activity down this branch necessary only if this node has children and can therefore be searched
-			if (TreeNode::hasChildren(curr_node_bitcode))
+			if (CPUIterTreeNode::hasChildren(curr_node_bitcode))
 			{
 				if (search_code == THREE_SEARCH)	// Currently a three-sided query
 				{
@@ -297,7 +297,7 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSear
 			}
 
 			// Delegation/further activity down this branch necessary only if this node has children and can therefore be searched
-			if (TreeNode::hasChildren(curr_node_bitcode))
+			if (CPUIterTreeNode::hasChildren(curr_node_bitcode))
 			{
 				if (search_code == LEFT_SEARCH)
 				{
@@ -389,7 +389,7 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::twoSidedRightSea
 			}
 
 			// Delegation/further activity down this branch necessary only if this node has children and can therefore be searched
-			if (TreeNode::hasChildren(curr_node_bitcode))
+			if (CPUIterTreeNode::hasChildren(curr_node_bitcode))
 			{
 				if (search_code == RIGHT_SEARCH)
 				{
@@ -472,7 +472,7 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::constructNode(T 
 
 	if (left_subarr_num_elems > 0)
 	{
-		TreeNode::setLeftChild(getBitcodesRoot(root, num_elem_slots), target_node_ind);
+		CPUIterTreeNode::setLeftChild(getBitcodesRoot(root, num_elem_slots), target_node_ind);
 
 		// Always place median value in left subtree
 		// max_dim2_val is to the left of median_dim1_val in dim1_val_ind_arr; shift all entries up to median_dim1_val_ind leftward, overwriting max_dim2_val_dim1_array_ind
@@ -484,7 +484,7 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::constructNode(T 
 	}
 	if (right_subarr_num_elems > 0)
 	{
-		TreeNode::setRightChild(getBitcodesRoot(root, num_elem_slots), target_node_ind);
+		CPUIterTreeNode::setRightChild(getBitcodesRoot(root, num_elem_slots), target_node_ind);
 
 		// max_dim2_val is to the right of median_dim1_val_ind in dim1_val_ind_arr; shift all entries after max_dim2_val_dim1_array_ind leftward, overwriting max_dim2_val_array_ind
 		if (max_dim2_val_dim1_array_ind > median_dim1_val_ind)
@@ -502,7 +502,7 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::constructNode(T 
 
 	// Iterate through dim2_val_ind_arr, placing data with lower dimension-1 value in the subarray for the left subtree and data with higher dimension-1 value in the subarray for the right subtree
 	// Note that because subarrays' sizes were allocated based on this same data, there should not be a need to check that left_dim2_subarr_iter_ind < left_subarr_num_elems (and similarly for the right side)
-	if (TreeNode::hasChildren(getBitcodesRoot(root, num_elem_slots)[target_node_ind]))
+	if (CPUIterTreeNode::hasChildren(getBitcodesRoot(root, num_elem_slots)[target_node_ind]))
 	{
 		size_t left_dim2_subarr_iter_ind = subelems_start_inds.top();
 		size_t right_dim2_subarr_iter_ind = right_subarr_start_ind;
@@ -533,30 +533,30 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::do3SidedSearchDe
 	{
 		// Query splits over median; split into 2 two-sided queries
 		// Search left subtree with a two-sided right search
-		if (TreeNode::hasLeftChild(curr_node_bitcode))
+		if (CPUIterTreeNode::hasLeftChild(curr_node_bitcode))
 		{
-			search_inds_stack.push(TreeNode::getLeftChild(search_ind));
+			search_inds_stack.push(CPUIterTreeNode::getLeftChild(search_ind));
 			search_codes_stack.push(RIGHT_SEARCH);
 		}
 		// Search right subtree with a two-sided left search
-		if (TreeNode::hasRightChild(curr_node_bitcode))
+		if (CPUIterTreeNode::hasRightChild(curr_node_bitcode))
 		{
-			search_inds_stack.push(TreeNode::getRightChild(search_ind));
+			search_inds_stack.push(CPUIterTreeNode::getRightChild(search_ind));
 			search_codes_stack.push(LEFT_SEARCH);
 		}
 	}
 	// Perform three-sided search on left child
 	else if (max_dim1_val < curr_node_med_dim1_val
-				&& TreeNode::hasLeftChild(curr_node_bitcode))
+				&& CPUIterTreeNode::hasLeftChild(curr_node_bitcode))
 	{
-		search_inds_stack.push(TreeNode::getLeftChild(search_ind));
+		search_inds_stack.push(CPUIterTreeNode::getLeftChild(search_ind));
 		search_codes_stack.push(THREE_SEARCH);
 	}
 	// Perform three-sided search on right child
 	else if (curr_node_med_dim1_val < min_dim1_val
-				&& TreeNode::hasRightChild(curr_node_bitcode))
+				&& CPUIterTreeNode::hasRightChild(curr_node_bitcode))
 	{
-		search_inds_stack.push(TreeNode::getRightChild(search_ind));
+		search_inds_stack.push(CPUIterTreeNode::getRightChild(search_ind));
 		search_codes_stack.push(THREE_SEARCH);
 	}
 }
@@ -570,23 +570,23 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::doLeftSearchDele
 	if (range_split_poss)
 	{
 		// If current node has left child, report all on left child
-		if (TreeNode::hasLeftChild(curr_node_bitcode))
+		if (CPUIterTreeNode::hasLeftChild(curr_node_bitcode))
 		{
-			search_inds_stack.push(TreeNode::getLeftChild(search_ind));
+			search_inds_stack.push(CPUIterTreeNode::getLeftChild(search_ind));
 			search_codes_stack.push(REPORT_ALL);
 		}
 		// If current node has right child, search right child
-		if (TreeNode::hasRightChild(curr_node_bitcode))
+		if (CPUIterTreeNode::hasRightChild(curr_node_bitcode))
 		{
-			search_inds_stack.push(TreeNode::getRightChild(search_ind));
+			search_inds_stack.push(CPUIterTreeNode::getRightChild(search_ind));
 			search_codes_stack.push(LEFT_SEARCH);
 		}
 	}
 	// !range_split_poss
 	// Only left subtree can possibly contain valid entries; search left subtree
-	else if (TreeNode::hasLeftChild(curr_node_bitcode))
+	else if (CPUIterTreeNode::hasLeftChild(curr_node_bitcode))
 	{
-		search_inds_stack.push(TreeNode::getLeftChild(search_ind));
+		search_inds_stack.push(CPUIterTreeNode::getLeftChild(search_ind));
 		search_codes_stack.push(LEFT_SEARCH);
 	}
 }
@@ -599,23 +599,23 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::doRightSearchDel
 	if (range_split_poss)
 	{
 		// If current node has left child, search left child
-		if (TreeNode::hasLeftChild(curr_node_bitcode))
+		if (CPUIterTreeNode::hasLeftChild(curr_node_bitcode))
 		{
-			search_inds_stack.push(TreeNode::getLeftChild(search_ind));
+			search_inds_stack.push(CPUIterTreeNode::getLeftChild(search_ind));
 			search_codes_stack.push(RIGHT_SEARCH);
 		}
 		// If current node has right child, report all on right child
-		if (TreeNode::hasRightChild(curr_node_bitcode))
+		if (CPUIterTreeNode::hasRightChild(curr_node_bitcode))
 		{
-			search_inds_stack.push(TreeNode::getRightChild(search_ind));
+			search_inds_stack.push(CPUIterTreeNode::getRightChild(search_ind));
 			search_codes_stack.push(REPORT_ALL);
 		}
 	}
 	// !range_split_poss
 	// Only right subtree can possibly contain valid entries; search right subtree
-	else if (TreeNode::hasRightChild(curr_node_bitcode))
+	else if (CPUIterTreeNode::hasRightChild(curr_node_bitcode))
 	{
-		search_inds_stack.push(TreeNode::getRightChild(search_ind));
+		search_inds_stack.push(CPUIterTreeNode::getRightChild(search_ind));
 		search_codes_stack.push(RIGHT_SEARCH);
 	}
 }
@@ -624,14 +624,14 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 			typename IDType, size_t num_IDs>
 void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodesDelegation(const unsigned char &curr_node_bitcode, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack)
 {
-	if (TreeNode::hasLeftChild(curr_node_bitcode))
+	if (CPUIterTreeNode::hasLeftChild(curr_node_bitcode))
 	{
-		search_inds_stack.push(TreeNode::getLeftChild(search_ind));
+		search_inds_stack.push(CPUIterTreeNode::getLeftChild(search_ind));
 		search_codes_stack.push(REPORT_ALL);
 	}
-	if (TreeNode::hasRightChild(curr_node_bitcode))
+	if (CPUIterTreeNode::hasRightChild(curr_node_bitcode))
 	{
-		search_inds_stack.push(TreeNode::getRightChild(search_ind));
+		search_inds_stack.push(CPUIterTreeNode::getRightChild(search_ind));
 		search_codes_stack.push(REPORT_ALL);
 	}
 }
@@ -731,22 +731,22 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::printRecur(std::
 		os << "; " << getIDsRoot(tree_root, num_elem_slots)[curr_ind];
 	os << ')';
 	const unsigned char curr_node_bitcode = getBitcodesRoot(tree_root, num_elem_slots)[curr_ind];
-	if (TreeNode::hasLeftChild(curr_node_bitcode)
-			&& TreeNode::hasRightChild(curr_node_bitcode))
+	if (CPUIterTreeNode::hasLeftChild(curr_node_bitcode)
+			&& CPUIterTreeNode::hasRightChild(curr_node_bitcode))
 	{
-		printRecur(os, tree_root, TreeNode::getRightChild(curr_ind), num_elem_slots,
+		printRecur(os, tree_root, CPUIterTreeNode::getRightChild(curr_ind), num_elem_slots,
 					'\n' + child_prefix + "├─(R)─ ", child_prefix + "│      ");
-		printRecur(os, tree_root, TreeNode::getLeftChild(curr_ind), num_elem_slots,
+		printRecur(os, tree_root, CPUIterTreeNode::getLeftChild(curr_ind), num_elem_slots,
 					'\n' + child_prefix + "└─(L)─ ", child_prefix + "       ");
 	}
-	else if (TreeNode::hasRightChild(curr_node_bitcode))
+	else if (CPUIterTreeNode::hasRightChild(curr_node_bitcode))
 	{
-		printRecur(os, tree_root, TreeNode::getRightChild(curr_ind), num_elem_slots,
+		printRecur(os, tree_root, CPUIterTreeNode::getRightChild(curr_ind), num_elem_slots,
 					'\n' + child_prefix + "└─(R)─ ", child_prefix + "       ");
 	}
-	else if (TreeNode::hasLeftChild(curr_node_bitcode))
+	else if (CPUIterTreeNode::hasLeftChild(curr_node_bitcode))
 	{
-		printRecur(os, tree_root, TreeNode::getLeftChild(curr_ind), num_elem_slots,
+		printRecur(os, tree_root, CPUIterTreeNode::getLeftChild(curr_ind), num_elem_slots,
 					'\n' + child_prefix + "└─(L)─ ", child_prefix + "       ");
 	}
 }

@@ -1,6 +1,7 @@
-template <typename T, template<typename, typename, size_t> class PointStructTemplate,
-			typename IDType, size_t num_IDs>
-class StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::TreeNode
+#ifndef CPU_ITER_TREE_NODE_H
+#define CPU_ITER_TREE_NODE_H
+
+class CPUIterTreeNode
 {
 	public:
 		// Current index is this-root
@@ -28,10 +29,11 @@ class StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::TreeNode
 			{bitcodes_root[index] &= ~HAS_RIGHT_CHILD;};
 
 	private:
-		TreeNode() {};
-		virtual ~TreeNode() {};
-		TreeNode& operator=(TreeNode &source) {};	// assignment operator
-		TreeNode(TreeNode &node) {};	// copy constructor
+		CPUIterTreeNode() {};
+		virtual ~CPUIterTreeNode() {};
+		// Explicitly deletes the copy assignment and copy constructors
+		CPUIterTreeNode& operator=(CPUIterTreeNode &source) = delete;	// assignment operator
+		CPUIterTreeNode(CPUIterTreeNode &node) = delete;	// copy constructor
 
 		// Bitcodes used to indicate presence of left/right children (and potentially other values as necessary) to save space, as bool actually takes up 1 byte, same as a char
 		// Without an explicit instantiation, Bitcodes won't take up any space
@@ -41,3 +43,5 @@ class StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::TreeNode
 			HAS_RIGHT_CHILD = 0x1
 		};
 };
+
+#endif

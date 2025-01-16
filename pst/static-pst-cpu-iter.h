@@ -4,6 +4,7 @@
 #include <stack>
 
 #include "class-member-checkers.h"
+#include "cpu-iter-tree-node.h"
 #include "data-size-concepts.h"
 #include "static-priority-search-tree.h"
 
@@ -143,9 +144,6 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T, PointStructTemplate,
 		const static size_t num_val_subarrs = 3;
 		const static size_t num_ID_subarrs = num_IDs;
 
-		// Declare helper nested class for accessing specific nodes and define in implementation file; as nested class are not attached to any particular instance of the outer class by default (i.e. are like Java's static nested classes by default), only functions contained within need to be declared as static
-		class TreeNode;
-
 		// Without an explicit instantiation, enums don't take up any space
 		// enum name : type gives the enum an explicit underlying type; type chosen to correspond to that given to the enum SearchCodes of StaticPSTGPU
 		enum SearchCodes : unsigned char
@@ -169,7 +167,6 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T, PointStructTemplate,
 
 // Implementation file; for class templates, implementations must be in the same file as the declaration so that the compiler can access them
 #include "static-pst-cpu-iter-populate-tree.tpp"
-#include "static-pst-cpu-iter-tree-node.tpp"
 #include "static-pst-cpu-iter.tpp"
 
 #endif
