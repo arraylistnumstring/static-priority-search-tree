@@ -760,7 +760,22 @@ __forceinline__ __host__ __device__ size_t StaticPSTGPU<T, PointStructTemplate, 
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-__forceinline__ __host__ __device__ size_t StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::expOfNextGreaterPowerOf2(const size_t num)
+template <typename U>
+	requires std::unsigned_integral<U>
+__forceinline__ __host__ __device__ U StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::expOfLeastPowerOf2(const U num)
+{
+	unsigned exp = 0;
+	// Repeat loop until exp is sufficiently large that 2^exp >= num
+	while (!(1 << exp >= num))
+		exp++;
+	return exp;
+}
+
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+template <typename U>
+	requires std::unsigned_integral<U>
+__forceinline__ __host__ __device__ U StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::expOfNextGreaterPowerOf2(const U num)
 {
 	/*
 		Smallest power of 2 greater than num is equal to 2^ceil(lg(num + 1))

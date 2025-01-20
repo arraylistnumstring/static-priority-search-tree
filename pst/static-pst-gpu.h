@@ -460,10 +460,22 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 			requires SizeOfUAtLeastSizeOfV<U, V>
 		__forceinline__ __host__ __device__ static size_t calcTotArrSizeNumUs(const size_t num_elem_slots);
 
+		// Helper function for calculating the smallest power of 2 greater than or equal to num
+		template <typename U>
+			requires std::unsigned_integral<U>
+		__forceinline__ __host__ __device__ static U leastPowerOf2(const U num)
+			{return 1 << expOfLeastPowerOf2(num);};
+		template <typename U>
+			requires std::unsigned_integral<U>
+		__forceinline__ __host__ __device__ static U expOfLeastPowerOf2(const U num);
 		// Helper function for calculating the next power of 2 greater than num
-		__forceinline__ __host__ __device__ static size_t nextGreaterPowerOf2(const size_t num)
+		template <typename U>
+			requires std::unsigned_integral<U>
+		__forceinline__ __host__ __device__ static U nextGreaterPowerOf2(const U num)
 			{return 1 << expOfNextGreaterPowerOf2(num);};
-		__forceinline__ __host__ __device__ static size_t expOfNextGreaterPowerOf2(const size_t num);
+		template <typename U>
+			requires std::unsigned_integral<U>
+		__forceinline__ __host__ __device__ static U expOfNextGreaterPowerOf2(const U num);
 
 		// Helper function for calculating minimum number of array slots necessary to construct a complete tree with num_elems elements
 		__forceinline__ __host__ __device__ static size_t calcNumElemSlots(const size_t num_elems)
