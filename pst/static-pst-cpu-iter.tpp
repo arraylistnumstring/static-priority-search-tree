@@ -684,7 +684,9 @@ size_t StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSize
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-size_t StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::expOfNextGreaterPowerOf2(const size_t num)
+template <typename U>
+	requires std::unsigned_integral<U>
+U StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::expOfNextGreaterPowerOf2(const U num)
 {
 	/*
 		Smallest power of 2 greater than num is equal to 2^ceil(lg(num + 1))

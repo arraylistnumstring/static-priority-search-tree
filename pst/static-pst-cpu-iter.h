@@ -116,9 +116,13 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T, PointStructTemplate,
 			requires SizeOfUAtLeastSizeOfV<U, V>;
 
 		// Helper function for calculating the next power of 2 greater than num
-		static size_t nextGreaterPowerOf2(const size_t num)
+		template <typename U>
+			requires std::unsigned_integral<U>
+		static U nextGreaterPowerOf2(const U num)
 			{return 1 << expOfNextGreaterPowerOf2(num);};
-		static size_t expOfNextGreaterPowerOf2(const size_t num);
+		template <typename U>
+			requires std::unsigned_integral<U>
+		static U expOfNextGreaterPowerOf2(const U num);
 
 		// From the specification of C, pointers are const if the const qualifier appears to the right of the corresponding *
 		// Returns index in dim1_val_ind_arr of elem_to_find
