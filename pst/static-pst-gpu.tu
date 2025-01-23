@@ -618,11 +618,10 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 	{
 		// report-all searches never become normal searches again, so do not need shared memory for a search_codes_arr, just a search_inds_arr
 		// For sufficiently complicated code (such as this one), the compiler cannot deduce types on its own, so supply the (template) types explicitly here
+		// Note that cudaStreamFireAndForget is not defined with the legacy CUDA debugger backend, and so cannot be used with such debuggers
 		twoSidedLeftSearchGlobal<T, PointStructTemplate, IDType, num_IDs, RetType>
-								<<<1, blockDim.x, blockDim.x * (sizeof(long long) + sizeof(unsigned char))
-// To allow for debugging of dynamic parallelism with legacy CUDA debugger backend, where cudaStreamFireAndForget is not defined
-								//	>>>
-								, cudaStreamFireAndForget>>>
+								<<<1, blockDim.x, blockDim.x * (sizeof(long long) + sizeof(unsigned char)),
+									cudaStreamFireAndForget>>>
 			(root_d, num_elem_slots, target_node_ind, res_arr_d, max_dim1_val, min_dim2_val);
 	}
 	else	// Inactive thread has ID (threadIdx.x + offset) % blockDim.x
@@ -664,11 +663,10 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 	{
 		// report-all searches never become normal searches again, so do not need shared memory for a search_codes_arr, just a search_inds_arr
 		// For sufficiently complicated code (such as this one), the compiler cannot deduce types on its own, so supply the (template) types explicitly here
+		// Note that cudaStreamFireAndForget is not defined with the legacy CUDA debugger backend, and so cannot be used with such debuggers
 		reportAllNodesGlobal<T, PointStructTemplate, IDType, num_IDs, RetType>
-							<<<1, blockDim.x, blockDim.x * sizeof(long long)
-// To allow for debugging of dynamic parallelism with legacy CUDA debugger backend, where cudaStreamFireAndForget is not defined
-								//	>>>
-								, cudaStreamFireAndForget>>>
+							<<<1, blockDim.x, blockDim.x * sizeof(long long),
+								cudaStreamFireAndForget>>>
 			(root_d, num_elem_slots, target_node_ind, res_arr_d, min_dim2_val);
 	}
 	else	// Inactive thread has ID (threadIdx.x + offset) % blockDim.x

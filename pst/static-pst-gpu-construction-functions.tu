@@ -10,10 +10,6 @@ __global__ void populateTree(T *const root_d, const size_t num_elem_slots,
 								const size_t val_ind_arr_start_ind, const size_t num_elems,
 								const size_t target_node_start_ind)
 {
-	// Update global number of currently active grids; placed as first line to avoid any delay in "manually" maintained knowledge of number of active grids
-	if (blockIdx.x == 0 && threadIdx.x == 0)
-		atomicAdd(&num_active_grids_d, 1);
-
 	// For correctness, only 1 block can ever be active, as synchronisation across blocks (i.e. global synchronisation) is not possible without exiting the kernel entirely
 	if (blockIdx.x != 0)
 		return;
@@ -87,17 +83,30 @@ __global__ void populateTree(T *const root_d, const size_t num_elem_slots,
 						GPUTreeNode::getLeftChild(target_node_inds_arr[threadIdx.x]);
 				}
 				// Dynamic parallelism on the children of the level of the tree where all threads are active, or the one above, if blockDim.x is not a power of 2, and some threads have no existing threads to which to assign the children of its current node
-				// Use cudaStreamFireAndForget to allow children grids to be independent of each other
 				else
 				{
 					// Primary and secondary arrays must be swapped at the next level
+					/*
+						Note on dynamic parallelism:
+							Original goal: use cudaStreamFireAndForget for maximal kernel concurrency
+							However, with sufficiently large data (e.g. n = 128^3 = (2^7)^3 = 2^21 elements), cudaStreamFireAndForget causes incorrect initialisations of tree nodes (to (0, 0; 0; 0)), even when device-code optimisations are turned off and an attempt at keeping track of the number of active grids is applied (when device-code optimisations are turned on, further initialisation errors occur).
+							Given the default kernel queueing limit of 2^11 = 2048 kernels, this is clearly an overshoot of the hardware's capabilities by a factor of about 2^10 = 1024 (also of note: hardware only supports at most 2^7 = 128 concurrent kernels, so the hardware is not designed to rely on dynamic parallelism for the bulk of its concurrency); hence, for code correctness at large problem sizes, the default stream (value NULL; is also achieved when unspecified) must be used for construction-side dynamic parallelism, though this causes a massive hit to the performance of tree construction.
+
+							For record-keeping purposes:
+							First iteration of dynamic parallelism sent all dynamic parallelism kernel calls to cudaStreamFireAndForget, which caused launch failures and left tree branches uninitialised at lower levels, with only 0 or otherwise garbage values
+							Second iteration of dynamic parallelism was an attempt to keep track of the total number of active grids and dynamically send to the default stream and/or cudaStreamFireAndForget depending on whether the number of active grids was below the hardware-set threshold; this issue still causes incorrect initialisations of tree nodes, though compute-sanitizer did not complain in this case with certain problem sizes that 
+								Switch in question: 
+									(num_active_grids_d < MAX_NUM_ACTIVE_GRIDS) ?
+										cudaStreamFireAndForget : NULL
+									Symbols used above were defined in helpers/dev-symbols.h
+
+								In both the first and second cases, errors in compute-sanitizer arising from cudaStreamFireAndForget present either as memory writes beyond allocated space (presumably when trying to write to the kernel queue) or as "unspecified launch failure"s; increasing the size of the kernel queue only postpones such problems
+
+							Third (current) iteration: default stream: handles large problem sizes, whether code is compiled with or without optimisations
+					*/
+					// Note that the 
 					populateTree<<<1, blockDim.x, blockDim.x * sizeof(size_t)
-										* StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::num_constr_working_arrs,
-					// To allow for debugging of dynamic parallelism with legacy CUDA debugger backend, where cudaStreamFireAndForget is not defined
-					// Note also that using the default device stream allows for correct execution of larger numbers of elements of any thread block size (up to SM resource usage limits, such as register occupation) at the expense of execution speed. At those same large sizes, cudaStreamFireAndForget ends up requiring too many resources, thereby failing to launch and leaving those branches of the tree uninitialised, with only 0 or otherwise garbage values (the oversubscription of resources presents itself as throwing errors in compute-sanitizer relating to memory writes beyond allocated space).
-					// Choose target stream based on number of currently active grids; NULL is the device default stream, as cudaStreamDefault is not defined on the device
-										(num_active_grids_d < MAX_NUM_ACTIVE_GRIDS) ?
-											cudaStreamFireAndForget : NULL>>>
+										* StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::num_constr_working_arrs>>>
 						(root_d, num_elem_slots, pt_arr_d, dim1_val_ind_arr_d,
 							dim2_val_ind_arr_secondary_d, dim2_val_ind_arr_d,
 							right_subarr_start_ind, right_subarr_num_elems,
@@ -107,9 +116,7 @@ __global__ void populateTree(T *const root_d, const size_t num_elem_slots,
 					if (threadIdx.x != 0 && nodes_per_level >= blockDim.x)
 					{
 						populateTree<<<1, blockDim.x, blockDim.x * sizeof(size_t)
-											* StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::num_constr_working_arrs,
-											(num_active_grids_d < MAX_NUM_ACTIVE_GRIDS) ?
-												cudaStreamFireAndForget : NULL>>>
+											* StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::num_constr_working_arrs>>>
 							(root_d, num_elem_slots, pt_arr_d, dim1_val_ind_arr_d,
 								dim2_val_ind_arr_secondary_d, dim2_val_ind_arr_d,
 								subelems_start_inds_arr[threadIdx.x],
@@ -137,9 +144,6 @@ __global__ void populateTree(T *const root_d, const size_t num_elem_slots,
 			__syncthreads();	// Synchronise before starting the next iteration
 		}
 	}
-
-	if (threadIdx.x == 0)
-		atomicSub(&num_active_grids_d, 1);
 }
 
 // No shared memory usage

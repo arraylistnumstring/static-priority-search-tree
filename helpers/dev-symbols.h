@@ -5,6 +5,9 @@
 // To match a valid atomicAdd function signature, res_arr_ind_d must be declared as an unsigned long long (unsigned long long is the same as an unsigned long long int)
 __device__ unsigned long long res_arr_ind_d;
 
+/*
+// No longer useful with the removal of cudaStreamFireAndForget usage during StaticPSTGPU tree construction
+
 // To track number of active resident grids for purpose of determining whether to call dynamic parallel functions with cudaStreamFireAndForget or to simply use the default device stream (as an excessive number of the former causes resource allocation failures and therefore correctness issues)
 __device__ unsigned int num_active_grids_d;
 
@@ -22,6 +25,7 @@ __device__ unsigned int num_active_grids_d;
 #else // __CUDA_ARCH__ == 530 || __CUDA_ARCH__ == 620 || __CUDA_ARCH__ = 720
 	#define MAX_NUM_ACTIVE_GRIDS 16
 #endif
+*/
 
 // Avoid compiler-issued signed int underflow warnings by attaching a "u" postfix to indicate unsigned values
 #define MAX_X_DIM_NUM_BLOCKS ((1u << 31) - 1)
