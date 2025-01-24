@@ -75,8 +75,9 @@ PointStruct *formMetacellTags(T *const vertex_arr_d, GridDimType pt_grid_dims[Di
 
 	gpuErrorCheck(cudaMalloc(&metacell_arr_d, num_metacells * sizeof(PointStruct)),
 					"Error in allocating metacell tag storage array on device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-					+ ": ");
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+					+ std::to_string(num_devs) + ": "
+				);
 
 	// Set grid size to be equal to number of metacells, unless this exceeds the GPU's capabilities, as determined by its compute capability-associated technical specifications
 	// Use of decltype to allow for appropriate instantiation of template function std::min (as implicit casting does not take place among its parameters); preprocessor constants here are either sufficiently large to hold GridDimType or at least to avoid type narrowing warnings
@@ -161,8 +162,9 @@ PointStruct *formVoxelTags(T *const vertex_arr_d, GridDimType pt_grid_dims[Dims:
 
 	gpuErrorCheck(cudaMalloc(&voxel_arr_d, num_voxels * sizeof(PointStruct)),
 					"Error in allocating voxel tag storage array on device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-					+ ": ");
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+					+ std::to_string(num_devs) + ": "
+				);
 
 	// Set grid size to be equal to number of voxels, unless this exceeds the GPU's capabilities, as determined by its compute capability-associated technical specifications
 	// Use of decltype to allow for appropriate instantiation of template function std::min (as implicit casting does not take place among its parameters); preprocessor constants here are either sufficiently large to hold GridDimType or at least to avoid type narrowing warnings

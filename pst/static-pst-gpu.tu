@@ -44,8 +44,9 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 		// Allocate as a T array so that alignment requirements for larger data types are obeyed
 		gpuErrorCheck(cudaMalloc(&root_d, tot_arr_size_num_datatype * sizeof(T)),
 						"Error in allocating priority search tree storage array on device "
-						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-						+ ": ");
+						+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+						+ std::to_string(num_devs) + ": "
+					);
 	}
 	else
 	{
@@ -54,16 +55,18 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 			// Allocate as a T array so that alignment requirements for larger data types are obeyed
 			gpuErrorCheck(cudaMalloc(&root_d, tot_arr_size_num_datatype * sizeof(T)),
 							"Error in allocating priority search tree storage array on device "
-							+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-							+ ": ");
+							+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+							+ std::to_string(num_devs) + ": "
+						);
 		}
 		else
 		{
 			// Allocate as an IDType array so that alignment requirements for larger data types are obeyed
 			gpuErrorCheck(cudaMalloc(&root_d, tot_arr_size_num_datatype * sizeof(IDType)),
 							"Error in allocating priority search tree storage array on device "
-							+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-							+ ": ");
+							+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+							+ std::to_string(num_devs) + ": "
+						);
 		}
 	}
 
@@ -76,16 +79,19 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 
 	gpuErrorCheck(cudaMalloc(&dim1_val_ind_arr_d, num_elems * sizeof(size_t)),
 					"Error in allocating array of PointStructTemplate<T, IDType, num_IDs> indices ordered by dimension 1 on device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-					+ ": ");
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+					+ std::to_string(num_devs) + ": "
+				);
 	gpuErrorCheck(cudaMalloc(&dim2_val_ind_arr_d, num_elems * sizeof(size_t)),
 					"Error in allocating array of PointStructTemplate<T, IDType, num_IDs> indices ordered by dimension 2 on device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-					+ ": ");
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+					+ std::to_string(num_devs) + ": "
+				);
 	gpuErrorCheck(cudaMalloc(&dim2_val_ind_arr_secondary_d, num_elems * sizeof(size_t)),
 					"Error in allocating secondary array of PointStructTemplate<T, IDType, num_IDs> indices ordered by dimension 2 on device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-					+ ": ");
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+					+ std::to_string(num_devs) + ": "
+				);
 
 #ifdef DEBUG_CONSTR
 	std::cout << "Allocated index arrays (around line 126)\n";
@@ -96,13 +102,16 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 	cudaStream_t stream_root_init;
 	gpuErrorCheck(cudaStreamCreateWithFlags(&stream_root_init, cudaStreamNonBlocking),
 					"Error in creating asynchronous stream for zero-intialising on-device priority search tree storage array on device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs) + ": ");
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+					+ std::to_string(num_devs) + ": "
+				);
 	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
 	{
 		gpuErrorCheck(cudaMemsetAsync(root_d, 0, tot_arr_size_num_datatype * sizeof(T), stream_root_init),
 						"Error in zero-intialising on-device priority search tree storage array via cudaMemset() on device "
-						+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-						+ ": ");
+						+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+						+ std::to_string(num_devs) + ": "
+					);
 	}
 	else
 	{
@@ -113,21 +122,25 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 #endif
 			gpuErrorCheck(cudaMemsetAsync(root_d, 0, tot_arr_size_num_datatype * sizeof(T), stream_root_init),
 							"Error in zero-intialising on-device priority search tree storage array via cudaMemset() on device "
-							+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-							+ ": ");
+							+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+							+ std::to_string(num_devs) + ": "
+						);
 		}
 		else
 		{
 			gpuErrorCheck(cudaMemsetAsync(root_d, 0, tot_arr_size_num_datatype * sizeof(IDType), stream_root_init),
 							"Error in zero-intialising on-device priority search tree storage array via cudaMemset() on device "
-							+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-							+ ": ");
+							+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+							+ std::to_string(num_devs) + ": "
+						);
 		}
 	}
 	// cudaStreamDestroy() is also a kernel submitted to the indicated stream, so it only runs once all previous calls have completed
 	gpuErrorCheck(cudaStreamDestroy(stream_root_init),
 					"Error in destroying asynchronous stream for zero-intialising on-device priority search tree storage array on device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs) + ": ");
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+					+ std::to_string(num_devs) + ": "
+				);
 
 #ifdef DEBUG_CONSTR
 	std::cout << "About to assign index as values to index arrays (around line 221)\n";
@@ -144,8 +157,9 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 	cudaStream_t stream_dim1;
 	gpuErrorCheck(cudaStreamCreateWithFlags(&stream_dim1, cudaStreamNonBlocking),
 					"Error in creating asynchronous stream for assignment and sorting of indices by dimension 1 on device "
-					+ std::to_string(dev_ind) + " of "
-					+ std::to_string(num_devs) + ": ");
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+					+ std::to_string(num_devs) + ": "
+				);
 	indexAssignment<<<index_assign_num_blocks, index_assign_threads_per_block, 0, stream_dim1>>>(dim1_val_ind_arr_d, num_elems);
 	// Sort dimension-1 values index array in ascending order; in-place sort using a curried comparison function; guaranteed O(n) running time or better
 	// Execution policy of thrust::cuda::par.on(stream_dim1) guarantees kernel is submitted to stream_dim1
@@ -154,26 +168,33 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 	// cudaStreamDestroy() is also a kernel submitted to the indicated stream, so it only runs once all previous calls have completed
 	gpuErrorCheck(cudaStreamDestroy(stream_dim1),
 					"Error in destroying asynchronous stream for assignment and sorting of indices by dimension 1 on device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs) + ": ");
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+					+ std::to_string(num_devs) + ": "
+				);
 
 
 	cudaStream_t stream_dim2;
 	gpuErrorCheck(cudaStreamCreateWithFlags(&stream_dim2, cudaStreamNonBlocking),
 					"Error in creating asynchronous stream for assignment and sorting of indices by dimension 2 on device "
-					+ std::to_string(dev_ind) + " of "
-					+ std::to_string(num_devs) + ": ");
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+					+ std::to_string(num_devs) + ": "
+				);
 	indexAssignment<<<index_assign_num_blocks, index_assign_threads_per_block, 0, stream_dim2>>>(dim2_val_ind_arr_d, num_elems);
 	// Sort dimension-2 values index array in descending order; in-place sort using a curried comparison function; guaranteed O(n) running time or better
 	thrust::sort(thrust::cuda::par.on(stream_dim2), dim2_val_ind_arr_d, dim2_val_ind_arr_d + num_elems,
 					Dim2ValIndCompDecOrd(pt_arr_d));
 	gpuErrorCheck(cudaStreamDestroy(stream_dim2),
 					"Error in destroying asynchronous stream for assignment and sorting of indices by dimension 2 on device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs) + ": ");
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+					+ std::to_string(num_devs) + ": "
+				);
 
 	// For correctness, must wait for all streams doing pre-construction pre-processing work to complete before continuing
 	gpuErrorCheck(cudaDeviceSynchronize(), "Error in synchronizing with device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-					+ " after tree pre-construction pre-processing: ");
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+					+ std::to_string(num_devs)
+					+ " after tree pre-construction pre-processing: "
+				);
 
 	// Populate tree with a one-block grid and a number of threads per block that is a multiple of the warp size
 	populateTree<<<1, warp_multiplier * dev_props.warpSize,
@@ -182,22 +203,26 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 
 
 	gpuErrorCheck(cudaDeviceSynchronize(), "Error in synchronizing with device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-					+ " after tree construction: ");
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+					+ std::to_string(num_devs) + " after tree construction: "
+				);
 
 	// All threads have finished using these arrays; free them and return
 	gpuErrorCheck(cudaFree(dim1_val_ind_arr_d),
 					"Error in freeing array of PointStructTemplate<T, IDType, num_IDs> indices ordered by dimension 1 on device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-					+ ": ");
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+					+ std::to_string(num_devs) + ": "
+				);
 	gpuErrorCheck(cudaFree(dim2_val_ind_arr_d),
 					"Error in freeing array of PointStructTemplate<T, IDType, num_IDs> indices ordered by dimension 2 on device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-					+ ": ");
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+					+ std::to_string(num_devs) + ": "
+				);
 	gpuErrorCheck(cudaFree(dim2_val_ind_arr_secondary_d), 
 					"Error in freeing secondary array of PointStructTemplate<T, IDType, num_IDs> indices ordered by dimension 2 on device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-					+ ": ");
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+					+ std::to_string(num_devs) + ": "
+				);
 }
 
 // const keyword after method name indicates that the method does not modify any data members of the associated class

@@ -19,7 +19,9 @@ void intervalParallelSearch(PointStructTemplate<T, IDType, num_IDs>* pt_arr_d, c
 	// Allocate space on GPU for output array, whether metacell tags or IDs
 	gpuErrorCheck(cudaMalloc(&res_arr_d, num_elems * sizeof(RetType)),
 					"Error in allocating array to store PointStruct search result on device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs) + ": ");
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+					+ std::to_string(num_devs) + ": "
+				);
 
 	// Set on-device global result array index to 0
 	unsigned long long res_arr_ind = 0;
@@ -27,7 +29,9 @@ void intervalParallelSearch(PointStructTemplate<T, IDType, num_IDs>* pt_arr_d, c
 	gpuErrorCheck(cudaMemcpyToSymbol(res_arr_ind_d, &res_arr_ind, sizeof(size_t),
 										0, cudaMemcpyDefault),
 					"Error in initialising global result array index to 0 on device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs) + ": ");
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+					+ std::to_string(num_devs) + ": "
+				);
 
 	const unsigned warps_per_block = threads_per_block / warp_size + ((threads_per_block % warp_size == 0) ? 0 : 1);
 
@@ -43,7 +47,9 @@ void intervalParallelSearch(PointStructTemplate<T, IDType, num_IDs>* pt_arr_d, c
 	gpuErrorCheck(cudaMemcpyFromSymbol(&num_res_elems, res_arr_ind_d,
 										sizeof(unsigned long long), 0, cudaMemcpyDefault),
 					"Error in copying global result array final index from device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs) + ": ");
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+					+ std::to_string(num_devs) + ": "
+				);
 };
 
 // Search in parallel for all points pt satisfying search_val \in [pt.dim1_val, pt.dim2_val]; output array is of type IDType if decltype(res_arr_d) = IDType and of type PointStructTemplate<T, IDType, num_IDs> if decltype(res_arr_d) = PointStructTemplate<T, IDType, num_IDs>

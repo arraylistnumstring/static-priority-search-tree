@@ -73,15 +73,18 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 {
 	public:
 		// {} is value-initialisation; for structs, this is zero-initialisation
-		StaticPSTGPU(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr_d, size_t num_elems, const int warp_multiplier=1, int dev_ind=0, int num_devs=1, cudaDeviceProp dev_props={});
+		StaticPSTGPU(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr_d, size_t num_elems,
+						const int warp_multiplier=1, int dev_ind=0, int num_devs=1,
+						cudaDeviceProp dev_props={});
 		// Since arrays were allocated continguously, only need to free one of the array pointers
 		virtual ~StaticPSTGPU()
 		{
 			if (num_elem_slots != 0)
 				gpuErrorCheck(cudaFree(root_d),
 								"Error in freeing array storing on-device PST on device "
-								+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
-								+ ": ");
+								+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+								+ std::to_string(num_devs) + ": "
+							);
 		};
 
 		// Printing function for printing operator << to use, as private data members must be accessed in the process
