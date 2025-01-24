@@ -1,3 +1,5 @@
+#include "warp-shuffles.h"
+
 // Utilises dynamic parallelism
 // Shared memory must be at least as large as (number of threads) * (sizeof(long long) + sizeof(signed char))
 // Correctness only guaranteed for grids with one active block

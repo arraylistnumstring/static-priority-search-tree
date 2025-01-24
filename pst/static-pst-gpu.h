@@ -3,11 +3,10 @@
 
 #include "class-member-checkers.h"
 #include "data-size-concepts.h"
-#include "dev-symbols.h"	// For global memory-scoped variable res_arr_ind_d
+#include "dev-symbols.h"					// For global memory-scoped variable res_arr_ind_d
 #include "gpu-err-chk.h"
 #include "gpu-tree-node.h"
 #include "static-priority-search-tree.h"
-#include "warp-shuffles.h"
 
 
 // To use __global__ function as a friend, must not define it at the same time as it is declared
