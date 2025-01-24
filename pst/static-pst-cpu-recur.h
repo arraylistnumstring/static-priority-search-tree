@@ -28,7 +28,8 @@ class StaticPSTCPURecur : public StaticPrioritySearchTree<T, PointStructTemplate
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 				>::value
-		void threeSidedSearch(size_t &num_res_elems, RetType *&res_arr, T min_dim1_val, T max_dim1_val, T min_dim2_val)
+		void threeSidedSearch(size_t &num_res_elems, RetType *&res_arr,
+								T min_dim1_val, T max_dim1_val, T min_dim2_val)
 		{
 			if (root == nullptr)
 			{
@@ -100,11 +101,21 @@ class StaticPSTCPURecur : public StaticPrioritySearchTree<T, PointStructTemplate
 		// Recursive constructor helper to populate the tree
 		// From the specification of C, pointers are const if the const qualifier appears to the right of the corresponding *
 		// Note that **const ensures that a second-level pointer (**) is constant, but that the pointer to which it points (i.e. a first-level pointer, *) is not
-		void populateTreeRecur(CPURecurTreeNode<T, PointStructTemplate, IDType, num_IDs> &subtree_root, PointStructTemplate<T, IDType, num_IDs> *const *const dim1_val_ptr_subarr, PointStructTemplate<T, IDType, num_IDs> *const *const dim2_val_ptr_subarr, const size_t num_elems);
+		void populateTreeRecur(CPURecurTreeNode<T, PointStructTemplate, IDType, num_IDs> &subtree_root,
+								PointStructTemplate<T, IDType, num_IDs> *const *const dim1_val_ptr_subarr,
+								PointStructTemplate<T, IDType, num_IDs> *const *const dim2_val_ptr_subarr,
+								const size_t num_elems
+							);
 		// Returns index in dim1_val_ptr_arr of elem_to_find
-		long long binarySearch(PointStructTemplate<T, IDType, num_IDs> *const *const dim1_val_ptr_arr, PointStructTemplate<T, IDType, num_IDs> &elem_to_find, const size_t num_elems);
+		long long binarySearch(PointStructTemplate<T, IDType, num_IDs> *const *const dim1_val_ptr_arr,
+								PointStructTemplate<T, IDType, num_IDs> &elem_to_find,
+								const size_t num_elems
+							);
 
-		void printRecur(std::ostream &os, const CPURecurTreeNode<T, PointStructTemplate, IDType, num_IDs> &subtree_root, std::string prefix, std::string child_prefix) const;
+		void printRecur(std::ostream &os,
+						const CPURecurTreeNode<T, PointStructTemplate, IDType, num_IDs> &subtree_root,
+						std::string prefix, std::string child_prefix
+					) const;
 
 		// Search-related helper functions
 		template <typename RetType>
@@ -112,25 +123,37 @@ class StaticPSTCPURecur : public StaticPrioritySearchTree<T, PointStructTemplate
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 				>::value
-		void threeSidedSearchRecur(RetType *&res_arr, size_t &num_res_elems, size_t &res_arr_size, CPURecurTreeNode<T, PointStructTemplate, IDType, num_IDs> &subtree_root, T min_dim1_val, T max_dim1_val, T min_dim2_val);
+		void threeSidedSearchRecur(RetType *&res_arr, size_t &num_res_elems, size_t &res_arr_size,
+									CPURecurTreeNode<T, PointStructTemplate, IDType, num_IDs> &subtree_root,
+									T min_dim1_val, T max_dim1_val, T min_dim2_val
+								);
 		template <typename RetType>
 			requires std::disjunction<
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 				>::value
-		void twoSidedLeftSearchRecur(RetType *&res_arr, size_t &num_res_elems, size_t &res_arr_size, CPURecurTreeNode<T, PointStructTemplate, IDType, num_IDs> &subtree_root, T max_dim1_val, T min_dim2_val);
+		void twoSidedLeftSearchRecur(RetType *&res_arr, size_t &num_res_elems, size_t &res_arr_size,
+										CPURecurTreeNode<T, PointStructTemplate, IDType, num_IDs> &subtree_root,
+										T max_dim1_val, T min_dim2_val
+									);
 		template <typename RetType>
 			requires std::disjunction<
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 				>::value
-		void twoSidedRightSearchRecur(RetType *&res_arr, size_t &num_res_elems, size_t &res_arr_size, CPURecurTreeNode<T, PointStructTemplate, IDType, num_IDs> &subtree_root, T min_dim1_val, T min_dim2_val);
+		void twoSidedRightSearchRecur(RetType *&res_arr, size_t &num_res_elems, size_t &res_arr_size,
+										CPURecurTreeNode<T, PointStructTemplate, IDType, num_IDs> &subtree_root,
+										T min_dim1_val, T min_dim2_val
+									);
 		template <typename RetType>
 			requires std::disjunction<
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 				>::value
-		void reportAllNodes(RetType *&res_arr, size_t &num_res_elems, size_t &res_arr_size, CPURecurTreeNode<T, PointStructTemplate, IDType, num_IDs> &subtree_root, T min_dim2_val);
+		void reportAllNodes(RetType *&res_arr, size_t &num_res_elems, size_t &res_arr_size,
+							CPURecurTreeNode<T, PointStructTemplate, IDType, num_IDs> &subtree_root,
+							T min_dim2_val
+						);
 };
 
 // Implementation file; for class templates, implementations must be in the same file as the declaration so that the compiler can access them

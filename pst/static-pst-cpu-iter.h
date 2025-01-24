@@ -37,7 +37,8 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T, PointStructTemplate,
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 				>::value
-		void threeSidedSearch(size_t &num_res_elems, RetType *&res_arr, T min_dim1_val, T max_dim1_val, T min_dim2_val);
+		void threeSidedSearch(size_t &num_res_elems, RetType *&res_arr, T min_dim1_val,
+								T max_dim1_val, T min_dim2_val);
 		template <typename RetType=PointStructTemplate<T, IDType, num_IDs>>
 			requires std::disjunction<
 								std::is_same<RetType, IDType>,
@@ -57,7 +58,8 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T, PointStructTemplate,
 		StaticPSTCPUIter(StaticPSTCPUIter &tree);	// copy constructor
 
 
-		static void setNode(T *const root, const size_t node_ind, const size_t num_elem_slots, PointStructTemplate<T, IDType, num_IDs> &source_data, T median_dim1_val)
+		static void setNode(T *const root, const size_t node_ind, const size_t num_elem_slots,
+							PointStructTemplate<T, IDType, num_IDs> &source_data, T median_dim1_val)
 		{
 			getDim1ValsRoot(root, num_elem_slots)[node_ind] = source_data.dim1_val;
 			getDim2ValsRoot(root, num_elem_slots)[node_ind] = source_data.dim2_val;
@@ -79,13 +81,33 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T, PointStructTemplate,
 									std::stack<size_t> &num_subelems_stack,
 									size_t &left_subarr_num_elems,
 									size_t &right_subarr_start_ind,
-									size_t &right_subarr_num_elems);
+									size_t &right_subarr_num_elems
+								);
 
 		// Helper functions for tracking work to be completed
-		void do3SidedSearchDelegation(const unsigned char &curr_node_bitcode, T min_dim1_val, T max_dim1_val, T curr_node_med_dim1_val, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack);
-		void doLeftSearchDelegation(const bool range_split_poss, const unsigned char &curr_node_bitcode, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack);
-		void doRightSearchDelegation(const bool range_split_poss, const unsigned char &curr_node_bitcode, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack);
-		void doReportAllNodesDelegation(const unsigned char &curr_node_bitcode, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack);
+		void do3SidedSearchDelegation(const unsigned char &curr_node_bitcode, T min_dim1_val,
+										T max_dim1_val, T curr_node_med_dim1_val,
+										const long long &search_ind,
+										std::stack<long long> &search_inds_stack,
+										std::stack<unsigned char> &search_codes_stack
+									);
+		void doLeftSearchDelegation(const bool range_split_poss,
+									const unsigned char &curr_node_bitcode,
+									const long long &search_ind,
+									std::stack<long long> &search_inds_stack,
+									std::stack<unsigned char> &search_codes_stack
+								);
+		void doRightSearchDelegation(const bool range_split_poss,
+										const unsigned char &curr_node_bitcode,
+										const long long &search_ind,
+										std::stack<long long> &search_inds_stack,
+										std::stack<unsigned char> &search_codes_stack
+									);
+		void doReportAllNodesDelegation(const unsigned char &curr_node_bitcode,
+										const long long &search_ind,
+										std::stack<long long> &search_inds_stack,
+										std::stack<unsigned char> &search_codes_stack
+									);
 
 		// Helper functions for getting start indices for various arrays
 		static T* getDim1ValsRoot(T *const root, const size_t num_elem_slots)
@@ -126,9 +148,15 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T, PointStructTemplate,
 
 		// From the specification of C, pointers are const if the const qualifier appears to the right of the corresponding *
 		// Returns index in dim1_val_ind_arr of elem_to_find
-		static long long binarySearch(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr, size_t *const &dim1_val_ind_arr, PointStructTemplate<T, IDType, num_IDs> &elem_to_find, const size_t &init_ind, const size_t &num_elems);
+		static long long binarySearch(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr,
+										size_t *const &dim1_val_ind_arr,
+										PointStructTemplate<T, IDType, num_IDs> &elem_to_find,
+										const size_t &init_ind, const size_t &num_elems
+									);
 
-		void printRecur(std::ostream &os, T *const &tree_root, const size_t curr_ind, const size_t num_elem_slots, std::string prefix, std::string child_prefix) const;
+		void printRecur(std::ostream &os, T *const &tree_root, const size_t curr_ind,
+						const size_t num_elem_slots, std::string prefix, std::string child_prefix
+					) const;
 
 
 		/*

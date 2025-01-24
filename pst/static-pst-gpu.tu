@@ -7,7 +7,11 @@
 // C++ allows trailing template type arguments and function parameters to have default values; for template type arguments, it is forbidden for default arguments to be specified for a class template member outside of the class template; for function parameters, one must not declare the default arguments again (as it is regarded as a redefinition, even if the values are the same)
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr_d, size_t num_elems, const int warp_multiplier, int dev_ind, int num_devs, cudaDeviceProp dev_props)
+StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr_d,
+																	size_t num_elems,
+																	const int warp_multiplier,
+																	int dev_ind, int num_devs,
+																	cudaDeviceProp dev_props)
 	// Member initialiser list must be followed by definition
 	: dev_ind(dev_ind),
 	num_devs(num_devs),
@@ -285,7 +289,8 @@ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::print(std::ostream &
 // static keyword should only be used when declaring a function in the header file
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-__forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::constructNode(T *const &root_d,
+__forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::constructNode(
+																T *const &root_d,
 																const size_t &num_elem_slots,
 																PointStructTemplate<T, IDType, num_IDs> *const &pt_arr_d,
 																size_t &target_node_ind,
@@ -401,7 +406,8 @@ template <typename RetType>
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 		>::value
-__forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::do3SidedSearchDelegation(const unsigned char &curr_node_bitcode,
+__forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::do3SidedSearchDelegation(
+																const unsigned char &curr_node_bitcode,
 																T *const &root_d,
 																const size_t &num_elem_slots,
 																RetType *const res_arr_d,
@@ -468,7 +474,8 @@ template <typename RetType>
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 		>::value
-__forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doLeftSearchDelegation(const bool range_split_poss,
+__forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doLeftSearchDelegation(
+																const bool range_split_poss,
 																const unsigned char &curr_node_bitcode,
 																T *const &root_d,
 																const size_t &num_elem_slots,
@@ -524,7 +531,8 @@ template <typename RetType>
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 		>::value
-__forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doRightSearchDelegation(const bool range_split_poss,
+__forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doRightSearchDelegation(
+																const bool range_split_poss,
 																const unsigned char &curr_node_bitcode,
 																T *const &root_d,
 																const size_t &num_elem_slots,
@@ -578,7 +586,8 @@ template <typename RetType>
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 		>::value
-__forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodesDelegation(const unsigned char &curr_node_bitcode,
+__forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodesDelegation(
+																const unsigned char &curr_node_bitcode,
 																T *const &root_d,
 																const size_t &num_elem_slots,
 																RetType *const res_arr_d,
@@ -617,7 +626,8 @@ template <typename RetType>
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 		>::value
-__forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::splitLeftSearchWork(T *const &root_d,
+__forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::splitLeftSearchWork(
+																T *const &root_d,
 																const size_t &num_elem_slots,
 																const size_t &target_node_ind,
 																RetType *const res_arr_d,
@@ -663,7 +673,8 @@ template <typename RetType>
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 		>::value
-__forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::splitReportAllNodesWork(T *const &root_d,
+__forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::splitReportAllNodesWork(
+																T *const &root_d,
 																const size_t &num_elem_slots,
 																const size_t &target_node_ind,
 																RetType *const res_arr_d,
@@ -706,7 +717,8 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-__forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::detInactivity(long long &search_ind,
+__forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::detInactivity(
+																long long &search_ind,
 																long long *const &search_inds_arr,
 																bool &cont_iter,
 																unsigned char *const search_code_ptr,
@@ -812,7 +824,12 @@ __forceinline__ __host__ __device__ U StaticPSTGPU<T, PointStructTemplate, IDTyp
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-__forceinline__ __host__ __device__ long long StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::binarySearch(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr, size_t *const &dim1_val_ind_arr, PointStructTemplate<T, IDType, num_IDs> &elem_to_find, const size_t &init_ind, const size_t &num_elems)
+__forceinline__ __host__ __device__ long long StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::binarySearch(
+																	PointStructTemplate<T, IDType, num_IDs> *const &pt_arr,
+																	size_t *const &dim1_val_ind_arr,
+																	PointStructTemplate<T, IDType, num_IDs> &elem_to_find,
+																	const size_t &init_ind,
+																	const size_t &num_elems)
 {
 	size_t low_ind = init_ind;
 	size_t high_ind = init_ind + num_elems;
@@ -837,7 +854,13 @@ __forceinline__ __host__ __device__ long long StaticPSTGPU<T, PointStructTemplat
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::printRecur(std::ostream &os, T *const &tree_root, const size_t curr_ind, const size_t num_elem_slots, std::string prefix, std::string child_prefix) const
+void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::printRecur(std::ostream &os,
+																		T *const &tree_root,
+																		const size_t curr_ind,
+																		const size_t num_elem_slots,
+																		std::string prefix,
+																		std::string child_prefix
+																	) const
 {
 	os << prefix << '(' << getDim1ValsRoot(tree_root, num_elem_slots)[curr_ind]
 				<< ", " << getDim2ValsRoot(tree_root, num_elem_slots)[curr_ind]
