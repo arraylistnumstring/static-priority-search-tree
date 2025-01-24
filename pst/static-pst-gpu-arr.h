@@ -19,7 +19,7 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 		// Since arrays were allocated continguously, only need to free one of the array pointers
 		virtual ~StaticPSTGPUArr()
 		{
-			if (num_elems == 0)
+			if (num_elems == 0)	// TODO: modify condition here as is appropriate
 				gpuErrorCheck(cudaFree(root_d),
 								"Error in freeing array storing on-device PST array on device "
 								+ std::to_string(dev_ind + 1) + " (1-indexed) of "
@@ -34,6 +34,16 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 		int getDevInd() const {return dev_ind;};
 		cudaDeviceProp getDevProps() const {return dev_props;};
 		int getNumDevs() const {return num_devs;};
+
+		//Save GPU info for later usage
+		int dev_ind;
+		cudaDeviceProp dev_props;
+		int num_devs;
+
+		// Number of working arrays necessary per tree: 1 array of dim1_val indices, 2 arrays for dim2_val indices (one that is the input, one that is the output after dividing up the indices between the current node's two children; this switches at every level of the tree)
+		const static unsigned char num_constr_working_arrs = 3;
+		// 1 subarray each for dim1_val, dim2_val and med_dim1_val
+		const static unsigned char num_val_subarrs = 3;
 };
 
 #endif
