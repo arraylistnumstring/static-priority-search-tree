@@ -5,7 +5,6 @@
 #include "data-size-concepts.h"
 #include "dev-symbols.h"					// For global memory-scoped variable res_arr_ind_d
 #include "gpu-err-chk.h"
-#include "gpu-tree-node.h"
 #include "static-priority-search-tree.h"
 
 

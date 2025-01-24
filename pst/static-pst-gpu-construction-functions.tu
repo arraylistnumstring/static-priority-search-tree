@@ -1,3 +1,5 @@
+#include "gpu-tree-node.h"
+
 // Utilises dynamic parallelism
 // Shared memory must be at least as large as (total number of threads) * sizeof(size_t) * num_constr_working_arrs (currently 3)
 // Correctness only guaranteed for grids with one active block

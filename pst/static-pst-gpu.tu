@@ -3,6 +3,7 @@
 #include <thrust/sort.h>		// To use parallel sorting algorithm
 
 #include "err-chk.h"
+#include "gpu-tree-node.h"
 
 // C++ allows trailing template type arguments and function parameters to have default values; for template type arguments, it is forbidden for default arguments to be specified for a class template member outside of the class template; for function parameters, one must not declare the default arguments again (as it is regarded as a redefinition, even if the values are the same)
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,

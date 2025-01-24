@@ -1,3 +1,4 @@
+#include "gpu-tree-node.h"
 #include "warp-shuffles.h"
 
 // Utilises dynamic parallelism
