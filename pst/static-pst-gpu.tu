@@ -796,35 +796,6 @@ __forceinline__ __host__ __device__ size_t StaticPSTGPU<T, PointStructTemplate, 
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-template <typename U>
-	requires std::unsigned_integral<U>
-__forceinline__ __host__ __device__ U StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::expOfLeastPowerOf2(const U num)
-{
-	unsigned exp = 0;
-	// Repeat loop until exp is sufficiently large that 2^exp >= num
-	while (!(1 << exp >= num))
-		exp++;
-	return exp;
-}
-
-template <typename T, template<typename, typename, size_t> class PointStructTemplate,
-			typename IDType, size_t num_IDs>
-template <typename U>
-	requires std::unsigned_integral<U>
-__forceinline__ __host__ __device__ U StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::expOfNextGreaterPowerOf2(const U num)
-{
-	/*
-		Smallest power of 2 greater than num is equal to 2^ceil(lg(num + 1))
-		ceil(lg(num + 1)) is equal to the number of right bitshifts necessary to make num = 0 (after integer truncation); this method of calcalation is used in order to prevent imprecision of float conversion from causing excessively large (and therefore incorrect) returned integer values
-	*/
-	unsigned exp = 0;
-	while (num >> exp != 0)
-		exp++;
-	return exp;
-}
-
-template <typename T, template<typename, typename, size_t> class PointStructTemplate,
-			typename IDType, size_t num_IDs>
 __forceinline__ __host__ __device__ long long StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::binarySearch(
 																	PointStructTemplate<T, IDType, num_IDs> *const &pt_arr,
 																	size_t *const &dim1_val_ind_arr,

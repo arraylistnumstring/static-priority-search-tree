@@ -37,8 +37,7 @@ __global__ void populateTree(T *const root_d, const size_t num_elem_slots,
 		// At any given level of the tree, each thread creates one node; as depth h of a tree has 2^h nodes, the number of active threads at level h is 2^h
 		// num_subelems_arr[threadIdx.x] > 0 condition not written here, as almost all threads except for thread 0 start out with the value num_subelems_arr[threadIdx.x] == 0
 #pragma unroll
-		for (size_t nodes_per_level = 1;
-				nodes_per_level <= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::leastPowerOf2(blockDim.x);
+		for (size_t nodes_per_level = 1; nodes_per_level <= leastPowerOf2(blockDim.x);
 				nodes_per_level <<= 1)
 		{
 			// Only active threads process a node
