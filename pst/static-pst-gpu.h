@@ -263,11 +263,9 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		};
 
 		// Calculate size of array allocated for the tree in units of number of elements of type T or IDType, whichever is larger
-		static size_t calcTotArrSizeNumDatatype(const size_t num_elems)
+		// Must be a static function because it is called during construction
+		static size_t calcTotArrSizeNumDatatype(const size_t num_elem_slots)
 		{
-			// Number of element slots in each container subarray is nextGreaterPowerOf2(num_elems) - 1
-			const size_t num_elem_slots = calcNumElemSlots(num_elems);
-
 			// constexpr if is a C++17 feature that only compiles the branch of code that evaluates to true at compile-time, saving executable space and execution runtime
 			if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
 				// No IDs present
@@ -552,6 +550,9 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 											const size_t val_ind_arr_start_ind, const size_t num_elems,
 											const size_t target_node_start_ind
 										);
+
+	// Non-template friend
+	friend __global__ void arrIndAssign(size_t *const ind_arr, const size_t num_elems);
 
 	/*
 		As partial specialisation is not allowed (i.e. mixing the (already-instantiated) template types of the enclosing class and the still-generic template type RetType); either replace already-declared types with generic type placeholders (to not overshadow the enclosing template types) and without requires clauses (due to the constraint imposed by C++ specification 13.7.5, point 9); or opt for full specialisation, i.e. replacing RetType with the explicit desired return types.
