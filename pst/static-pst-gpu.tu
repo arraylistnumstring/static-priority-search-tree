@@ -14,15 +14,14 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 																	int dev_ind, int num_devs,
 																	cudaDeviceProp dev_props)
 	// Member initialiser list must be followed by definition
-	: dev_ind(dev_ind),
+	: num_elems(num_elems),
+	dev_ind(dev_ind),
 	num_devs(num_devs),
 	dev_props(dev_props)
 {
 #ifdef DEBUG_CONSTR
 	std::cout << "Began constructor\n";
 #endif
-
-	this->num_elems = num_elems;
 
 	if (num_elems == 0)
 	{
