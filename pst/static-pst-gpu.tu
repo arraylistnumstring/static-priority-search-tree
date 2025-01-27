@@ -22,6 +22,8 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 	std::cout << "Began constructor\n";
 #endif
 
+	this->num_elems = num_elems;
+
 	if (num_elems == 0)
 	{
 		root_d = nullptr;
@@ -29,7 +31,6 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 		return;
 	}
 
-	this->num_elems = num_elems;
 	/*
 		Minimum number of array slots necessary to construct any complete tree with num_elems elements is 1 less than the smallest power of 2 greater than num_elems
 		Tree is fully balanced by construction, with the placement of nodes in the partially empty last row being unknown
