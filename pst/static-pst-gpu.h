@@ -22,9 +22,6 @@ __global__ void populateTree(T *const root_d, const size_t num_elem_slots,
 								const size_t num_elems,
 								const size_t target_node_start_ind);
 
-// Assigning elements of an array on device such that array[i] = i
-__global__ void indexAssignment(size_t *const ind_arr, const size_t num_elems);
-
 // C++ allows trailing template type arguments and function parameters to have default values; for template type arguments, it is forbidden for default arguments to be specified for a class template member outside of the class template; for function parameters, one must not declare the default arguments again (as it is regarded as a redefinition, even if the values are the same)
 
 // Cannot overload a global function over a host function, even if the number of arguments differs
@@ -555,9 +552,6 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 											const size_t val_ind_arr_start_ind, const size_t num_elems,
 											const size_t target_node_start_ind
 										);
-
-	// Non-template friend
-	friend __global__ void indexAssignment (size_t *const ind_arr, const size_t num_elems);
 
 	/*
 		As partial specialisation is not allowed (i.e. mixing the (already-instantiated) template types of the enclosing class and the still-generic template type RetType); either replace already-declared types with generic type placeholders (to not overshadow the enclosing template types) and without requires clauses (due to the constraint imposed by C++ specification 13.7.5, point 9); or opt for full specialisation, i.e. replacing RetType with the explicit desired return types.

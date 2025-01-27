@@ -2,6 +2,7 @@
 #include <thrust/execution_policy.h>	// To use thrust::cuda::par::on() stream-specifying execution policy for sorting
 #include <thrust/sort.h>		// To use parallel sorting algorithm
 
+#include "arr-ind-assign.h"
 #include "err-chk.h"
 #include "gpu-tree-node.h"
 
@@ -165,7 +166,7 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
 					+ std::to_string(num_devs) + ": "
 				);
-	indexAssignment<<<index_assign_num_blocks, index_assign_threads_per_block, 0, stream_dim1>>>(dim1_val_ind_arr_d, num_elems);
+	arrIndAssign<<<index_assign_num_blocks, index_assign_threads_per_block, 0, stream_dim1>>>(dim1_val_ind_arr_d, num_elems);
 	// Sort dimension-1 values index array in ascending order; in-place sort using a curried comparison function; guaranteed O(n) running time or better
 	// Execution policy of thrust::cuda::par.on(stream_dim1) guarantees kernel is submitted to stream_dim1
 	thrust::sort(thrust::cuda::par.on(stream_dim1), dim1_val_ind_arr_d, dim1_val_ind_arr_d + num_elems,
@@ -184,7 +185,7 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
 					+ std::to_string(num_devs) + ": "
 				);
-	indexAssignment<<<index_assign_num_blocks, index_assign_threads_per_block, 0, stream_dim2>>>(dim2_val_ind_arr_d, num_elems);
+	arrIndAssign<<<index_assign_num_blocks, index_assign_threads_per_block, 0, stream_dim2>>>(dim2_val_ind_arr_d, num_elems);
 	// Sort dimension-2 values index array in descending order; in-place sort using a curried comparison function; guaranteed O(n) running time or better
 	thrust::sort(thrust::cuda::par.on(stream_dim2), dim2_val_ind_arr_d, dim2_val_ind_arr_d + num_elems,
 					Dim2ValIndCompDecOrd(pt_arr_d));

@@ -146,14 +146,3 @@ __global__ void populateTree(T *const root_d, const size_t num_elem_slots,
 		}
 	}
 }
-
-// No shared memory usage
-__global__ void indexAssignment(size_t *const ind_arr, const size_t num_elems)
-{
-	// Simple iteration over entire array, instantiating each array element with the value of its index; no conflicts possible, so no synchronisation necessary
-	// Use loop unrolling to decrease register occupation, as the number of loops is known when kernel is called
-#pragma unroll
-	for (size_t i = blockIdx.x * blockDim.x + threadIdx.x;
-			i < num_elems; i += gridDim.x * blockDim.x)
-		ind_arr[i] = i;
-}
