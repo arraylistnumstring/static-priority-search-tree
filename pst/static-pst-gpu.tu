@@ -38,7 +38,7 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 	// Number of element slots in each container subarray is nextGreaterPowerOf2(num_elems) - 1
 	num_elem_slots = calcNumElemSlots(num_elems);
 
-	const size_t tot_arr_size_num_datatype = calcTotArrSizeNumDatatype(num_elem_slots);
+	const size_t tot_arr_size_num_datatype = calcTotArrSizeNumDatatype(num_elems);
 
 #ifdef DEBUG_CONSTR
 	std::cout << "Ready to allocate memory (around line 73)\n";
