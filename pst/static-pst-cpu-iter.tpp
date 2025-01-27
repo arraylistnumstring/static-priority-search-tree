@@ -8,6 +8,8 @@
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
 StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::StaticPSTCPUIter(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr, size_t num_elems)
+	// Member initialiser list must be followed by definition
+	: num_elems(num_elems)
 {
 	if (num_elems == 0)
 	{
@@ -16,7 +18,6 @@ StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::StaticPSTCPUIter(Poin
 		return;
 	}
 
-	this->num_elems = num_elems;
 	// Number of element slots in each container subarray is nextGreaterPowerOf2(num_elems) - 1
 	num_elem_slots = nextGreaterPowerOf2(num_elems) - 1;
 
