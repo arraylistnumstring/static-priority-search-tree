@@ -5,6 +5,11 @@
 #include "err-chk.h"
 #include "resize-array.h"
 
+#ifdef CONSTR_TIMED
+#include <chrono>		// To use std::chrono::steady_clock (a monotonic clock suitable for interval measurements) and related functions
+#include <ctime>		// To use std::clock_t (CPU timer; pauses when CPU pauses, etc.)
+#endif
+
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
 StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::StaticPSTCPUIter(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr, size_t num_elems)
@@ -61,8 +66,33 @@ StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::StaticPSTCPUIter(Poin
 	if (dim2_val_ind_arr_secondary == nullptr)
 		throwErr("Error: could not allocate " + std::to_string(num_elems) + " elements of type size_t to dim2_val_ind_arr_secondary");
 
+#ifdef CONSTR_TIMED
+	std::clock_t ind_assign_start_CPU, ind_assign_stop_CPU;
+	std::chrono::time_point<std::chrono::steady_clock> ind_assign_start_wall, ind_assign_stop_wall;
+
+	std::clock_t ind1_sort_start_CPU, ind1_sort_stop_CPU;
+	std::chrono::time_point<std::chrono::steady_clock> ind1_sort_start_wall, ind1_sort_stop_wall;
+
+	std::clock_t ind2_sort_start_CPU, ind2_sort_stop_CPU;
+	std::chrono::time_point<std::chrono::steady_clock> ind2_sort_start_wall, ind2_sort_stop_wall;
+
+	std::clock_t populate_tree_start_CPU, populate_tree_stop_CPU;
+	std::chrono::time_point<std::chrono::steady_clock> populate_tree_start_wall, populate_tree_stop_wall;
+
+	ind_assign_start_CPU = std::clock();
+	ind_assign_start_wall = std::chrono::steady_clock::now();
+#endif
+
 	for (size_t i = 0; i < num_elems; i++)
 		dim1_val_ind_arr[i] = dim2_val_ind_arr[i] = i;
+
+#ifdef CONSTR_TIMED
+	ind_assign_stop_CPU = std::clock();
+	ind_assign_stop_wall = std::chrono::steady_clock::now();
+
+	ind1_sort_start_CPU = std::clock();
+	ind1_sort_start_wall = std::chrono::steady_clock::now();
+#endif
 
 	// Sort dimension-1 values index array in ascending order; in-place sort using a curried comparison function
 	std::sort(dim1_val_ind_arr, dim1_val_ind_arr + num_elems,
@@ -75,6 +105,14 @@ StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::StaticPSTCPUIter(Poin
 							};
 					}(pt_arr));	// Parentheses immediately after a lambda definition serves to call it with the given parameter
 
+#ifdef CONSTR_TIMED
+	ind1_sort_stop_CPU = std::clock();
+	ind1_sort_stop_wall = std::chrono::steady_clock::now();
+
+	ind2_sort_start_CPU = std::clock();
+	ind2_sort_start_wall = std::chrono::steady_clock::now();
+#endif
+
 	// Sort dimension-2 values index array in descending order; in-place sort using a curried comparison function
 	std::sort(dim2_val_ind_arr, dim2_val_ind_arr + num_elems,
 				[](PointStructTemplate<T, IDType, num_IDs> *const &pt_arr)
@@ -85,6 +123,10 @@ StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::StaticPSTCPUIter(Poin
 							};
 					}(pt_arr));
 
+#ifdef CONSTR_TIMED
+	ind2_sort_stop_CPU = std::clock();
+	ind2_sort_stop_wall = std::chrono::steady_clock::now();
+#endif
 
 #ifdef DEBUG
 	/*
@@ -96,7 +138,46 @@ StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::StaticPSTCPUIter(Poin
 	const size_t cudaWarpSize = 32;
 	std::cout << "Would call populateTree() with " << 1 << " block, " << nextGreaterPowerOf2(cudaWarpSize - 1) << " threads, " << (nextGreaterPowerOf2(cudaWarpSize - 1) * sizeof(size_t) << 1) << " B of shared memory\n";
 #endif
+
+#ifdef CONSTR_TIMED
+	populate_tree_start_CPU = std::clock();
+	populate_tree_start_wall = std::chrono::steady_clock::now();
+#endif
+
 	populateTree(root, num_elem_slots, pt_arr, dim1_val_ind_arr, dim2_val_ind_arr, dim2_val_ind_arr_secondary, 0, num_elems);
+
+#ifdef CONSTR_TIMED
+	populate_tree_stop_CPU = std::clock();
+	populate_tree_stop_wall = std::chrono::steady_clock::now();
+
+	std::cout << "CPU PST index assignment time:\n"
+			  << "\tCPU clock time used:\t"
+			  << 1000.0 * (ind_assign_stop_CPU - ind_assign_start_CPU) / CLOCKS_PER_SEC << " ms\n"
+			  << "\tWall clock time passed:\t"
+			  << std::chrono::duration<double, std::milli>(ind_assign_stop_wall - ind_assign_start_wall).count()
+			  << " ms\n";
+
+	std::cout << "CPU PST index dimension-1-based sorting time:\n"
+			  << "\tCPU clock time used:\t"
+			  << 1000.0 * (ind1_sort_stop_CPU - ind1_sort_start_CPU) / CLOCKS_PER_SEC << " ms\n"
+			  << "\tWall clock time passed:\t"
+			  << std::chrono::duration<double, std::milli>(ind1_sort_stop_wall - ind1_sort_start_wall).count()
+			  << " ms\n";
+
+	std::cout << "CPU PST index dimension-2-based sorting time:\n"
+			  << "\tCPU clock time used:\t"
+			  << 1000.0 * (ind2_sort_stop_CPU - ind2_sort_start_CPU) / CLOCKS_PER_SEC << " ms\n"
+			  << "\tWall clock time passed:\t"
+			  << std::chrono::duration<double, std::milli>(ind2_sort_stop_wall - ind2_sort_start_wall).count()
+			  << " ms\n";
+
+	std::cout << "CPU PST tree-population code time:\n"
+			  << "\tCPU clock time used:\t"
+			  << 1000.0 * (populate_tree_stop_CPU - populate_tree_start_CPU) / CLOCKS_PER_SEC << " ms\n"
+			  << "\tWall clock time passed:\t"
+			  << std::chrono::duration<double, std::milli>(populate_tree_stop_wall - populate_tree_start_wall).count()
+			  << " ms\n";
+#endif
 
 	delete[] dim1_val_ind_arr;
 	delete[] dim2_val_ind_arr;
