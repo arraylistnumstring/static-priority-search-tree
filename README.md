@@ -19,6 +19,7 @@ For debugging options, run:
 
 where `<flags>` can be any combination of:
 - `-D<preproc-flag>` to toggle various preprocessor variables that delineate debugging print statements in the code. Possible values of `<preproc-flag>`:
+	- `CONSTR_TIMED`: records and outputs the duration of various aspects of constructor code; do not use executables compiled with `CONSTR_TIMED` with the `-t` option, as the insertion of additional timing events due to `CONSTR_TIMED` may cause overall timing of construction code to be inaccurate (specifically due to the in-constructor call to `cudaEventSynchronize()` necessary to ensure that all recorded events have occurred before attempting to read from them)
 	- `DEBUG`: toggles print output to aid with debugging variables that are inaccessible via gdb
 	- `DEBUG_CONSTR`: toggle constructor-internal debugging print statements
 	- `DEBUG_SHFL`: toggle warp shuffle-internal debugging print statements
