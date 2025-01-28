@@ -18,8 +18,33 @@ StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::StaticPSTCPURecur(Po
 	PointStructTemplate<T, IDType, num_IDs> **dim1_val_ptr_arr = new PointStructTemplate<T, IDType, num_IDs>*[num_elems]();
 	PointStructTemplate<T, IDType, num_IDs> **dim2_val_ptr_arr = new PointStructTemplate<T, IDType, num_IDs>*[num_elems]();
 
+#ifdef CONSTR_TIMED
+	std::clock_t ptr_assign_start_CPU, ptr_assign_stop_CPU;
+	std::chrono::time_point<std::chrono::steady_clock> ptr_assign_start_wall, ptr_assign_stop_wall;
+
+	std::clock_t ptr1_sort_start_CPU, ptr1_sort_stop_CPU;
+	std::chrono::time_point<std::chrono::steady_clock> ptr1_sort_start_wall, ptr1_sort_stop_wall;
+
+	std::clock_t ptr2_sort_start_CPU, ptr2_sort_stop_CPU;
+	std::chrono::time_point<std::chrono::steady_clock> ptr2_sort_start_wall, ptr2_sort_stop_wall;
+
+	std::clock_t populate_tree_start_CPU, populate_tree_stop_CPU;
+	std::chrono::time_point<std::chrono::steady_clock> populate_tree_start_wall, populate_tree_stop_wall;
+
+	ptr_assign_start_CPU = std::clock();
+	ptr_assign_start_wall = std::chrono::steady_clock::now();
+#endif
+
 	for (size_t i = 0; i < num_elems; i++)
 		dim1_val_ptr_arr[i] = dim2_val_ptr_arr[i] = pt_arr + i;
+
+#ifdef CONSTR_TIMED
+	ptr_assign_stop_CPU = std::clock();
+	ptr_assign_stop_wall = std::chrono::steady_clock::now();
+
+	ptr1_sort_start_CPU = std::clock();
+	ptr1_sort_start_wall = std::chrono::steady_clock::now();
+#endif
 
 	// Sort dimension-1 values pointer array in ascending order; in-place sort
 	std::sort(dim1_val_ptr_arr, dim1_val_ptr_arr + num_elems,
@@ -28,12 +53,25 @@ StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::StaticPSTCPURecur(Po
 					return node_ptr_1->compareDim1(*node_ptr_2) < 0;
 				});
 
+#ifdef CONSTR_TIMED
+	ptr1_sort_stop_CPU = std::clock();
+	ptr1_sort_stop_wall = std::chrono::steady_clock::now();
+
+	ptr2_sort_start_CPU = std::clock();
+	ptr2_sort_start_wall = std::chrono::steady_clock::now();
+#endif
+
 	// Sort dim2_val pointer array in descending order; in-place sort
 	std::sort(dim2_val_ptr_arr, dim2_val_ptr_arr + num_elems,
 				[](PointStructTemplate<T, IDType, num_IDs> *const &node_ptr_1, PointStructTemplate<T, IDType, num_IDs> *const &node_ptr_2)
 				{
 					return node_ptr_1->compareDim2(*node_ptr_2) > 0;
 				});
+
+#ifdef CONSTR_TIMED
+	ptr2_sort_stop_CPU = std::clock();
+	ptr2_sort_stop_wall = std::chrono::steady_clock::now();
+#endif
 
 #ifdef DEBUG
 	/*
@@ -66,7 +104,45 @@ StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::StaticPSTCPURecur(Po
 	// Use of () after new and new[] causes value-initialisation (to 0) starting in C++03; needed for any nodes that technically contain no data
 	root = new CPURecurTreeNode<T, PointStructTemplate, IDType, num_IDs>[(1 << exp) - 1]();
 
+#ifdef CONSTR_TIMED
+	populate_tree_start_CPU = std::clock();
+	populate_tree_start_wall = std::chrono::steady_clock::now();
+#endif
+
 	populateTreeRecur(*(root), dim1_val_ptr_arr, dim2_val_ptr_arr, num_elems);
+
+#ifdef CONSTR_TIMED
+	populate_tree_stop_CPU = std::clock();
+	populate_tree_stop_wall = std::chrono::steady_clock::now();
+
+	std::cout << "CPU PST pointer assignment time:\n"
+			  << "\tCPU clock time used:\t"
+			  << 1000.0 * (ptr_assign_stop_CPU - ptr_assign_start_CPU) / CLOCKS_PER_SEC << " ms\n"
+			  << "\tWall clock time passed:\t"
+			  << std::chrono::duration<double, std::milli>(ptr_assign_stop_wall - ptr_assign_start_wall).count()
+			  << " ms\n";
+
+	std::cout << "CPU PST pointer dimension-1-based sorting time:\n"
+			  << "\tCPU clock time used:\t"
+			  << 1000.0 * (ptr1_sort_stop_CPU - ptr1_sort_start_CPU) / CLOCKS_PER_SEC << " ms\n"
+			  << "\tWall clock time passed:\t"
+			  << std::chrono::duration<double, std::milli>(ptr1_sort_stop_wall - ptr1_sort_start_wall).count()
+			  << " ms\n";
+
+	std::cout << "CPU PST pointer dimension-2-based sorting time:\n"
+			  << "\tCPU clock time used:\t"
+			  << 1000.0 * (ptr2_sort_stop_CPU - ptr2_sort_start_CPU) / CLOCKS_PER_SEC << " ms\n"
+			  << "\tWall clock time passed:\t"
+			  << std::chrono::duration<double, std::milli>(ptr2_sort_stop_wall - ptr2_sort_start_wall).count()
+			  << " ms\n";
+
+	std::cout << "CPU PST tree-population code time:\n"
+			  << "\tCPU clock time used:\t"
+			  << 1000.0 * (populate_tree_stop_CPU - populate_tree_start_CPU) / CLOCKS_PER_SEC << " ms\n"
+			  << "\tWall clock time passed:\t"
+			  << std::chrono::duration<double, std::milli>(populate_tree_stop_wall - populate_tree_start_wall).count()
+			  << " ms\n";
+#endif
 }
 
 // const keyword after method name indicates that the method does not modify any data members of the associated class
