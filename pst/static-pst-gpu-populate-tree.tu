@@ -105,7 +105,6 @@ __global__ void populateTree(T *const root_d, const size_t num_elem_slots,
 
 							Third (current) iteration: default stream: handles large problem sizes, whether code is compiled with or without optimisations
 					*/
-					// Note that the 
 					populateTree<<<1, blockDim.x, blockDim.x * sizeof(size_t)
 										* StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::num_constr_working_arrs>>>
 						(root_d, num_elem_slots, pt_arr_d, dim1_val_ind_arr_d,
