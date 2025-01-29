@@ -604,7 +604,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 };
 
 // Implementation file; for class templates, implementations must be in the same file as the declaration so that the compiler can access them
-#include "static-pst-gpu-construction-functions.tu"
+#include "static-pst-gpu-populate-tree.tu"
 #include "static-pst-gpu-search-functions.tu"
 #include "static-pst-gpu.tu"
 
