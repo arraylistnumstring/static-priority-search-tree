@@ -46,4 +46,6 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 		const static unsigned char num_val_subarrs = 3;
 };
 
+#include "static-pst-gpu-arr.tu"
+
 #endif

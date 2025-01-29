@@ -37,7 +37,7 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 
 	// Check that GPU memory is sufficiently big for the necessary calculations; num_metacells is now known because of formMetacellTags()
 	// Put this before vertex read-in so that total global memory consumption is known and not attempted to be allocated if insufficient
-	if constexpr (pst_type == GPU)
+	if constexpr (pst_type != CPU_ITER && pst_type != CPU_RECUR)
 	{
 		// Space needed for input vertex array, metacell tag array and PST operations (construction and search)
 		const size_t global_mem_needed = num_verts * sizeof(T) + num_metacells * sizeof(PointStruct)
@@ -71,7 +71,7 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 
 	cudaEvent_t construct_start_CUDA, construct_stop_CUDA, search_start_CUDA, search_stop_CUDA;
 
-	if constexpr (timed && pst_type == GPU)
+	if constexpr (timed && pst_type != CPU_ITER && pst_type != CPU_RECUR)
 	{
 		gpuErrorCheck(cudaEventCreate(&construct_start_CUDA),
 						"Error in creating start event for timing CUDA PST construction code");
@@ -112,15 +112,15 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 
 	if constexpr (timed)
 	{
-		if constexpr (pst_type == GPU)
-			// Start CUDA construction timer (i.e. place this event into default stream)
-			gpuErrorCheck(cudaEventRecord(construct_start_CUDA),
-							"Error in recording start event for timing CUDA PST construction code");
-		else
+		if constexpr (pst_type == CPU_ITER || pst_type == CPU_RECUR)
 		{
 			construct_start_CPU = std::clock();
 			construct_start_wall = std::chrono::steady_clock::now();
 		}
+		else
+			// Start CUDA construction timer (i.e. place this event into default stream)
+			gpuErrorCheck(cudaEventRecord(construct_start_CUDA),
+							"Error in recording start event for timing CUDA PST construction code");
 	}
 
 	// For consistency of comparison with IPS, include metacell formation time in construction cost
@@ -160,25 +160,25 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 	}
 
 	StaticPST *tree;
-	if constexpr (pst_type == GPU)
+	if constexpr (pst_type == CPU_ITER || pst_type == CPU_RECUR)
+		tree = new StaticPST(metacell_tag_arr, num_metacells);
+	else
 		tree = new StaticPST(metacell_tag_arr, num_metacells, tree_ops_warps_per_block,
 								dev_ind, num_devs, dev_props
 							);
-	else
-		tree = new StaticPST(metacell_tag_arr, num_metacells);
 
 	if constexpr (timed)
 	{
-		if constexpr (pst_type == GPU)
+		if constexpr (pst_type == CPU_ITER || pst_type == CPU_RECUR)
+		{
+			construct_stop_CPU = std::clock();
+			construct_stop_wall = std::chrono::steady_clock::now();
+		}
+		else
 		{
 			// End CUDA construction timer
 			gpuErrorCheck(cudaEventRecord(construct_stop_CUDA),
 							"Error in recording stop event for timing CUDA PST construction code: ");
-		}
-		else
-		{
-			construct_stop_CPU = std::clock();
-			construct_stop_wall = std::chrono::steady_clock::now();
 		}
 	}
 
@@ -191,61 +191,30 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 
 	if constexpr (timed)
 	{
-		if constexpr (pst_type == GPU)
+		if constexpr (pst_type == CPU_ITER || pst_type == CPU_RECUR)
+		{
+			search_start_CPU = std::clock();
+			search_start_wall = std::chrono::steady_clock::now();
+		}
+		else
 		{
 			// Start CUDA search timer (i.e. place this event in default stream)
 			gpuErrorCheck(cudaEventRecord(search_start_CUDA),
 							"Error in recording start event for timing CUDA search code: ");
 		}
-		else
-		{
-			search_start_CPU = std::clock();
-			search_start_wall = std::chrono::steady_clock::now();
-		}
 	}
 
 	// Search/report test phase
-	if constexpr (pst_type == GPU)
-		tree->twoSidedLeftSearch(num_res_elems, res_arr, pst_tester.dim1_val_bound1,
-									pst_tester.min_dim2_val, tree_ops_warps_per_block);
-	else
+	if constexpr (pst_type == CPU_ITER || pst_type == CPU_RECUR)
 		tree->twoSidedLeftSearch(num_res_elems, res_arr, pst_tester.dim1_val_bound1,
 									pst_tester.min_dim2_val);
+	else
+		tree->twoSidedLeftSearch(num_res_elems, res_arr, pst_tester.dim1_val_bound1,
+									pst_tester.min_dim2_val, tree_ops_warps_per_block);
 
 	if constexpr (timed)
 	{
-		if constexpr (pst_type == GPU)
-		{
-			// End CUDA search timer
-			gpuErrorCheck(cudaEventRecord(search_stop_CUDA),
-							"Error in recording stop event for timing CUDA search code: ");
-
-			// Block CPU execution until search stop event has been recorded
-			gpuErrorCheck(cudaEventSynchronize(search_stop_CUDA),
-							"Error in blocking CPU execution until completion of stop event for timing CUDA search code: ");
-
-			// Report construction and search timing
-			// Type chosen because of type of parameter of cudaEventElapsedTime
-			float ms = 0;	// milliseconds
-
-			gpuErrorCheck(cudaEventElapsedTime(&ms, construct_start_CUDA, construct_stop_CUDA),
-							"Error in calculating time elapsed for CUDA PST construction code: ");
-			std::cout << "CUDA PST construction time: " << ms << " ms\n";
-
-			gpuErrorCheck(cudaEventElapsedTime(&ms, search_start_CUDA, search_stop_CUDA),
-							"Error in calculating time elapsed for CUDA search code: ");
-			std::cout << "CUDA PST search time: " << ms << " ms\n";
-
-			gpuErrorCheck(cudaEventDestroy(construct_start_CUDA),
-							"Error in destroying start event for timing CUDA PST construction code: ");
-			gpuErrorCheck(cudaEventDestroy(construct_stop_CUDA),
-							"Error in destroying stop event for timing CUDA PST construction code: ");
-			gpuErrorCheck(cudaEventDestroy(search_start_CUDA),
-							"Error in destroying start event for timing CUDA search code: ");
-			gpuErrorCheck(cudaEventDestroy(search_stop_CUDA),
-							"Error in destroying stop event for timing CUDA search code: ");
-		}
-		else
+		if constexpr (pst_type == CPU_ITER || pst_type == CPU_RECUR)
 		{
 			// If timing CPU PST code, add the cost of transferring the search results back to GPU (for on-device marching cubes)
 			RetType *res_arr_d;
@@ -293,6 +262,37 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 					  << "\tWall clock time passed:\t"
 					  << std::chrono::duration<double, std::milli>(search_stop_wall - search_start_wall).count()
 					  << " ms\n";
+		}
+		else
+		{
+			// End CUDA search timer
+			gpuErrorCheck(cudaEventRecord(search_stop_CUDA),
+							"Error in recording stop event for timing CUDA search code: ");
+
+			// Block CPU execution until search stop event has been recorded
+			gpuErrorCheck(cudaEventSynchronize(search_stop_CUDA),
+							"Error in blocking CPU execution until completion of stop event for timing CUDA search code: ");
+
+			// Report construction and search timing
+			// Type chosen because of type of parameter of cudaEventElapsedTime
+			float ms = 0;	// milliseconds
+
+			gpuErrorCheck(cudaEventElapsedTime(&ms, construct_start_CUDA, construct_stop_CUDA),
+							"Error in calculating time elapsed for CUDA PST construction code: ");
+			std::cout << "CUDA PST construction time: " << ms << " ms\n";
+
+			gpuErrorCheck(cudaEventElapsedTime(&ms, search_start_CUDA, search_stop_CUDA),
+							"Error in calculating time elapsed for CUDA search code: ");
+			std::cout << "CUDA PST search time: " << ms << " ms\n";
+
+			gpuErrorCheck(cudaEventDestroy(construct_start_CUDA),
+							"Error in destroying start event for timing CUDA PST construction code: ");
+			gpuErrorCheck(cudaEventDestroy(construct_stop_CUDA),
+							"Error in destroying stop event for timing CUDA PST construction code: ");
+			gpuErrorCheck(cudaEventDestroy(search_start_CUDA),
+							"Error in destroying start event for timing CUDA search code: ");
+			gpuErrorCheck(cudaEventDestroy(search_stop_CUDA),
+							"Error in destroying stop event for timing CUDA search code: ");
 		}
 	}
 
@@ -385,7 +385,7 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 					IDDistribInstan *const id_distr_ptr)
 {
 	// Check that GPU memory is sufficiently big for the necessary calculations
-	if constexpr (pst_type == GPU)
+	if constexpr (pst_type != CPU_ITER && pst_type != CPU_RECUR)
 	{
 		const size_t global_mem_needed = StaticPST::calcGlobalMemNeeded(num_elems)
 											+ num_elems * sizeof(PointStruct);
@@ -445,7 +445,12 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 
 	if constexpr (timed)
 	{
-		if constexpr (pst_type == GPU)
+		if constexpr (pst_type == CPU_ITER || pst_type == CPU_RECUR)
+		{
+			construct_start_CPU = std::clock();
+			construct_start_wall = std::chrono::steady_clock::now();
+		}
+		else
 		{
 			gpuErrorCheck(cudaEventCreate(&construct_start_CUDA),
 							"Error in creating start event for timing CUDA PST construction code");
@@ -457,15 +462,10 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 			gpuErrorCheck(cudaEventCreate(&search_stop_CUDA),
 							"Error in creating stop event for timing CUDA search code");
 		}
-		else
-		{
-			construct_start_CPU = std::clock();
-			construct_start_wall = std::chrono::steady_clock::now();
-		}
 	}
 	
 	// GPU PST-only construction cost of copying data to device must be timed
-	if constexpr (pst_type == GPU)
+	if constexpr (pst_type != CPU_ITER && pst_type != CPU_RECUR)
 	{
 		if constexpr (timed)
 		{
@@ -493,23 +493,23 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 	}
 
 	StaticPST *tree;
-	if constexpr (pst_type == GPU)
-		tree = new StaticPST(pt_arr, num_elems, warps_per_block, dev_ind, num_devs, dev_props);
-	else
+	if constexpr (pst_type == CPU_ITER || pst_type == CPU_RECUR)
 		tree = new StaticPST(pt_arr, num_elems);
+	else
+		tree = new StaticPST(pt_arr, num_elems, warps_per_block, dev_ind, num_devs, dev_props);
 
 	if constexpr (timed)
 	{
-		if constexpr (pst_type == GPU)
+		if constexpr (pst_type == CPU_ITER || pst_type == CPU_RECUR)
+		{
+			construct_stop_CPU = std::clock();
+			construct_stop_wall = std::chrono::steady_clock::now();
+		}
+		else
 		{
 			// End CUDA construction timer
 			gpuErrorCheck(cudaEventRecord(construct_stop_CUDA),
 							"Error in recording stop event for timing CUDA PST construction code");
-		}
-		else
-		{
-			construct_stop_CPU = std::clock();
-			construct_stop_wall = std::chrono::steady_clock::now();
 		}
 	}
 
@@ -528,96 +528,50 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 
 	if constexpr (timed)
 	{
-		if constexpr (pst_type == GPU)
+		if constexpr (pst_type == CPU_ITER || pst_type == CPU_RECUR)
+		{
+			search_start_CPU = std::clock();
+			search_start_wall = std::chrono::steady_clock::now();
+		}
+		else
 		{
 			// Start CUDA search timer (i.e. place this event in default stream)
 			gpuErrorCheck(cudaEventRecord(search_start_CUDA),
 							"Error in recording start event for timing CUDA search code");
 		}
-		else
-		{
-			search_start_CPU = std::clock();
-			search_start_wall = std::chrono::steady_clock::now();
-		}
 	}
 
 	// Search/report test phase
-	if constexpr (pst_type == GPU)
+	if constexpr (pst_type == CPU_ITER || pst_type == CPU_RECUR)
 	{
 		if (test_type == LEFT_SEARCH)
-		{
 			tree->twoSidedLeftSearch(num_res_elems, res_arr, pst_tester.dim1_val_bound1,
-										pst_tester.min_dim2_val, warps_per_block);
-		}
+										pst_tester.min_dim2_val);
 		else if (test_type == RIGHT_SEARCH)
-		{
 			tree->twoSidedRightSearch(num_res_elems, res_arr, pst_tester.dim1_val_bound1,
-										pst_tester.min_dim2_val, warps_per_block);
-		}
+										pst_tester.min_dim2_val);
 		else if (test_type == THREE_SEARCH)
-		{
 			tree->threeSidedSearch(num_res_elems, res_arr, pst_tester.dim1_val_bound1,
-									pst_tester.dim1_val_bound2, pst_tester.min_dim2_val,
-									warps_per_block);
-		}
+									pst_tester.dim1_val_bound2, pst_tester.min_dim2_val);
 	}
 	else
 	{
 		if (test_type == LEFT_SEARCH)
-		{
 			tree->twoSidedLeftSearch(num_res_elems, res_arr, pst_tester.dim1_val_bound1,
-										pst_tester.min_dim2_val);
-		}
+										pst_tester.min_dim2_val, warps_per_block);
 		else if (test_type == RIGHT_SEARCH)
-		{
 			tree->twoSidedRightSearch(num_res_elems, res_arr, pst_tester.dim1_val_bound1,
-										pst_tester.min_dim2_val);
-		}
+										pst_tester.min_dim2_val, warps_per_block);
 		else if (test_type == THREE_SEARCH)
-		{
 			tree->threeSidedSearch(num_res_elems, res_arr, pst_tester.dim1_val_bound1,
-									pst_tester.dim1_val_bound2, pst_tester.min_dim2_val);
-		}
+									pst_tester.dim1_val_bound2, pst_tester.min_dim2_val,
+									warps_per_block);
 	}
 	// If test_type == CONSTRUCT, do nothing for the search/report phase
 
 	if constexpr (timed)
 	{
-		if constexpr (pst_type == GPU)
-		{
-			// End CUDA search timer
-			gpuErrorCheck(cudaEventRecord(search_stop_CUDA),
-							"Error in recording stop event for timing CUDA search code");
-
-			// Block CPU execution until search stop event has been recorded
-			gpuErrorCheck(cudaEventSynchronize(search_stop_CUDA),
-							"Error in blocking CPU execution until completion of stop event for timing CUDA search code");
-
-			// Report construction and search timing
-			// Type chosen because of type of parameter of cudaEventElapsedTime
-			float ms = 0;	// milliseconds
-
-			gpuErrorCheck(cudaEventElapsedTime(&ms, construct_start_CUDA, construct_stop_CUDA),
-							"Error in calculating time elapsed for CUDA PST construction code");
-			std::cout << "CUDA PST construction time: " << ms << " ms\n";
-
-			if (test_type != CONSTRUCT)
-			{
-				gpuErrorCheck(cudaEventElapsedTime(&ms, search_start_CUDA, search_stop_CUDA),
-								"Error in calculating time elapsed for CUDA search code");
-				std::cout << "CUDA PST search time: " << ms << " ms\n";
-			}
-
-			gpuErrorCheck(cudaEventDestroy(construct_start_CUDA),
-							"Error in destroying start event for timing CUDA PST construction code");
-			gpuErrorCheck(cudaEventDestroy(construct_stop_CUDA),
-							"Error in destroying stop event for timing CUDA PST construction code");
-			gpuErrorCheck(cudaEventDestroy(search_start_CUDA),
-							"Error in destroying start event for timing CUDA search code");
-			gpuErrorCheck(cudaEventDestroy(search_stop_CUDA),
-							"Error in destroying stop event for timing CUDA search code");
-		}
-		else
+		if constexpr (pst_type == CPU_ITER || pst_type == CPU_RECUR)
 		{
 			// If timing CPU PST code, add the cost of transferring the search results back to GPU (for on-device marching cubes); value set to nullptr to allow for pointer introspection and avoid potential null-pointer dereference warnings
 			RetType *res_arr_d = nullptr;
@@ -673,6 +627,40 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 						  << std::chrono::duration<double, std::milli>(search_stop_wall - search_start_wall).count()
 						  << " ms\n";
 			}
+		}
+		else
+		{
+			// End CUDA search timer
+			gpuErrorCheck(cudaEventRecord(search_stop_CUDA),
+							"Error in recording stop event for timing CUDA search code");
+
+			// Block CPU execution until search stop event has been recorded
+			gpuErrorCheck(cudaEventSynchronize(search_stop_CUDA),
+							"Error in blocking CPU execution until completion of stop event for timing CUDA search code");
+
+			// Report construction and search timing
+			// Type chosen because of type of parameter of cudaEventElapsedTime
+			float ms = 0;	// milliseconds
+
+			gpuErrorCheck(cudaEventElapsedTime(&ms, construct_start_CUDA, construct_stop_CUDA),
+							"Error in calculating time elapsed for CUDA PST construction code");
+			std::cout << "CUDA PST construction time: " << ms << " ms\n";
+
+			if (test_type != CONSTRUCT)
+			{
+				gpuErrorCheck(cudaEventElapsedTime(&ms, search_start_CUDA, search_stop_CUDA),
+								"Error in calculating time elapsed for CUDA search code");
+				std::cout << "CUDA PST search time: " << ms << " ms\n";
+			}
+
+			gpuErrorCheck(cudaEventDestroy(construct_start_CUDA),
+							"Error in destroying start event for timing CUDA PST construction code");
+			gpuErrorCheck(cudaEventDestroy(construct_stop_CUDA),
+							"Error in destroying stop event for timing CUDA PST construction code");
+			gpuErrorCheck(cudaEventDestroy(search_start_CUDA),
+							"Error in destroying start event for timing CUDA search code");
+			gpuErrorCheck(cudaEventDestroy(search_stop_CUDA),
+							"Error in destroying stop event for timing CUDA search code");
 		}
 	}
 
