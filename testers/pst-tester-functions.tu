@@ -53,15 +53,18 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 					);
 		}
 
-
-		// Set GPU pending kernel queue size limit; note that the queue takes up global memory, hence why a kernel launch that exceeds the queue's capacity may cause an "Invalid __global__ write of n bytes" error message in compute-sanitizer that points to the line of one of its function parameters
-		if (num_metacells/2 > 2048)		// Default value: 2048
-			gpuErrorCheck(cudaDeviceSetLimit(cudaLimitDevRuntimePendingLaunchCount, num_metacells/2),
-							"Error in increasing pending kernel queue size to "
-							+ std::to_string(num_metacells/2) + " on device "
-							+ std::to_string(dev_ind + 1) + " (1-indexed) of "
-							+ std::to_string(num_devs) + ": "
-						);
+		// GPU deep PST-only increase of kernel queue size limit
+		if constexpr (pst_type == GPU)
+		{
+			// Set GPU pending kernel queue size limit; note that the queue takes up global memory, hence why a kernel launch that exceeds the queue's capacity may cause an "Invalid __global__ write of n bytes" error message in compute-sanitizer that points to the line of one of its function parameters
+			if (num_metacells/2 > 2048)		// Default value: 2048
+				gpuErrorCheck(cudaDeviceSetLimit(cudaLimitDevRuntimePendingLaunchCount, num_metacells/2),
+								"Error in increasing pending kernel queue size to "
+								+ std::to_string(num_metacells/2) + " on device "
+								+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+								+ std::to_string(num_devs) + ": "
+							);
+		}
 	}
 
 	// Variables must be outside of conditionals to be accessible in later conditionals
@@ -175,11 +178,9 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 			construct_stop_wall = std::chrono::steady_clock::now();
 		}
 		else
-		{
 			// End CUDA construction timer
 			gpuErrorCheck(cudaEventRecord(construct_stop_CUDA),
 							"Error in recording stop event for timing CUDA PST construction code: ");
-		}
 	}
 
 #ifdef DEBUG_TREE
@@ -197,20 +198,18 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 			search_start_wall = std::chrono::steady_clock::now();
 		}
 		else
-		{
 			// Start CUDA search timer (i.e. place this event in default stream)
 			gpuErrorCheck(cudaEventRecord(search_start_CUDA),
 							"Error in recording start event for timing CUDA search code: ");
-		}
 	}
 
 	// Search/report test phase
-	if constexpr (pst_type == CPU_ITER || pst_type == CPU_RECUR)
-		tree->twoSidedLeftSearch(num_res_elems, res_arr, pst_tester.dim1_val_bound1,
-									pst_tester.min_dim2_val);
-	else
+	if constexpr (pst_type == GPU)
 		tree->twoSidedLeftSearch(num_res_elems, res_arr, pst_tester.dim1_val_bound1,
 									pst_tester.min_dim2_val, tree_ops_warps_per_block);
+	else
+		tree->twoSidedLeftSearch(num_res_elems, res_arr, pst_tester.dim1_val_bound1,
+									pst_tester.min_dim2_val);
 
 	if constexpr (timed)
 	{
@@ -506,11 +505,9 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 			construct_stop_wall = std::chrono::steady_clock::now();
 		}
 		else
-		{
 			// End CUDA construction timer
 			gpuErrorCheck(cudaEventRecord(construct_stop_CUDA),
 							"Error in recording stop event for timing CUDA PST construction code");
-		}
 	}
 
 	if (num_elems == 0)
@@ -534,27 +531,13 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 			search_start_wall = std::chrono::steady_clock::now();
 		}
 		else
-		{
 			// Start CUDA search timer (i.e. place this event in default stream)
 			gpuErrorCheck(cudaEventRecord(search_start_CUDA),
 							"Error in recording start event for timing CUDA search code");
-		}
 	}
 
 	// Search/report test phase
-	if constexpr (pst_type == CPU_ITER || pst_type == CPU_RECUR)
-	{
-		if (test_type == LEFT_SEARCH)
-			tree->twoSidedLeftSearch(num_res_elems, res_arr, pst_tester.dim1_val_bound1,
-										pst_tester.min_dim2_val);
-		else if (test_type == RIGHT_SEARCH)
-			tree->twoSidedRightSearch(num_res_elems, res_arr, pst_tester.dim1_val_bound1,
-										pst_tester.min_dim2_val);
-		else if (test_type == THREE_SEARCH)
-			tree->threeSidedSearch(num_res_elems, res_arr, pst_tester.dim1_val_bound1,
-									pst_tester.dim1_val_bound2, pst_tester.min_dim2_val);
-	}
-	else
+	if constexpr (pst_type == GPU)
 	{
 		if (test_type == LEFT_SEARCH)
 			tree->twoSidedLeftSearch(num_res_elems, res_arr, pst_tester.dim1_val_bound1,
@@ -566,6 +549,18 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 			tree->threeSidedSearch(num_res_elems, res_arr, pst_tester.dim1_val_bound1,
 									pst_tester.dim1_val_bound2, pst_tester.min_dim2_val,
 									warps_per_block);
+	}
+	else
+	{
+		if (test_type == LEFT_SEARCH)
+			tree->twoSidedLeftSearch(num_res_elems, res_arr, pst_tester.dim1_val_bound1,
+										pst_tester.min_dim2_val);
+		else if (test_type == RIGHT_SEARCH)
+			tree->twoSidedRightSearch(num_res_elems, res_arr, pst_tester.dim1_val_bound1,
+										pst_tester.min_dim2_val);
+		else if (test_type == THREE_SEARCH)
+			tree->threeSidedSearch(num_res_elems, res_arr, pst_tester.dim1_val_bound1,
+									pst_tester.dim1_val_bound2, pst_tester.min_dim2_val);
 	}
 	// If test_type == CONSTRUCT, do nothing for the search/report phase
 
