@@ -14,6 +14,7 @@
 #include "static-pst-cpu-iter.h"
 #include "static-pst-cpu-recur.h"
 #include "static-pst-gpu.h"
+#include "static-pst-gpu-arr.h"
 
 
 // Struct for information necessary to instantiate PSTTester
@@ -170,12 +171,22 @@ struct PSTTestInfoStruct
 
 			numIDsWrap(pst_tester_tree_instan);
 		}
-		else	// tree_type == PSTType::GPU
+		else if (tree_type == PSTType::GPU)
 		{
 			typename PSTTesterDataTypeInstantiated::TreeTypeWrapper<PointStruct, StaticPSTGPU, PSTType::GPU> pst_tester_tree_instan(pst_tester);
 
 #ifdef DEBUG_WRAP
 			std::cout << "Instantiated StaticPSTGPU wrapper\n";
+#endif
+
+			numIDsWrap(pst_tester_tree_instan);
+		}
+		else	// tree_type == PSTType::GPU_ARR
+		{
+			typename PSTTesterDataTypeInstantiated::TreeTypeWrapper<PointStruct, StaticPSTGPUArr, PSTType::GPU_ARR> pst_tester_tree_instan(pst_tester);
+
+#ifdef DEBUG_WRAP
+			std::cout << "Instantiated StaticPSTGPUArr wrapper\n";
 #endif
 
 			numIDsWrap(pst_tester_tree_instan);

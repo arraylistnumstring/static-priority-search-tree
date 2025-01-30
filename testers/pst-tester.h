@@ -21,7 +21,7 @@ enum PSTTestCodes
 	THREE_SEARCH
 };
 
-enum PSTType {CPU_ITER, CPU_RECUR, GPU};
+enum PSTType {CPU_ITER, CPU_RECUR, GPU, GPU_ARR};
 
 // No integral requirement is imposed on GridDimType, as datasetTest() is still declared as a friend for non-integral IDTypes and would thus result in compilation failure
 template <typename PointStruct, typename T, typename StaticPST,

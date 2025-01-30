@@ -53,6 +53,7 @@ int main(int argc, char *argv[])
 			std::cerr << "\tAll search bounds are inclusive\n\n";
 
 			std::cerr << "\ttree-type-flag:\n";
+			std::cerr << "\t\t-a, --gpu-arr\tUse StaticPSTGPUArr\n\n";
 			std::cerr << "\t\t-g, --gpu\tUse StaticPSTGPU\n\n";
 			std::cerr << "\t\t--iter\t\tUse StaticPSTCPUIter\n\n";
 			std::cerr << "\t\t--recur\t\tUse StaticPSTCPURecur\n\n";
@@ -136,6 +137,8 @@ int main(int argc, char *argv[])
 		}
 
 		// Tree type parsing
+		else if (arg == "-a" || arg == "--gpu-arr")
+			test_info.tree_type = PSTType::GPU_ARR;
 		else if (arg == "-g" || arg == "--gpu")
 			test_info.tree_type = PSTType::GPU;
 		else if (arg == "--iter")

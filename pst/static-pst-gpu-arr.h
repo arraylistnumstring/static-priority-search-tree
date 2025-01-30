@@ -40,7 +40,7 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 		template <typename RetType=PointStructTemplate<T, IDType, num_IDs>>
 					requires std::disjunction<
 										std::is_same<RetType, IDType>,
-										std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>
+										std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 						>::value
 		void threeSidedSearch(size_t &num_res_elems, RetType *&res_arr_d,
 								T min_dim1_val, T max_dim1_val, T min_dim2_val)
@@ -49,7 +49,7 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 		template <typename RetType=PointStructTemplate<T, IDType, num_IDs>>
 					requires std::disjunction<
 										std::is_same<RetType, IDType>,
-										std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>
+										std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 						>::value
 		void twoSidedLeftSearch(size_t &num_res_elems, RetType *&res_arr_d,
 								T max_dim1_val, T min_dim2_val)
@@ -58,11 +58,17 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 		template <typename RetType=PointStructTemplate<T, IDType, num_IDs>>
 					requires std::disjunction<
 										std::is_same<RetType, IDType>,
-										std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>
+										std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 						>::value
 		void twoSidedRightSearch(size_t &num_res_elems, RetType *&res_arr_d,
 									T min_dim1_val, T min_dim2_val)
 		{
+		};
+
+		// Calculate minimum amount of global memory that must be available for allocation on the GPU for construction and search to run correctly
+		static size_t calcGlobalMemNeeded(const size_t num_elems)
+		{
+			return 0;
 		};
 
 	private:
