@@ -254,8 +254,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 				Enough space to contain 3 size_t indices for every node is needed because the splitting of pointers in the dim2_val array at each node creates a need for the dim2_val arrays to be duplicated
 				Space needed for reporting nodes is at most num_elems (if all elements are reported) * size of PointStructTemplate (if RetType = PointStructTemplate)
 			*/
-			const size_t num_working_ind_arrays = 3;
-			const size_t construct_mem_overhead = num_elems * num_working_ind_arrays * sizeof(size_t);
+			const size_t construct_mem_overhead = num_elems * num_constr_working_arrs * sizeof(size_t);
 			const size_t search_mem_max_overhead = num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>);
 			global_mem_needed += (construct_mem_overhead > search_mem_max_overhead ? construct_mem_overhead : search_mem_max_overhead);
 
