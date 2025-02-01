@@ -163,12 +163,17 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 	}
 
 	StaticPST *tree;
-	if constexpr (pst_type == CPU_ITER || pst_type == CPU_RECUR)
-		tree = new StaticPST(metacell_tag_arr, num_metacells);
-	else
+	if constexpr (pst_type == GPU)
 		tree = new StaticPST(metacell_tag_arr, num_metacells, tree_ops_warps_per_block,
 								dev_ind, num_devs, dev_props
 							);
+	else if constexpr (pst_type == GPU_ARR)
+		tree = new StaticPST(metacell_tag_arr, num_metacells,
+								tree_ops_warps_per_block * dev_props.warpSize,
+								dev_ind, num_devs, dev_props
+							);
+	else
+		tree = new StaticPST(metacell_tag_arr, num_metacells);
 
 	if constexpr (timed)
 	{
@@ -492,10 +497,13 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 	}
 
 	StaticPST *tree;
-	if constexpr (pst_type == CPU_ITER || pst_type == CPU_RECUR)
-		tree = new StaticPST(pt_arr, num_elems);
-	else
+	if constexpr (pst_type == GPU)
 		tree = new StaticPST(pt_arr, num_elems, warps_per_block, dev_ind, num_devs, dev_props);
+	else if constexpr (pst_type == GPU_ARR)
+		tree = new StaticPST(pt_arr, num_elems, warps_per_block * dev_props.warpSize,
+								dev_ind, num_devs, dev_props);
+	else
+		tree = new StaticPST(pt_arr, num_elems);
 
 	if constexpr (timed)
 	{

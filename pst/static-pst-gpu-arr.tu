@@ -2,15 +2,31 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 			typename IDType, size_t num_IDs>
 StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPUArr(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr_d,
 																			size_t num_elems,
-																			const int warps_per_block,
+																			const unsigned threads_per_block,
 																			int dev_ind, int num_devs,
 																			cudaDeviceProp dev_props)
 	: num_elems(num_elems),
-	warps_per_block(warps_per_block),
+	threads_per_block(threads_per_block),
 	dev_ind(dev_ind),
 	num_devs(num_devs),
 	dev_props(dev_props)
 {
+#ifdef DEBUG_CONSTR
+	std::cout << "Began constructor\n";
+#endif
+
+	if (num_elems == 0)
+	{
+		tree_arr_d = nullptr;
+		num_elem_slots_per_tree = 0;
+		return;
+	}
+
+	/*
+		All trees except potentially the last tree in the array are complete trees in order to reduce internal fragmentation
+		In order to reduce dynamic parallelism cost in construction and communication overhead in search, make each complete tree have enough elements such that each thread is active at least once (so that differing block sizes that are not powers of 2 will have an effect on performance) and will only process at most two elements in the last level (which is the only level where it is possible to have an insufficient number of threads available), allowing for a constant number of resources to handle this (relatively common) edge case
+	*/
+	num_elem_slots_per_tree = calcNumElemSlotsPerTree(threads_per_block);
 }
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,

@@ -480,7 +480,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		{
 			/*
 				Minimum number of array slots necessary to construct any complete tree with num_elems elements is 1 less than the smallest power of 2 greater than num_elems
-				Tree is fully balanced by construction, with the placement of nodes in the partially empty last row being unknown
+				Tree is fully balanced by construction, with the placement of nodes in the partially empty last row being deterministic, but input-dependent
 			*/
 			// Number of element slots in each container subarray is nextGreaterPowerOf2(num_elems) - 1
 			return nextGreaterPowerOf2(num_elems) - 1;
@@ -508,6 +508,8 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 				T *dim1_vals_root_d;
 				T *dim2_vals_root_d;
 				T *med_dim1_vals_root_d;
+				(Optional:
+					IDType *ids_root_d;)
 				unsigned char *bitcodes_root_d;
 		*/
 		T *root_d;
@@ -525,7 +527,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		// 1 subarray each for dim1_val, dim2_val and med_dim1_val
 		const static unsigned char num_val_subarrs = 3;
 
-		// Without an explicit instantiation, enums don't take up any space
+		// Without explicit instantiation, enums do not take up any space
 		enum IndexCodes
 		{
 			INACTIVE_IND = -1

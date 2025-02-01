@@ -13,7 +13,7 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 	public:
 		// {} is value-initialisation; for structs, this is zero-initialisation
 		StaticPSTGPUArr(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr_d, size_t num_elems,
-							const int warps_per_block=1, int dev_ind=0, int num_devs=1,
+							const unsigned threads_per_block, int dev_ind=0, int num_devs=1,
 							cudaDeviceProp dev_props={}
 						);
 		// Since arrays were allocated continguously, only need to free one of the array pointers
@@ -21,7 +21,7 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 		{
 			/*
 			if (num_elems != 0)	// TODO: modify condition here as is appropriate
-				gpuErrorCheck(cudaFree(root_d),
+				gpuErrorCheck(cudaFree(tree_arr_d),
 								"Error in freeing array storing on-device PST array on device "
 								+ std::to_string(dev_ind + 1) + " (1-indexed) of "
 								+ std::to_string(num_devs) + ": "
@@ -72,21 +72,46 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 		};
 
 	private:
+		// Want unique copies of each tree array, so no assignment or copying allowed
+		StaticPSTGPUArr& operator=(StaticPSTGPUArr &tree_arr);	//assignment operator
+		StaticPSTGPUArr(StaticPSTGPUArr &tree_arr);		// copy constructor
+
+		// Helper function for calculating minimum number of array slots necessary to construct a complete tree with num_elems elements
+		__forceinline__ __host__ __device__ static size_t calcNumElemSlotsPerTree(const size_t num_elems)
+		{
+			// Minimum number of array slots necessary to construct any complete tree with num_elems elements is 1 less than the smallest power of 2 greater than num_elems
+			// Number of elements in each container subarray for each tree is nextGreaterPowerOf2(num_elems) - 1
+			return nextGreaterPowerOf2(num_elems) - 1;
+		};
+
+		/*
+			Implicit tree structure for each tree, with field-major orientation of nodes; all values are stored in one contiguous array on device
+			Implicit subdivisions:
+				T *dim1_vals_root_d;
+				T *dim2_vals_root_d;
+				T *med_dim1_vals_root_d;
+				(Optional:
+					IDType *ids_root_d;)
+				unsigned char *bitcodes_root_d;
+		*/
+		T *tree_arr_d;
+		size_t num_elem_slots_per_tree;
 		size_t num_elems;
+
+		// Number of threads per block (and therefore per shallow tree, as each such tree is processed by one thread block); unsigned type is chosen to correspond with CUDA on-device data type of fields of blockDim
+		unsigned threads_per_block;
 
 		//Save GPU info for later usage
 		int dev_ind;
 		cudaDeviceProp dev_props;
 		int num_devs;
 
-		// Number of warps per block (and therefore per shallow tree, as each such tree is processed by one thread block)
-		unsigned warps_per_block;
-
 		// Number of working arrays necessary per tree: 1 array of dim1_val indices, 2 arrays for dim2_val indices (one that is the input, one that is the output after dividing up the indices between the current node's two children; this switches at every level of the tree)
 		const static unsigned char num_constr_working_arrs = 3;
 		// 1 subarray each for dim1_val, dim2_val and med_dim1_val
 		const static unsigned char num_val_subarrs = 3;
 
+		// Without explicit instantiation, enums do not take up any space
 		enum SearchCodes
 		{
 			REPORT_ALL,
