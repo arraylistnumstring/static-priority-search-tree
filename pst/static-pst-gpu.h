@@ -261,29 +261,6 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 			return global_mem_needed;
 		};
 
-		// Calculate size of array allocated for the tree in units of number of elements of type T or IDType, whichever is larger
-		// Must be a static function because it is called during construction; similarly, class member num_elem_slots is not yet available, so must re-calculate it here
-		static size_t calcTotArrSizeNumDatatype(const size_t num_elems)
-		{
-			// Number of element slots in each container subarray is nextGreaterPowerOf2(num_elems) - 1
-			const size_t num_elem_slots = calcNumElemSlots(num_elems);
-
-			// constexpr if is a C++17 feature that only compiles the branch of code that evaluates to true at compile-time, saving executable space and execution runtime
-			if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
-				// No IDs present
-				return calcTotArrSizeNumTs(num_elem_slots, num_val_subarrs);
-			else
-			{
-				// Separate size-comparison condition from the num_IDs==0 condition so that sizeof(IDType) is well-defined here, as often only one branch of a constexpr if is compiled
-				if constexpr (sizeof(T) >= sizeof(IDType))
-					// sizeof(T) >= sizeof(IDType), so calculate total array size in units of sizeof(T) so that datatype T's alignment requirements will be satisfied
-					return calcTotArrSizeNumUs<T, num_val_subarrs, IDType, num_IDs>(num_elem_slots);
-				else
-					// sizeof(IDType) > sizeof(T), so calculate total array size in units of sizeof(IDType) so that datatype IDType's alignment requirements will be satisfied
-					return calcTotArrSizeNumUs<IDType, num_IDs, T, num_val_subarrs>(num_elem_slots);
-			}
-		};
-
 		// Functor (callable object) used instead of nested __host__ __device__ lambdas, as such lambdas are not permitted within other __host__ __device__ lambdas
 		// Must be public to be accessible in __global__ functions
 		struct Dim1ValIndCompIncOrd
@@ -317,18 +294,16 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		StaticPSTGPU(StaticPSTGPU &tree);	// copy constructor
 
 
-		__forceinline__ __host__ __device__ static void setNode(T *const root_d,
-																const size_t node_ind,
-																const size_t num_elem_slots,
-																PointStructTemplate<T, IDType, num_IDs> &source_data,
-																T median_dim1_val)
-		{
-			getDim1ValsRoot(root_d, num_elem_slots)[node_ind] = source_data.dim1_val;
-			getDim2ValsRoot(root_d, num_elem_slots)[node_ind] = source_data.dim2_val;
-			getMedDim1ValsRoot(root_d, num_elem_slots)[node_ind] = median_dim1_val;
-			if constexpr (HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
-				getIDsRoot(root_d, num_elem_slots)[node_ind] = source_data.id;
-		};
+		// Construction-related helper functions
+
+		// From the specification of C, pointers are const if the const qualifier appears to the right of the corresponding *
+		// Returns index in dim1_val_ind_arr of elem_to_find
+		__forceinline__ __device__ static long long binarySearch(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr,
+																			size_t *const &dim1_val_ind_arr,
+																			PointStructTemplate<T, IDType, num_IDs> &elem_to_find,
+																			const size_t &init_ind,
+																			const size_t &num_elems
+																		);
 
 		__forceinline__ __device__ static void constructNode(T *const &root_d,
 																const size_t &num_elem_slots,
@@ -344,6 +319,22 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 																size_t &left_subarr_num_elems,
 																size_t &right_subarr_start_ind,
 																size_t &right_subarr_num_elems);
+
+		__forceinline__ __device__ static void setNode(T *const root_d,
+																const size_t node_ind,
+																const size_t num_elem_slots,
+																PointStructTemplate<T, IDType, num_IDs> &source_data,
+																T median_dim1_val)
+		{
+			getDim1ValsRoot(root_d, num_elem_slots)[node_ind] = source_data.dim1_val;
+			getDim2ValsRoot(root_d, num_elem_slots)[node_ind] = source_data.dim2_val;
+			getMedDim1ValsRoot(root_d, num_elem_slots)[node_ind] = median_dim1_val;
+			if constexpr (HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
+				getIDsRoot(root_d, num_elem_slots)[node_ind] = source_data.id;
+		};
+
+
+		// Search-related helper functions
 
 		// Helper functions for determining how to delegate work during searches
 		template <typename RetType=PointStructTemplate<T, IDType, num_IDs>>
@@ -447,6 +438,9 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 																unsigned char *const &search_codes_arr = nullptr
 															);
 
+
+		// Data-accessing helper functions
+
 		// Helper functions for getting start indices for various arrays
 		__forceinline__ __host__ __device__ static T* getDim1ValsRoot(T *const root, const size_t num_elem_slots)
 			{return root;};
@@ -467,13 +461,8 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 					return reinterpret_cast<unsigned char*>(getIDsRoot(root, num_elem_slots) + num_IDs * num_elem_slots);
 			};
 
-		// Helper function for calculating the number of elements of size T necessary to instantiate an array for root of trees with no ID field
-		__forceinline__ __host__ __device__ static size_t calcTotArrSizeNumTs(const size_t num_elem_slots, const size_t num_T_subarrs);
 
-		// Helper function for calculating the number of elements of size U necessary to instantiate an array for root, for data types U and V such that sizeof(U) >= sizeof(V)
-		template <typename U, size_t num_U_subarrs, typename V, size_t num_V_subarrs>
-			requires SizeOfUAtLeastSizeOfV<U, V>
-		__forceinline__ __host__ __device__ static size_t calcTotArrSizeNumUs(const size_t num_elem_slots);
+		// Data footprint calculation functions
 
 		// Helper function for calculating minimum number of array slots necessary to construct a complete tree with num_elems elements
 		__forceinline__ __host__ __device__ static size_t calcNumElemSlots(const size_t num_elems)
@@ -486,21 +475,45 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 			return nextGreaterPowerOf2(num_elems) - 1;
 		};
 
+		// Calculate size of array allocated for the tree in units of number of elements of type T or IDType, whichever is larger
+		// Must be a static function because it is called during construction; similarly, class member num_elem_slots is not yet available, so must re-calculate it here
+		static size_t calcTotArrSizeNumDatatype(const size_t num_elems)
+		{
+			// Number of element slots in each container subarray is nextGreaterPowerOf2(num_elems) - 1
+			const size_t num_elem_slots = calcNumElemSlots(num_elems);
 
-		// From the specification of C, pointers are const if the const qualifier appears to the right of the corresponding *
-		// Returns index in dim1_val_ind_arr of elem_to_find
-		__forceinline__ __host__ __device__ static long long binarySearch(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr,
-																			size_t *const &dim1_val_ind_arr,
-																			PointStructTemplate<T, IDType, num_IDs> &elem_to_find,
-																			const size_t &init_ind,
-																			const size_t &num_elems
-																		);
+			// constexpr if is a C++17 feature that only compiles the branch of code that evaluates to true at compile-time, saving executable space and execution runtime
+			if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
+				// No IDs present
+				return calcTotArrSizeNumTs(num_elem_slots, num_val_subarrs);
+			else
+			{
+				// Separate size-comparison condition from the num_IDs==0 condition so that sizeof(IDType) is well-defined here, as often only one branch of a constexpr if is compiled
+				if constexpr (sizeof(T) >= sizeof(IDType))
+					// sizeof(T) >= sizeof(IDType), so calculate total array size in units of sizeof(T) so that datatype T's alignment requirements will be satisfied
+					return calcTotArrSizeNumUs<T, num_val_subarrs, IDType, num_IDs>(num_elem_slots);
+				else
+					// sizeof(IDType) > sizeof(T), so calculate total array size in units of sizeof(IDType) so that datatype IDType's alignment requirements will be satisfied
+					return calcTotArrSizeNumUs<IDType, num_IDs, T, num_val_subarrs>(num_elem_slots);
+			}
+		};
+
+		// Helper function for calculating the number of elements of size T necessary to instantiate an array for root of trees with no ID field
+		__forceinline__ __host__ __device__ static size_t calcTotArrSizeNumTs(const size_t num_elem_slots, const size_t num_T_subarrs);
+
+		// Helper function for calculating the number of elements of size U necessary to instantiate an array for root, for data types U and V such that sizeof(U) >= sizeof(V)
+		template <typename U, size_t num_U_subarrs, typename V, size_t num_V_subarrs>
+			requires SizeOfUAtLeastSizeOfV<U, V>
+		__forceinline__ __host__ __device__ static size_t calcTotArrSizeNumUs(const size_t num_elem_slots);
+
 
 		void printRecur(std::ostream &os, T *const &tree_root, const size_t curr_ind,
 							const size_t num_elem_slots, std::string prefix,
 							std::string child_prefix
 						) const;
 
+
+		// Member fields
 
 		/*
 			Implicit tree structure, with field-major orientation of nodes; all values are stored in one contiguous array on device
