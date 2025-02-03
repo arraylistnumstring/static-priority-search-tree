@@ -105,14 +105,14 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 	// Create asynchronous stream for initialising to 0, as cudaStreamFireAndForget is only available on device
 	cudaStream_t stream_root_init;
 	gpuErrorCheck(cudaStreamCreateWithFlags(&stream_root_init, cudaStreamNonBlocking),
-					"Error in creating asynchronous stream for zero-intialising on-device priority search tree storage array on device "
+					"Error in creating asynchronous stream for zero-intialising priority search tree storage array on device "
 					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
 					+ std::to_string(num_devs) + ": "
 				);
 	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
 	{
 		gpuErrorCheck(cudaMemsetAsync(root_d, 0, tot_arr_size_num_datatype * sizeof(T), stream_root_init),
-						"Error in zero-intialising on-device priority search tree storage array via cudaMemset() on device "
+						"Error in zero-intialising priority search tree storage array via cudaMemset() on device "
 						+ std::to_string(dev_ind + 1) + " (1-indexed) of "
 						+ std::to_string(num_devs) + ": "
 					);
@@ -125,7 +125,7 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 			std::cout << "About to do an async memory assignment (around line 200)\n";
 #endif
 			gpuErrorCheck(cudaMemsetAsync(root_d, 0, tot_arr_size_num_datatype * sizeof(T), stream_root_init),
-							"Error in zero-intialising on-device priority search tree storage array via cudaMemset() on device "
+							"Error in zero-intialising priority search tree storage array via cudaMemset() on device "
 							+ std::to_string(dev_ind + 1) + " (1-indexed) of "
 							+ std::to_string(num_devs) + ": "
 						);
@@ -133,7 +133,7 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 		else
 		{
 			gpuErrorCheck(cudaMemsetAsync(root_d, 0, tot_arr_size_num_datatype * sizeof(IDType), stream_root_init),
-							"Error in zero-intialising on-device priority search tree storage array via cudaMemset() on device "
+							"Error in zero-intialising priority search tree storage array via cudaMemset() on device "
 							+ std::to_string(dev_ind + 1) + " (1-indexed) of "
 							+ std::to_string(num_devs) + ": "
 						);
@@ -141,7 +141,7 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 	}
 	// cudaStreamDestroy() is also a kernel submitted to the indicated stream, so it only runs once all previous calls have completed
 	gpuErrorCheck(cudaStreamDestroy(stream_root_init),
-					"Error in destroying asynchronous stream for zero-intialising on-device priority search tree storage array on device "
+					"Error in destroying asynchronous stream for zero-intialising priority search tree storage array on device "
 					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
 					+ std::to_string(num_devs) + ": "
 				);

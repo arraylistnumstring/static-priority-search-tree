@@ -77,7 +77,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		{
 			if (num_elems != 0)
 				gpuErrorCheck(cudaFree(root_d),
-								"Error in freeing array storing on-device PST on device "
+								"Error in freeing array storing PST on device "
 								+ std::to_string(dev_ind + 1) + " (1-indexed) of "
 								+ std::to_string(num_devs) + ": "
 							);
