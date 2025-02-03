@@ -83,13 +83,18 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 							);
 		};
 
+
 		// Printing function for printing operator << to use, as private data members must be accessed in the process
 		// const keyword after method name indicates that the method does not modify any data members of the associated class
 		virtual void print(std::ostream &os) const;
 
+
 		int getDevInd() const {return dev_ind;};
 		cudaDeviceProp getDevProps() const {return dev_props;};
 		int getNumDevs() const {return num_devs;};
+
+
+		// Public search functions
 
 		template <typename RetType=PointStructTemplate<T, IDType, num_IDs>>
 			requires std::disjunction<
@@ -118,8 +123,10 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 									T min_dim1_val, T min_dim2_val,
 									const int warp_multiplier=1);
 
+
 		// Calculate minimum amount of global memory that must be available for allocation on the GPU for construction and search to run correctly
 		static size_t calcGlobalMemNeeded(const size_t num_elems);
+
 
 		// Functor (callable object) used instead of nested __host__ __device__ lambdas, as such lambdas are not permitted within other __host__ __device__ lambdas
 		// Must be public to be accessible in __global__ functions

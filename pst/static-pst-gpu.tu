@@ -442,6 +442,7 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 #endif
 }
 
+
 // const keyword after method name indicates that the method does not modify any data members of the associated class
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
@@ -498,6 +499,9 @@ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::print(std::ostream &
 
 	delete[] temp_root;
 }
+
+
+// Public search functions
 
 // Default template argument for a class template's member function can only be specified within the class template; similarly, default arguments for functions can only be specified within the class/class template declaration
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
@@ -658,6 +662,7 @@ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::twoSidedRightSearch(
 					+ ": ");
 }
 
+
 // static keyword should only be used when declaring a function in the header file
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
@@ -689,6 +694,9 @@ size_t StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::calcGlobalMemNeede
 
 	return global_mem_needed;
 }
+
+
+// Construction-related helper functions
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
@@ -829,6 +837,9 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 		}
 	}
 }
+
+
+// Search-related helper functions
 
 // Separate template clauses are necessary when the enclosing template class has different template types from the member function
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
@@ -1252,6 +1263,7 @@ inline size_t StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::calcTotArrS
 		tot_arr_size_num_Us++;
 	return tot_arr_size_num_Us;
 }
+
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
