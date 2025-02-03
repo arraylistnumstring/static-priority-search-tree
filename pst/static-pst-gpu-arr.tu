@@ -1,3 +1,5 @@
+#include "class-member-checkers.h"
+
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
 StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPUArr(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr_d,
@@ -88,36 +90,91 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 			typename IDType, size_t num_IDs>
 size_t StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcGlobalMemNeeded(const size_t num_elems, const unsigned threads_per_block)
 {
-	// TODO
-	return 0;
+	const size_t tree_arr_size_num_max_data_id_types = calcTreeArrSizeNumMaxDataIdTypes(num_elems, threads_per_block);
+
+	size_t global_mem_needed = tree_arr_size_num_max_data_id_types;
+	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
+		// No IDs present
+		global_mem_needed *= sizeof(T);
+	else
+	{
+		// Separate size-comparison condition from the num_IDs==0 condition so that sizeof(IDType) is well-defined here, as often only one branch of a constexpr if is compiled
+		if constexpr (sizeof(T) >= sizeof(IDType))
+			global_mem_needed *= sizeof(T);
+		else
+			global_mem_needed *= sizeof(IDType);
+	}
+
+	/*
+		Space needed for instantiation = tree array size + addend, where addend = max(construction overhead, search overhead) = max(3 * num_elems * size of PointStructTemplate indices, num_elems * size of PointStructTemplate)
+		Enough space to contain 3 size_t indices for every node is needed because the splitting of pointers in the dim2_val array at each node creates a need for the dim2_val arrays to be duplicated
+		Space needed for reporting nodes is at most num_elems (if all elements are reported) * size of PointStructTemplate (if RetType = PointStructTemplate)
+	*/
+	const size_t construct_mem_overhead = num_elems * num_constr_working_arrs * sizeof(size_t);
+	const size_t search_mem_max_overhead = num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>);
+	global_mem_needed += (construct_mem_overhead > search_mem_max_overhead ? construct_mem_overhead : search_mem_max_overhead);
+
+	return global_mem_needed;
 }
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-size_t StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcTreeSizeNumMaxDataIDTypes(const size_t num_elem_slots)
+size_t StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcTreeArrSizeNumMaxDataIDTypes(const size_t num_elems, const unsigned threads_per_block)
+{
+	// Full trees are trees that are complete and have nextGreaterPowerOf2(threads_per_block) - 1 elements
+	const size_t full_tree_num_elem_slots = calcNumElemSlotsPerTree(threads_per_block);
+	const size_t full_tree_size_num_max_data_id_types = calcTreeSizeNumMaxDataIDTypes(full_tree_num_elem_slots);
+
+	// Equal to number of thread blocks
+	const unsigned num_trees = num_elems / full_tree_num_elem_slots
+								+ (num_elems % full_tree_num_elem_slots == 0 ? 0 : 1);
+
+	size_t tree_arr_size_num_max_data_id_types = full_tree_size_num_max_data_id_types;
+
+	// Each tree is a complete tree
+	if (num_elems % full_tree_num_elem_slots == 0)
+		tree_arr_size_num_max_data_id_types *= num_trees;
+	// All trees except for the last are full trees; determine the number of slots necessary for the last tree separately
+	else
+	{
+		tree_arr_size_num_max_data_id_types *= num_trees - 1;
+
+		// Last tree size calculation in units of the larger of data or ID type
+		const size_t last_tree_num_elem_slots = calcNumElemSlotsPerTree(num_elems % full_tree_num_elem_slots);
+		const size_t last_tree_size_num_max_data_id_types = calcTreeSizeNumMaxDataIDTypes(last_tree_num_elem_slots);
+
+		tree_arr_size_num_max_data_id_types += last_tree_size_num_max_data_id_types;
+	}
+
+	return tree_arr_size_num_max_data_id_types;
+}
+
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+size_t StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcTreeSizeNumMaxDataIDTypes(const size_t num_elem_slots_per_tree)
 {
 	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
 		// No IDs present
-		return calcTreeSizeNumTs<num_val_subarrs>(num_elem_slots);
+		return calcTreeSizeNumTs<num_val_subarrs>(num_elem_slots_per_tree);
 	else
 	{
 		// Separate size-comparison condition from the num_IDs==0 condition so that sizeof(IDType) is well-defined here, as often only one branch of a constexpr if is compiled
 		if constexpr (sizeof(T) >= sizeof(IDType))
 			// sizeof(T) >= sizeof(IDType), so calculate tree array size in units of sizeof(T) so that datatype T's alignment requirements will be satisfied
-			return calcTreeSizeNumUs<T, num_val_subarrs, IDType, num_IDs>(num_elem_slots);
+			return calcTreeSizeNumUs<T, num_val_subarrs, IDType, num_IDs>(num_elem_slots_per_tree);
 		else
 			// sizeof(IDType) > sizeof(T), so calculate total array size in units of sizeof(IDType) so that datatype IDType's alignment requirements will be satisfied
-			return calcTreeSizeNumUs<IDType, num_IDs, T, num_val_subarrs>(num_elem_slots);
+			return calcTreeSizeNumUs<IDType, num_IDs, T, num_val_subarrs>(num_elem_slots_per_tree);
 	}
 }
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
 template <size_t num_T_subarrs>
-size_t StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcTreeSizeNumTs(const size_t num_elem_slots)
+size_t StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcTreeSizeNumTs(const size_t num_elem_slots_per_tree)
 {
 	/*
-		tree_size_num_Ts = ceil(1/sizeof(T) * num_elem_slots * (sizeof(T) * num_T_subarrs + 1 B/bitcode * 1 bitcode))
+		tree_size_num_Ts = ceil(1/sizeof(T) * num_elem_slots_per_tree * (sizeof(T) * num_T_subarrs + 1 B/bitcode * 1 bitcode))
 			With integer truncation:
 				if tree_size_bytes % sizeof(T) != 0:
 							= tree_size_bytes + 1
@@ -125,7 +182,7 @@ size_t StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcTreeSizeNum
 							= tree_size_bytes
 	*/
 	// Calculate total size in bytes
-	size_t tree_size_bytes = num_elem_slots * (sizeof(T) * num_T_subarrs + 1);
+	size_t tree_size_bytes = num_elem_slots_per_tree * (sizeof(T) * num_T_subarrs + 1);
 	// Divide by sizeof(T)
 	size_t tree_size_num_Ts = tree_size_bytes / sizeof(T);
 	// If tree_size_bytes % sizeof(T) != 0, then tree_size_num_Ts * sizeof(T) < tree_size_bytes, so add 1 to tree_size_num_Ts
@@ -138,10 +195,10 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 			typename IDType, size_t num_IDs>
 template <typename U, size_t num_U_subarrs, typename V, size_t num_V_subarrs>
 	requires SizeOfUAtLeastSizeOfV<U, V>
-size_t StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcTreeSizeNumUs(const size_t num_elem_slots)
+size_t StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcTreeSizeNumUs(const size_t num_elem_slots_per_tree)
 {
 	/*
-		tree_size_num_Us = ceil(1/sizeof(U) * num_elem_slots * (sizeof(U) * num_U_subarrs + sizeof(V) * num_V_subarrs + 1 B/bitcode * 1 bitcode))
+		tree_size_num_Us = ceil(1/sizeof(U) * num_elem_slots_per_tree * (sizeof(U) * num_U_subarrs + sizeof(V) * num_V_subarrs + 1 B/bitcode * 1 bitcode))
 			With integer truncation:
 				if tree_size_bytes % sizeof(U) != 0:
 							= tree_size_bytes + 1
@@ -149,7 +206,7 @@ size_t StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcTreeSizeNum
 							= tree_size_bytes
 	*/
 	// Calculate total size in bytes
-	size_t tree_size_bytes = num_elem_slots * (sizeof(U) * num_U_subarrs + sizeof(V) * num_V_subarrs + 1);
+	size_t tree_size_bytes = num_elem_slots_per_tree * (sizeof(U) * num_U_subarrs + sizeof(V) * num_V_subarrs + 1);
 	// Divide by sizeof(U)
 	size_t tree_size_num_Us = tree_size_bytes / sizeof(U);
 	// If tree_size_bytes % sizeof(U) != 0, then tree_size_num_Us * sizeof(U) < tree_size_bytes, so add 1 to tree_size_num_Us

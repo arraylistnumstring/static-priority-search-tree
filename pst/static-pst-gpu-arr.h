@@ -77,14 +77,17 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 
 		// Helper function for calculating minimum number of array slots necessary to construct a complete tree with num_elems elements
 		// Must be a static function because it is called during construction
-		static size_t calcNumElemSlotsPerTree(const size_t num_elems)
+		static size_t calcNumElemSlotsPerTree(const size_t num_elems_per_tree)
 		{
 			// Minimum number of array slots necessary to construct any complete tree with num_elems elements is 1 less than the smallest power of 2 greater than num_elems
 			// Number of elements in each container subarray for each tree is nextGreaterPowerOf2(num_elems) - 1
-			return nextGreaterPowerOf2(num_elems) - 1;
+			return nextGreaterPowerOf2(num_elems_per_tree) - 1;
 		};
 
-		// Calculate size of array allocate for each tree in units of number of elements of type T or IDType, whichever is larger
+		// Calculate size of array of trees in units of number of elements of type T or IDType, whichever is larger
+		static size_t calcTreeArrSizeNumMaxDataIDTypes(const size_t num_elems, const unsigned threads_per_block);
+
+		// Calculate size of array allocated for each tree in units of number of elements of type T or IDType, whichever is larger
 		static size_t calcTreeSizeNumMaxDataIDTypes(const size_t num_elem_slots);
 
 		// Helper function for calculating the number of elements of size T necessary to instantiate each tree for trees with no ID field
