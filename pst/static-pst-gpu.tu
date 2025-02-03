@@ -39,10 +39,10 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 	const size_t tot_arr_size_num_max_data_id_types = calcTotArrSizeNumMaxDataIDTypes(num_elems);
 
 #ifdef DEBUG_CONSTR
-	std::cout << "Ready to allocate memory (around line 73)\n";
+	std::cout << "Ready to allocate memory\n";
 #endif
 
-	// Memory transfer only permitted for on-host pinned (page-locked) memory, so do such operations in the default stream
+	// Asynchronous memory transfer only permitted for on-host pinned (page-locked) memory, so do such operations in the default stream
 	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
 	{
 		// Allocate as a T array so that alignment requirements for larger data types are obeyed
@@ -98,7 +98,7 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 				);
 
 #ifdef DEBUG_CONSTR
-	std::cout << "Allocated index arrays (around line 126)\n";
+	std::cout << "Allocated index arrays\n";
 #endif
 
 	// Synchronous allocations and blocking memory copies complete; do asynchronous initialisations
@@ -122,7 +122,7 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 		if constexpr (sizeof(T) >= sizeof(IDType))
 		{
 #ifdef DEBUG_CONSTR
-			std::cout << "About to do an async memory assignment (around line 200)\n";
+			std::cout << "About to do an async memory assignment\n";
 #endif
 			gpuErrorCheck(cudaMemsetAsync(root_d, 0, tot_arr_size_num_max_data_id_types * sizeof(T), stream_root_init),
 							"Error in zero-intialising priority search tree storage array via cudaMemset() on device "
@@ -147,7 +147,7 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 				);
 
 #ifdef DEBUG_CONSTR
-	std::cout << "About to assign index as values to index arrays (around line 221)\n";
+	std::cout << "About to assign index as values to index arrays\n";
 #endif
 
 	const size_t index_assign_threads_per_block = warp_multiplier * dev_props.warpSize;
