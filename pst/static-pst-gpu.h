@@ -232,34 +232,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		};
 
 		// Calculate minimum amount of global memory that must be available for allocation on the GPU for construction and search to run correctly
-		static size_t calcGlobalMemNeeded(const size_t num_elems)
-		{
-			const size_t tot_arr_size_num_datatype = calcTotArrSizeNumMaxDataIDTypes(num_elems);
-
-			size_t global_mem_needed;
-			if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
-				// No IDs present
-				global_mem_needed = tot_arr_size_num_datatype * sizeof(T);
-			else
-			{
-				// Separate size-comparison condition from the num_IDs==0 condition so that sizeof(IDType) is well-defined here, as often only one branch of a constexpr if is compiled
-				if constexpr (sizeof(T) >= sizeof(IDType))
-					global_mem_needed = tot_arr_size_num_datatype * sizeof(T);
-				else
-					global_mem_needed = tot_arr_size_num_datatype * sizeof(IDType);
-			}
-
-			/*
-				Space needed for instantiation = tree size + addend, where addend = max(3 * num_elems * size of PointStructTemplate indices, num_elems * size of PointStructTemplate)
-				Enough space to contain 3 size_t indices for every node is needed because the splitting of pointers in the dim2_val array at each node creates a need for the dim2_val arrays to be duplicated
-				Space needed for reporting nodes is at most num_elems (if all elements are reported) * size of PointStructTemplate (if RetType = PointStructTemplate)
-			*/
-			const size_t construct_mem_overhead = num_elems * num_constr_working_arrs * sizeof(size_t);
-			const size_t search_mem_max_overhead = num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>);
-			global_mem_needed += (construct_mem_overhead > search_mem_max_overhead ? construct_mem_overhead : search_mem_max_overhead);
-
-			return global_mem_needed;
-		};
+		static size_t calcGlobalMemNeeded(const size_t num_elems);
 
 		// Functor (callable object) used instead of nested __host__ __device__ lambdas, as such lambdas are not permitted within other __host__ __device__ lambdas
 		// Must be public to be accessible in __global__ functions
