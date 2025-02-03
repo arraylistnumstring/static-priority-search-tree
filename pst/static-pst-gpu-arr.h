@@ -67,6 +67,33 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 		// Calculate minimum amount of global memory that must be available for allocation on the GPU for construction and search to run correctly
 		static size_t calcGlobalMemNeeded(const size_t num_elems, const unsigned threads_per_block);
 
+		// Functor (callable object) used instead of nested __host__ __device__ lambdas, as such lambdas are not permitted within other __host__ __device__ lambdas
+		// Must be public to be accessible in __global__ functions
+		struct Dim1ValIndCompIncOrd
+		{
+			Dim1ValIndCompIncOrd(PointStructTemplate<T, IDType, num_IDs> *pt_arr_d) : pt_arr_d(pt_arr_d) {};
+
+			__host__ __device__ bool operator()(const size_t &i, const size_t &j)
+			{
+				return pt_arr_d[i].compareDim1(pt_arr_d[j]) < 0;
+			};
+
+			private:
+				PointStructTemplate<T, IDType, num_IDs> *pt_arr_d;
+		};
+		struct Dim2ValIndCompDecOrd
+		{
+			Dim2ValIndCompDecOrd(PointStructTemplate<T, IDType, num_IDs> *pt_arr_d) : pt_arr_d(pt_arr_d) {};
+
+			__host__ __device__ bool operator()(const size_t &i, const size_t &j)
+			{
+				return pt_arr_d[i].compareDim2(pt_arr_d[j]) > 0;
+			};
+
+			private:
+				PointStructTemplate<T, IDType, num_IDs> *pt_arr_d;
+		};
+
 	private:
 		// Want unique copies of each tree array, so no assignment or copying allowed
 		StaticPSTGPUArr& operator=(StaticPSTGPUArr &tree_arr);	//assignment operator
