@@ -5,7 +5,14 @@ StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPUArr(PointS
 																			const unsigned threads_per_block,
 																			int dev_ind, int num_devs,
 																			cudaDeviceProp dev_props)
-	: num_elems(num_elems),
+	/*
+		All trees except potentially the last tree in the array are complete trees in order to reduce internal fragmentation
+		In order to reduce dynamic parallelism cost in construction and communication overhead in search, make each complete tree have enough elements such that each thread is active at least once (so that differing block sizes that are not powers of 2 will have an effect on performance) and will only process at most two elements in the last level (which is the only level where it is possible to have an insufficient number of threads available), allowing for a constant number of resources to handle this (relatively common) edge case
+	*/
+	: num_elem_slots_per_tree(calcNumElemSlotsPerTree(threads_per_block))
+	num_elems(num_elems),
+	// Total number of subtrees = num_thread_blocks = ceil(num_elems/threads_per_block)
+	num_thread_blocks(num_elems / threads_per_block + (num_elems % threads_per_block == 0 ? 0 : 1)),
 	threads_per_block(threads_per_block),
 	dev_ind(dev_ind),
 	num_devs(num_devs),
@@ -21,12 +28,6 @@ StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPUArr(PointS
 		num_elem_slots_per_tree = 0;
 		return;
 	}
-
-	/*
-		All trees except potentially the last tree in the array are complete trees in order to reduce internal fragmentation
-		In order to reduce dynamic parallelism cost in construction and communication overhead in search, make each complete tree have enough elements such that each thread is active at least once (so that differing block sizes that are not powers of 2 will have an effect on performance) and will only process at most two elements in the last level (which is the only level where it is possible to have an insufficient number of threads available), allowing for a constant number of resources to handle this (relatively common) edge case
-	*/
-	num_elem_slots_per_tree = calcNumElemSlotsPerTree(threads_per_block);
 }
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,

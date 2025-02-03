@@ -15,7 +15,13 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 																	int dev_ind, int num_devs,
 																	cudaDeviceProp dev_props)
 	// Member initialiser list must be followed by definition
-	: num_elems(num_elems),
+	/*
+		Minimum number of array slots necessary to construct any complete tree with num_elems elements is 1 less than the smallest power of 2 greater than num_elems
+		Tree is fully balanced by construction, with the placement of nodes in the partially empty last row being deterministic, but not necessarily with the same alignment for a given total number of elements
+	*/
+	// Number of element slots in each container subarray is nextGreaterPowerOf2(num_elems) - 1
+	: num_elem_slots(calcNumElemSlots(num_elems)),
+	num_elems(num_elems),
 	dev_ind(dev_ind),
 	num_devs(num_devs),
 	dev_props(dev_props)
@@ -30,13 +36,6 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 		num_elem_slots = 0;
 		return;
 	}
-
-	/*
-		Minimum number of array slots necessary to construct any complete tree with num_elems elements is 1 less than the smallest power of 2 greater than num_elems
-		Tree is fully balanced by construction, with the placement of nodes in the partially empty last row being deterministic, but not necessarily with the same alignment for a given total number of elements
-	*/
-	// Number of element slots in each container subarray is nextGreaterPowerOf2(num_elems) - 1
-	num_elem_slots = calcNumElemSlots(num_elems);
 
 	const size_t tot_arr_size_num_datatype = calcTotArrSizeNumDatatype(num_elems);
 

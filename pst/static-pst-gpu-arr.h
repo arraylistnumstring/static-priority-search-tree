@@ -98,7 +98,10 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 		size_t num_elem_slots_per_tree;
 		size_t num_elems;
 
-		// Number of threads per block (and therefore per shallow tree, as each such tree is processed by one thread block); unsigned type is chosen to correspond with CUDA on-device data type of fields of blockDim
+		// unsigned type is chosen to correspond with CUDA on-device data type of fields of gridDim and blockDim, respectively
+		// Number of thread blocks in each kernel call (and therefore the number of shallow trees)
+		unsigned num_thread_blocks;
+		// Number of threads per block (and therefore per shallow tree, as each such tree is processed by one thread block)
 		unsigned threads_per_block;
 
 		//Save GPU info for later usage
