@@ -4,7 +4,8 @@
 #include "data-size-concepts.h"
 #include "dev-symbols.h"			// For global memory-scoped variable res_arr_ind_d
 #include "gpu-err-chk.h"
-#include "gpu-tree-node.h"
+#include "gpu-power-of-2-functions.h"
+#include "static-priority-search-tree.h"
 
 // Array of shallow on-GPU PSTs that do not require dynamic parallelism to construct or search
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
