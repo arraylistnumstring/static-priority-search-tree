@@ -274,10 +274,23 @@ StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPUArr(PointS
 
 	// TODO: for now, run sort using multiple kernel calls (as this is easier to do) in order to ascertain whether it is worthwhile to invest in writing a better, one-kernel partitioned sort function (i.e. a sort function that sorts elements within partitions of a given size)
 
-	// Sort dimension-1 values index array in ascending order; in-place sort using a curried comparison function; guaranteed O(n) running time or better
-	// Execution policy of thrust::cuda::par.on(stream_dim1) guarantees kernel is submitted to stream_dim1
-	thrust::sort(thrust::cuda::par.on(stream_dim1), dim1_val_ind_arr_d, dim1_val_ind_arr_d + num_elems,
-					Dim1ValIndCompIncOrd(pt_arr_d));
+	for (auto i = 0; i < num_thread_blocks - 1; i++)
+	{
+		// Sort dimension-1 values index array in ascending order; in-place sort using a curried comparison function; guaranteed O(n) running time or better
+		// Execution policy of thrust::cuda::par.on(stream_dim1) guarantees kernel is submitted to stream_dim1
+		thrust::sort(thrust::cuda::par.on(stream_dim1),
+						dim1_val_ind_arr_d + num_elem_slots_per_tree * i,
+						dim1_val_ind_arr_d + num_elem_slots_per_tree * (i + 1),
+						Dim1ValIndCompIncOrd(pt_arr_d)
+					);
+	}
+
+	// Last block may be differently sized, so simply instantiate a slightly different sort call for it
+	thrust::sort(thrust::cuda::par.on(stream_dim1),
+					dim1_val_ind_arr_d + num_elem_slots_per_tree * (num_thread_blocks - 1),
+					dim1_val_ind_arr_d + num_elems,
+					Dim1ValIndCompIncOrd(pt_arr_d)
+				);
 
 #ifdef CONSTR_TIMED
 	gpuErrorCheck(cudaEventRecord(ind1_sort_stop, stream_dim1),
@@ -326,9 +339,25 @@ StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPUArr(PointS
 				);
 #endif
 
-	// Sort dimension-2 values index array in descending order; in-place sort using a curried comparison function; guaranteed O(n) running time or better
-	thrust::sort(thrust::cuda::par.on(stream_dim2), dim2_val_ind_arr_d, dim2_val_ind_arr_d + num_elems,
-					Dim2ValIndCompDecOrd(pt_arr_d));
+	// TODO: for now, run sort using multiple kernel calls (as this is easier to do) in order to ascertain whether it is worthwhile to invest in writing a better, one-kernel partitioned sort function (i.e. a sort function that sorts elements within partitions of a given size)
+
+	for (auto i = 0; i < num_thread_blocks - 1; i++)
+	{
+		// Sort dimension-2 values index array in descending order; in-place sort using a curried comparison function; guaranteed O(n) running time or better
+		// Execution policy of thrust::cuda::par.on(stream_dim2) guarantees kernel is submitted to stream_dim2
+		thrust::sort(thrust::cuda::par.on(stream_dim2),
+						dim2_val_ind_arr_d + num_elem_slots_per_tree * i,
+						dim2_val_ind_arr_d + num_elem_slots_per_tree * (i + 1),
+						Dim2ValIndCompDecOrd(pt_arr_d)
+					);
+	}
+
+	// Last block may be differently sized, so simply instantiate a slightly different sort call for it
+	thrust::sort(thrust::cuda::par.on(stream_dim2),
+					dim2_val_ind_arr_d + num_elem_slots_per_tree * (num_thread_blocks - 1),
+					dim2_val_ind_arr_d + num_elems,
+					Dim2ValIndCompDecOrd(pt_arr_d)
+				);
 
 #ifdef CONSTR_TIMED
 	gpuErrorCheck(cudaEventRecord(ind2_sort_stop, stream_dim2),
