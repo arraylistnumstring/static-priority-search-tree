@@ -40,6 +40,59 @@ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::print(std::ostrea
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
+template <typename RetType>
+			requires std::disjunction<
+								std::is_same<RetType, IDType>,
+								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+				>::value
+void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::threeSidedSearch(size_t &num_res_elems,
+																				RetType *&res_arr_d,
+																				T min_dim1_val,
+																				T max_dim1_val,
+																				T min_dim2_val
+																			)
+{
+}
+
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+template <typename RetType>
+			requires std::disjunction<
+								std::is_same<RetType, IDType>,
+								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+				>::value
+void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSearch(size_t &num_res_elems,
+																					RetType *&res_arr_d,
+																					T max_dim1_val,
+																					T min_dim2_val
+																				)
+{
+}
+
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+template <typename RetType>
+			requires std::disjunction<
+								std::is_same<RetType, IDType>,
+								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+				>::value
+void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::twoSidedRightSearch(size_t &num_res_elems,
+																					RetType *&res_arr_d,
+																					T min_dim1_val,
+																					T min_dim2_val
+																				)
+{
+}
+
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+size_t StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcGlobalMemNeeded(const size_t num_elems)
+{
+	return 0;
+}
+
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
 size_t StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcTreeSizeNumMaxDataIDTypes(const size_t num_elem_slots)
 {
 	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
