@@ -1015,6 +1015,30 @@ size_t StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSizeNumT
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
+size_t StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSizeNumMaxDataIDTypes(const size_t num_elems)
+{
+	// Number of element slots in each container subarray is nextGreaterPowerOf2(num_elems) - 1
+	// Class member num_elem_slots is not available due to being in a static function, so must re-calculate it here
+	const size_t num_elem_slots = calcNumElemSlots(num_elems);
+
+	// constexpr if is a C++17 feature that only compiles the branch of code that evaluates to true at compile-time, saving executable space and execution runtime
+	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
+		// No IDs present
+		return calcTotArrSizeNumTs<num_val_subarrs>(num_elem_slots);
+	else
+	{
+		// Separate size-comparison condition from the num_IDs==0 condition so that sizeof(IDType) is well-defined here, as often only one branch of a constexpr if is compiled
+		if constexpr (sizeof(T) >= sizeof(IDType))
+			// sizeof(T) >= sizeof(IDType), so calculate total array size in units of sizeof(T) so that datatype T's alignment requirements will be satisfied
+			return calcTotArrSizeNumUs<T, num_val_subarrs, IDType, num_IDs>(num_elem_slots);
+		else
+			// sizeof(IDType) > sizeof(T), so calculate total array size in units of sizeof(IDType) so that datatype IDType's alignment requirements will be satisfied
+			return calcTotArrSizeNumUs<IDType, num_IDs, T, num_val_subarrs>(num_elem_slots);
+	}
+}
+
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
 template <typename U, size_t num_U_subarrs, typename V, size_t num_V_subarrs>
 	requires SizeOfUAtLeastSizeOfV<U, V>
 size_t StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSizeNumUs<U, num_U_subarrs, V, num_V_subarrs>(const size_t num_elem_slots)

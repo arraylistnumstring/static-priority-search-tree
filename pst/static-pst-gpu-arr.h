@@ -1,7 +1,8 @@
 #ifndef STATIC_PST_GPU_ARR_H
 #define STATIC_PST_GPU_ARR_H
 
-#include "dev-symbols.h"		// For global memory-scoped variable res_arr_ind_d
+#include "data-size-concepts.h"
+#include "dev-symbols.h"			// For global memory-scoped variable res_arr_ind_d
 #include "gpu-err-chk.h"
 #include "gpu-tree-node.h"
 
@@ -80,12 +81,25 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 		// Data footprint calculation functions
 
 		// Helper function for calculating minimum number of array slots necessary to construct a complete tree with num_elems elements
-		__forceinline__ __host__ __device__ static size_t calcNumElemSlotsPerTree(const size_t num_elems)
+		static size_t calcNumElemSlotsPerTree(const size_t num_elems)
 		{
 			// Minimum number of array slots necessary to construct any complete tree with num_elems elements is 1 less than the smallest power of 2 greater than num_elems
 			// Number of elements in each container subarray for each tree is nextGreaterPowerOf2(num_elems) - 1
 			return nextGreaterPowerOf2(num_elems) - 1;
 		};
+
+		// Calculate size of array allocate for each tree in units of number of elements of type T or IDType, whichever is larger
+		// Must be a static function because it is called during construction
+		static size_t calcTreeSizeNumMaxDataIDTypes(const size_t num_elem_slots);
+
+		// Helper function for calculating the number of elements of size T necessary to instantiate each tree for trees with no ID field
+		template <size_t num_T_subarrs>
+		static size_t calcTreeSizeNumTs(const size_t num_elem_slots);
+
+		// Helper function for calculating the number of elements of size U necessary to instantiate each tree, for data types U and V such that sizeof(U) >= sizeof(V)
+		template <typename U, size_t num_U_subarrs, typename V, size_t num_V_subarrs>
+			requires SizeOfUAtLeastSizeOfV<U, V>
+		static size_t calcTreeSizeNumUs(const size_t num_elem_slots);
 
 
 		// Data members

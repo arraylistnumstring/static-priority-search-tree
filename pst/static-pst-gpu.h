@@ -476,27 +476,8 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		};
 
 		// Calculate size of array allocated for the tree in units of number of elements of type T or IDType, whichever is larger
-		// Must be a static function because it is called during construction; similarly, class member num_elem_slots is not yet available, so must re-calculate it here
-		static size_t calcTotArrSizeNumMaxDataIDTypes(const size_t num_elems)
-		{
-			// Number of element slots in each container subarray is nextGreaterPowerOf2(num_elems) - 1
-			const size_t num_elem_slots = calcNumElemSlots(num_elems);
-
-			// constexpr if is a C++17 feature that only compiles the branch of code that evaluates to true at compile-time, saving executable space and execution runtime
-			if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
-				// No IDs present
-				return calcTotArrSizeNumTs<num_val_subarrs>(num_elem_slots);
-			else
-			{
-				// Separate size-comparison condition from the num_IDs==0 condition so that sizeof(IDType) is well-defined here, as often only one branch of a constexpr if is compiled
-				if constexpr (sizeof(T) >= sizeof(IDType))
-					// sizeof(T) >= sizeof(IDType), so calculate total array size in units of sizeof(T) so that datatype T's alignment requirements will be satisfied
-					return calcTotArrSizeNumUs<T, num_val_subarrs, IDType, num_IDs>(num_elem_slots);
-				else
-					// sizeof(IDType) > sizeof(T), so calculate total array size in units of sizeof(IDType) so that datatype IDType's alignment requirements will be satisfied
-					return calcTotArrSizeNumUs<IDType, num_IDs, T, num_val_subarrs>(num_elem_slots);
-			}
-		};
+		// Must be a static function because it is called during construction
+		static size_t calcTotArrSizeNumMaxDataIDTypes(const size_t num_elems);	
 
 		// Helper function for calculating the number of elements of size T necessary to instantiate an array for root of trees with no ID field
 		template <size_t num_T_subarrs>

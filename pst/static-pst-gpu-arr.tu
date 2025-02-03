@@ -37,3 +37,22 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::print(std::ostream &os) const
 {
 }
+
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+size_t StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcTreeSizeNumMaxDataIDTypes(const size_t num_elem_slots)
+{
+	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
+		// No IDs present
+		return calcTreeSizeNumTs<num_val_subarrs>(num_elem_slots);
+	else
+	{
+		// Separate size-comparison condition from the num_IDs==0 condition so that sizeof(IDType) is well-defined here, as often only one branch of a constexpr if is compiled
+		if constexpr (sizeof(T) >= sizeof(IDType))
+			// sizeof(T) >= sizeof(IDType), so calculate tree array size in units of sizeof(T) so that datatype T's alignment requirements will be satisfied
+			return calcTreeSizeNumUs<T, num_val_subarrs, IDType, num_IDs>(num_elem_slots);
+		else
+			// sizeof(IDType) > sizeof(T), so calculate total array size in units of sizeof(IDType) so that datatype IDType's alignment requirements will be satisfied
+			return calcTreeSizeNumUs<IDType, num_IDs, T, num_val_subarrs>(num_elem_slots);
+	}
+}
