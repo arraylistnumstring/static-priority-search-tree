@@ -499,6 +499,165 @@ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::print(std::ostream &
 	delete[] temp_root;
 }
 
+// Default template argument for a class template's member function can only be specified within the class template; similarly, default arguments for functions can only be specified within the class/class template declaration
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+template <typename RetType>
+	requires std::disjunction<
+						std::is_same<RetType, IDType>,
+						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+		>::value
+void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::threeSidedSearch(size_t &num_res_elems,
+																				RetType *&res_arr_d,
+																				T min_dim1_val,
+																				T max_dim1_val,
+																				T min_dim2_val,
+																				const int warp_multiplier
+																			)
+{
+	if (num_elems == 0)
+	{
+		std::cout << "Tree is empty; nothing to search\n";
+		num_res_elems = 0;
+		res_arr_d = nullptr;
+		return;
+	}
+
+	gpuErrorCheck(cudaMalloc(&res_arr_d, num_elems * sizeof(RetType)),
+					"Error in allocating array to store PointStruct search result on device "
+					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+					+ ": ");
+	// Set on-device global result array index to 0
+	unsigned long long res_arr_ind = 0;
+	// Copying to a defined symbol requires use of an extant symbol; note that a symbol is neither a pointer nor a direct data value, but instead the handle by which the variable is denoted, with look-up necessary to generate a pointer if cudaMemcpy() is used (whereas cudaMemcpyToSymbol()/cudaMemcpyFromSymbol() do the lookup and memory copy altogether)
+	gpuErrorCheck(cudaMemcpyToSymbol(res_arr_ind_d, &res_arr_ind, sizeof(size_t),
+										0, cudaMemcpyDefault),
+					"Error in initialising global result array index to 0 on device "
+					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+					+ ": ");
+
+	// Call global function for on-device search
+	threeSidedSearchGlobal<T, PointStructTemplate, IDType, num_IDs, RetType>
+						  <<<1, warp_multiplier * dev_props.warpSize,
+								warp_multiplier * dev_props.warpSize
+									* (sizeof(long long) + sizeof(unsigned char))>>>
+		(root_d, num_elem_slots, 0, res_arr_d, min_dim1_val, max_dim1_val, min_dim2_val);
+
+	// Because all calls to the device are placed in the same stream (queue) and because cudaMemcpy() is (host-)blocking, this code will not return before the computation has completed
+	// res_arr_ind_d points to the next index to write to, meaning that it actually contains the number of elements returned
+	gpuErrorCheck(cudaMemcpyFromSymbol(&num_res_elems, res_arr_ind_d,
+										sizeof(unsigned long long), 0,
+										cudaMemcpyDefault),
+					"Error in copying global result array final index from device "
+					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+					+ ": ");
+}
+
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+template <typename RetType>
+	requires std::disjunction<
+						std::is_same<RetType, IDType>,
+						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+		>::value
+void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSearch(size_t &num_res_elems,
+																				RetType *&res_arr_d,
+																				T max_dim1_val,
+																				T min_dim2_val,
+																				const int warp_multiplier
+																			)
+{
+	if (num_elems == 0)
+	{
+		std::cout << "Tree is empty; nothing to search\n";
+		num_res_elems = 0;
+		res_arr_d = nullptr;
+		return;
+	}
+
+	gpuErrorCheck(cudaMalloc(&res_arr_d, num_elems * sizeof(RetType)),
+					"Error in allocating array to store PointStruct search result on device "
+					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+					+ ": ");
+	// Set on-device global result array index to 0
+	unsigned long long res_arr_ind = 0;
+	// Copying to a defined symbol requires use of an extant symbol; note that a symbol is neither a pointer nor a direct data value, but instead the handle by which the variable is denoted, with look-up necessary to generate a pointer if cudaMemcpy() is used (whereas cudaMemcpyToSymbol()/cudaMemcpyFromSymbol() do the lookup and memory copy altogether)
+	gpuErrorCheck(cudaMemcpyToSymbol(res_arr_ind_d, &res_arr_ind, sizeof(size_t),
+										0, cudaMemcpyDefault),
+					"Error in initialising global result array index to 0 on device "
+					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+					+ ": ");
+
+	// Call global function for on-device search
+	// For sufficiently complicated code (such as this one), the compiler cannot deduce types on its own, so supply the (template) types explicitly here
+	twoSidedLeftSearchGlobal<T, PointStructTemplate, IDType, num_IDs, RetType>
+							<<<1, warp_multiplier * dev_props.warpSize,
+								warp_multiplier * dev_props.warpSize
+									* (sizeof(long long) + sizeof(unsigned char))>>>
+		(root_d, num_elem_slots, 0, res_arr_d, max_dim1_val, min_dim2_val);
+
+	// Because all calls to the device are placed in the same stream (queue) and because cudaMemcpy() is (host-)blocking, this code will not return before the computation has completed
+	// res_arr_ind_d points to the next index to write to, meaning that it actually contains the number of elements returned
+	gpuErrorCheck(cudaMemcpyFromSymbol(&num_res_elems, res_arr_ind_d,
+										sizeof(unsigned long long), 0,
+										cudaMemcpyDefault),
+					"Error in copying global result array final index from device "
+					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+					+ ": ");
+}
+
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+template <typename RetType>
+	requires std::disjunction<
+						std::is_same<RetType, IDType>,
+						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+		>::value
+void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::twoSidedRightSearch(size_t &num_res_elems,
+																				RetType *&res_arr_d,
+																				T min_dim1_val,
+																				T min_dim2_val,
+																				const int warp_multiplier
+																			)
+{
+	if (num_elems == 0)
+	{
+		std::cout << "Tree is empty; nothing to search\n";
+		num_res_elems = 0;
+		res_arr_d = nullptr;
+		return;
+	}
+
+	gpuErrorCheck(cudaMalloc(&res_arr_d, num_elems * sizeof(RetType)),
+					"Error in allocating array to store PointStruct search result on device "
+					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+					+ ": ");
+	// Set on-device global result array index to 0
+	unsigned long long res_arr_ind = 0;
+	// Copying to a defined symbol requires use of an extant symbol; note that a symbol is neither a pointer nor a direct data value, but instead the handle by which the variable is denoted, with look-up necessary to generate a pointer if cudaMemcpy() is used (whereas cudaMemcpyToSymbol()/cudaMemcpyFromSymbol() do the lookup and memory copy altogether)
+	gpuErrorCheck(cudaMemcpyToSymbol(res_arr_ind_d, &res_arr_ind, sizeof(size_t),
+										0, cudaMemcpyDefault),
+					"Error in initialising global result array index to 0 on device "
+					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+					+ ": ");
+
+	// Call global function for on-device search
+	twoSidedRightSearchGlobal<T, PointStructTemplate, IDType, num_IDs, RetType>
+							 <<<1, warp_multiplier * dev_props.warpSize,
+								warp_multiplier * dev_props.warpSize
+									* (sizeof(long long) + sizeof(unsigned char))>>>
+		(root_d, num_elem_slots, 0, res_arr_d, min_dim1_val, min_dim2_val);
+
+	// Because all calls to the device are placed in the same stream (queue) and because cudaMemcpy() is (host-)blocking, this code will not return before the computation has completed
+	// res_arr_ind_d points to the next index to write to, meaning that it actually contains the number of elements returned
+	gpuErrorCheck(cudaMemcpyFromSymbol(&num_res_elems, res_arr_ind_d,
+										sizeof(unsigned long long), 0,
+										cudaMemcpyDefault),
+					"Error in copying global result array final index from device "
+					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+					+ ": ");
+}
+
 // static keyword should only be used when declaring a function in the header file
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
@@ -672,7 +831,6 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 }
 
 // Separate template clauses are necessary when the enclosing template class has different template types from the member function
-// Default template argument for a class template's member function can only be specified within the class template
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
 template <typename RetType>
