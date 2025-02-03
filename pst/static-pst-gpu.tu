@@ -36,7 +36,7 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 		return;
 	}
 
-	const size_t tot_arr_size_num_datatype = calcTotArrSizeNumMaxDataIDTypes(num_elems);
+	const size_t tot_arr_size_num_max_data_id_types = calcTotArrSizeNumMaxDataIDTypes(num_elems);
 
 #ifdef DEBUG_CONSTR
 	std::cout << "Ready to allocate memory (around line 73)\n";
@@ -46,7 +46,7 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
 	{
 		// Allocate as a T array so that alignment requirements for larger data types are obeyed
-		gpuErrorCheck(cudaMalloc(&root_d, tot_arr_size_num_datatype * sizeof(T)),
+		gpuErrorCheck(cudaMalloc(&root_d, tot_arr_size_num_max_data_id_types * sizeof(T)),
 						"Error in allocating priority search tree storage array on device "
 						+ std::to_string(dev_ind + 1) + " (1-indexed) of "
 						+ std::to_string(num_devs) + ": "
@@ -57,7 +57,7 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
  		if constexpr (sizeof(T) >= sizeof(IDType))
 		{
 			// Allocate as a T array so that alignment requirements for larger data types are obeyed
-			gpuErrorCheck(cudaMalloc(&root_d, tot_arr_size_num_datatype * sizeof(T)),
+			gpuErrorCheck(cudaMalloc(&root_d, tot_arr_size_num_max_data_id_types * sizeof(T)),
 							"Error in allocating priority search tree storage array on device "
 							+ std::to_string(dev_ind + 1) + " (1-indexed) of "
 							+ std::to_string(num_devs) + ": "
@@ -66,7 +66,7 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 		else
 		{
 			// Allocate as an IDType array so that alignment requirements for larger data types are obeyed
-			gpuErrorCheck(cudaMalloc(&root_d, tot_arr_size_num_datatype * sizeof(IDType)),
+			gpuErrorCheck(cudaMalloc(&root_d, tot_arr_size_num_max_data_id_types * sizeof(IDType)),
 							"Error in allocating priority search tree storage array on device "
 							+ std::to_string(dev_ind + 1) + " (1-indexed) of "
 							+ std::to_string(num_devs) + ": "
@@ -111,7 +111,7 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 				);
 	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
 	{
-		gpuErrorCheck(cudaMemsetAsync(root_d, 0, tot_arr_size_num_datatype * sizeof(T), stream_root_init),
+		gpuErrorCheck(cudaMemsetAsync(root_d, 0, tot_arr_size_num_max_data_id_types * sizeof(T), stream_root_init),
 						"Error in zero-intialising priority search tree storage array via cudaMemset() on device "
 						+ std::to_string(dev_ind + 1) + " (1-indexed) of "
 						+ std::to_string(num_devs) + ": "
@@ -124,7 +124,7 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 #ifdef DEBUG_CONSTR
 			std::cout << "About to do an async memory assignment (around line 200)\n";
 #endif
-			gpuErrorCheck(cudaMemsetAsync(root_d, 0, tot_arr_size_num_datatype * sizeof(T), stream_root_init),
+			gpuErrorCheck(cudaMemsetAsync(root_d, 0, tot_arr_size_num_max_data_id_types * sizeof(T), stream_root_init),
 							"Error in zero-intialising priority search tree storage array via cudaMemset() on device "
 							+ std::to_string(dev_ind + 1) + " (1-indexed) of "
 							+ std::to_string(num_devs) + ": "
@@ -132,7 +132,7 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 		}
 		else
 		{
-			gpuErrorCheck(cudaMemsetAsync(root_d, 0, tot_arr_size_num_datatype * sizeof(IDType), stream_root_init),
+			gpuErrorCheck(cudaMemsetAsync(root_d, 0, tot_arr_size_num_max_data_id_types * sizeof(IDType), stream_root_init),
 							"Error in zero-intialising priority search tree storage array via cudaMemset() on device "
 							+ std::to_string(dev_ind + 1) + " (1-indexed) of "
 							+ std::to_string(num_devs) + ": "
@@ -454,20 +454,20 @@ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::print(std::ostream &
 		return;
 	}
 
-	const size_t tot_arr_size_num_datatype = calcTotArrSizeNumMaxDataIDTypes(num_elems);
+	const size_t tot_arr_size_num_max_data_id_types = calcTotArrSizeNumMaxDataIDTypes(num_elems);
 	T *temp_root;
 	// Use of () after new and new[] causes value-initialisation (to 0) starting in C++03; needed for any nodes that technically contain no data
 	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
 		// No IDs present
-		temp_root = new T[tot_arr_size_num_datatype]();
+		temp_root = new T[tot_arr_size_num_max_data_id_types]();
 	else
 	{
 		if constexpr(sizeof(T) >= sizeof(IDType))
 			// sizeof(T) >= sizeof(IDType), so calculate total array size in units of sizeof(T) so that datatype T's alignment requirements will be satisfied
-			temp_root = new T[tot_arr_size_num_datatype]();
+			temp_root = new T[tot_arr_size_num_max_data_id_types]();
 		else
 			// sizeof(IDType) > sizeof(T), so calculate total array size in units of sizeof(IDType) so that datatype IDType's alignment requirements will be satisfied
-			temp_root = reinterpret_cast<T *>(new IDType[tot_arr_size_num_datatype]());
+			temp_root = reinterpret_cast<T *>(new IDType[tot_arr_size_num_max_data_id_types]());
 	}
 	
 	if (temp_root == nullptr)
@@ -476,19 +476,19 @@ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::print(std::ostream &
 
 	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
 	{
-		gpuErrorCheck(cudaMemcpy(temp_root, root_d, tot_arr_size_num_datatype * sizeof(T), cudaMemcpyDefault),
+		gpuErrorCheck(cudaMemcpy(temp_root, root_d, tot_arr_size_num_max_data_id_types * sizeof(T), cudaMemcpyDefault),
 						"Error in copying array underlying StaticPSTGPU instance from device to host: ");
 	}
 	else
 	{
 		if constexpr (sizeof(T) >= sizeof(IDType))
 		{
-		gpuErrorCheck(cudaMemcpy(temp_root, root_d, tot_arr_size_num_datatype * sizeof(T), cudaMemcpyDefault),
+		gpuErrorCheck(cudaMemcpy(temp_root, root_d, tot_arr_size_num_max_data_id_types * sizeof(T), cudaMemcpyDefault),
 						"Error in copying array underlying StaticPSTGPU instance from device to host: ");
 		}
 		else
 		{
-			gpuErrorCheck(cudaMemcpy(temp_root, root_d, tot_arr_size_num_datatype * sizeof(IDType), cudaMemcpyDefault),
+			gpuErrorCheck(cudaMemcpy(temp_root, root_d, tot_arr_size_num_max_data_id_types * sizeof(IDType), cudaMemcpyDefault),
 							"Error in copying array underlying StaticPSTGPU instance from device to host: ");
 		}
 	}
@@ -668,23 +668,23 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 			typename IDType, size_t num_IDs>
 size_t StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::calcGlobalMemNeeded(const size_t num_elems)
 {
-	const size_t tot_arr_size_num_datatype = calcTotArrSizeNumMaxDataIDTypes(num_elems);
+	const size_t tot_arr_size_num_max_data_id_types = calcTotArrSizeNumMaxDataIDTypes(num_elems);
 
-	size_t global_mem_needed;
+	size_t global_mem_needed = tot_arr_size_num_max_data_id_types;
 	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
 		// No IDs present
-		global_mem_needed = tot_arr_size_num_datatype * sizeof(T);
+		global_mem_needed *= sizeof(T);
 	else
 	{
 		// Separate size-comparison condition from the num_IDs==0 condition so that sizeof(IDType) is well-defined here, as often only one branch of a constexpr if is compiled
 		if constexpr (sizeof(T) >= sizeof(IDType))
-			global_mem_needed = tot_arr_size_num_datatype * sizeof(T);
+			global_mem_needed *= sizeof(T);
 		else
-			global_mem_needed = tot_arr_size_num_datatype * sizeof(IDType);
+			global_mem_needed *= sizeof(IDType);
 	}
 
 	/*
-		Space needed for instantiation = tree size + addend, where addend = max(3 * num_elems * size of PointStructTemplate indices, num_elems * size of PointStructTemplate)
+		Space needed for instantiation = tree size + addend, where addend = max(construction overhead, search overhead) = max(3 * num_elems * size of PointStructTemplate indices, num_elems * size of PointStructTemplate)
 		Enough space to contain 3 size_t indices for every node is needed because the splitting of pointers in the dim2_val array at each node creates a need for the dim2_val arrays to be duplicated
 		Space needed for reporting nodes is at most num_elems (if all elements are reported) * size of PointStructTemplate (if RetType = PointStructTemplate)
 	*/
