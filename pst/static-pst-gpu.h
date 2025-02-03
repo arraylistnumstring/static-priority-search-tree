@@ -465,7 +465,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		// Data footprint calculation functions
 
 		// Helper function for calculating minimum number of array slots necessary to construct a complete tree with num_elems elements
-		__forceinline__ __host__ __device__ static size_t calcNumElemSlots(const size_t num_elems)
+		static size_t calcNumElemSlots(const size_t num_elems)
 		{
 			/*
 				Minimum number of array slots necessary to construct any complete tree with num_elems elements is 1 less than the smallest power of 2 greater than num_elems
