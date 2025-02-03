@@ -111,7 +111,8 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 				);
 	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
 	{
-		gpuErrorCheck(cudaMemsetAsync(root_d, 0, tot_arr_size_num_max_data_id_types * sizeof(T), stream_root_init),
+		gpuErrorCheck(cudaMemsetAsync(root_d, 0, tot_arr_size_num_max_data_id_types * sizeof(T),
+										stream_root_init),
 						"Error in zero-intialising priority search tree storage array via cudaMemset() on device "
 						+ std::to_string(dev_ind + 1) + " (1-indexed) of "
 						+ std::to_string(num_devs) + ": "
@@ -124,7 +125,8 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 #ifdef DEBUG_CONSTR
 			std::cout << "About to do an async memory assignment\n";
 #endif
-			gpuErrorCheck(cudaMemsetAsync(root_d, 0, tot_arr_size_num_max_data_id_types * sizeof(T), stream_root_init),
+			gpuErrorCheck(cudaMemsetAsync(root_d, 0, tot_arr_size_num_max_data_id_types * sizeof(T),
+											stream_root_init),
 							"Error in zero-intialising priority search tree storage array via cudaMemset() on device "
 							+ std::to_string(dev_ind + 1) + " (1-indexed) of "
 							+ std::to_string(num_devs) + ": "
@@ -132,7 +134,8 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 		}
 		else
 		{
-			gpuErrorCheck(cudaMemsetAsync(root_d, 0, tot_arr_size_num_max_data_id_types * sizeof(IDType), stream_root_init),
+			gpuErrorCheck(cudaMemsetAsync(root_d, 0, tot_arr_size_num_max_data_id_types * sizeof(IDType),
+											stream_root_init),
 							"Error in zero-intialising priority search tree storage array via cudaMemset() on device "
 							+ std::to_string(dev_ind + 1) + " (1-indexed) of "
 							+ std::to_string(num_devs) + ": "
@@ -152,8 +155,8 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 
 	const size_t index_assign_threads_per_block = warp_multiplier * dev_props.warpSize;
 	const size_t index_assign_num_blocks = std::min(num_elems % index_assign_threads_per_block == 0 ?
-													num_elems/index_assign_threads_per_block
-													: num_elems/index_assign_threads_per_block + 1,
+														num_elems/index_assign_threads_per_block
+														: num_elems/index_assign_threads_per_block + 1,
 													// static_cast to size_t necessary as dev_props.warpSize is of type int, and std::min fails to compile on arguments of different types
 													static_cast<size_t>(dev_props.warpSize * dev_props.warpSize));
 
