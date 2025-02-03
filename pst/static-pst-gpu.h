@@ -75,7 +75,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		// Since arrays were allocated continguously, only need to free one of the array pointers
 		virtual ~StaticPSTGPU()
 		{
-			if (num_elem_slots != 0)
+			if (num_elems != 0)
 				gpuErrorCheck(cudaFree(root_d),
 								"Error in freeing array storing on-device PST on device "
 								+ std::to_string(dev_ind + 1) + " (1-indexed) of "
@@ -325,7 +325,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		// Data footprint calculation functions
 
 		// Helper function for calculating minimum number of array slots necessary to construct a complete tree with num_elems elements
-		static size_t calcNumElemSlots(const size_t num_elems)
+		inline static size_t calcNumElemSlots(const size_t num_elems)
 		{
 			/*
 				Minimum number of array slots necessary to construct any complete tree with num_elems elements is 1 less than the smallest power of 2 greater than num_elems
@@ -337,16 +337,16 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 
 		// Calculate size of array allocated for the tree in units of number of elements of type T or IDType, whichever is larger
 		// Must be a static function because it is called during construction
-		static size_t calcTotArrSizeNumMaxDataIDTypes(const size_t num_elems);	
+		inline static size_t calcTotArrSizeNumMaxDataIDTypes(const size_t num_elems);	
 
 		// Helper function for calculating the number of elements of size T necessary to instantiate an array for root of trees with no ID field
 		template <size_t num_T_subarrs>
-		static size_t calcTotArrSizeNumTs(const size_t num_elem_slots);
+		inline static size_t calcTotArrSizeNumTs(const size_t num_elem_slots);
 
 		// Helper function for calculating the number of elements of size U necessary to instantiate an array for root, for data types U and V such that sizeof(U) >= sizeof(V)
 		template <typename U, size_t num_U_subarrs, typename V, size_t num_V_subarrs>
 			requires SizeOfUAtLeastSizeOfV<U, V>
-		static size_t calcTotArrSizeNumUs(const size_t num_elem_slots);
+		inline static size_t calcTotArrSizeNumUs(const size_t num_elem_slots);
 
 
 		void printRecur(std::ostream &os, T *const &tree_root, const size_t curr_ind,

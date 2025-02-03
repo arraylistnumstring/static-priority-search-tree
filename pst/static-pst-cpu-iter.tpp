@@ -14,18 +14,15 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 			typename IDType, size_t num_IDs>
 StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::StaticPSTCPUIter(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr, size_t num_elems)
 	// Member initialiser list must be followed by definition
-	: num_elems(num_elems)
+	// Number of element slots in each container subarray is nextGreaterPowerOf2(num_elems) - 1
+	: num_elem_slots(num_elems == 0 ? 0 : nextGreaterPowerOf2(num_elems) - 1),
+	num_elems(num_elems)
 {
 	if (num_elems == 0)
 	{
 		root = nullptr;
-		num_elem_slots = 0;
 		return;
 	}
-
-	// Number of element slots in each container subarray is nextGreaterPowerOf2(num_elems) - 1
-	num_elem_slots = nextGreaterPowerOf2(num_elems) - 1;
-
 
 	// Use of () after new and new[] causes value-initialisation (to 0) starting in C++03; needed for any nodes that technically contain no data
 	// constexpr if is a C++17 feature that only compiles the branch of code that evaluates to true at compile-time, saving executable space and execution runtime
@@ -189,7 +186,7 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 			typename IDType, size_t num_IDs>
 void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::print(std::ostream &os) const
 {
-	if (num_elem_slots == 0)
+	if (num_elems == 0)
 	{
 		os << "Tree is empty\n";
 		return;
