@@ -40,8 +40,15 @@ void datasetTest(const std::string input_file, const unsigned tree_ops_warps_per
 	if constexpr (pst_type != CPU_ITER && pst_type != CPU_RECUR)
 	{
 		// Space needed for input vertex array, metacell tag array and PST operations (construction and search)
-		const size_t global_mem_needed = num_verts * sizeof(T) + num_metacells * sizeof(PointStruct)
+		size_t global_mem_needed;
+	   	if constexpr (pst_type == GPU)
+			global_mem_needed = num_verts * sizeof(T) + num_metacells * sizeof(PointStruct)
 											+ StaticPST::calcGlobalMemNeeded(num_metacells);
+		else	// pst_type == GPU_ARR
+			global_mem_needed = num_verts * sizeof(T) + num_metacells * sizeof(PointStruct)
+											+ StaticPST::calcGlobalMemNeeded(num_metacells,
+																				tree_ops_warps_per_block * dev_props.warpSize
+																			);
 
 		if (global_mem_needed > dev_props.totalGlobalMem)
 		{
@@ -391,8 +398,15 @@ void randDataTest(const size_t num_elems, const unsigned warps_per_block,
 	// Check that GPU memory is sufficiently big for the necessary calculations
 	if constexpr (pst_type != CPU_ITER && pst_type != CPU_RECUR)
 	{
-		const size_t global_mem_needed = StaticPST::calcGlobalMemNeeded(num_elems)
-											+ num_elems * sizeof(PointStruct);
+		size_t global_mem_needed;
+		if constexpr (pst_type == GPU)
+			global_mem_needed = num_elems * sizeof(PointStruct)
+									+ StaticPST::calcGlobalMemNeeded(num_elems);
+		else	// pst_type == GPU_ARR
+			global_mem_needed = num_elems * sizeof(PointStruct)
+									+ StaticPST::calcGlobalMemNeeded(num_elems,
+																		warps_per_block * dev_props.warpSize
+																	);
 
 		if (global_mem_needed > dev_props.totalGlobalMem)
 		{
