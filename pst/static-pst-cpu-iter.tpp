@@ -32,7 +32,7 @@ StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::StaticPSTCPUIter(Poin
 	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
 	{
 		// No IDs present
-		size_t tot_arr_size_num_Ts = calcTotArrSizeNumTs(num_elem_slots, num_val_subarrs);
+		size_t tot_arr_size_num_Ts = calcTotArrSizeNumTs<num_val_subarrs>(num_elem_slots);
 		root = new T[tot_arr_size_num_Ts]();
 	}
 	else
@@ -720,7 +720,8 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodes
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-size_t StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSizeNumTs(const size_t num_elem_slots, const size_t num_T_subarrs)
+template <size_t num_T_subarrs>
+size_t StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSizeNumTs(const size_t num_elem_slots)
 {
 	/*
 		tot_arr_size_num_Ts = ceil(1/sizeof(T) * num_elem_slots * (sizeof(T) * num_T_subarrs + 1 B/bitcode * 1 bitcode))

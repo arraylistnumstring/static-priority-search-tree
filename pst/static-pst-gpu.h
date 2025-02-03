@@ -485,7 +485,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 			// constexpr if is a C++17 feature that only compiles the branch of code that evaluates to true at compile-time, saving executable space and execution runtime
 			if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
 				// No IDs present
-				return calcTotArrSizeNumTs(num_elem_slots, num_val_subarrs);
+				return calcTotArrSizeNumTs<num_val_subarrs>(num_elem_slots);
 			else
 			{
 				// Separate size-comparison condition from the num_IDs==0 condition so that sizeof(IDType) is well-defined here, as often only one branch of a constexpr if is compiled
@@ -499,7 +499,8 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		};
 
 		// Helper function for calculating the number of elements of size T necessary to instantiate an array for root of trees with no ID field
-		__forceinline__ __host__ __device__ static size_t calcTotArrSizeNumTs(const size_t num_elem_slots, const size_t num_T_subarrs);
+		template <size_t num_T_subarrs>
+		__forceinline__ __host__ __device__ static size_t calcTotArrSizeNumTs(const size_t num_elem_slots);
 
 		// Helper function for calculating the number of elements of size U necessary to instantiate an array for root, for data types U and V such that sizeof(U) >= sizeof(V)
 		template <typename U, size_t num_U_subarrs, typename V, size_t num_V_subarrs>
