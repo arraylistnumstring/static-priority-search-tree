@@ -1181,29 +1181,6 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-template <size_t num_T_subarrs>
-size_t StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSizeNumTs(const size_t num_elem_slots)
-{
-	/*
-		tot_arr_size_num_Ts = ceil(1/sizeof(T) * num_elem_slots * (sizeof(T) * num_T_subarrs + 1 B/bitcode * 1 bitcode))
-			With integer truncation:
-				if tot_arr_size_bytes % sizeof(T) != 0:
-							= tot_arr_size_bytes + 1
-				if tot_arr_size_bytes % sizeof(T) == 0:
-							= tot_arr_size_bytes
-	*/
-	// Calculate total size in bytes
-	size_t tot_arr_size_bytes = num_elem_slots * (sizeof(T) * num_T_subarrs + 1);
-	// Divide by sizeof(T)
-	size_t tot_arr_size_num_Ts = tot_arr_size_bytes / sizeof(T);
-	// If tot_arr_size_bytes % sizeof(T) != 0, then tot_arr_size_num_Ts * sizeof(T) < tot_arr_size_bytes, so add 1 to tot_arr_size_num_Ts
-	if (tot_arr_size_bytes % sizeof(T) != 0)
-		tot_arr_size_num_Ts++;
-	return tot_arr_size_num_Ts;
-}
-
-template <typename T, template<typename, typename, size_t> class PointStructTemplate,
-			typename IDType, size_t num_IDs>
 size_t StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSizeNumMaxDataIDTypes(const size_t num_elems)
 {
 	// Number of element slots in each container subarray is nextGreaterPowerOf2(num_elems) - 1
@@ -1224,6 +1201,29 @@ size_t StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSizeNumM
 			// sizeof(IDType) > sizeof(T), so calculate total array size in units of sizeof(IDType) so that datatype IDType's alignment requirements will be satisfied
 			return calcTotArrSizeNumUs<IDType, num_IDs, T, num_val_subarrs>(num_elem_slots);
 	}
+}
+
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+template <size_t num_T_subarrs>
+size_t StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSizeNumTs(const size_t num_elem_slots)
+{
+	/*
+		tot_arr_size_num_Ts = ceil(1/sizeof(T) * num_elem_slots * (sizeof(T) * num_T_subarrs + 1 B/bitcode * 1 bitcode))
+			With integer truncation:
+				if tot_arr_size_bytes % sizeof(T) != 0:
+							= tot_arr_size_bytes + 1
+				if tot_arr_size_bytes % sizeof(T) == 0:
+							= tot_arr_size_bytes
+	*/
+	// Calculate total size in bytes
+	size_t tot_arr_size_bytes = num_elem_slots * (sizeof(T) * num_T_subarrs + 1);
+	// Divide by sizeof(T)
+	size_t tot_arr_size_num_Ts = tot_arr_size_bytes / sizeof(T);
+	// If tot_arr_size_bytes % sizeof(T) != 0, then tot_arr_size_num_Ts * sizeof(T) < tot_arr_size_bytes, so add 1 to tot_arr_size_num_Ts
+	if (tot_arr_size_bytes % sizeof(T) != 0)
+		tot_arr_size_num_Ts++;
+	return tot_arr_size_num_Ts;
 }
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
