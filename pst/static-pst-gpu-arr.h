@@ -76,6 +76,9 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 		StaticPSTGPUArr& operator=(StaticPSTGPUArr &tree_arr);	//assignment operator
 		StaticPSTGPUArr(StaticPSTGPUArr &tree_arr);		// copy constructor
 
+
+		// Data footprint calculation functions
+
 		// Helper function for calculating minimum number of array slots necessary to construct a complete tree with num_elems elements
 		__forceinline__ __host__ __device__ static size_t calcNumElemSlotsPerTree(const size_t num_elems)
 		{
@@ -83,6 +86,10 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 			// Number of elements in each container subarray for each tree is nextGreaterPowerOf2(num_elems) - 1
 			return nextGreaterPowerOf2(num_elems) - 1;
 		};
+
+		static size_t calcTotArrSizeNum
+
+		__forceinline__ __host__ __device__ static size_t calcTreeSizeNumTs
 
 
 		// Data members

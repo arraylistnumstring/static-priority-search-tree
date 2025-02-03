@@ -234,7 +234,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		// Calculate minimum amount of global memory that must be available for allocation on the GPU for construction and search to run correctly
 		static size_t calcGlobalMemNeeded(const size_t num_elems)
 		{
-			const size_t tot_arr_size_num_datatype = calcTotArrSizeNumDatatype(num_elems);
+			const size_t tot_arr_size_num_datatype = calcTotArrSizeNumMaxDataIDTypes(num_elems);
 
 			size_t global_mem_needed;
 			if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
@@ -477,7 +477,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 
 		// Calculate size of array allocated for the tree in units of number of elements of type T or IDType, whichever is larger
 		// Must be a static function because it is called during construction; similarly, class member num_elem_slots is not yet available, so must re-calculate it here
-		static size_t calcTotArrSizeNumDatatype(const size_t num_elems)
+		static size_t calcTotArrSizeNumMaxDataIDTypes(const size_t num_elems)
 		{
 			// Number of element slots in each container subarray is nextGreaterPowerOf2(num_elems) - 1
 			const size_t num_elem_slots = calcNumElemSlots(num_elems);

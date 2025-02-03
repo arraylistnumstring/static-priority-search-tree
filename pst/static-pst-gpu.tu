@@ -36,7 +36,7 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 		return;
 	}
 
-	const size_t tot_arr_size_num_datatype = calcTotArrSizeNumDatatype(num_elems);
+	const size_t tot_arr_size_num_datatype = calcTotArrSizeNumMaxDataIDTypes(num_elems);
 
 #ifdef DEBUG_CONSTR
 	std::cout << "Ready to allocate memory (around line 73)\n";
@@ -453,7 +453,7 @@ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::print(std::ostream &
 		return;
 	}
 
-	const size_t tot_arr_size_num_datatype = calcTotArrSizeNumDatatype(num_elems);
+	const size_t tot_arr_size_num_datatype = calcTotArrSizeNumMaxDataIDTypes(num_elems);
 	T *temp_root;
 	// Use of () after new and new[] causes value-initialisation (to 0) starting in C++03; needed for any nodes that technically contain no data
 	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
