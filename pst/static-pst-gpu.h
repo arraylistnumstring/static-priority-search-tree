@@ -514,7 +514,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 						) const;
 
 
-		// Member fields
+		// Data members
 
 		/*
 			Implicit tree structure, with field-major orientation of nodes; all values are stored in one contiguous array on device

@@ -84,6 +84,9 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 			return nextGreaterPowerOf2(num_elems) - 1;
 		};
 
+
+		// Data members
+
 		/*
 			Implicit tree structure for each tree, with field-major orientation of nodes; all values are stored in one contiguous array on device
 			Implicit subdivisions:
