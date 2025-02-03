@@ -500,12 +500,12 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 
 		// Helper function for calculating the number of elements of size T necessary to instantiate an array for root of trees with no ID field
 		template <size_t num_T_subarrs>
-		__forceinline__ __host__ __device__ static size_t calcTotArrSizeNumTs(const size_t num_elem_slots);
+		static size_t calcTotArrSizeNumTs(const size_t num_elem_slots);
 
 		// Helper function for calculating the number of elements of size U necessary to instantiate an array for root, for data types U and V such that sizeof(U) >= sizeof(V)
 		template <typename U, size_t num_U_subarrs, typename V, size_t num_V_subarrs>
 			requires SizeOfUAtLeastSizeOfV<U, V>
-		__forceinline__ __host__ __device__ static size_t calcTotArrSizeNumUs(const size_t num_elem_slots);
+		static size_t calcTotArrSizeNumUs(const size_t num_elem_slots);
 
 
 		void printRecur(std::ostream &os, T *const &tree_root, const size_t curr_ind,
