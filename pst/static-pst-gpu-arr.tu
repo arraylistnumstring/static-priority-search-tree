@@ -285,7 +285,7 @@ StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPUArr(PointS
 					);
 	}
 
-	// Last block may be differently sized, so simply instantiate a slightly different sort call for it
+	// Last block may be differently sized, so simply make a slightly different sort call for it
 	thrust::sort(thrust::cuda::par.on(stream_dim1),
 					dim1_val_ind_arr_d + num_elem_slots_per_tree * (num_thread_blocks - 1),
 					dim1_val_ind_arr_d + num_elems,
@@ -352,7 +352,7 @@ StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPUArr(PointS
 					);
 	}
 
-	// Last block may be differently sized, so simply instantiate a slightly different sort call for it
+	// Last block may be differently sized, so simply make a slightly different sort call for it
 	thrust::sort(thrust::cuda::par.on(stream_dim2),
 					dim2_val_ind_arr_d + num_elem_slots_per_tree * (num_thread_blocks - 1),
 					dim2_val_ind_arr_d + num_elems,
