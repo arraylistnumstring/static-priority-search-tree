@@ -87,10 +87,6 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 			return nextGreaterPowerOf2(num_elems) - 1;
 		};
 
-		static size_t calcTotArrSizeNum
-
-		__forceinline__ __host__ __device__ static size_t calcTreeSizeNumTs
-
 
 		// Data members
 

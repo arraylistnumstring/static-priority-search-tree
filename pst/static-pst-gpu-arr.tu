@@ -11,8 +11,10 @@ StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPUArr(PointS
 	*/
 	: num_elem_slots_per_tree(num_elems == 0 ? 0 : calcNumElemSlotsPerTree(threads_per_block)),
 	num_elems(num_elems),
+	// Each tree (except potentially the last one) contains as many elements as it can hold in order to reduce internal fragmentation and maximise thread occupancy
 	// Total number of subtrees = num_thread_blocks = ceil(num_elems/threads_per_block)
-	num_thread_blocks(num_elems / threads_per_block + (num_elems % threads_per_block == 0 ? 0 : 1)),
+	// As num_elem_slots_per_tree is declared before num_thread_blocks in the class declaration, it is also instantiated first
+	num_thread_blocks(num_elems / num_elem_slots_per_tree + (num_elems % num_elem_slots_per_tree == 0 ? 0 : 1)),
 	threads_per_block(threads_per_block),
 	dev_ind(dev_ind),
 	num_devs(num_devs),
