@@ -90,7 +90,7 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 			typename IDType, size_t num_IDs>
 size_t StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcGlobalMemNeeded(const size_t num_elems, const unsigned threads_per_block)
 {
-	const size_t tree_arr_size_num_max_data_id_types = calcTreeArrSizeNumMaxDataIdTypes(num_elems, threads_per_block);
+	const size_t tree_arr_size_num_max_data_id_types = calcTreeArrSizeNumMaxDataIDTypes(num_elems, threads_per_block);
 
 	size_t global_mem_needed = tree_arr_size_num_max_data_id_types;
 	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
