@@ -86,8 +86,9 @@ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::twoSidedRightSear
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-size_t StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcGlobalMemNeeded(const size_t num_elems)
+size_t StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcGlobalMemNeeded(const size_t num_elems, const unsigned threads_per_block)
 {
+	// TODO
 	return 0;
 }
 
@@ -108,4 +109,51 @@ size_t StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcTreeSizeNum
 			// sizeof(IDType) > sizeof(T), so calculate total array size in units of sizeof(IDType) so that datatype IDType's alignment requirements will be satisfied
 			return calcTreeSizeNumUs<IDType, num_IDs, T, num_val_subarrs>(num_elem_slots);
 	}
+}
+
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+template <size_t num_T_subarrs>
+size_t StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcTreeSizeNumTs(const size_t num_elem_slots)
+{
+	/*
+		tree_size_num_Ts = ceil(1/sizeof(T) * num_elem_slots * (sizeof(T) * num_T_subarrs + 1 B/bitcode * 1 bitcode))
+			With integer truncation:
+				if tree_size_bytes % sizeof(T) != 0:
+							= tree_size_bytes + 1
+				if tree_size_bytes % sizeof(T) == 0:
+							= tree_size_bytes
+	*/
+	// Calculate total size in bytes
+	size_t tree_size_bytes = num_elem_slots * (sizeof(T) * num_T_subarrs + 1);
+	// Divide by sizeof(T)
+	size_t tree_size_num_Ts = tree_size_bytes / sizeof(T);
+	// If tree_size_bytes % sizeof(T) != 0, then tree_size_num_Ts * sizeof(T) < tree_size_bytes, so add 1 to tree_size_num_Ts
+	if (tree_size_bytes % sizeof(T) != 0)
+		tree_size_num_Ts++;
+	return tree_size_num_Ts;
+}
+
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+template <typename U, size_t num_U_subarrs, typename V, size_t num_V_subarrs>
+	requires SizeOfUAtLeastSizeOfV<U, V>
+size_t StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcTreeSizeNumUs(const size_t num_elem_slots)
+{
+	/*
+		tree_size_num_Us = ceil(1/sizeof(U) * num_elem_slots * (sizeof(U) * num_U_subarrs + sizeof(V) * num_V_subarrs + 1 B/bitcode * 1 bitcode))
+			With integer truncation:
+				if tree_size_bytes % sizeof(U) != 0:
+							= tree_size_bytes + 1
+				if tree_size_bytes % sizeof(U) == 0:
+							= tree_size_bytes
+	*/
+	// Calculate total size in bytes
+	size_t tree_size_bytes = num_elem_slots * (sizeof(U) * num_U_subarrs + sizeof(V) * num_V_subarrs + 1);
+	// Divide by sizeof(U)
+	size_t tree_size_num_Us = tree_size_bytes / sizeof(U);
+	// If tree_size_bytes % sizeof(U) != 0, then tree_size_num_Us * sizeof(U) < tree_size_bytes, so add 1 to tree_size_num_Us
+	if (tree_size_bytes % sizeof(U) != 0)
+		tree_size_num_Us++;
+	return tree_size_num_Us;
 }

@@ -64,7 +64,7 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 
 
 		// Calculate minimum amount of global memory that must be available for allocation on the GPU for construction and search to run correctly
-		static size_t calcGlobalMemNeeded(const size_t num_elems);
+		static size_t calcGlobalMemNeeded(const size_t num_elems, const unsigned threads_per_block);
 
 	private:
 		// Want unique copies of each tree array, so no assignment or copying allowed
@@ -75,6 +75,7 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 		// Data footprint calculation functions
 
 		// Helper function for calculating minimum number of array slots necessary to construct a complete tree with num_elems elements
+		// Must be a static function because it is called during construction
 		static size_t calcNumElemSlotsPerTree(const size_t num_elems)
 		{
 			// Minimum number of array slots necessary to construct any complete tree with num_elems elements is 1 less than the smallest power of 2 greater than num_elems
@@ -83,7 +84,6 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 		};
 
 		// Calculate size of array allocate for each tree in units of number of elements of type T or IDType, whichever is larger
-		// Must be a static function because it is called during construction
 		static size_t calcTreeSizeNumMaxDataIDTypes(const size_t num_elem_slots);
 
 		// Helper function for calculating the number of elements of size T necessary to instantiate each tree for trees with no ID field
