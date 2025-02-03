@@ -1,6 +1,6 @@
-#include <string>				// To use string-building functions
+#include <string>						// To use string-building functions
 #include <thrust/execution_policy.h>	// To use thrust::cuda::par::on() stream-specifying execution policy for sorting
-#include <thrust/sort.h>		// To use parallel sorting algorithm
+#include <thrust/sort.h>				// To use parallel sorting algorithm
 
 #include "arr-ind-assign.h"
 #include "err-chk.h"
