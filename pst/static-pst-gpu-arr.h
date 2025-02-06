@@ -7,6 +7,19 @@
 #include "gpu-power-of-2-functions.h"
 #include "static-priority-search-tree.h"
 
+
+// To use __global__ function as a friend, must not define it at the same time as it is declared
+// As references passed to a global function live on host code, references to variables are not valid if the value does not reside in pinned memory
+// As function definition uses StaticPSTGPUArr members, must define function after StaticPSTGPUArr has been defined (hence the placement of the implementation file after the class declaration
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+__global__ void populateTrees(T *const tree_arr_d, const size_t num_elem_slots,
+								PointStructTemplate<T, IDType, num_IDs> *const pt_arr_d,
+								size_t *const dim1_val_ind_arr_d,
+								size_t *dim2_val_ind_arr_d,
+								size_t *dim2_val_ind_arr_secondary_d,
+								const size_t num_elems);
+
 // Array of shallow on-GPU PSTs that do not require dynamic parallelism to construct or search
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 		 	typename IDType=void, size_t num_IDs=0>
@@ -21,14 +34,12 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 		// Since arrays were allocated continguously, only need to free one of the array pointers
 		virtual ~StaticPSTGPUArr()
 		{
-			/*
 			if (num_elems != 0)
 				gpuErrorCheck(cudaFree(tree_arr_d),
 								"Error in freeing array of PSTs on device "
 								+ std::to_string(dev_ind + 1) + " (1-indexed) of "
 								+ std::to_string(num_devs) + ": "
 							);
-			*/
 		};
 
 		// Printing function for printing operator << to use, as private data members must be accessed in the process
@@ -170,5 +181,6 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 };
 
 #include "static-pst-gpu-arr.tu"
+#include "static-pst-gpu-arr-populate-trees.tu"
 
 #endif

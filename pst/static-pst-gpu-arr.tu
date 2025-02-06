@@ -394,6 +394,10 @@ StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPUArr(PointS
 				);
 #endif
 
+	// Populate trees with a multi-block grid, with one block per tree
+	populateTrees<<<num_thread_blocks, threads_per_block,
+						threads_per_block * sizeof(size_t) * num_constr_working_arrs>>>
+					(tree_arr_d, num_elem_slots_per_tree, pt_arr_d, dim1_val_ind_arr_d, dim2_val_ind_arr_d, dim2_val_ind_arr_secondary_d, num_elems);
 }
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
