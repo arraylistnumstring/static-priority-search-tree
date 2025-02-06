@@ -11,6 +11,7 @@
 
 // To use __global__ function as a friend, must not define it at the same time as it is declared
 // As references passed to a global function live on host code, references to variables are not valid if the value does not reside in pinned memory
+// As function definition uses StaticPSTGPU members, must define function after StaticPSTGPU has been defined (hence the placement of the implementation file after the class declaration), whereas template friend declaration within class requires prior knowledge of existence (declaration) of template function
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
 __global__ void populateTree(T *const root_d, const size_t num_elem_slots,
