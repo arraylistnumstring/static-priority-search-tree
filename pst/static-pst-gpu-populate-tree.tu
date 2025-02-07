@@ -48,7 +48,7 @@ __global__ void populateTree(T *const root_d, const size_t num_elem_slots,
 				size_t right_subarr_start_ind;
 				size_t right_subarr_num_elems;
 
-				// Find index in dim1_val_ind_arr_d of PointStructGPU with maximal dim2_val 
+				// Find index in dim1_val_ind_arr_d of PointStruct with maximal dim2_val 
 				long long array_search_res_ind = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::binarySearch(pt_arr_d, dim1_val_ind_arr_d,
 													pt_arr_d[dim2_val_ind_arr_d[subelems_start_inds_arr[threadIdx.x]]],
 													subelems_start_inds_arr[threadIdx.x],

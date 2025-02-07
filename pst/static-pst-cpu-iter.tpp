@@ -52,7 +52,7 @@ StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::StaticPSTCPUIter(Poin
 	if (root == nullptr)
 		throwErr("Error: could not allocate " + std::to_string(num_elems) + " elements of type " + typeid(T).name() + " to root");
 
-	// Create two arrays of PointStructCPUIter indices for processing PointStructCPUIter objects
+	// Create two arrays of PointStruct indices for processing PointStruct objects
 	size_t *dim1_val_ind_arr = new size_t[num_elems];
 	if (dim1_val_ind_arr == nullptr)
 		throwErr("Error: could not allocate " + std::to_string(num_elems) + " elements of type size_t to dim1_val_ind_arr");
@@ -591,11 +591,11 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::constructNode(T 
 				i < subelems_start_inds.top() + num_subelems_stack.top();
 				i++)
 		{
-			// dim2_val_ind_arr[i] is the index of a PointStructCPUIter that comes before or is the PointStructCPUIter of median dim1 value in dim1_val_ind_arr
+			// dim2_val_ind_arr[i] is the index of a PointStruct that comes before or is the PointStruct of median dim1 value in dim1_val_ind_arr
 			if (pt_arr[dim2_val_ind_arr[i]].compareDim1(pt_arr[dim1_val_ind_arr[median_dim1_val_ind]]) <= 0)
 				// Postfix ++ returns the current value before incrementing
 				dim2_val_ind_arr_secondary[left_dim2_subarr_iter_ind++] = dim2_val_ind_arr[i];
-			// dim2_val_ind_arr[i] is the index of a PointStructCPUIter that comes after the PointStructCPUIter of median dim1 value in dim1_val_ind_arr
+			// dim2_val_ind_arr[i] is the index of a PointStruct that comes after the PointStruct of median dim1 value in dim1_val_ind_arr
 			else
 				dim2_val_ind_arr_secondary[right_dim2_subarr_iter_ind++] = dim2_val_ind_arr[i];
 		}

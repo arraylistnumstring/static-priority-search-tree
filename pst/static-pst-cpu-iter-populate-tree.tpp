@@ -41,7 +41,7 @@ void populateTree (T *const root, const size_t num_elem_slots,
 			curr_iter_dim2_val_ind_arr_secondary = dim2_val_ind_arr;
 		}
 
-		// Find index in dim1_val_ind_arr of PointStructCPUIter with maximal dim2_val 
+		// Find index in dim1_val_ind_arr of PointStruct with maximal dim2_val 
 		long long array_search_res_ind = StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::binarySearch(pt_arr, dim1_val_ind_arr,
 																		pt_arr[curr_iter_dim2_val_ind_arr[subelems_start_inds.top()]],
 																		subelems_start_inds.top(),
