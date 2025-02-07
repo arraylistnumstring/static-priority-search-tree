@@ -167,11 +167,11 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		// From the specification of C, pointers are const if the const qualifier appears to the right of the corresponding *
 		// Returns index in dim1_val_ind_arr of elem_to_find
 		__forceinline__ __device__ static long long binarySearch(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr_d,
-																			size_t *const &dim1_val_ind_arr,
-																			PointStructTemplate<T, IDType, num_IDs> &elem_to_find,
-																			const size_t &init_ind,
-																			const size_t &num_elems
-																		);
+																	size_t *const &dim1_val_ind_arr,
+																	PointStructTemplate<T, IDType, num_IDs> &elem_to_find,
+																	const size_t &init_ind,
+																	const size_t &num_elems
+																);
 
 		__forceinline__ __device__ static void constructNode(T *const &root_d,
 																const size_t &num_elem_slots,
