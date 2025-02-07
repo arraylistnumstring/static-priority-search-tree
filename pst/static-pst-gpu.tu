@@ -1226,7 +1226,7 @@ template <size_t num_T_subarrs>
 inline size_t StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSizeNumTs(const size_t num_elem_slots)
 {
 	/*
-		tot_arr_size_num_Ts = ceil(1/sizeof(T) * num_elem_slots * (sizeof(T) * num_T_subarrs + 1 B/bitcode * 1 bitcode))
+		tot_arr_size_num_Ts = ceil(1/sizeof(T) * num_elem_slots * (sizeof(T) * num_T_subarrs + sizeof(IDType) * num_IDs + 1 B/bitcode * 1 bitcode))
 			With integer truncation:
 				if tot_arr_size_bytes % sizeof(T) != 0:
 							= tot_arr_size_bytes + 1
@@ -1234,7 +1234,11 @@ inline size_t StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::calcTotArrS
 							= tot_arr_size_bytes
 	*/
 	// Calculate total size in bytes
-	size_t tot_arr_size_bytes = num_elem_slots * (sizeof(T) * num_T_subarrs + 1);
+	size_t tot_arr_size_bytes = sizeof(T) * num_T_subarrs + 1;
+	if constexpr (HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
+		tot_arr_size_bytes += sizeof(IDType) * num_IDs;
+	tot_arr_size_bytes *= num_elem_slots;
+
 	// Divide by sizeof(T)
 	size_t tot_arr_size_num_Ts = tot_arr_size_bytes / sizeof(T);
 	// If tot_arr_size_bytes % sizeof(T) != 0, then tot_arr_size_num_Ts * sizeof(T) < tot_arr_size_bytes, so add 1 to tot_arr_size_num_Ts
