@@ -704,7 +704,7 @@ size_t StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::calcGlobalMemNeede
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
 __forceinline__ __device__ long long StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::binarySearch(
-																	PointStructTemplate<T, IDType, num_IDs> *const &pt_arr,
+																	PointStructTemplate<T, IDType, num_IDs> *const &pt_arr_d,
 																	size_t *const &dim1_val_ind_arr,
 																	PointStructTemplate<T, IDType, num_IDs> &elem_to_find,
 																	const size_t &init_ind,
@@ -718,14 +718,14 @@ __forceinline__ __device__ long long StaticPSTGPU<T, PointStructTemplate, IDType
 	{
 		mid_ind = (low_ind + high_ind)/2;
 		// Location in dim1_val_ind_arr of elem_to_find has been found
-		if (pt_arr[dim1_val_ind_arr[mid_ind]] == elem_to_find
-			&& pt_arr[dim1_val_ind_arr[mid_ind]].comparisonTiebreaker(elem_to_find) == 0)
+		if (pt_arr_d[dim1_val_ind_arr[mid_ind]] == elem_to_find
+			&& pt_arr_d[dim1_val_ind_arr[mid_ind]].comparisonTiebreaker(elem_to_find) == 0)
 			return mid_ind;
 		// elem_to_find is before middle element; recurse on left subarray
-		else if (elem_to_find.compareDim1(pt_arr[dim1_val_ind_arr[mid_ind]]) < 0)
+		else if (elem_to_find.compareDim1(pt_arr_d[dim1_val_ind_arr[mid_ind]]) < 0)
 			high_ind = mid_ind;
 		// elem_to_find is after middle element; recurse on right subarray
-		else	// elem_to_find.compareDim1(pt_arr[dim1_val_ind_arr[mid_ind]]) > 0
+		else	// elem_to_find.compareDim1(pt_arr_d[dim1_val_ind_arr[mid_ind]]) > 0
 			low_ind = mid_ind + 1;
 	}
 	return -1;	// Element not found
