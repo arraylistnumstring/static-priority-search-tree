@@ -16,13 +16,13 @@ StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPUArr(PointS
 		All trees except potentially the last tree in the array are complete trees in order to reduce internal fragmentation
 		In order to reduce dynamic parallelism cost in construction and communication overhead in search, make each complete tree have enough elements such that each thread is active at least once (so that differing block sizes that are not powers of 2 will have an effect on performance) and will only process at most two elements in the last level (which is the only level where it is possible to have an insufficient number of threads available), allowing for a constant number of resources to handle this (relatively common) edge case
 	*/
-	: num_elem_slots_per_tree(num_elems == 0 ? 0 : calcNumElemSlotsPerTree(threads_per_block)),
+	: full_tree_num_elem_slots(num_elems == 0 ? 0 : calcNumElemSlotsPerTree(threads_per_block)),
 	num_elems(num_elems),
 	// Each tree (except potentially the last one) contains as many elements as it can hold in order to reduce internal fragmentation and maximise thread occupancy
 	// Total number of subtrees = num_thread_blocks = ceil(num_elems/threads_per_block)
-	// As num_elem_slots_per_tree is declared before num_thread_blocks in the class declaration, it is also instantiated first
+	// As full_tree_num_elem_slots is declared before num_thread_blocks in the class declaration, it is also instantiated first
 	// When this order is violated, no compilation error is reported; the data member that depends on a later-declared data member is simply incorrectly initialised
-	num_thread_blocks(num_elems / num_elem_slots_per_tree + (num_elems % num_elem_slots_per_tree == 0 ? 0 : 1)),
+	num_thread_blocks(num_elems / full_tree_num_elem_slots + (num_elems % full_tree_num_elem_slots == 0 ? 0 : 1)),
 	threads_per_block(threads_per_block),
 	dev_ind(dev_ind),
 	num_devs(num_devs),
@@ -279,15 +279,15 @@ StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPUArr(PointS
 		// Sort dimension-1 values index array in ascending order; in-place sort using a curried comparison function; guaranteed O(n) running time or better
 		// Execution policy of thrust::cuda::par.on(stream_dim1) guarantees kernel is submitted to stream_dim1
 		thrust::sort(thrust::cuda::par.on(stream_dim1),
-						dim1_val_ind_arr_d + num_elem_slots_per_tree * i,
-						dim1_val_ind_arr_d + num_elem_slots_per_tree * (i + 1),
+						dim1_val_ind_arr_d + full_tree_num_elem_slots * i,
+						dim1_val_ind_arr_d + full_tree_num_elem_slots * (i + 1),
 						Dim1ValIndCompIncOrd(pt_arr_d)
 					);
 	}
 
 	// Last block may be differently sized, so simply make a slightly different sort call for it
 	thrust::sort(thrust::cuda::par.on(stream_dim1),
-					dim1_val_ind_arr_d + num_elem_slots_per_tree * (num_thread_blocks - 1),
+					dim1_val_ind_arr_d + full_tree_num_elem_slots * (num_thread_blocks - 1),
 					dim1_val_ind_arr_d + num_elems,
 					Dim1ValIndCompIncOrd(pt_arr_d)
 				);
@@ -346,15 +346,15 @@ StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPUArr(PointS
 		// Sort dimension-2 values index array in descending order; in-place sort using a curried comparison function; guaranteed O(n) running time or better
 		// Execution policy of thrust::cuda::par.on(stream_dim2) guarantees kernel is submitted to stream_dim2
 		thrust::sort(thrust::cuda::par.on(stream_dim2),
-						dim2_val_ind_arr_d + num_elem_slots_per_tree * i,
-						dim2_val_ind_arr_d + num_elem_slots_per_tree * (i + 1),
+						dim2_val_ind_arr_d + full_tree_num_elem_slots * i,
+						dim2_val_ind_arr_d + full_tree_num_elem_slots * (i + 1),
 						Dim2ValIndCompDecOrd(pt_arr_d)
 					);
 	}
 
 	// Last block may be differently sized, so simply make a slightly different sort call for it
 	thrust::sort(thrust::cuda::par.on(stream_dim2),
-					dim2_val_ind_arr_d + num_elem_slots_per_tree * (num_thread_blocks - 1),
+					dim2_val_ind_arr_d + full_tree_num_elem_slots * (num_thread_blocks - 1),
 					dim2_val_ind_arr_d + num_elems,
 					Dim2ValIndCompDecOrd(pt_arr_d)
 				);
@@ -397,15 +397,21 @@ StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPUArr(PointS
 	// Populate trees with a multi-block grid, with one block per tree
 	populateTrees<<<num_thread_blocks, threads_per_block,
 						threads_per_block * sizeof(size_t) * num_constr_working_arrs>>>
-					(tree_arr_d, num_elem_slots_per_tree, pt_arr_d, dim1_val_ind_arr_d, dim2_val_ind_arr_d, dim2_val_ind_arr_secondary_d, num_elems);
+					(tree_arr_d, full_tree_num_elem_slots, pt_arr_d, dim1_val_ind_arr_d, dim2_val_ind_arr_d, dim2_val_ind_arr_secondary_d, num_elems);
 }
 
+
+// const keyword after method name indicates that the method does not modify any data members of the associated class
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
 void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::print(std::ostream &os) const
 {
 }
 
+
+// Public search functions
+
+// Default template argument for a class template's member function can only be specified within the class template; similarly, default arguments for functions can only be specified within the class/class template declaration
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
 template <typename RetType>
@@ -452,6 +458,8 @@ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::twoSidedRightSear
 {
 }
 
+
+// static keyword should only be used when declaring a function in the header file
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
 size_t StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcGlobalMemNeeded(const size_t num_elems, const unsigned threads_per_block)
@@ -482,6 +490,43 @@ size_t StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcGlobalMemNe
 
 	return global_mem_needed;
 }
+
+
+// Construction-related helper functions
+
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+__forceinline__ __device__ long long StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::binarySearch(
+															PointStructTemplate<T, IDType, num_IDs> *const &pt_arr_d,
+															size_t *const &dim1_val_ind_arr_d,
+															PointStructTemplate<T, IDType, num_IDs> &elem_to_find,
+															const size_t &init_ind,
+															const size_t &num_elems
+														)
+{
+	size_t low_ind = init_ind;
+	size_t high_ind = init_ind + num_elems;
+	size_t mid_ind;		// Avoid reinstantiating mid_ind in every iteration
+	// Search is done in the range [low_ind, high_ind)
+	while (low_ind < high_ind)
+	{
+		mid_ind = (low_ind + high_ind)/2;
+		// Location in dim1_val_ind_arr_d of elem_to_find has been found
+		if (pt_arr_d[dim1_val_ind_arr_d[mid_ind]] == elem_to_find
+			&& pt_arr_d[dim1_val_ind_arr_d[mid_ind]].comparisonTiebreaker(elem_to_find) == 0)
+			return mid_ind;
+		// elem_to_find is before middle element; recurse on left subarray
+		else if (elem_to_find.compareDim1(pt_arr_d[dim1_val_ind_arr_d[mid_ind]]) < 0)
+			high_ind = mid_ind;
+		// elem_to_find is after middle element; recurse on right subarray
+		else	// elem_to_find.compareDim1(pt_arr_d[dim1_val_ind_arr_d[mid_ind]]) > 0
+			low_ind = mid_ind + 1;
+	}
+	return -1;	// Element not found
+}
+
+
+// Data footprint calculation functions
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
@@ -540,7 +585,7 @@ template <size_t num_T_subarrs>
 size_t StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcTreeSizeNumTs(const size_t num_elem_slots_per_tree)
 {
 	/*
-		tree_size_num_Ts = ceil(1/sizeof(T) * num_elem_slots_per_tree * (sizeof(T) * num_T_subarrs + 1 B/bitcode * 1 bitcode))
+		tree_size_num_Ts = ceil(1/sizeof(T) * num_elem_slots_per_tree * (sizeof(T) * num_T_subarrs + sizeof(IDType) * num_IDs + 1 B/bitcode * 1 bitcode))
 			With integer truncation:
 				if tree_size_bytes % sizeof(T) != 0:
 							= tree_size_bytes + 1
@@ -548,7 +593,11 @@ size_t StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcTreeSizeNum
 							= tree_size_bytes
 	*/
 	// Calculate total size in bytes
-	size_t tree_size_bytes = num_elem_slots_per_tree * (sizeof(T) * num_T_subarrs + 1);
+	size_t tree_size_bytes = sizeof(T) * num_T_subarrs + 1;
+	if constexpr (HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
+		tree_size_bytes += sizeof(IDType) * num_IDs;
+	tree_size_bytes *= num_elem_slots_per_tree;
+
 	// Divide by sizeof(T)
 	size_t tree_size_num_Ts = tree_size_bytes / sizeof(T);
 	// If tree_size_bytes % sizeof(T) != 0, then tree_size_num_Ts * sizeof(T) < tree_size_bytes, so add 1 to tree_size_num_Ts

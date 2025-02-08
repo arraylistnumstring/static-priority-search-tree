@@ -13,7 +13,7 @@
 // As function definition uses StaticPSTGPUArr members, must define function after StaticPSTGPUArr has been defined (hence the placement of the implementation file after the class declaration
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-__global__ void populateTrees(T *const tree_arr_d, const size_t num_elem_slots,
+__global__ void populateTrees(T *const tree_arr_d, const size_t full_tree_num_elem_slots,
 								PointStructTemplate<T, IDType, num_IDs> *const pt_arr_d,
 								size_t *const dim1_val_ind_arr_d,
 								size_t *dim2_val_ind_arr_d,
@@ -110,6 +110,18 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 		StaticPSTGPUArr& operator=(StaticPSTGPUArr &tree_arr);	//assignment operator
 		StaticPSTGPUArr(StaticPSTGPUArr &tree_arr);		// copy constructor
 
+		
+		// Construction-related helper functions
+
+		// From the specification of C, pointers are const if the const qualifier appears to the right of the corresponding *
+		// Returns index in dim1_val_ind_arr of elem_to_find
+		__forceinline__ __device__ static long long binarySearch(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr_d,
+																	size_t *const &dim1_val_ind_arr_d,
+																	PointStructTemplate<T, IDType, num_IDs> &elem_to_find,
+																	const size_t &init_ind,
+																	const size_t &num_elems
+																);
+
 
 		// Data footprint calculation functions
 
@@ -126,16 +138,16 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 		static size_t calcTreeArrSizeNumMaxDataIDTypes(const size_t num_elems, const unsigned threads_per_block);
 
 		// Calculate size of array allocated for each tree in units of number of elements of type T or IDType, whichever is larger
-		static size_t calcTreeSizeNumMaxDataIDTypes(const size_t num_elem_slots);
+		static size_t calcTreeSizeNumMaxDataIDTypes(const size_t num_elem_slots_per_tree);
 
 		// Helper function for calculating the number of elements of size T necessary to instantiate each tree for trees with no ID field
 		template <size_t num_T_subarrs>
-		static size_t calcTreeSizeNumTs(const size_t num_elem_slots);
+		static size_t calcTreeSizeNumTs(const size_t num_elem_slots_per_tree);
 
 		// Helper function for calculating the number of elements of size U necessary to instantiate each tree, for data types U and V such that sizeof(U) >= sizeof(V)
 		template <typename U, size_t num_U_subarrs, typename V, size_t num_V_subarrs>
 			requires SizeOfUAtLeastSizeOfV<U, V>
-		static size_t calcTreeSizeNumUs(const size_t num_elem_slots);
+		static size_t calcTreeSizeNumUs(const size_t num_elem_slots_per_tree);
 
 
 		// Data members
@@ -151,7 +163,10 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 				unsigned char *bitcodes_root_d;
 		*/
 		T *tree_arr_d;
-		size_t num_elem_slots_per_tree;
+		size_t full_tree_num_elem_slots;
+		// Necessary to allow each thread block to calculate the correct starting location of its assigned tree
+		// Must be calculated in units of the maximally-sized datatype in order to ensure that each tree obeys its alignment requirements for both its data and ID types
+		size_t full_tree_size_num_max_data_id_types;
 		size_t num_elems;
 
 		// unsigned type is chosen to correspond with CUDA on-device data type of fields of gridDim and blockDim, respectively
@@ -178,6 +193,21 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 			RIGHT_SEARCH,
 			THREE_SEARCH
 		};
+
+	/*
+		For friend functions of template classes, for the compiler to recognise the function as a template function, it is necessary to either pre-declare each template friend function before the template class; or to simply define the friend function when it is declared
+		https://isocpp.org/wiki/faq/templates#template-friends
+
+		Note that <> means a (full) specialisation with default arguments, which in this case are the template parameters of the enclosing class
+	*/
+	friend __global__ void populateTrees <> (T *const tree_arr_d, const size_t full_tree_num_elem_slots,
+												PointStructTemplate<T, IDType, num_IDs> *const pt_arr_d,
+												size_t *const dim1_val_ind_arr_d,
+												size_t *dim2_val_ind_arr_d,
+												size_t *dim2_val_ind_arr_secondary_d,
+												const size_t num_elems
+											);
+
 };
 
 #include "static-pst-gpu-arr.tu"
