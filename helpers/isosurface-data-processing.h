@@ -8,11 +8,11 @@
 #include <type_traits>
 
 #include "class-member-checkers.h"
-#include "data-size-concepts.h"
 #include "dev-symbols.h"
 #include "exit-status-codes.h"
 #include "gpu-err-chk.h"
 #include "linearise-id.h"
+#include "type-concepts.h"
 #include "warp-shuffles.h"
 
 

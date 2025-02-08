@@ -5,8 +5,8 @@
 
 #include "class-member-checkers.h"
 #include "cpu-iter-tree-node.h"
-#include "data-size-concepts.h"
 #include "static-priority-search-tree.h"
+#include "type-concepts.h"
 
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
@@ -129,13 +129,18 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T, PointStructTemplate,
 					return reinterpret_cast<unsigned char*>(getIDsRoot(root, num_elem_slots) + num_ID_subarrs * num_elem_slots);
 			};	
 
-		// Helper function for calculating the number of elements of size T necessary to instantiate an array for root of trees with no ID field
+		// Helper function for calculating the number of elements of size T necessary to instantiate an array for root of tree
 		template <size_t num_T_subarrs>
 		static size_t calcTotArrSizeNumTs(const size_t num_elem_slots);
 
+		// Helper function for calculating the number of elements of size IDType necessary to instantiate an array for root of tree
+		template <size_t num_T_subarrs>
+			requires NonVoidType<IDType>
+		static size_t calcTotArrSizeNumIDTypes(const size_t num_elem_slots);
+
 		// Helper function for calculating the number of elements of size U necessary to instantiate an array for root, for data types U and V such that sizeof(U) >= sizeof(V)
 		template <typename U, size_t num_U_subarrs, typename V, size_t num_V_subarrs>
-		static size_t calcTotArrSizeNumUs(const size_t num_elem_slots)
+			static size_t calcTotArrSizeNumUs(const size_t num_elem_slots)
 			requires SizeOfUAtLeastSizeOfV<U, V>;
 
 		// Helper function for calculating the next power of 2 greater than num

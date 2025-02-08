@@ -1,5 +1,8 @@
-#ifndef DATA_SIZE_CONCEPTS_H
-#define DATA_SIZE_CONCEPTS_H
+#ifndef TYPE_CONCEPTS_H
+#define TYPE_CONCEPTS_H
+
+template <typename T>
+concept NonVoidType = !std::is_void<T>::value;
 
 template <typename U, typename V>
 concept SizeOfUAtLeastSizeOfV = requires {sizeof(U) >= sizeof(V);};
