@@ -404,6 +404,9 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 			THREE_SEARCH
 		};
 
+
+	// Friend function declarations
+
 	/*
 		For friend functions of template classes, for the compiler to recognise the function as a template function, it is necessary to either pre-declare each template friend function before the template class; or to simply define the friend function when it is declared
 		https://isocpp.org/wiki/faq/templates#template-friends
