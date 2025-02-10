@@ -727,7 +727,7 @@ inline size_t StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::calcTot
 	*/
 	// Calculate total size in bytes
 	size_t tot_arr_size_bytes = sizeof(T) * num_T_subarrs + 1;
-	if constexpr (HasID<PointStructTemplate<T, IDType, num_IDs>::value)
+	if constexpr (HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
 		tot_arr_size_bytes += sizeof(IDType) * num_IDs;
 	tot_arr_size_bytes *= num_elem_slots;
 
@@ -740,6 +740,7 @@ inline size_t StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::calcTot
 }
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
 template <size_t num_T_subarrs>
 	requires NonVoidType<IDType>
 inline size_t StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSizeNumIDTypes(const size_t num_elem_slots)
