@@ -763,30 +763,6 @@ inline size_t StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::calcTot
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-template <typename U, size_t num_U_subarrs, typename V, size_t num_V_subarrs>
-inline size_t StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSizeNumUs(const size_t num_elem_slots)
-	requires SizeOfUAtLeastSizeOfV<U, V>
-{
-	/*
-		tot_arr_size_num_Us = ceil(1/sizeof(U) * num_elem_slots * (sizeof(U) * num_U_subarrs + sizeof(V) * num_V_subarrs + 1 B/bitcode * 1 bitcode))
-			With integer truncation:
-				if tot_arr_size_bytes % sizeof(U) != 0:
-							= tot_arr_size_bytes + 1
-				if tot_arr_size_bytes % sizeof(U) == 0:
-							= tot_arr_size_bytes
-	*/
-	// Calculate total size in bytes
-	size_t tot_arr_size_bytes = num_elem_slots * (sizeof(U) * num_U_subarrs + sizeof(V) * num_V_subarrs + 1);
-	// Divide by sizeof(U)
-	size_t tot_arr_size_num_Us = tot_arr_size_bytes / sizeof(U);
-	// If tot_arr_size_bytes % sizeof(U) != 0, then tot_arr_size_num_Us * sizeof(U) < tot_arr_size_bytes, so add 1 to tot_arr_size_num_Us
-	if (tot_arr_size_bytes % sizeof(U) != 0)
-		tot_arr_size_num_Us++;
-	return tot_arr_size_num_Us;
-}
-
-template <typename T, template<typename, typename, size_t> class PointStructTemplate,
-			typename IDType, size_t num_IDs>
 template <typename U>
 	requires std::unsigned_integral<U>
 U StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::expOfNextGreaterPowerOf2(const U num)
