@@ -124,24 +124,30 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T, PointStructTemplate,
 		// Data-accessing helper functions
 
 		// Helper functions for getting start indices for various arrays
-		static T* getDim1ValsRoot(T *const root, const size_t num_elem_slots)
+		inline static T* getDim1ValsRoot(T *const root, const size_t num_elem_slots)
 			{return root;};
-		static T* getDim2ValsRoot(T *const root, const size_t num_elem_slots)
+		inline static T* getDim2ValsRoot(T *const root, const size_t num_elem_slots)
 			{return root + num_elem_slots;};
-		static T* getMedDim1ValsRoot(T *const root, const size_t num_elem_slots)
+		inline static T* getMedDim1ValsRoot(T *const root, const size_t num_elem_slots)
 			{return root + (num_elem_slots << 1);};
-		static IDType* getIDsRoot(T *const root, const size_t num_elem_slots)
-			{return reinterpret_cast<IDType *>(root + num_elem_slots * num_val_subarrs);};
-		static unsigned char* getBitcodesRoot(T *const root, const size_t num_elem_slots)
-			// Use reinterpret_cast for pointer conversions
-			{
-				if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
-					// Argument of cast is of type T *
-					return reinterpret_cast<unsigned char*>(root + num_val_subarrs * num_elem_slots);
-				else
-					// Argument of cast is of type IDType *
-					return reinterpret_cast<unsigned char*>(getIDsRoot(root, num_elem_slots) + num_ID_subarrs * num_elem_slots);
-			};	
+		inline static IDType* getIDsRoot(T *const root, const size_t num_elem_slots)
+			requires NonVoidType<IDType>
+		{
+			const size_t val_subarr_offset_bytes = num_elem_slots * num_val_subarrs * sizeof(T);
+			const size_t val_subarr_offset_IDTypes = val_subarr_offset_bytes / sizeof(IDType)
+														+ (val_subarr_offset_bytes % sizeof(IDType) == 0 ? 0 : 1);
+			return reinterpret_cast<IDType *>(root) + val_subarr_offset_IDTypes;
+		};
+		inline static unsigned char* getBitcodesRoot(T *const root, const size_t num_elem_slots)
+		// Use reinterpret_cast for pointer conversions
+		{
+			if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
+				// Argument of cast is of type T *
+				return reinterpret_cast<unsigned char*>(root + num_val_subarrs * num_elem_slots);
+			else
+				// Argument of cast is of type IDType *
+				return reinterpret_cast<unsigned char*>(getIDsRoot(root, num_elem_slots) + num_ID_subarrs * num_elem_slots);
+		};
 
 
 		// Data footprint calculation functions
