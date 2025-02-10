@@ -26,27 +26,19 @@ StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::StaticPSTCPUIter(Poin
 
 	// Use of () after new and new[] causes value-initialisation (to 0) starting in C++03; needed for any nodes that technically contain no data
 	// constexpr if is a C++17 feature that only compiles the branch of code that evaluates to true at compile-time, saving executable space and execution runtime
-	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
+	// Use of !HasID<> serves as an effective guard against IDType=void instantiations
+	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value
+					|| SizeOfUAtLeastSizeOfV<T, IDType>)
 	{
-		// No IDs present
+		// No IDs present or sizeof(T) >= sizeof(IDType)
 		size_t tot_arr_size_num_Ts = calcTotArrSizeNumTs<num_val_subarrs>(num_elem_slots);
 		root = new T[tot_arr_size_num_Ts]();
 	}
 	else
 	{
-		// Separate size-comparison condition from the num_IDs==0 condition so that sizeof(IDType) is well-defined here, as often only one branch of a constexpr if is compiled
-		if constexpr(sizeof(T) >= sizeof(IDType))
-		{
-			// sizeof(T) >= sizeof(IDType), so calculate total array size in units of sizeof(T) so that datatype T's alignment requirements will be satisfied
-			size_t tot_arr_size_num_Ts = calcTotArrSizeNumUs<T, num_val_subarrs, IDType, num_ID_subarrs>(num_elem_slots);
-			root = new T[tot_arr_size_num_Ts]();
-		}
-		else
-		{
-			// sizeof(IDType) > sizeof(T), so calculate total array size in units of sizeof(IDType) so that datatype IDType's alignment requirements will be satisfied
-			size_t tot_arr_size_num_IDTypes = calcTotArrSizeNumUs<IDType, num_ID_subarrs, T, num_val_subarrs>(num_elem_slots);
-			root = reinterpret_cast<T *>(new IDType[tot_arr_size_num_IDTypes]());
-		}
+		// sizeof(IDType) > sizeof(T), so calculate total array size in units of sizeof(IDType) so that datatype IDType's alignment requirements will be satisfied
+		size_t tot_arr_size_num_IDTypes = calcTotArrSizeNumIDTypes<num_val_subarrs>(num_elem_slots);
+		root = reinterpret_cast<T *>(new IDType[tot_arr_size_num_IDTypes]());
 	}
 
 	if (root == nullptr)
@@ -759,8 +751,8 @@ inline size_t StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::calcTot
 
 	// Calculate size of bitcode array in units of number of IDTypes
 	const size_t bitcode_arr_size_bytes = num_elem_slots;
-	const size_t bitcode_arr_size_num_IDTypes = num_elem_slots / sizeof(IDType)
-												+ (num_elem_slots % sizeof(IDType) == 0 ? 0 : 1);
+	const size_t bitcode_arr_size_num_IDTypes = bitcode_arr_size_bytes / sizeof(IDType)
+												+ (bitcode_arr_size_bytes  % sizeof(IDType) == 0 ? 0 : 1);
 
 	const size_t tot_arr_size_num_IDTypes = val_arr_size_num_IDTypes			// Value array
 											+ num_elem_slots * num_IDs			// ID array
