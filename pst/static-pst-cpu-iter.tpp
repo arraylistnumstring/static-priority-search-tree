@@ -718,18 +718,19 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodes
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
 template <size_t num_T_subarrs>
-size_t StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSizeNumTs(const size_t num_elem_slots)
+inline size_t StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSizeNumTs(const size_t num_elem_slots)
 {
 	/*
-		tot_arr_size_num_Ts = ceil(1/sizeof(T) * num_elem_slots * (sizeof(T) * num_T_subarrs + 1 B/bitcode * 1 bitcode))
-			With integer truncation:
-				if tot_arr_size_bytes % sizeof(T) != 0:
-							= tot_arr_size_bytes + 1
-				if tot_arr_size_bytes % sizeof(T) == 0:
-							= tot_arr_size_bytes
+		sizeof(T) >= sizeof(IDType), so alignment requirements for all types satisfied when using maximal compaction
+
+		tot_arr_size_num_Ts = ceil(1/sizeof(T) * num_elem_slots * (sizeof(T) * num_T_subarrs + sizeof(IDType) * num_IDs + 1 B/bitcode * 1 bitcode))
 	*/
 	// Calculate total size in bytes
-	size_t tot_arr_size_bytes = num_elem_slots * (sizeof(T) * num_T_subarrs + 1);
+	size_t tot_arr_size_bytes = sizeof(T) * num_T_subarrs + 1;
+	if constexpr (HasID<PointStructTemplate<T, IDType, num_IDs>::value)
+		tot_arr_size_bytes += sizeof(IDType) * num_IDs;
+	tot_arr_size_bytes *= num_elem_slots;
+
 	// Divide by sizeof(T)
 	size_t tot_arr_size_num_Ts = tot_arr_size_bytes / sizeof(T);
 	// If tot_arr_size_bytes % sizeof(T) != 0, then tot_arr_size_num_Ts * sizeof(T) < tot_arr_size_bytes, so add 1 to tot_arr_size_num_Ts
@@ -738,10 +739,38 @@ size_t StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSize
 	return tot_arr_size_num_Ts;
 }
 
+template <size_t num_T_subarrs>
+	requires NonVoidType<IDType>
+inline size_t calcTotArrSizeNumIDTypes(const size_t num_elem_slots)
+{
+	/*
+		sizeof(IDType) > sizeof(T), so extra padding must be placed before IDType array to ensure alignment requirements are met (hence the distribution of the ceil() function around each addend
+
+		tot_arr_size_num_IDTypes = ceil(1/sizeof(IDType) * num_elem_slots * sizeof(T) * num_T_subarrs)
+									+ num_elem_slots * num_IDs
+									+ ceil(1/sizeof(IDType) * num_elem_slots * 1 B/bitcode * 1 bitcode)
+	*/
+	// Calculate size of value arrays in units of number of IDTypes
+	const size_t val_arr_size_bytes = num_elem_slots * sizeof(T) * num_T_subarrs;
+	const size_t val_arr_size_num_IDTypes = val_arr_size_bytes / sizeof(IDType)
+												+ (val_arr_size_bytes % sizeof(IDType) == 0 ? 0 : 1);
+
+	// Calculate size of bitcode array in units of number of IDTypes
+	const size_t bitcode_arr_size_bytes = num_elem_slots;
+	const size_t bitcode_arr_size_num_IDTypes = num_elem_slots / sizeof(IDType)
+												+ (num_elem_slots % sizeof(IDType) == 0 ? 0 : 1);
+
+	const size_t tot_arr_size_num_IDTypes = val_arr_size_num_IDTypes			// Value array
+											+ num_elem_slots * num_IDs			// ID array
+											+ bitcode_arr_size_num_IDTypes;		// Bitcode array
+
+	return tot_arr_size_num_IDTypes;
+}
+
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
 template <typename U, size_t num_U_subarrs, typename V, size_t num_V_subarrs>
-size_t StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSizeNumUs(const size_t num_elem_slots)
+inline size_t StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSizeNumUs(const size_t num_elem_slots)
 	requires SizeOfUAtLeastSizeOfV<U, V>
 {
 	/*

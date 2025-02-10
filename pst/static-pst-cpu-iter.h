@@ -148,16 +148,16 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T, PointStructTemplate,
 
 		// Helper function for calculating the number of elements of size T necessary to instantiate an array for root of tree
 		template <size_t num_T_subarrs>
-		static size_t calcTotArrSizeNumTs(const size_t num_elem_slots);
+		inline static size_t calcTotArrSizeNumTs(const size_t num_elem_slots);
 
 		// Helper function for calculating the number of elements of size IDType necessary to instantiate an array for root of tree; calculation differs from calcTotArrSizeNumTs() due to need for IDType alignment to be satisfied when sizeof(IDType) > sizeof(T)
 		template <size_t num_T_subarrs>
 			requires NonVoidType<IDType>
-		static size_t calcTotArrSizeNumIDTypes(const size_t num_elem_slots);
+		inline static size_t calcTotArrSizeNumIDTypes(const size_t num_elem_slots);
 
 		// Helper function for calculating the number of elements of size U necessary to instantiate an array for root, for data types U and V such that sizeof(U) >= sizeof(V)
 		template <typename U, size_t num_U_subarrs, typename V, size_t num_V_subarrs>
-			static size_t calcTotArrSizeNumUs(const size_t num_elem_slots)
+		inline static size_t calcTotArrSizeNumUs(const size_t num_elem_slots)
 			requires SizeOfUAtLeastSizeOfV<U, V>;
 
 		// Helper function for calculating the next power of 2 greater than num

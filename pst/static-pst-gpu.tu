@@ -1226,12 +1226,9 @@ template <size_t num_T_subarrs>
 inline size_t StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSizeNumTs(const size_t num_elem_slots)
 {
 	/*
+		sizeof(T) >= sizeof(IDType), so alignment requirements for all types satisfied when using maximal compaction
+
 		tot_arr_size_num_Ts = ceil(1/sizeof(T) * num_elem_slots * (sizeof(T) * num_T_subarrs + sizeof(IDType) * num_IDs + 1 B/bitcode * 1 bitcode))
-			With integer truncation:
-				if tot_arr_size_bytes % sizeof(T) != 0:
-							= tot_arr_size_bytes + 1
-				if tot_arr_size_bytes % sizeof(T) == 0:
-							= tot_arr_size_bytes
 	*/
 	// Calculate total size in bytes
 	size_t tot_arr_size_bytes = sizeof(T) * num_T_subarrs + 1;
