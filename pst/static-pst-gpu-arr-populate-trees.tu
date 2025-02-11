@@ -19,22 +19,43 @@ __global__ void populateTrees(T *const tree_arr_d, const size_t full_tree_num_el
 
 	// Calculate number of slots in this thread block's assigned tree
 	size_t tree_num_elem_slots;
-	if (num_elems % full_tree_num_elem_slots == 0)
-		// All trees are full trees
-		tree_num_elem_slots = full_tree_num_elem_slots;
-	else
+	if (num_elems % full_tree_num_elem_slots == 0)		// All trees are full trees
 	{
-		// All trees except last are full trees
-		if (blockIdx.x < gridDim.x - 1)
-			tree_num_elem_slots = full_tree_num_elem_slots;
+		tree_num_elem_slots = full_tree_num_elem_slots;
+
+		// All threads except for thread 0 in each block start by being inactive
+		if (threadIdx.x == 0)
+			num_subelems_arr[threadIdx.x] = tree_num_elem_slots;
 		else
-			tree_num_elem_slots = StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcNumElemSlotsPerTree(num_elems % full_tree_num_elem_slots);
+			num_subelems_arr[threadIdx.x] = 0;
 	}
-	// All threads except for thread 0 start by being inactive
-	if (threadIdx.x == 0)
-		num_subelems_arr[threadIdx.x] = tree_num_elem_slots;
-	else
-		num_subelems_arr[threadIdx.x] = 0;
+	else	// All trees except last are full trees
+	{
+		// All blocks except last populate full trees
+		if (blockIdx.x < gridDim.x - 1)
+		{
+			tree_num_elem_slots = full_tree_num_elem_slots;
+
+			// All threads except for thread 0 start by being inactive
+			if (threadIdx.x == 0)
+				num_subelems_arr[threadIdx.x] = tree_num_elem_slots;
+			else
+				num_subelems_arr[threadIdx.x] = 0;
+		}
+		// Last tree has (num_elems % full_tree_num_elem_slots) elements
+		else
+		{
+			const size_t last_tree_num_elems = num_elems % full_tree_num_elem_slots;
+
+			tree_num_elem_slots = StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcNumElemSlotsPerTree(last_tree_num_elems);
+
+			// All threads except for thread 0 start by being inactive
+			if (threadIdx.x == 0)
+				num_subelems_arr[threadIdx.x] = last_tree_num_elems;
+			else
+				num_subelems_arr[threadIdx.x] = 0;
+		}
+	}
 
 	// Note: would only need to have one thread block do multiple trees when the number of trees exceeds 2^31 - 1, i.e. the maximum number of blocks permitted in a grid
 	T *const tree_root_d = tree_arr_d + blockIdx.x * full_tree_size_num_Ts;
