@@ -126,7 +126,7 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 																);
 
 		__forceinline__ __device__ static void constructNode(T *const &root_d,
-																const size_t &num_elem_slots,
+																const size_t &tree_num_elem_slots,
 																PointStructTemplate<T, IDType, num_IDs> *const &pt_arr_d,
 																size_t &target_node_ind,
 																size_t *const &dim1_val_ind_arr_d,

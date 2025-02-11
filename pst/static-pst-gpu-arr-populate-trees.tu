@@ -90,6 +90,7 @@ __global__ void populateTrees(T *const tree_arr_d, const size_t full_tree_num_el
 			// Note: potential sign conversion issue when computer memory becomes of size 2^64
 			const size_t max_dim2_val_dim1_array_ind = array_search_res_ind;
 
+			/*
 			StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::constructNode(
 											tree_root_d, tree_num_elem_slots,
 											pt_arr_d, target_tree_node_inds_arr[threadIdx.x],
@@ -101,6 +102,7 @@ __global__ void populateTrees(T *const tree_arr_d, const size_t full_tree_num_el
 											left_subarr_num_elems, right_subarr_start_ind,
 											right_subarr_num_elems
 										);
+			*/
 
 			// Update information for next iteration; as memory accesses are coalesced no matter the relative order as long as they are from the same source location, (and nodes are consecutive except possibly at the leaf levels), pick an inactive thread to instantiate the right child
 			// If there exist inactive threads in the block, assign the right child to an inactive thread and the left child to oneself
@@ -118,6 +120,7 @@ __global__ void populateTrees(T *const tree_arr_d, const size_t full_tree_num_el
 			// Because of how elements have been allocated to this tree, this means that the next level is the last level; in this case, if there are no more threads available to construct the right child, do so (it will not have any children, so if it exists, it will be the last node to handle in its subtree)
 			else if (right_subarr_num_elems > 0)
 			{
+				/*
 				StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::constructNode(
 												tree_root_d, tree_num_elem_slots,
 												pt_arr_d,
@@ -127,8 +130,10 @@ __global__ void populateTrees(T *const tree_arr_d, const size_t full_tree_num_el
 													max_dim2_val_dim1_array_ind,
 												subelems_start_inds_arr[threadIdx.x],
 												num_subelems_arr[threadIdx.x],
-												left_subarr_num_elems
+												left_subarr_num_elems,
+
 											);
+				*/
 			}
 
 			num_subelems_arr[threadIdx.x] = left_subarr_num_elems;
