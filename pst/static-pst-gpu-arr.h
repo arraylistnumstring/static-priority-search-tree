@@ -133,8 +133,8 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 																size_t *&dim2_val_ind_arr_d,
 																size_t *&dim2_val_ind_arr_secondary_d,
 																const size_t &max_dim2_val_dim1_array_ind,
-																size_t *&subelems_start_inds_arr,
-																size_t *&num_subelems_arr,
+																size_t &subelems_start_inds,
+																size_t &num_subelems,
 																size_t &left_subarr_num_elems,
 																size_t &right_subarr_start_ind,
 																size_t &right_subarr_num_elems);
