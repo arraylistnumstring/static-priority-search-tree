@@ -108,8 +108,12 @@ __global__ void populateTrees(T *const tree_arr_d, const size_t full_tree_num_el
 			{
 				subelems_start_inds_arr[threadIdx.x + nodes_per_level] = right_subarr_start_ind;
 				num_subelems_arr[threadIdx.x + nodes_per_level] = right_subarr_num_elems;
-				target_node_inds_arr[threadIdx.x + nodes_per_level] =
-					GPUTreeNode::getRightChild(target_node_inds_arr[threadIdx.x]);
+				target_tree_node_inds_arr[threadIdx.x + nodes_per_level] =
+					GPUTreeNode::getRightChild(target_tree_node_inds_arr[threadIdx.x]);
+
+				num_subelems_arr[threadIdx.x] = left_subarr_num_elems;
+				target_tree_node_inds_arr[threadIdx.x] =
+					GPUTreeNode::getLeftChild(target_tree_node_inds_arr[threadIdx.x]);
 			}
 			// Because of how elements have been allocated to this tree, this means that the next level is the last level; in this case, if there are no more threads available to construct the right child, do so (it will not have any children, so if it exists, it will be the last node to handle in its subtree)
 			else if (right_subarr_num_elems > 0)
@@ -117,7 +121,7 @@ __global__ void populateTrees(T *const tree_arr_d, const size_t full_tree_num_el
 				StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::constructNode(
 												tree_root_d, tree_num_elem_slots,
 												pt_arr_d,
-												GPUTreeNode::getRightChild(target_node_inds_arr[threadIdx.x]),
+												GPUTreeNode::getRightChild(target_tree_node_inds_arr[threadIdx.x]),
 												dim1_val_ind_arr_d, dim2_val_ind_arr_d,
 													dim2_val_ind_arr_secondary_d,
 													max_dim2_val_dim1_array_ind,
@@ -128,8 +132,8 @@ __global__ void populateTrees(T *const tree_arr_d, const size_t full_tree_num_el
 			}
 
 			num_subelems_arr[threadIdx.x] = left_subarr_num_elems;
-			target_node_inds_arr[threadIdx.x] =
-				GPUTreeNode::getLeftChild(target_node_inds_arr[threadIdx.x]);
+			target_tree_node_inds_arr[threadIdx.x] =
+				GPUTreeNode::getLeftChild(target_tree_node_inds_arr[threadIdx.x]);
 		}
 	}
 }
