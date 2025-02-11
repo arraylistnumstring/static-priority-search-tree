@@ -62,7 +62,7 @@ __global__ void populateTree(T *const root_d, const size_t num_elem_slots,
 				const size_t max_dim2_val_dim1_array_ind = array_search_res_ind;
 
 				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::constructNode(root_d, num_elem_slots,
-											pt_arr_d, target_node_inds_arr[threadIdx.x], num_elems,
+											pt_arr_d, target_node_inds_arr[threadIdx.x],
 											dim1_val_ind_arr_d, dim2_val_ind_arr_d,
 												dim2_val_ind_arr_secondary_d,
 												max_dim2_val_dim1_array_ind,
