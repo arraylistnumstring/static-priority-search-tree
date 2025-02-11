@@ -12,19 +12,35 @@ __global__ void populateTrees(T *const tree_arr_d, const size_t full_tree_num_el
 	extern __shared__ char s[];
 	size_t *subelems_start_inds_arr = reinterpret_cast<size_t *>(s);
 	size_t *num_subelems_arr = reinterpret_cast<size_t *>(s) + blockDim.x;
-	size_t *target_node_inds_arr = reinterpret_cast<size_t *>(s) + (blockDim.x << 1);
+	size_t *target_tree_node_inds_arr = reinterpret_cast<size_t *>(s) + (blockDim.x << 1);
 	// Initialise shared memory
-	subelems_start_inds_arr[threadIdx.x] = 0;
-	// All threads except for thread 0 start by being inactive
-	num_subelems_arr[threadIdx.x] = 0;
-	if (threadIdx.x == 0)
-		num_subelems_arr[threadIdx.x] = num_elems;
-	target_node_inds_arr[threadIdx.x] = 0;
+	subelems_start_inds_arr[threadIdx.x] = blockIdx.x * full_tree_num_subelem_slots;
+	target_tree_node_inds_arr[threadIdx.x] = 0;
 
-	// Note: would only need to have one thread block do multiple trees if the number of trees exceeds 2^31 - 1, i.e. the maximum number of blocks permitted in a grid
+	// Calculate number of slots in this thread block's assigned tree
+	size_t tree_num_subelem_slots;
+	if (num_elems % full_tree_num_elem_slots == 0)
+		// All trees are full trees
+		tree_num_subelem_slots = full_tree_num_elem_slots;
+	else
+	{
+		// All trees except last are full trees
+		if (blockIdx.x < gridDim.x - 1)
+			tree_num_subelem_slots = full_tree_num_elem_slots;
+		else
+			tree_num_subelem_slots = calcNumElemSlotsPerTree(num_elems % full_tree_num_elem_slots);
+	}
+	// All threads except for thread 0 start by being inactive
+	if (threadIdx.x == 0)
+		num_subelems_arr[threadIdx.x] = tree_num_elem_slots;
+	else
+		num_subelems_arr[threadIdx.x] = 0;
+
+	// Note: would only need to have one thread block do multiple trees when the number of trees exceeds 2^31 - 1, i.e. the maximum number of blocks permitted in a grid
 	T *const tree_root_d = tree_arr_d + blockIdx.x * full_tree_size_num_Ts;
 
 	__syncthreads();
+
 
 	// At any given level of the tree, each thread creates one node; as depth h of a tree has 2^h nodes, the number of active threads at level h is 2^h
 	// num_subelems_arr[threadIdx.x] > 0 condition not written here, as almost all threads except for thread 0 start out with the value num_subelems_arr[threadIdx.x] == 0
@@ -52,6 +68,16 @@ __global__ void populateTrees(T *const tree_arr_d, const size_t full_tree_num_el
 
 			// Note: potential sign conversion issue when computer memory becomes of size 2^64
 			const size_t max_dim2_val_dim1_array_ind = array_search_res_ind;
+
+			StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::constructNode(tree_root_d, tree_num_elem_slots,
+											pt_arr_d, target_tree_node_inds_arr[threadIdx.x],
+											dim1_val_ind_arr_d, dim2_val_ind_arr_d,
+												dim2_val_ind_arr_secondary_d,
+												max_dim2_val_dim1_array_ind,
+											subelems_start_inds_arr, num_subelems_arr,
+											left_subarr_num_elems, right_subarr_start_ind,
+											right_subarr_num_elems);
 		}
 	}
+}
 }

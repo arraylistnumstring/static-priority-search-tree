@@ -123,12 +123,55 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 																	const size_t &num_elems
 																);
 
+		__forceinline__ __device__ static void constructNode(T *const &root_d,
+																const size_t &num_elem_slots,
+																PointStructTemplate<T, IDType, num_IDs> *const &pt_arr_d,
+																size_t &target_node_ind,
+																size_t *const &dim1_val_ind_arr_d,
+																size_t *&dim2_val_ind_arr_d,
+																size_t *&dim2_val_ind_arr_secondary_d,
+																const size_t &max_dim2_val_dim1_array_ind,
+																size_t *&subelems_start_inds_arr,
+																size_t *&num_subelems_arr,
+																size_t &left_subarr_num_elems,
+																size_t &right_subarr_start_ind,
+																size_t &right_subarr_num_elems);
+
+
+		// Data-accessing helper functions
+
+		// Helper functions for getting start indices for various arrays
+		__forceinline__ __host__ __device__ static T* getDim1ValsRoot(T *const root, const size_t num_elem_slots)
+			{return root;};
+		__forceinline__ __host__ __device__ static T* getDim2ValsRoot(T *const root, const size_t num_elem_slots)
+			{return root + num_elem_slots;};
+		__forceinline__ __host__ __device__ static T* getMedDim1ValsRoot(T *const root, const size_t num_elem_slots)
+			{return root + (num_elem_slots << 1);};
+		__forceinline__ __host__ __device__ static IDType* getIDsRoot(T *const root, const size_t num_elem_slots)
+			requires NonVoidType<IDType>
+		{
+			const size_t val_subarr_offset_bytes = num_elem_slots * sizeof(T) * num_val_subarrs;
+			const size_t val_subarr_offset_IDTypes = val_subarr_offset_bytes / sizeof(IDType)
+														+ (val_subarr_offset_bytes % sizeof(IDType) == 0 ? 0 : 1);
+			return reinterpret_cast<IDType *>(root) + val_subarr_offset_IDTypes;
+		};
+		__forceinline__ __host__ __device__ static unsigned char* getBitcodesRoot(T *const root, const size_t num_elem_slots)
+		// Use reinterpret_cast for pointer conversions
+		{
+			if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
+				// Argument of cast is of type T *
+				return reinterpret_cast<unsigned char*>(root + num_val_subarrs * num_elem_slots);
+			else
+				// Argument of cast is of type IDType *
+				return reinterpret_cast<unsigned char*>(getIDsRoot(root, num_elem_slots) + num_IDs * num_elem_slots);
+		};
+
 
 		// Data footprint calculation functions
 
 		// Helper function for calculating minimum number of array slots necessary to construct a complete tree with num_elems elements
 		// Must be a static function because it is called during construction
-		inline static size_t calcNumElemSlotsPerTree(const size_t num_elems_per_tree)
+		__forceinline__ __host__ __device__ static size_t calcNumElemSlotsPerTree(const size_t num_elems_per_tree)
 		{
 			// Minimum number of array slots necessary to construct any complete tree with num_elems elements is 1 less than the smallest power of 2 greater than num_elems
 			// Number of elements in each container subarray for each tree is nextGreaterPowerOf2(num_elems) - 1

@@ -519,6 +519,115 @@ __forceinline__ __device__ long long StaticPSTGPUArr<T, PointStructTemplate, IDT
 	return -1;	// Element not found
 }
 
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+__forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::constructNode(
+																T *const &tree_root_d,
+																const size_t &tree_num_elem_slots,
+																PointStructTemplate<T, IDType, num_IDs> *const &pt_arr_d,
+																size_t &target_node_ind,
+																size_t *const &dim1_val_ind_arr_d,
+																size_t *&dim2_val_ind_arr_d,
+																size_t *&dim2_val_ind_arr_secondary_d,
+																const size_t &max_dim2_val_dim1_array_ind,
+																size_t *&subelems_start_inds_arr,
+																size_t *&num_subelems_arr,
+																size_t &left_subarr_num_elems,
+																size_t &right_subarr_start_ind,
+																size_t &right_subarr_num_elems)
+{
+	size_t median_dim1_val_ind;
+
+	// Treat dim1_val_ind_arr_ind[max_dim2_val_dim1_array_ind] as a removed element (but don't actually remove the element for performance reasons
+
+	if (num_subelems_arr[threadIdx.x] == 1)		// Base case
+	{
+		median_dim1_val_ind = subelems_start_inds_arr[threadIdx.x];
+		left_subarr_num_elems = 0;
+		right_subarr_num_elems = 0;
+	}
+	// max_dim2_val originally comes from the part of the array to the left of median_dim1_val
+	else if (max_dim2_val_dim1_array_ind < subelems_start_inds_arr[threadIdx.x] + num_subelems_arr[threadIdx.x]/2)
+	{
+		// As median values are always put in the left subtree, when the subroot value comes from the left subarray, the median index is given by num_elems/2, which evenly splits the array if there are an even number of elements remaining or makes the left subtree larger by one element if there are an odd number of elements remaining
+		median_dim1_val_ind = subelems_start_inds_arr[threadIdx.x]
+								+ num_subelems_arr[threadIdx.x]/2;
+		// max_dim2_val has been removed from the left subarray, so there are median_dim1_val_ind elements remaining on the left side
+		left_subarr_num_elems = median_dim1_val_ind - subelems_start_inds_arr[threadIdx.x];
+		right_subarr_num_elems = subelems_start_inds_arr[threadIdx.x] + num_subelems_arr[threadIdx.x]
+									- median_dim1_val_ind - 1;
+	}
+	/*
+		max_dim2_val originally comes from the part of the array to the right of median_dim1_val, i.e.
+			max_dim2_val_dim1_array_ind >= subelems_start_inds_arr[threadIdx.x] + num_subelems_arr[threadIdx.x]/2
+	*/
+	else
+	{
+		median_dim1_val_ind = subelems_start_inds_arr[threadIdx.x]
+								+ num_subelems_arr[threadIdx.x]/2 - 1;
+
+		left_subarr_num_elems = median_dim1_val_ind - subelems_start_inds_arr[threadIdx.x] + 1;
+		right_subarr_num_elems = subelems_start_inds_arr[threadIdx.x] + num_subelems_arr[threadIdx.x]
+									- median_dim1_val_ind - 2;
+	}
+
+	setNode(tree_root_d, target_node_ind, tree_num_elem_slots,
+			pt_arr_d[dim2_val_ind_arr_d[subelems_start_inds_arr[threadIdx.x]]],
+			pt_arr_d[dim1_val_ind_arr_d[median_dim1_val_ind]].dim1_val);
+
+	if (left_subarr_num_elems > 0)
+	{
+		GPUTreeNode::setLeftChild(getBitcodesRoot(tree_root_d, tree_num_elem_slots), target_node_ind);
+
+		// Always place median value in left subtree
+		// max_dim2_val is to the left of median_dim1_val in dim1_val_ind_arr_d; shift all entries up to median_dim1_val_ind leftward, overwriting max_dim2_val_dim1_array_ind
+		if (max_dim2_val_dim1_array_ind < median_dim1_val_ind)
+			// memcpy() is undefined if the source and destination regions overlap, and the safe memmove() (that behaves as if the source values were first copied to an intermediate array) does not exist on CUDA within kernel code
+			for (size_t i = max_dim2_val_dim1_array_ind; i < median_dim1_val_ind; i++)
+				dim1_val_ind_arr_d[i] = dim1_val_ind_arr_d[i+1];
+		// Otherwise, max_dim2_val is to the right of median_dim1_val_ind in dim1_val_ind_arr_d; leave left subarray as is
+	}
+	if (right_subarr_num_elems > 0)
+	{
+		GPUTreeNode::setRightChild(getBitcodesRoot(tree_root_d, tree_num_elem_slots), target_node_ind);
+
+		// max_dim2_val is to the right of median_dim1_val_ind in dim1_val_ind_arr_d; shift all entries after max_dim2_val_dim1_array_ind leftward, overwriting max_dim2_val_array_ind
+		if (max_dim2_val_dim1_array_ind > median_dim1_val_ind)
+			for (size_t i = max_dim2_val_dim1_array_ind;
+					i < subelems_start_inds_arr[threadIdx.x] + num_subelems_arr[threadIdx.x] - 1;
+					i++)
+				dim1_val_ind_arr_d[i] = dim1_val_ind_arr_d[i+1];
+		// Otherwise, max_dim2_val is to the left of median_dim1_val in dim1_val_ind_arr_d; leave right subarray as is
+	}
+
+
+	// Choose median_dim1_val_ind + 1 as the starting index for all right subarrays, as this is the only index that is valid no matter whether max_dim2_val is to the left or right of med_dim1_val
+	right_subarr_start_ind = median_dim1_val_ind + 1;
+
+
+	// Iterate through dim2_val_ind_arr_d, placing data with lower dimension-1 value in the subarray for the left subtree and data with higher dimension-1 value in the subarray for the right subtree
+	// Note that because subarrays' sizes were allocated based on this same data, there should not be a need to check that left_dim2_subarr_iter_ind < left_subarr_num_elems (and similarly for the right side)
+	if (GPUTreeNode::hasChildren(getBitcodesRoot(tree_root_d, tree_num_elem_slots)[target_node_ind]))
+	{
+		size_t left_dim2_subarr_iter_ind = subelems_start_inds_arr[threadIdx.x];
+		size_t right_dim2_subarr_iter_ind = right_subarr_start_ind;
+
+		// Skip over first (largest) element in dim2_val_ind_arr_d, as it has been already placed in the current node
+		for (size_t i = subelems_start_inds_arr[threadIdx.x] + 1;
+				i < subelems_start_inds_arr[threadIdx.x] + num_subelems_arr[threadIdx.x];
+				i++)
+		{
+			// dim2_val_ind_arr_d[i] is the index of a PointStructTemplate<T, IDType, num_IDs> that comes before or is the PointStructTemplate<T, IDType, num_IDs> of median dim1 value in dim1_val_ind_arr_d
+			if (pt_arr_d[dim2_val_ind_arr_d[i]].compareDim1(pt_arr_d[dim1_val_ind_arr_d[median_dim1_val_ind]]) <= 0)
+				// Postfix ++ returns the current value before incrementing
+				dim2_val_ind_arr_secondary_d[left_dim2_subarr_iter_ind++] = dim2_val_ind_arr_d[i];
+			// dim2_val_ind_arr_d[i] is the index of a PointStructTemplate<T, IDType, num_IDs> that comes after the PointStructTemplate<T, IDType, num_IDs> of median dim1 value in dim1_val_ind_arr_d
+			else
+				dim2_val_ind_arr_secondary_d[right_dim2_subarr_iter_ind++] = dim2_val_ind_arr_d[i];
+		}
+	}
+}
+
 
 // Data footprint calculation functions
 
