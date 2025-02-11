@@ -98,6 +98,20 @@ __global__ void populateTrees(T *const tree_arr_d, const size_t full_tree_num_el
 											subelems_start_inds_arr, num_subelems_arr,
 											left_subarr_num_elems, right_subarr_start_ind,
 											right_subarr_num_elems);
+
+			// Update information for next iteration; as memory accesses are coalesced no matter the relative order as long as they are from the same source location, (and nodes are consecutive except possibly at the leaf levels), pick an inactive thread to instantiate the right child
+				// If there exist inactive threads in the block, assign the right child to an inactive thread and the left child to oneself
+			if (threadIdx.x + nodes_per_level < blockDim.x)
+			{
+				subelems_start_inds_arr[threadIdx.x + nodes_per_level] = right_subarr_start_ind;
+				num_subelems_arr[threadIdx.x + nodes_per_level] = right_subarr_num_elems;
+				target_node_inds_arr[threadIdx.x + nodes_per_level] =
+					GPUTreeNode::getRightChild(target_node_inds_arr[threadIdx.x]);
+
+				num_subelems_arr[threadIdx.x] = left_subarr_num_elems;
+				target_node_inds_arr[threadIdx.x] =
+					GPUTreeNode::getLeftChild(target_node_inds_arr[threadIdx.x]);
+			}
 		}
 	}
 }

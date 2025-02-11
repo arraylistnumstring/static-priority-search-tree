@@ -4,6 +4,7 @@
 #include "dev-symbols.h"			// For global memory-scoped variable res_arr_ind_d
 #include "gpu-err-chk.h"
 #include "gpu-power-of-2-functions.h"
+#include "gpu-tree-node.h"
 #include "static-priority-search-tree.h"
 #include "type-concepts.h"
 
