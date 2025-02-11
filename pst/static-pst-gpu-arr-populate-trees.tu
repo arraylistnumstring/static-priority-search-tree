@@ -90,7 +90,6 @@ __global__ void populateTrees(T *const tree_arr_d, const size_t full_tree_num_el
 			// Note: potential sign conversion issue when computer memory becomes of size 2^64
 			const size_t max_dim2_val_dim1_array_ind = array_search_res_ind;
 
-			/*
 			StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::constructNode(
 											tree_root_d, tree_num_elem_slots,
 											pt_arr_d, target_tree_node_inds_arr[threadIdx.x],
@@ -102,7 +101,6 @@ __global__ void populateTrees(T *const tree_arr_d, const size_t full_tree_num_el
 											left_subarr_num_elems, right_subarr_start_ind,
 											right_subarr_num_elems
 										);
-			*/
 
 			// Update information for next iteration; as memory accesses are coalesced no matter the relative order as long as they are from the same source location, (and nodes are consecutive except possibly at the leaf levels), pick an inactive thread to instantiate the right child
 			// If there exist inactive threads in the block, assign the right child to an inactive thread and the left child to oneself
