@@ -127,7 +127,7 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 
 		// Helper function for calculating minimum number of array slots necessary to construct a complete tree with num_elems elements
 		// Must be a static function because it is called during construction
-		static size_t calcNumElemSlotsPerTree(const size_t num_elems_per_tree)
+		inline static size_t calcNumElemSlotsPerTree(const size_t num_elems_per_tree)
 		{
 			// Minimum number of array slots necessary to construct any complete tree with num_elems elements is 1 less than the smallest power of 2 greater than num_elems
 			// Number of elements in each container subarray for each tree is nextGreaterPowerOf2(num_elems) - 1
@@ -135,19 +135,19 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 		};
 
 		// Calculate size of array of trees in units of number of elements of type T or IDType, whichever is larger
-		static size_t calcTreeArrSizeNumMaxDataIDTypes(const size_t num_elems, const unsigned threads_per_block);
+		inline static size_t calcTreeArrSizeNumMaxDataIDTypes(const size_t num_elems, const unsigned threads_per_block);
 
 		// Calculate size of array allocated for each tree in units of number of elements of type T or IDType, whichever is larger
-		static size_t calcTreeSizeNumMaxDataIDTypes(const size_t num_elem_slots_per_tree);
+		inline static size_t calcTreeSizeNumMaxDataIDTypes(const size_t num_elem_slots_per_tree);
 
 		// Helper function for calculating the number of elements of size T necessary to instantiate each tree for trees with no ID field
 		template <size_t num_T_subarrs>
-		static size_t calcTreeSizeNumTs(const size_t num_elem_slots_per_tree);
+		inline static size_t calcTreeSizeNumTs(const size_t num_elem_slots_per_tree);
 
-		// Helper function for calculating the number of elements of size U necessary to instantiate each tree, for data types U and V such that sizeof(U) >= sizeof(V)
-		template <typename U, size_t num_U_subarrs, typename V, size_t num_V_subarrs>
-			requires SizeOfUAtLeastSizeOfV<U, V>
-		static size_t calcTreeSizeNumUs(const size_t num_elem_slots_per_tree);
+		// Helper function for calculating the number of elements of size IDType necessary to instantiate an array for root of tree; calculation differs from calcTotArrSizeNumTs() due to need for IDType alignment to be satisfied when sizeof(IDType) > sizeof(T)
+		template <size_t num_T_subarrs>
+			requires NonVoidType<IDType>
+		inline static size_t calcTotArrSizeNumIDTypes(const size_t num_elem_slots);
 
 
 		// Data members

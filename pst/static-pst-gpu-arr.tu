@@ -45,7 +45,8 @@ StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPUArr(PointS
 #endif
 
 	// Asynchronous memory transfer only permitted for on-host pinned (page-locked) memory, so do such operations in the default stream
-	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
+	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value
+					|| SizeOfUAtLeastSizeOfV<T, IDType>)
 	{
 		// Allocate as a T array so that alignment requirements for larger data types are obeyed
 		gpuErrorCheck(cudaMalloc(&tree_arr_d, tree_arr_size_num_max_data_id_types * sizeof(T)),
@@ -56,24 +57,12 @@ StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPUArr(PointS
 	}
 	else
 	{
-		if constexpr (sizeof(T) >= sizeof(IDType))
-		{
-			// Allocate as a T array so that alignment requirements for larger data types are obeyed
-			gpuErrorCheck(cudaMalloc(&tree_arr_d, tree_arr_size_num_max_data_id_types * sizeof(T)),
-							"Error in allocating array of PSTs on device "
-							+ std::to_string(dev_ind + 1) + " (1-indexed) of "
-							+ std::to_string(num_devs) + " :"
-						);
-		}
-		else
-		{
-			// Allocate as an IDType array so that alignment requirements for larger data types are obeyed
-			gpuErrorCheck(cudaMalloc(&tree_arr_d, tree_arr_size_num_max_data_id_types * sizeof(IDType)),
-							"Error in allocating array of PSTs on device "
-							+ std::to_string(dev_ind + 1) + " (1-indexed) of "
-							+ std::to_string(num_devs) + " :"
-						);
-		}
+		// Allocate as an IDType array so that alignment requirements for larger data types are obeyed
+		gpuErrorCheck(cudaMalloc(&tree_arr_d, tree_arr_size_num_max_data_id_types * sizeof(IDType)),
+						"Error in allocating array of PSTs on device "
+						+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+						+ std::to_string(num_devs) + " :"
+					);
 	}
 
 
@@ -111,7 +100,13 @@ StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPUArr(PointS
 					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
 					+ std::to_string(num_devs) + ": "
 				);
-	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
+
+#ifdef DEBUG_CONSTR
+	std::cout << "About to do an async memory assignment\n";
+#endif
+
+	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value
+					|| SizeOfUAtLeastSizeOfV<T, IDType>)
 	{
 		gpuErrorCheck(cudaMemsetAsync(tree_arr_d, 0, tree_arr_size_num_max_data_id_types * sizeof(T),
 										stream_root_init),
@@ -122,27 +117,12 @@ StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPUArr(PointS
 	}
 	else
 	{
-		if constexpr (sizeof(T) >= sizeof(IDType))
-		{
-#ifdef DEBUG_CONSTR
-			std::cout << "About to do an async memory assignment\n";
-#endif
-			gpuErrorCheck(cudaMemsetAsync(tree_arr_d, 0, tree_arr_size_num_max_data_id_types * sizeof(T),
-											stream_root_init),
-							"Error in zero-intialising priority search tree storage array via cudaMemset() on device "
-							+ std::to_string(dev_ind + 1) + " (1-indexed) of "
-							+ std::to_string(num_devs) + ": "
-						);
-		}
-		else
-		{
-			gpuErrorCheck(cudaMemsetAsync(tree_arr_d, 0, tree_arr_size_num_max_data_id_types * sizeof(IDType),
-											stream_root_init),
-							"Error in zero-intialising priority search tree storage array via cudaMemset() on device "
-							+ std::to_string(dev_ind + 1) + " (1-indexed) of "
-							+ std::to_string(num_devs) + ": "
-						);
-		}
+		gpuErrorCheck(cudaMemsetAsync(tree_arr_d, 0, tree_arr_size_num_max_data_id_types * sizeof(IDType),
+										stream_root_init),
+						"Error in zero-intialising priority search tree storage array via cudaMemset() on device "
+						+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+						+ std::to_string(num_devs) + ": "
+					);
 	}
 	// cudaStreamDestroy() is also a kernel submitted to the indicated stream, so it only runs once all previous calls have completed
 	gpuErrorCheck(cudaStreamDestroy(stream_root_init),
@@ -467,17 +447,12 @@ size_t StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcGlobalMemNe
 	const size_t tree_arr_size_num_max_data_id_types = calcTreeArrSizeNumMaxDataIDTypes(num_elems, threads_per_block);
 
 	size_t global_mem_needed = tree_arr_size_num_max_data_id_types;
-	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
-		// No IDs present
+	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value
+					|| SizeOfUAtLeastSizeOfV<T, IDType>)
+		// No IDs present or sizeof(T) >= sizeof(IDType)
 		global_mem_needed *= sizeof(T);
 	else
-	{
-		// Separate size-comparison condition from the num_IDs==0 condition so that sizeof(IDType) is well-defined here, as often only one branch of a constexpr if is compiled
-		if constexpr (sizeof(T) >= sizeof(IDType))
-			global_mem_needed *= sizeof(T);
-		else
-			global_mem_needed *= sizeof(IDType);
-	}
+		global_mem_needed *= sizeof(IDType);
 
 	/*
 		Space needed for instantiation = tree array size + addend, where addend = max(construction overhead, search overhead) = max(3 * num_elems * size of PointStructTemplate indices, num_elems * size of PointStructTemplate)
@@ -564,19 +539,13 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 			typename IDType, size_t num_IDs>
 size_t StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcTreeSizeNumMaxDataIDTypes(const size_t num_elem_slots_per_tree)
 {
-	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
-		// No IDs present
+	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value
+					|| SizeOfUAtLeastSizeOfV<T, IDType>)
+		// No IDs present or sizeof(T) >= sizeof(IDType)
 		return calcTreeSizeNumTs<num_val_subarrs>(num_elem_slots_per_tree);
 	else
-	{
-		// Separate size-comparison condition from the num_IDs==0 condition so that sizeof(IDType) is well-defined here, as often only one branch of a constexpr if is compiled
-		if constexpr (sizeof(T) >= sizeof(IDType))
-			// sizeof(T) >= sizeof(IDType), so calculate tree array size in units of sizeof(T) so that datatype T's alignment requirements will be satisfied
-			return calcTreeSizeNumUs<T, num_val_subarrs, IDType, num_IDs>(num_elem_slots_per_tree);
-		else
-			// sizeof(IDType) > sizeof(T), so calculate total array size in units of sizeof(IDType) so that datatype IDType's alignment requirements will be satisfied
-			return calcTreeSizeNumUs<IDType, num_IDs, T, num_val_subarrs>(num_elem_slots_per_tree);
-	}
+		// sizeof(IDType) > sizeof(T), so calculate total array size in units of sizeof(IDType) so that datatype IDType's alignment requirements will be satisfied
+		return calcTreeSizeNumIDTypes<num_val_subarrs>(num_elem_slots_per_tree);
 }
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
@@ -585,12 +554,9 @@ template <size_t num_T_subarrs>
 size_t StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcTreeSizeNumTs(const size_t num_elem_slots_per_tree)
 {
 	/*
-		tree_size_num_Ts = ceil(1/sizeof(T) * num_elem_slots_per_tree * (sizeof(T) * num_T_subarrs + sizeof(IDType) * num_IDs + 1 B/bitcode * 1 bitcode))
-			With integer truncation:
-				if tree_size_bytes % sizeof(T) != 0:
-							= tree_size_bytes + 1
-				if tree_size_bytes % sizeof(T) == 0:
-							= tree_size_bytes
+		sizeof(T) >= sizeof(IDType), so alignment requirements for all types satisfied when using maximal compaction
+
+		tot_arr_size_num_Ts = ceil(1/sizeof(T) * num_elem_slots * (sizeof(T) * num_T_subarrs + sizeof(IDType) * num_IDs + 1 B/bitcode * 1 bitcode))
 	*/
 	// Calculate total size in bytes
 	size_t tree_size_bytes = sizeof(T) * num_T_subarrs + 1;
@@ -608,24 +574,30 @@ size_t StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcTreeSizeNum
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-template <typename U, size_t num_U_subarrs, typename V, size_t num_V_subarrs>
-	requires SizeOfUAtLeastSizeOfV<U, V>
-size_t StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcTreeSizeNumUs(const size_t num_elem_slots_per_tree)
+template <size_t num_T_subarrs>
+	requires NonVoidType<IDType>
+inline size_t StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSizeNumIDTypes(const size_t num_elem_slots)
 {
 	/*
-		tree_size_num_Us = ceil(1/sizeof(U) * num_elem_slots_per_tree * (sizeof(U) * num_U_subarrs + sizeof(V) * num_V_subarrs + 1 B/bitcode * 1 bitcode))
-			With integer truncation:
-				if tree_size_bytes % sizeof(U) != 0:
-							= tree_size_bytes + 1
-				if tree_size_bytes % sizeof(U) == 0:
-							= tree_size_bytes
+		sizeof(IDType) > sizeof(T), so extra padding must be placed before IDType array to ensure alignment requirements are met (hence the distribution of the ceil() function around each addend
+
+		tot_arr_size_num_IDTypes = ceil(1/sizeof(IDType) * num_elem_slots * sizeof(T) * num_T_subarrs)
+									+ num_elem_slots * num_IDs
+									+ ceil(1/sizeof(IDType) * num_elem_slots * 1 B/bitcode * 1 bitcode)
 	*/
-	// Calculate total size in bytes
-	size_t tree_size_bytes = num_elem_slots_per_tree * (sizeof(U) * num_U_subarrs + sizeof(V) * num_V_subarrs + 1);
-	// Divide by sizeof(U)
-	size_t tree_size_num_Us = tree_size_bytes / sizeof(U);
-	// If tree_size_bytes % sizeof(U) != 0, then tree_size_num_Us * sizeof(U) < tree_size_bytes, so add 1 to tree_size_num_Us
-	if (tree_size_bytes % sizeof(U) != 0)
-		tree_size_num_Us++;
-	return tree_size_num_Us;
+	// Calculate size of value arrays in units of number of IDTypes
+	const size_t val_arr_size_bytes = num_elem_slots * sizeof(T) * num_T_subarrs;
+	const size_t val_arr_size_num_IDTypes = val_arr_size_bytes / sizeof(IDType)
+												+ (val_arr_size_bytes % sizeof(IDType) == 0 ? 0 : 1);
+
+	// Calculate size of bitcode array in units of number of IDTypes
+	const size_t bitcode_arr_size_bytes = num_elem_slots;
+	const size_t bitcode_arr_size_num_IDTypes = bitcode_arr_size_bytes / sizeof(IDType)
+												+ (bitcode_arr_size_bytes  % sizeof(IDType) == 0 ? 0 : 1);
+
+	const size_t tot_arr_size_num_IDTypes = val_arr_size_num_IDTypes			// Value array
+											+ num_elem_slots * num_IDs			// ID array
+											+ bitcode_arr_size_num_IDTypes;		// Bitcode array
+
+	return tot_arr_size_num_IDTypes;
 }

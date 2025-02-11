@@ -317,17 +317,23 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		__forceinline__ __host__ __device__ static T* getMedDim1ValsRoot(T *const root, const size_t num_elem_slots)
 			{return root + (num_elem_slots << 1);};
 		__forceinline__ __host__ __device__ static IDType* getIDsRoot(T *const root, const size_t num_elem_slots)
-			{return reinterpret_cast<IDType *>(root + num_elem_slots * num_val_subarrs);};
+			requires NonVoidType<IDType>
+		{
+			const size_t val_subarr_offset_bytes = num_elem_slots * num_val_subarrs * sizeof(T);
+			const size_t val_subarr_offset_IDTypes = val_subarr_offset_bytes / sizeof(IDType)
+														+ (val_subarr_offset_bytes % sizeof(IDType) == 0 ? 0 : 1);
+			return reinterpret_cast<IDType *>(root) + val_subarr_offset_IDTypes;
+		};
 		__forceinline__ __host__ __device__ static unsigned char* getBitcodesRoot(T *const root, const size_t num_elem_slots)
-			// Use reinterpret_cast for pointer conversions
-			{
-				if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
-					// Argument of cast is of type T *
-					return reinterpret_cast<unsigned char*>(root + num_val_subarrs * num_elem_slots);
-				else
-					// Argument of cast is of type IDType *
-					return reinterpret_cast<unsigned char*>(getIDsRoot(root, num_elem_slots) + num_IDs * num_elem_slots);
-			};
+		// Use reinterpret_cast for pointer conversions
+		{
+			if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
+				// Argument of cast is of type T *
+				return reinterpret_cast<unsigned char*>(root + num_val_subarrs * num_elem_slots);
+			else
+				// Argument of cast is of type IDType *
+				return reinterpret_cast<unsigned char*>(getIDsRoot(root, num_elem_slots) + num_IDs * num_elem_slots);
+		};
 
 
 		// Data footprint calculation functions
@@ -351,10 +357,10 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		template <size_t num_T_subarrs>
 		inline static size_t calcTotArrSizeNumTs(const size_t num_elem_slots);
 
-		// Helper function for calculating the number of elements of size U necessary to instantiate an array for root, for data types U and V such that sizeof(U) >= sizeof(V)
-		template <typename U, size_t num_U_subarrs, typename V, size_t num_V_subarrs>
-			requires SizeOfUAtLeastSizeOfV<U, V>
-		inline static size_t calcTotArrSizeNumUs(const size_t num_elem_slots);
+		// Helper function for calculating the number of elements of size IDType necessary to instantiate an array for root of tree; calculation differs from calcTotArrSizeNumTs() due to need for IDType alignment to be satisfied when sizeof(IDType) > sizeof(T)
+		template <size_t num_T_subarrs>
+			requires NonVoidType<IDType>
+		inline static size_t calcTotArrSizeNumIDTypes(const size_t num_elem_slots);
 
 
 		void printRecur(std::ostream &os, T *const &tree_root, const size_t curr_ind,
