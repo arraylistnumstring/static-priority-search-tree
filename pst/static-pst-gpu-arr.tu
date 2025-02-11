@@ -576,7 +576,7 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 			typename IDType, size_t num_IDs>
 template <size_t num_T_subarrs>
 	requires NonVoidType<IDType>
-inline size_t StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSizeNumIDTypes(const size_t num_elem_slots)
+inline size_t StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSizeNumIDTypes(const size_t num_elem_slots)
 {
 	/*
 		sizeof(IDType) > sizeof(T), so extra padding must be placed before IDType array to ensure alignment requirements are met (hence the distribution of the ceil() function around each addend

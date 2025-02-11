@@ -1172,7 +1172,7 @@ inline size_t StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::calcTotArrS
 	// constexpr if is a C++17 feature that only compiles the branch of code that evaluates to true at compile-time, saving executable space and execution runtime
 	// Use of !HasID<> serves as an effective guard against IDType=void instantiations
 	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value
-					|| SizeOFUAtLeastSizeOfV<T, IDType>)
+					|| SizeOfUAtLeastSizeOfV<T, IDType>)
 		// No IDs present or sizeof(T) >= sizeof(IDType)
 		return calcTotArrSizeNumTs<num_val_subarrs>(num_elem_slots);
 	else
@@ -1208,7 +1208,7 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 			typename IDType, size_t num_IDs>
 template <size_t num_T_subarrs>
 	requires NonVoidType<IDType>
-inline size_t StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSizeNumIDTypes(const size_t num_elem_slots)
+inline size_t StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSizeNumIDTypes(const size_t num_elem_slots)
 {
 	/*
 		sizeof(IDType) > sizeof(T), so extra padding must be placed before IDType array to ensure alignment requirements are met (hence the distribution of the ceil() function around each addend
