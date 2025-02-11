@@ -166,6 +166,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 
 		// From the specification of C, pointers are const if the const qualifier appears to the right of the corresponding *
 		// Returns index in dim1_val_ind_arr_d of elem_to_find
+		// Must be a static function because it is called during construction
 		__forceinline__ __device__ static long long binarySearch(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr_d,
 																	size_t *const &dim1_val_ind_arr_d,
 																	PointStructTemplate<T, IDType, num_IDs> &elem_to_find,
@@ -188,10 +189,10 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 																size_t &right_subarr_num_elems);
 
 		__forceinline__ __device__ static void setNode(T *const root_d,
-																const size_t node_ind,
-																const size_t num_elem_slots,
-																PointStructTemplate<T, IDType, num_IDs> &source_data,
-																T median_dim1_val)
+														const size_t node_ind,
+														const size_t num_elem_slots,
+														PointStructTemplate<T, IDType, num_IDs> &source_data,
+														T median_dim1_val)
 		{
 			getDim1ValsRoot(root_d, num_elem_slots)[node_ind] = source_data.dim1_val;
 			getDim2ValsRoot(root_d, num_elem_slots)[node_ind] = source_data.dim2_val;
@@ -349,7 +350,6 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		};
 
 		// Calculate size of array allocated for the tree in units of number of elements of type T or IDType, whichever is larger
-		// Must be a static function because it is called during construction
 		inline static size_t calcTotArrSizeNumMaxDataIDTypes(const size_t num_elems);	
 
 		// Helper function for calculating the number of elements of size T necessary to instantiate an array for root of trees with no ID field

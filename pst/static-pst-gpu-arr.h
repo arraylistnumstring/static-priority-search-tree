@@ -116,6 +116,7 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 
 		// From the specification of C, pointers are const if the const qualifier appears to the right of the corresponding *
 		// Returns index in dim1_val_ind_arr of elem_to_find
+		// Must be a static function because it is called during construction
 		__forceinline__ __device__ static long long binarySearch(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr_d,
 																	size_t *const &dim1_val_ind_arr_d,
 																	PointStructTemplate<T, IDType, num_IDs> &elem_to_find,
@@ -136,6 +137,19 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 																size_t &left_subarr_num_elems,
 																size_t &right_subarr_start_ind,
 																size_t &right_subarr_num_elems);
+
+		__forceinline__ __device__ static void setNode(T *const root_d,
+														const size_t node_ind,
+														const size_t num_elem_slots,
+														PointStructTemplate<T, IDType, num_IDs> &source_data,
+														T median_dim1_val)
+		{
+			getDim1ValsRoot(root_d, num_elem_slots)[node_ind] = source_data.dim1_val;
+			getDim2ValsRoot(root_d, num_elem_slots)[node_ind] = source_data.dim2_val;
+			getMedDim1ValsRoot(root_d, num_elem_slots)[node_ind] = median_dim1_val;
+			if constexpr (HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
+				getIDsRoot(root_d, num_elem_slots)[node_ind] = source_data.id;
+		};
 
 
 		// Data-accessing helper functions
@@ -170,7 +184,6 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 		// Data footprint calculation functions
 
 		// Helper function for calculating minimum number of array slots necessary to construct a complete tree with num_elems elements
-		// Must be a static function because it is called during construction
 		__forceinline__ __host__ __device__ static size_t calcNumElemSlotsPerTree(const size_t num_elems_per_tree)
 		{
 			// Minimum number of array slots necessary to construct any complete tree with num_elems elements is 1 less than the smallest power of 2 greater than num_elems
