@@ -105,12 +105,12 @@ __global__ void populateTrees(T *const tree_arr_d, const size_t full_tree_num_el
 			{
 				subelems_start_inds_arr[threadIdx.x + nodes_per_level] = right_subarr_start_ind;
 				num_subelems_arr[threadIdx.x + nodes_per_level] = right_subarr_num_elems;
-				target_node_inds_arr[threadIdx.x + nodes_per_level] =
-					GPUTreeNode::getRightChild(target_node_inds_arr[threadIdx.x]);
+				target_tree_node_inds_arr[threadIdx.x + nodes_per_level] =
+					GPUTreeNode::getRightChild(target_tree_node_inds_arr[threadIdx.x]);
 
 				num_subelems_arr[threadIdx.x] = left_subarr_num_elems;
-				target_node_inds_arr[threadIdx.x] =
-					GPUTreeNode::getLeftChild(target_node_inds_arr[threadIdx.x]);
+				target_tree_node_inds_arr[threadIdx.x] =
+					GPUTreeNode::getLeftChild(target_tree_node_inds_arr[threadIdx.x]);
 			}
 		}
 	}
