@@ -177,7 +177,6 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 																const size_t &num_elem_slots,
 																PointStructTemplate<T, IDType, num_IDs> *const &pt_arr_d,
 																size_t &target_node_ind,
-																const size_t &num_elems,
 																size_t *const &dim1_val_ind_arr_d,
 																size_t *&dim2_val_ind_arr_d,
 																size_t *&dim2_val_ind_arr_secondary_d,
