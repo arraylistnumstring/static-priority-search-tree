@@ -7,7 +7,7 @@
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPUArr(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr_d,
+StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPUArr(PointStructTemplate<T, IDType, num_IDs> *const pt_arr_d,
 																			size_t num_elems,
 																			const unsigned threads_per_block,
 																			int dev_ind, int num_devs,
@@ -491,11 +491,11 @@ size_t StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcGlobalMemNe
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
 __forceinline__ __device__ long long StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::binarySearch(
-															PointStructTemplate<T, IDType, num_IDs> *const &pt_arr_d,
-															size_t *const &dim1_val_ind_arr_d,
-															PointStructTemplate<T, IDType, num_IDs> &elem_to_find,
-															const size_t &init_ind,
-															const size_t &num_elems
+															PointStructTemplate<T, IDType, num_IDs> *const pt_arr_d,
+															size_t *const dim1_val_ind_arr_d,
+															PointStructTemplate<T, IDType, num_IDs> const &elem_to_find,
+															const size_t init_ind,
+															const size_t num_elems
 														)
 {
 	size_t low_ind = init_ind;
@@ -522,19 +522,20 @@ __forceinline__ __device__ long long StaticPSTGPUArr<T, PointStructTemplate, IDT
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
 __forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::constructNode(
-																T *const &tree_root_d,
-																const size_t &tree_num_elem_slots,
-																PointStructTemplate<T, IDType, num_IDs> *const &pt_arr_d,
-																size_t &target_node_ind,
-																size_t *const &dim1_val_ind_arr_d,
-																size_t *&dim2_val_ind_arr_d,
-																size_t *&dim2_val_ind_arr_secondary_d,
-																const size_t &max_dim2_val_dim1_array_ind,
+																T *const tree_root_d,
+																const size_t tree_num_elem_slots,
+																PointStructTemplate<T, IDType, num_IDs> *const pt_arr_d,
+																const size_t target_node_ind,
+																size_t *const dim1_val_ind_arr_d,
+																size_t *const dim2_val_ind_arr_d,
+																size_t *const dim2_val_ind_arr_secondary_d,
+																const size_t max_dim2_val_dim1_array_ind,
 																size_t &subelems_start_ind,
 																size_t &num_subelems,
 																size_t &left_subarr_num_elems,
 																size_t &right_subarr_start_ind,
-																size_t &right_subarr_num_elems)
+																size_t &right_subarr_num_elems
+															)
 {
 	size_t median_dim1_val_ind;
 
@@ -550,12 +551,10 @@ __forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, 
 	else if (max_dim2_val_dim1_array_ind < subelems_start_ind + num_subelems/2)
 	{
 		// As median values are always put in the left subtree, when the subroot value comes from the left subarray, the median index is given by num_elems/2, which evenly splits the array if there are an even number of elements remaining or makes the left subtree larger by one element if there are an odd number of elements remaining
-		median_dim1_val_ind = subelems_start_ind
-								+ num_subelems/2;
+		median_dim1_val_ind = subelems_start_ind + num_subelems/2;
 		// max_dim2_val has been removed from the left subarray, so there are median_dim1_val_ind elements remaining on the left side
 		left_subarr_num_elems = median_dim1_val_ind - subelems_start_ind;
-		right_subarr_num_elems = subelems_start_ind + num_subelems
-									- median_dim1_val_ind - 1;
+		right_subarr_num_elems = subelems_start_ind + num_subelems - median_dim1_val_ind - 1;
 	}
 	/*
 		max_dim2_val originally comes from the part of the array to the right of median_dim1_val, i.e.
@@ -563,12 +562,10 @@ __forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, 
 	*/
 	else
 	{
-		median_dim1_val_ind = subelems_start_ind
-								+ num_subelems/2 - 1;
+		median_dim1_val_ind = subelems_start_ind + num_subelems/2 - 1;
 
 		left_subarr_num_elems = median_dim1_val_ind - subelems_start_ind + 1;
-		right_subarr_num_elems = subelems_start_ind + num_subelems
-									- median_dim1_val_ind - 2;
+		right_subarr_num_elems = subelems_start_ind + num_subelems - median_dim1_val_ind - 2;
 	}
 
 	setNode(tree_root_d, target_node_ind, tree_num_elem_slots,
@@ -594,8 +591,7 @@ __forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, 
 		// max_dim2_val is to the right of median_dim1_val_ind in dim1_val_ind_arr_d; shift all entries after max_dim2_val_dim1_array_ind leftward, overwriting max_dim2_val_array_ind
 		if (max_dim2_val_dim1_array_ind > median_dim1_val_ind)
 			for (size_t i = max_dim2_val_dim1_array_ind;
-					i < subelems_start_ind + num_subelems - 1;
-					i++)
+					i < subelems_start_ind + num_subelems - 1; i++)
 				dim1_val_ind_arr_d[i] = dim1_val_ind_arr_d[i+1];
 		// Otherwise, max_dim2_val is to the left of median_dim1_val in dim1_val_ind_arr_d; leave right subarray as is
 	}
@@ -613,9 +609,7 @@ __forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, 
 		size_t right_dim2_subarr_iter_ind = right_subarr_start_ind;
 
 		// Skip over first (largest) element in dim2_val_ind_arr_d, as it has been already placed in the current node
-		for (size_t i = subelems_start_ind + 1;
-				i < subelems_start_ind + num_subelems;
-				i++)
+		for (size_t i = subelems_start_ind + 1; i < subelems_start_ind + num_subelems; i++)
 		{
 			// dim2_val_ind_arr_d[i] is the index of a PointStructTemplate<T, IDType, num_IDs> that comes before or is the PointStructTemplate<T, IDType, num_IDs> of median dim1 value in dim1_val_ind_arr_d
 			if (pt_arr_d[dim2_val_ind_arr_d[i]].compareDim1(pt_arr_d[dim1_val_ind_arr_d[median_dim1_val_ind]]) <= 0)

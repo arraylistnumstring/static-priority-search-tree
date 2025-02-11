@@ -29,7 +29,7 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 {
 	public:
 		// {} is value-initialisation; for structs, this is zero-initialisation
-		StaticPSTGPUArr(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr_d, size_t num_elems,
+		StaticPSTGPUArr(PointStructTemplate<T, IDType, num_IDs> *const pt_arr_d, size_t num_elems,
 							const unsigned threads_per_block, int dev_ind=0, int num_devs=1,
 							cudaDeviceProp dev_props={}
 						);
@@ -118,22 +118,22 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 		// From the specification of C, pointers are const if the const qualifier appears to the right of the corresponding *
 		// Returns index in dim1_val_ind_arr of elem_to_find
 		// Must be a static function because it is called during construction
-		__forceinline__ __device__ static long long binarySearch(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr_d,
-																	size_t *const &dim1_val_ind_arr_d,
-																	PointStructTemplate<T, IDType, num_IDs> &elem_to_find,
-																	const size_t &init_ind,
-																	const size_t &num_elems
+		__forceinline__ __device__ static long long binarySearch(PointStructTemplate<T, IDType, num_IDs> *const pt_arr_d,
+																	size_t *const dim1_val_ind_arr_d,
+																	PointStructTemplate<T, IDType, num_IDs> const &elem_to_find,
+																	const size_t init_ind,
+																	const size_t num_elems
 																);
 
-		__forceinline__ __device__ static void constructNode(T *const &root_d,
-																const size_t &tree_num_elem_slots,
-																PointStructTemplate<T, IDType, num_IDs> *const &pt_arr_d,
-																size_t &target_node_ind,
-																size_t *const &dim1_val_ind_arr_d,
-																size_t *&dim2_val_ind_arr_d,
-																size_t *&dim2_val_ind_arr_secondary_d,
-																const size_t &max_dim2_val_dim1_array_ind,
-																size_t &subelems_start_inds,
+		__forceinline__ __device__ static void constructNode(T *const root_d,
+																const size_t tree_num_elem_slots,
+																PointStructTemplate<T, IDType, num_IDs> *const pt_arr_d,
+																const size_t target_node_ind,
+																size_t *const dim1_val_ind_arr_d,
+																size_t *const dim2_val_ind_arr_d,
+																size_t *const dim2_val_ind_arr_secondary_d,
+																const size_t max_dim2_val_dim1_array_ind,
+																size_t &subelems_start_ind,
 																size_t &num_subelems,
 																size_t &left_subarr_num_elems,
 																size_t &right_subarr_start_ind,
@@ -142,7 +142,7 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 		__forceinline__ __device__ static void setNode(T *const root_d,
 														const size_t node_ind,
 														const size_t num_elem_slots,
-														PointStructTemplate<T, IDType, num_IDs> &source_data,
+														PointStructTemplate<T, IDType, num_IDs> const &source_data,
 														T median_dim1_val)
 		{
 			getDim1ValsRoot(root_d, num_elem_slots)[node_ind] = source_data.dim1_val;

@@ -67,7 +67,8 @@ __global__ void populateTree(T *const root_d, const size_t num_elem_slots,
 											dim1_val_ind_arr_d, dim2_val_ind_arr_d,
 												dim2_val_ind_arr_secondary_d,
 												max_dim2_val_dim1_array_ind,
-											subelems_start_inds_arr, num_subelems_arr,
+											subelems_start_inds_arr[threadIdx.x],
+											num_subelems_arr[threadIdx.x],
 											left_subarr_num_elems, right_subarr_start_ind,
 											right_subarr_num_elems);
 

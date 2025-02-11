@@ -9,7 +9,7 @@
 // C++ allows trailing template type arguments and function parameters to have default values; for template type arguments, it is forbidden for default arguments to be specified for a class template member outside of the class template; for function parameters, one must not declare the default arguments again (as it is regarded as a redefinition, even if the values are the same)
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr_d,
+StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructTemplate<T, IDType, num_IDs> *const pt_arr_d,
 																	size_t num_elems,
 																	const int warp_multiplier,
 																	int dev_ind, int num_devs,
@@ -669,11 +669,11 @@ size_t StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::calcGlobalMemNeede
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
 __forceinline__ __device__ long long StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::binarySearch(
-																	PointStructTemplate<T, IDType, num_IDs> *const &pt_arr_d,
-																	size_t *const &dim1_val_ind_arr_d,
-																	PointStructTemplate<T, IDType, num_IDs> &elem_to_find,
-																	const size_t &init_ind,
-																	const size_t &num_elems)
+																	PointStructTemplate<T, IDType, num_IDs> *const pt_arr_d,
+																	size_t *const dim1_val_ind_arr_d,
+																	PointStructTemplate<T, IDType, num_IDs> const &elem_to_find,
+																	const size_t init_ind,
+																	const size_t num_elems)
 {
 	size_t low_ind = init_ind;
 	size_t high_ind = init_ind + num_elems;
@@ -699,16 +699,16 @@ __forceinline__ __device__ long long StaticPSTGPU<T, PointStructTemplate, IDType
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
 __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::constructNode(
-																T *const &root_d,
-																const size_t &num_elem_slots,
-																PointStructTemplate<T, IDType, num_IDs> *const &pt_arr_d,
-																size_t &target_node_ind,
-																size_t *const &dim1_val_ind_arr_d,
-																size_t *&dim2_val_ind_arr_d,
-																size_t *&dim2_val_ind_arr_secondary_d,
-																const size_t &max_dim2_val_dim1_array_ind,
-																size_t *&subelems_start_inds_arr,
-																size_t *&num_subelems_arr,
+																T *const root_d,
+																const size_t num_elem_slots,
+																PointStructTemplate<T, IDType, num_IDs> *const pt_arr_d,
+																const size_t target_node_ind,
+																size_t *const dim1_val_ind_arr_d,
+																size_t *const dim2_val_ind_arr_d,
+																size_t *const dim2_val_ind_arr_secondary_d,
+																const size_t max_dim2_val_dim1_array_ind,
+																size_t &subelems_start_ind,
+																size_t &num_subelems,
 																size_t &left_subarr_num_elems,
 																size_t &right_subarr_start_ind,
 																size_t &right_subarr_num_elems)
@@ -717,39 +717,35 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 
 	// Treat dim1_val_ind_arr_ind[max_dim2_val_dim1_array_ind] as a removed element (but don't actually remove the element for performance reasons
 
-	if (num_subelems_arr[threadIdx.x] == 1)		// Base case
+	if (num_subelems == 1)		// Base case
 	{
-		median_dim1_val_ind = subelems_start_inds_arr[threadIdx.x];
+		median_dim1_val_ind = subelems_start_ind;
 		left_subarr_num_elems = 0;
 		right_subarr_num_elems = 0;
 	}
 	// max_dim2_val originally comes from the part of the array to the left of median_dim1_val
-	else if (max_dim2_val_dim1_array_ind < subelems_start_inds_arr[threadIdx.x] + num_subelems_arr[threadIdx.x]/2)
+	else if (max_dim2_val_dim1_array_ind < subelems_start_ind + num_subelems/2)
 	{
 		// As median values are always put in the left subtree, when the subroot value comes from the left subarray, the median index is given by num_elems/2, which evenly splits the array if there are an even number of elements remaining or makes the left subtree larger by one element if there are an odd number of elements remaining
-		median_dim1_val_ind = subelems_start_inds_arr[threadIdx.x]
-								+ num_subelems_arr[threadIdx.x]/2;
+		median_dim1_val_ind = subelems_start_ind + num_subelems/2;
 		// max_dim2_val has been removed from the left subarray, so there are median_dim1_val_ind elements remaining on the left side
-		left_subarr_num_elems = median_dim1_val_ind - subelems_start_inds_arr[threadIdx.x];
-		right_subarr_num_elems = subelems_start_inds_arr[threadIdx.x] + num_subelems_arr[threadIdx.x]
-									- median_dim1_val_ind - 1;
+		left_subarr_num_elems = median_dim1_val_ind - subelems_start_ind;
+		right_subarr_num_elems = subelems_start_ind + num_subelems - median_dim1_val_ind - 1;
 	}
 	/*
 		max_dim2_val originally comes from the part of the array to the right of median_dim1_val, i.e.
-			max_dim2_val_dim1_array_ind >= subelems_start_inds_arr[threadIdx.x] + num_subelems_arr[threadIdx.x]/2
+			max_dim2_val_dim1_array_ind >= subelems_start_ind + num_subelems/2
 	*/
 	else
 	{
-		median_dim1_val_ind = subelems_start_inds_arr[threadIdx.x]
-								+ num_subelems_arr[threadIdx.x]/2 - 1;
+		median_dim1_val_ind = subelems_start_ind + num_subelems/2 - 1;
 
-		left_subarr_num_elems = median_dim1_val_ind - subelems_start_inds_arr[threadIdx.x] + 1;
-		right_subarr_num_elems = subelems_start_inds_arr[threadIdx.x] + num_subelems_arr[threadIdx.x]
-									- median_dim1_val_ind - 2;
+		left_subarr_num_elems = median_dim1_val_ind - subelems_start_ind + 1;
+		right_subarr_num_elems = subelems_start_ind + num_subelems - median_dim1_val_ind - 2;
 	}
 
 	setNode(root_d, target_node_ind, num_elem_slots,
-			pt_arr_d[dim2_val_ind_arr_d[subelems_start_inds_arr[threadIdx.x]]],
+			pt_arr_d[dim2_val_ind_arr_d[subelems_start_ind]],
 			pt_arr_d[dim1_val_ind_arr_d[median_dim1_val_ind]].dim1_val);
 
 	if (left_subarr_num_elems > 0)
@@ -771,8 +767,7 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 		// max_dim2_val is to the right of median_dim1_val_ind in dim1_val_ind_arr_d; shift all entries after max_dim2_val_dim1_array_ind leftward, overwriting max_dim2_val_array_ind
 		if (max_dim2_val_dim1_array_ind > median_dim1_val_ind)
 			for (size_t i = max_dim2_val_dim1_array_ind;
-					i < subelems_start_inds_arr[threadIdx.x] + num_subelems_arr[threadIdx.x] - 1;
-					i++)
+					i < subelems_start_ind + num_subelems - 1; i++)
 				dim1_val_ind_arr_d[i] = dim1_val_ind_arr_d[i+1];
 		// Otherwise, max_dim2_val is to the left of median_dim1_val in dim1_val_ind_arr_d; leave right subarray as is
 	}
@@ -786,13 +781,11 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 	// Note that because subarrays' sizes were allocated based on this same data, there should not be a need to check that left_dim2_subarr_iter_ind < left_subarr_num_elems (and similarly for the right side)
 	if (GPUTreeNode::hasChildren(getBitcodesRoot(root_d, num_elem_slots)[target_node_ind]))
 	{
-		size_t left_dim2_subarr_iter_ind = subelems_start_inds_arr[threadIdx.x];
+		size_t left_dim2_subarr_iter_ind = subelems_start_ind;
 		size_t right_dim2_subarr_iter_ind = right_subarr_start_ind;
 
 		// Skip over first (largest) element in dim2_val_ind_arr_d, as it has been already placed in the current node
-		for (size_t i = subelems_start_inds_arr[threadIdx.x] + 1;
-				i < subelems_start_inds_arr[threadIdx.x] + num_subelems_arr[threadIdx.x];
-				i++)
+		for (size_t i = subelems_start_ind + 1; i < subelems_start_ind + num_subelems; i++)
 		{
 			// dim2_val_ind_arr_d[i] is the index of a PointStructTemplate<T, IDType, num_IDs> that comes before or is the PointStructTemplate<T, IDType, num_IDs> of median dim1 value in dim1_val_ind_arr_d
 			if (pt_arr_d[dim2_val_ind_arr_d[i]].compareDim1(pt_arr_d[dim1_val_ind_arr_d[median_dim1_val_ind]]) <= 0)
@@ -826,9 +819,9 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 																const T &curr_node_med_dim1_val,
 																const T &min_dim2_val,
 																long long &search_ind,
-																long long *const &search_inds_arr,
+																long long *const search_inds_arr,
 																unsigned char &search_code,
-																unsigned char *const &search_codes_arr)
+																unsigned char *const search_codes_arr)
 {
 	// Splitting of query is only possible if the current node has two children and min_dim1_val <= curr_node_med_dim1_val <= max_dim1_val; the equality on max_dim1_val is for the edge case where a median point may be duplicated, with one copy going to the left subtree and the other to the right subtree
 	if (min_dim1_val <= curr_node_med_dim1_val
@@ -886,15 +879,15 @@ template <typename RetType>
 		>::value
 __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doLeftSearchDelegation(
 																const bool range_split_poss,
-																const unsigned char &curr_node_bitcode,
-																T *const &root_d,
-																const size_t &num_elem_slots,
+																const unsigned char curr_node_bitcode,
+																T *const root_d,
+																const size_t num_elem_slots,
 																RetType *const res_arr_d,
-																const T &min_dim2_val,
+																const T min_dim2_val,
 																long long &search_ind,
-																long long *const &search_inds_arr,
+																long long *const search_inds_arr,
 																unsigned char &search_code,
-																unsigned char *const &search_codes_arr)
+																unsigned char *const search_codes_arr)
 {
 	// Report all nodes in left subtree, "recurse" search on right
 	// Because reportAllNodesGlobal uses less shared memory, prefer launching reportAllNodesGlobal over launching a search when utilising dynamic parallelism
@@ -943,15 +936,15 @@ template <typename RetType>
 		>::value
 __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doRightSearchDelegation(
 																const bool range_split_poss,
-																const unsigned char &curr_node_bitcode,
-																T *const &root_d,
-																const size_t &num_elem_slots,
+																const unsigned char curr_node_bitcode,
+																T *const root_d,
+																const size_t num_elem_slots,
 																RetType *const res_arr_d,
-																const T &min_dim2_val,
+																const T min_dim2_val,
 																long long &search_ind,
-																long long *const &search_inds_arr,
+																long long *const search_inds_arr,
 																unsigned char &search_code,
-																unsigned char *const &search_codes_arr)
+																unsigned char *const search_codes_arr)
 {
 	// Report all nodes in right subtree, "recurse" search on left
 	// Because reportAllNodesGlobal uses less shared memory, prefer launching reportAllNodesGlobal over launching a search when utilising dynamic parallelism
@@ -997,14 +990,14 @@ template <typename RetType>
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 		>::value
 __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodesDelegation(
-																const unsigned char &curr_node_bitcode,
-																T *const &root_d,
-																const size_t &num_elem_slots,
+																const unsigned char curr_node_bitcode,
+																T *const root_d,
+																const size_t num_elem_slots,
 																RetType *const res_arr_d,
-																const T &min_dim2_val,
+																const T min_dim2_val,
 																long long &search_ind,
-																long long *const &search_inds_arr,
-																unsigned char *const &search_codes_arr)
+																long long *const search_inds_arr,
+																unsigned char *const search_codes_arr)
 {
 	if (GPUTreeNode::hasLeftChild(curr_node_bitcode)
 			&& GPUTreeNode::hasRightChild(curr_node_bitcode))
@@ -1037,14 +1030,14 @@ template <typename RetType>
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 		>::value
 __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::splitLeftSearchWork(
-																T *const &root_d,
-																const size_t &num_elem_slots,
-																const size_t &target_node_ind,
+																T *const root_d,
+																const size_t num_elem_slots,
+																const size_t target_node_ind,
 																RetType *const res_arr_d,
-																const T &max_dim1_val,
-																const T &min_dim2_val,
-																long long *const &search_inds_arr,
-																unsigned char *const &search_codes_arr)
+																const T max_dim1_val,
+																const T min_dim2_val,
+																long long *const search_inds_arr,
+																unsigned char *const search_codes_arr)
 {
 	// Find next inactive thread by iterating through search_inds_arr atomically
 	// offset < blockDim.x check comes before atomicCAS() operation because short-circuit evaluation and wrapping of result will ensure atomicCAS() does not activate after all potential target indices have been checked (of which none were empty)
@@ -1084,13 +1077,13 @@ template <typename RetType>
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 		>::value
 __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::splitReportAllNodesWork(
-																T *const &root_d,
-																const size_t &num_elem_slots,
-																const size_t &target_node_ind,
+																T *const root_d,
+																const size_t num_elem_slots,
+																const size_t target_node_ind,
 																RetType *const res_arr_d,
-																const T &min_dim2_val,
-																long long *const &search_inds_arr,
-																unsigned char *const &search_codes_arr)
+																const T min_dim2_val,
+																long long *const search_inds_arr,
+																unsigned char *const search_codes_arr)
 {
 	// Find next inactive thread by iterating through search_inds_arr atomically
 	// offset < blockDim.x check comes before atomicCAS() operation because short-circuit evaluation and wrapping of result will ensure atomicCAS() does not activate after all potential target indices have been checked (of which none were empty)
@@ -1129,10 +1122,10 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 			typename IDType, size_t num_IDs>
 __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::detInactivity(
 																long long &search_ind,
-																long long *const &search_inds_arr,
+																long long *const search_inds_arr,
 																bool &cont_iter,
 																unsigned char *const search_code_ptr,
-																unsigned char *const &search_codes_arr)
+																unsigned char *const search_codes_arr)
 {
 	// INACTIVE threads check whether they should be active in the next iteration; if not, and all threads are inactive, set iteration toggle to false
 
@@ -1237,7 +1230,7 @@ inline size_t StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::calcTotArrS
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
 void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::printRecur(std::ostream &os,
-																		T *const &tree_root,
+																		T *const tree_root,
 																		const size_t curr_ind,
 																		const size_t num_elem_slots,
 																		std::string prefix,

@@ -806,7 +806,7 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 long long StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::binarySearch(
 												PointStructTemplate<T, IDType, num_IDs> *const pt_arr,
 												size_t *const dim1_val_ind_arr,
-												PointStructTemplate<T, IDType, num_IDs> &elem_to_find,
+												PointStructTemplate<T, IDType, num_IDs> const &elem_to_find,
 												const size_t init_ind, const size_t num_elems
 											)
 {

@@ -70,7 +70,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 {
 	public:
 		// {} is value-initialisation; for structs, this is zero-initialisation
-		StaticPSTGPU(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr_d, size_t num_elems,
+		StaticPSTGPU(PointStructTemplate<T, IDType, num_IDs> *const pt_arr_d, size_t num_elems,
 						const int warp_multiplier=1, int dev_ind=0, int num_devs=1,
 						cudaDeviceProp dev_props={});
 		// Since arrays were allocated continguously, only need to free one of the array pointers
@@ -167,23 +167,23 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		// From the specification of C, pointers are const if the const qualifier appears to the right of the corresponding *
 		// Returns index in dim1_val_ind_arr_d of elem_to_find
 		// Must be a static function because it is called during construction
-		__forceinline__ __device__ static long long binarySearch(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr_d,
-																	size_t *const &dim1_val_ind_arr_d,
-																	PointStructTemplate<T, IDType, num_IDs> &elem_to_find,
-																	const size_t &init_ind,
-																	const size_t &num_elems
+		__forceinline__ __device__ static long long binarySearch(PointStructTemplate<T, IDType, num_IDs> *const pt_arr_d,
+																	size_t *const dim1_val_ind_arr_d,
+																	PointStructTemplate<T, IDType, num_IDs> const &elem_to_find,
+																	const size_t init_ind,
+																	const size_t num_elems
 																);
 
-		__forceinline__ __device__ static void constructNode(T *const &root_d,
-																const size_t &num_elem_slots,
-																PointStructTemplate<T, IDType, num_IDs> *const &pt_arr_d,
-																size_t &target_node_ind,
-																size_t *const &dim1_val_ind_arr_d,
-																size_t *&dim2_val_ind_arr_d,
-																size_t *&dim2_val_ind_arr_secondary_d,
-																const size_t &max_dim2_val_dim1_array_ind,
-																size_t *&subelems_start_inds_arr,
-																size_t *&num_subelems_arr,
+		__forceinline__ __device__ static void constructNode(T *const root_d,
+																const size_t num_elem_slots,
+																PointStructTemplate<T, IDType, num_IDs> *const pt_arr_d,
+																const size_t target_node_ind,
+																size_t *const dim1_val_ind_arr_d,
+																size_t *const dim2_val_ind_arr_d,
+																size_t *const dim2_val_ind_arr_secondary_d,
+																const size_t max_dim2_val_dim1_array_ind,
+																size_t &subelems_start_ind,
+																size_t &num_subelems,
 																size_t &left_subarr_num_elems,
 																size_t &right_subarr_start_ind,
 																size_t &right_subarr_num_elems);
@@ -191,7 +191,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		__forceinline__ __device__ static void setNode(T *const root_d,
 														const size_t node_ind,
 														const size_t num_elem_slots,
-														PointStructTemplate<T, IDType, num_IDs> &source_data,
+														PointStructTemplate<T, IDType, num_IDs> const &source_data,
 														T median_dim1_val)
 		{
 			getDim1ValsRoot(root_d, num_elem_slots)[node_ind] = source_data.dim1_val;
@@ -210,18 +210,18 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 				>::value
-		__forceinline__ __device__ static void do3SidedSearchDelegation(const unsigned char &curr_node_bitcode,
-																		T *const &root_d,
-																		const size_t &num_elem_slots,
+		__forceinline__ __device__ static void do3SidedSearchDelegation(const unsigned char curr_node_bitcode,
+																		T *const root_d,
+																		const size_t num_elem_slots,
 																		RetType *const res_arr_d,
-																		const T &min_dim1_val,
-																		const T &max_dim1_val,
-																		const T &curr_node_med_dim1_val,
-																		const T &min_dim2_val,
+																		const T min_dim1_val,
+																		const T max_dim1_val,
+																		const T curr_node_med_dim1_val,
+																		const T min_dim2_val,
 																		long long &search_ind,
-																		long long *const &search_inds_arr,
+																		long long *const search_inds_arr,
 																		unsigned char &search_code,
-																		unsigned char *const &search_codes_arr
+																		unsigned char *const search_codes_arr
 																	);
 		template <typename RetType=PointStructTemplate<T, IDType, num_IDs>>
 			requires std::disjunction<
@@ -229,15 +229,15 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 				>::value
 		__forceinline__ __device__ static void doLeftSearchDelegation(const bool range_split_poss,
-																		const unsigned char &curr_node_bitcode,
-																		T *const &root_d,
-																		const size_t &num_elem_slots,
+																		const unsigned char curr_node_bitcode,
+																		T *const root_d,
+																		const size_t num_elem_slots,
 																		RetType *const res_arr_d,
-																		const T &min_dim2_val,
+																		const T min_dim2_val,
 																		long long &search_ind,
-																		long long *const &search_inds_arr,
+																		long long *const search_inds_arr,
 																		unsigned char &search_code,
-																		unsigned char *const &search_codes_arr
+																		unsigned char *const search_codes_arr
 																	);
 		template <typename RetType=PointStructTemplate<T, IDType, num_IDs>>
 			requires std::disjunction<
@@ -245,29 +245,29 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 				>::value
 		__forceinline__ __device__ static void doRightSearchDelegation(const bool range_split_poss,
-																		const unsigned char &curr_node_bitcode,
-																		T *const &root_d,
-																		const size_t &num_elem_slots,
+																		const unsigned char curr_node_bitcode,
+																		T *const root_d,
+																		const size_t num_elem_slots,
 																		RetType *const res_arr_d,
-																		const T &min_dim2_val,
+																		const T min_dim2_val,
 																		long long &search_ind,
-																		long long *const &search_inds_arr,
+																		long long *const search_inds_arr,
 																		unsigned char &search_code,
-																		unsigned char *const &search_codes_arr
+																		unsigned char *const search_codes_arr
 																	);
 		template <typename RetType=PointStructTemplate<T, IDType, num_IDs>>
 			requires std::disjunction<
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 				>::value
-		__forceinline__ __device__ static void doReportAllNodesDelegation(const unsigned char &curr_node_bitcode,
-																T *const &root_d,
-																const size_t &num_elem_slots,
+		__forceinline__ __device__ static void doReportAllNodesDelegation(const unsigned char curr_node_bitcode,
+																T *const root_d,
+																const size_t num_elem_slots,
 																RetType *const res_arr_d,
-																const T &min_dim2_val,
+																const T min_dim2_val,
 																long long &search_ind,
-																long long *const &search_inds_arr,
-																unsigned char *const &search_codes_arr = nullptr);
+																long long *const search_inds_arr,
+																unsigned char *const search_codes_arr = nullptr);
 
 		// Helper functions for delegating work during searches
 		template <typename RetType=PointStructTemplate<T, IDType, num_IDs>>
@@ -275,35 +275,35 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 				>::value
-		__forceinline__ __device__ static void splitLeftSearchWork(T *const &root_d,
-																	const size_t &num_elem_slots,
-																	const size_t &target_node_ind,
+		__forceinline__ __device__ static void splitLeftSearchWork(T *const root_d,
+																	const size_t num_elem_slots,
+																	const size_t target_node_ind,
 																	RetType *const res_arr_d,
-																	const T &max_dim1_val,
-																	const T &min_dim2_val,
-																	long long *const &search_inds_arr,
-																	unsigned char *const &search_codes_arr
+																	const T max_dim1_val,
+																	const T min_dim2_val,
+																	long long *const search_inds_arr,
+																	unsigned char *const search_codes_arr
 																);
 		template <typename RetType=PointStructTemplate<T, IDType, num_IDs>>
 			requires std::disjunction<
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 				>::value
-		__forceinline__ __device__ static void splitReportAllNodesWork(T *const &root_d,
-																		const size_t &num_elem_slots,
-																		const size_t &target_node_ind,
+		__forceinline__ __device__ static void splitReportAllNodesWork(T *const root_d,
+																		const size_t num_elem_slots,
+																		const size_t target_node_ind,
 																		RetType *const res_arr_d,
-																		const T &min_dim2_val,
-																		long long *const &search_inds_arr,
-																		unsigned char *const &search_codes_arr = nullptr
+																		const T min_dim2_val,
+																		long long *const search_inds_arr,
+																		unsigned char *const search_codes_arr = nullptr
 																	);
 
 		// Helper function for threads to determine whether all iterations have ended
 		__forceinline__ __device__ static void detInactivity(long long &search_ind,
-																long long *const &search_inds_arr,
+																long long *const search_inds_arr,
 																bool &cont_iter,
 																unsigned char *const search_code = nullptr,
-																unsigned char *const &search_codes_arr = nullptr
+																unsigned char *const search_codes_arr = nullptr
 															);
 
 
@@ -362,7 +362,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		inline static size_t calcTotArrSizeNumIDTypes(const size_t num_elem_slots);
 
 
-		void printRecur(std::ostream &os, T *const &tree_root, const size_t curr_ind,
+		void printRecur(std::ostream &os, T *const tree_root, const size_t curr_ind,
 							const size_t num_elem_slots, std::string prefix,
 							std::string child_prefix
 						) const;
