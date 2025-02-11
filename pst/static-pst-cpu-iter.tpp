@@ -12,7 +12,7 @@
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::StaticPSTCPUIter(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr, size_t num_elems)
+StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::StaticPSTCPUIter(PointStructTemplate<T, IDType, num_IDs> *const pt_arr, size_t num_elems)
 	// Member initialiser list must be followed by definition
 	// Number of element slots in each container subarray is nextGreaterPowerOf2(num_elems) - 1
 	: num_elem_slots(num_elems == 0 ? 0 : nextGreaterPowerOf2(num_elems) - 1),
@@ -487,15 +487,15 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::twoSidedRightSea
 // static keyword should only be used when declaring a function in the header file
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::constructNode(T *const &root,
-										const size_t &num_elem_slots,
-										PointStructTemplate<T, IDType, num_IDs> *const &pt_arr,
-										size_t &target_node_ind,
-										const size_t &num_elems,
-										size_t *const &dim1_val_ind_arr,
-										size_t *&dim2_val_ind_arr,
-										size_t *&dim2_val_ind_arr_secondary,
-										const size_t &max_dim2_val_dim1_array_ind,
+void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::constructNode(T *const root,
+										const size_t num_elem_slots,
+										PointStructTemplate<T, IDType, num_IDs> *const pt_arr,
+										const size_t target_node_ind,
+										const size_t num_elems,
+										size_t *const dim1_val_ind_arr,
+										size_t *const dim2_val_ind_arr,
+										size_t *const dim2_val_ind_arr_secondary,
+										const size_t max_dim2_val_dim1_array_ind,
 										std::stack<size_t> &subelems_start_inds,
 										std::stack<size_t> &num_subelems_stack,
 										size_t &left_subarr_num_elems,

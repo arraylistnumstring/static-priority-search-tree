@@ -23,7 +23,7 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 class StaticPSTCPUIter : public StaticPrioritySearchTree<T, PointStructTemplate, IDType, num_IDs>
 {
 	public:
-		StaticPSTCPUIter(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr, size_t num_elems);
+		StaticPSTCPUIter(PointStructTemplate<T, IDType, num_IDs> *const pt_arr, size_t num_elems);
 		// Since arrays were allocated continguously, only need to free one of the array pointers
 		virtual ~StaticPSTCPUIter() {if (num_elems != 0) delete[] root;};
 
@@ -66,15 +66,15 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T, PointStructTemplate,
 
 		// Construction-related helper functions
 
-		static void constructNode(T *const &root,
-									const size_t &num_elem_slots,
-									PointStructTemplate<T, IDType, num_IDs> *const &pt_arr,
-									size_t &target_node_ind,
-									const size_t &num_elems,
-									size_t *const &dim1_val_ind_arr,
-									size_t *&dim2_val_ind_arr,
-									size_t *&dim2_val_ind_arr_secondary,
-									const size_t &max_dim2_val_dim1_array_ind,
+		static void constructNode(T *const root,
+									const size_t num_elem_slots,
+									PointStructTemplate<T, IDType, num_IDs> *const pt_arr,
+									const size_t target_node_ind,
+									const size_t num_elems,
+									size_t *const dim1_val_ind_arr,
+									size_t *const dim2_val_ind_arr,
+									size_t *const dim2_val_ind_arr_secondary,
+									const size_t max_dim2_val_dim1_array_ind,
 									std::stack<size_t> &subelems_start_inds,
 									std::stack<size_t> &num_subelems_stack,
 									size_t &left_subarr_num_elems,
@@ -96,26 +96,26 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T, PointStructTemplate,
 		// Search-related helper functions
 
 		// Helper functions for tracking work to be completed
-		void do3SidedSearchDelegation(const unsigned char &curr_node_bitcode, T min_dim1_val,
+		void do3SidedSearchDelegation(const unsigned char curr_node_bitcode, T min_dim1_val,
 										T max_dim1_val, T curr_node_med_dim1_val,
-										const long long &search_ind,
+										const long long search_ind,
 										std::stack<long long> &search_inds_stack,
 										std::stack<unsigned char> &search_codes_stack
 									);
 		void doLeftSearchDelegation(const bool range_split_poss,
-									const unsigned char &curr_node_bitcode,
-									const long long &search_ind,
+									const unsigned char curr_node_bitcode,
+									const long long search_ind,
 									std::stack<long long> &search_inds_stack,
 									std::stack<unsigned char> &search_codes_stack
 								);
 		void doRightSearchDelegation(const bool range_split_poss,
-										const unsigned char &curr_node_bitcode,
-										const long long &search_ind,
+										const unsigned char curr_node_bitcode,
+										const long long search_ind,
 										std::stack<long long> &search_inds_stack,
 										std::stack<unsigned char> &search_codes_stack
 									);
-		void doReportAllNodesDelegation(const unsigned char &curr_node_bitcode,
-										const long long &search_ind,
+		void doReportAllNodesDelegation(const unsigned char curr_node_bitcode,
+										const long long search_ind,
 										std::stack<long long> &search_inds_stack,
 										std::stack<unsigned char> &search_codes_stack
 									);
@@ -172,14 +172,14 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T, PointStructTemplate,
 
 		// From the specification of C, pointers are const if the const qualifier appears to the right of the corresponding *
 		// Returns index in dim1_val_ind_arr of elem_to_find
-		static long long binarySearch(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr,
-										size_t *const &dim1_val_ind_arr,
+		static long long binarySearch(PointStructTemplate<T, IDType, num_IDs> *const pt_arr,
+										size_t *const dim1_val_ind_arr,
 										PointStructTemplate<T, IDType, num_IDs> &elem_to_find,
-										const size_t &init_ind, const size_t &num_elems
+										const size_t init_ind, const size_t num_elems
 									);
 
 
-		void printRecur(std::ostream &os, T *const &tree_root, const size_t curr_ind,
+		void printRecur(std::ostream &os, T *const tree_root, const size_t curr_ind,
 						const size_t num_elem_slots, std::string prefix, std::string child_prefix
 					) const;
 
