@@ -1,6 +1,7 @@
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
 __global__ void populateTrees(T *const tree_arr_d, const size_t full_tree_num_elem_slots,
+								const size_t full_tree_size_num_Ts,
 								PointStructTemplate<T, IDType, num_IDs> *const pt_arr_d,
 								size_t *const dim1_val_ind_arr_d,
 								size_t *dim2_val_ind_arr_d,
@@ -19,6 +20,9 @@ __global__ void populateTrees(T *const tree_arr_d, const size_t full_tree_num_el
 	if (threadIdx.x == 0)
 		num_subelems_arr[threadIdx.x] = num_elems;
 	target_node_inds_arr[threadIdx.x] = 0;
+
+	// Note: would only need to have one thread block do multiple trees if the number of trees exceeds 2^31 - 1, i.e. the maximum number of blocks permitted in a grid
+	T *const tree_root_d = tree_arr_d + blockIdx.x * full_tree_size_num_Ts;
 
 	__syncthreads();
 

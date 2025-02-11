@@ -17,6 +17,7 @@ StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPUArr(PointS
 		In order to reduce dynamic parallelism cost in construction and communication overhead in search, make each complete tree have enough elements such that each thread is active at least once (so that differing block sizes that are not powers of 2 will have an effect on performance) and will only process at most two elements in the last level (which is the only level where it is possible to have an insufficient number of threads available), allowing for a constant number of resources to handle this (relatively common) edge case
 	*/
 	: full_tree_num_elem_slots(num_elems == 0 ? 0 : calcNumElemSlotsPerTree(threads_per_block)),
+	full_tree_size_num_max_data_id_types(num_elems == 0 ? 0 : calcTreeSizeNumMaxDataIDTypes(full_tree_num_elem_slots)),
 	num_elems(num_elems),
 	// Each tree (except potentially the last one) contains as many elements as it can hold in order to reduce internal fragmentation and maximise thread occupancy
 	// Total number of subtrees = num_thread_blocks = ceil(num_elems/threads_per_block)
@@ -375,9 +376,27 @@ StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPUArr(PointS
 #endif
 
 	// Populate trees with a multi-block grid, with one block per tree
-	populateTrees<<<num_thread_blocks, threads_per_block,
-						threads_per_block * sizeof(size_t) * num_constr_working_arrs>>>
-					(tree_arr_d, full_tree_num_elem_slots, pt_arr_d, dim1_val_ind_arr_d, dim2_val_ind_arr_d, dim2_val_ind_arr_secondary_d, num_elems);
+	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value
+					|| SizeOfUAtLeastSizeOfV<T, IDType>)
+	{
+		// No ID or sizeof(T) >= sizeof(IDType); full_tree_size_num_max_data_id_types is already in units of sizeof(T)
+		populateTrees<<<num_thread_blocks, threads_per_block,
+							threads_per_block * sizeof(size_t) * num_constr_working_arrs>>>
+						(tree_arr_d, full_tree_num_elem_slots,
+						 full_tree_size_num_max_data_id_types,
+						 pt_arr_d, dim1_val_ind_arr_d, dim2_val_ind_arr_d,
+						 dim2_val_ind_arr_secondary_d, num_elems);
+	}
+	else
+	{
+		// sizeof(IDType) > sizeof(T), and the latter is guaranteed to be a factor of the former
+		populateTrees<<<num_thread_blocks, threads_per_block,
+							threads_per_block * sizeof(size_t) * num_constr_working_arrs>>>
+						(tree_arr_d, full_tree_num_elem_slots,
+						 full_tree_size_num_max_data_id_types * sizeof(IDType) / sizeof(T),
+						 pt_arr_d, dim1_val_inD_arr_d, dim2_val_ind_arr_d,
+						 dim2_val_ind_arr_secondary_d, num_elems);
+	}
 }
 
 
