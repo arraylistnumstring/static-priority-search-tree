@@ -319,7 +319,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		__forceinline__ __host__ __device__ static IDType* getIDsRoot(T *const root, const size_t num_elem_slots)
 			requires NonVoidType<IDType>
 		{
-			const size_t val_subarr_offset_bytes = num_elem_slots * num_val_subarrs * sizeof(T);
+			const size_t val_subarr_offset_bytes = num_elem_slots * sizeof(T) * num_val_subarrs;
 			const size_t val_subarr_offset_IDTypes = val_subarr_offset_bytes / sizeof(IDType)
 														+ (val_subarr_offset_bytes % sizeof(IDType) == 0 ? 0 : 1);
 			return reinterpret_cast<IDType *>(root) + val_subarr_offset_IDTypes;
