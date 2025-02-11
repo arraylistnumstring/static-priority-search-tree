@@ -14,21 +14,21 @@ __global__ void populateTrees(T *const tree_arr_d, const size_t full_tree_num_el
 	size_t *num_subelems_arr = reinterpret_cast<size_t *>(s) + blockDim.x;
 	size_t *target_tree_node_inds_arr = reinterpret_cast<size_t *>(s) + (blockDim.x << 1);
 	// Initialise shared memory
-	subelems_start_inds_arr[threadIdx.x] = blockIdx.x * full_tree_num_subelem_slots;
+	subelems_start_inds_arr[threadIdx.x] = blockIdx.x * full_tree_num_elem_slots;
 	target_tree_node_inds_arr[threadIdx.x] = 0;
 
 	// Calculate number of slots in this thread block's assigned tree
-	size_t tree_num_subelem_slots;
+	size_t tree_num_elem_slots;
 	if (num_elems % full_tree_num_elem_slots == 0)
 		// All trees are full trees
-		tree_num_subelem_slots = full_tree_num_elem_slots;
+		tree_num_elem_slots = full_tree_num_elem_slots;
 	else
 	{
 		// All trees except last are full trees
 		if (blockIdx.x < gridDim.x - 1)
-			tree_num_subelem_slots = full_tree_num_elem_slots;
+			tree_num_elem_slots = full_tree_num_elem_slots;
 		else
-			tree_num_subelem_slots = calcNumElemSlotsPerTree(num_elems % full_tree_num_elem_slots);
+			tree_num_elem_slots = StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcNumElemSlotsPerTree(num_elems % full_tree_num_elem_slots);
 	}
 	// All threads except for thread 0 start by being inactive
 	if (threadIdx.x == 0)
@@ -79,5 +79,4 @@ __global__ void populateTrees(T *const tree_arr_d, const size_t full_tree_num_el
 											right_subarr_num_elems);
 		}
 	}
-}
 }
