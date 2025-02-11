@@ -147,7 +147,7 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 		// Helper function for calculating the number of elements of size IDType necessary to instantiate an array for root of tree; calculation differs from calcTotArrSizeNumTs() due to need for IDType alignment to be satisfied when sizeof(IDType) > sizeof(T)
 		template <size_t num_T_subarrs>
 			requires NonVoidType<IDType>
-		inline static size_t calcTotArrSizeNumIDTypes(const size_t num_elem_slots);
+		inline static size_t calcTreeSizeNumIDTypes(const size_t num_elem_slots);
 
 
 		// Data members
