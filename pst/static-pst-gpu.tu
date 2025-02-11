@@ -810,14 +810,14 @@ template <typename RetType>
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 		>::value
 __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::do3SidedSearchDelegation(
-																const unsigned char &curr_node_bitcode,
-																T *const &root_d,
-																const size_t &num_elem_slots,
+																const unsigned char curr_node_bitcode,
+																T *const root_d,
+																const size_t num_elem_slots,
 																RetType *const res_arr_d,
-																const T &min_dim1_val,
-																const T &max_dim1_val,
-																const T &curr_node_med_dim1_val,
-																const T &min_dim2_val,
+																const T min_dim1_val,
+																const T max_dim1_val,
+																const T curr_node_med_dim1_val,
+																const T min_dim2_val,
 																long long &search_ind,
 																long long *const search_inds_arr,
 																unsigned char &search_code,
