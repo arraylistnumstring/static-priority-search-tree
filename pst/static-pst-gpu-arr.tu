@@ -394,7 +394,7 @@ StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPUArr(PointS
 							threads_per_block * sizeof(size_t) * num_constr_working_arrs>>>
 						(tree_arr_d, full_tree_num_elem_slots,
 						 full_tree_size_num_max_data_id_types * sizeof(IDType) / sizeof(T),
-						 pt_arr_d, dim1_val_inD_arr_d, dim2_val_ind_arr_d,
+						 pt_arr_d, dim1_val_ind_arr_d, dim2_val_ind_arr_d,
 						 dim2_val_ind_arr_secondary_d, num_elems);
 	}
 }
