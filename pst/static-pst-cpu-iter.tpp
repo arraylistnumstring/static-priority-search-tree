@@ -596,7 +596,14 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::constructNode(T 
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::do3SidedSearchDelegation(const unsigned char &curr_node_bitcode, T min_dim1_val, T max_dim1_val, T curr_node_med_dim1_val, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack)
+void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::do3SidedSearchDelegation(
+											const unsigned char curr_node_bitcode,
+											T min_dim1_val, T max_dim1_val,
+											T curr_node_med_dim1_val,
+											const long long search_ind,
+											std::stack<long long> &search_inds_stack,
+											std::stack<unsigned char> &search_codes_stack
+										)
 {
 	// Splitting of query is only possible if the current node has two children and min_dim1_val <= curr_node_med_dim1_val <= max_dim1_val; the equality on max_dim1_val is for the edge case where a median point may be duplicated, with one copy going to the left subtree and the other to the right subtree
 	if (min_dim1_val <= curr_node_med_dim1_val
@@ -634,7 +641,13 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::do3SidedSearchDe
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::doLeftSearchDelegation(const bool range_split_poss, const unsigned char &curr_node_bitcode, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack)
+void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::doLeftSearchDelegation(
+											const bool range_split_poss,
+											const unsigned char curr_node_bitcode,
+											const long long search_ind,
+											std::stack<long long> &search_inds_stack,
+											std::stack<unsigned char> &search_codes_stack
+										)
 {
 	// Report all nodes in left subtree, "recurse" search on right
 	// Though the upper bound of the dimension-1 search range is typically open, if there are duplicates of the median point and one happens to be allocated to each subtree, both trees must be traversed for correctness
@@ -664,7 +677,13 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::doLeftSearchDele
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::doRightSearchDelegation(const bool range_split_poss, const unsigned char &curr_node_bitcode, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack)
+void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::doRightSearchDelegation(
+											const bool range_split_poss,
+											const unsigned char curr_node_bitcode,
+											const long long search_ind,
+											std::stack<long long> &search_inds_stack,
+											std::stack<unsigned char> &search_codes_stack
+										)
 {
 	// Report all nodes in right subtree, "recurse" search on left
 	if (range_split_poss)
@@ -693,7 +712,12 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::doRightSearchDel
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodesDelegation(const unsigned char &curr_node_bitcode, const long long &search_ind, std::stack<long long> &search_inds_stack, std::stack<unsigned char> &search_codes_stack)
+void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodesDelegation(
+											const unsigned char curr_node_bitcode,
+											const long long search_ind,
+											std::stack<long long> &search_inds_stack,
+											std::stack<unsigned char> &search_codes_stack
+										)
 {
 	if (CPUIterTreeNode::hasLeftChild(curr_node_bitcode))
 	{
@@ -779,7 +803,12 @@ U StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::expOfNextGreaterPow
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-long long StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::binarySearch(PointStructTemplate<T, IDType, num_IDs> *const &pt_arr, size_t *const &dim1_val_ind_arr, PointStructTemplate<T, IDType, num_IDs> &elem_to_find, const size_t &init_ind, const size_t &num_elems)
+long long StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::binarySearch(
+												PointStructTemplate<T, IDType, num_IDs> *const pt_arr,
+												size_t *const dim1_val_ind_arr,
+												PointStructTemplate<T, IDType, num_IDs> &elem_to_find,
+												const size_t init_ind, const size_t num_elems
+											)
 {
 	size_t low_ind = init_ind;
 	size_t high_ind = init_ind + num_elems;
@@ -803,7 +832,11 @@ long long StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::binarySearc
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::printRecur(std::ostream &os, T *const &tree_root, const size_t curr_ind, const size_t num_elem_slots, std::string prefix, std::string child_prefix) const
+void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::printRecur(
+											std::ostream &os, T *const tree_root,
+											const size_t curr_ind, const size_t num_elem_slots,
+											std::string prefix, std::string child_prefix
+										) const
 {
 	os << prefix << '(' << getDim1ValsRoot(tree_root, num_elem_slots)[curr_ind]
 				<< ", " << getDim2ValsRoot(tree_root, num_elem_slots)[curr_ind]
