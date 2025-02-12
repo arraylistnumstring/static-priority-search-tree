@@ -84,7 +84,7 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T, PointStructTemplate,
 
 		static void setNode(T *const root, const size_t node_ind, const size_t num_elem_slots,
 							PointStructTemplate<T, IDType, num_IDs> const &source_data,
-							T median_dim1_val)
+							const T median_dim1_val)
 		{
 			getDim1ValsRoot(root, num_elem_slots)[node_ind] = source_data.dim1_val;
 			getDim2ValsRoot(root, num_elem_slots)[node_ind] = source_data.dim2_val;
