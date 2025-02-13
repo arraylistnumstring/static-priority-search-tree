@@ -103,40 +103,50 @@ __global__ void populateTrees(T *const tree_arr_d, const size_t full_tree_num_el
 										);
 
 			// Update information for next iteration; as memory accesses are coalesced no matter the relative order as long as they are from the same source location, (and nodes are consecutive except possibly at the leaf levels), pick an inactive thread to instantiate the right child
+			
+			// Save current target_tree_node_ind and save left child information first in order to allow for reuse of variables left_subarr_num_elems, right_subarr_start_ind, right_subarr_num_elems in right child construction, decreasing overall register usage
+			const size_t curr_target_tree_node_ind = target_tree_node_inds_arr[threadIdx.x];
+
+			num_subelems_arr[threadIdx.x] = left_subarr_num_elems;
+			target_tree_node_inds_arr[threadIdx.x] = GPUTreeNode::getLeftChild(curr_target_tree_node_ind);
+
 			// If there exist inactive threads in the block, assign the right child to an inactive thread and the left child to oneself
 			if (threadIdx.x + nodes_per_level < blockDim.x)
 			{
 				subelems_start_inds_arr[threadIdx.x + nodes_per_level] = right_subarr_start_ind;
 				num_subelems_arr[threadIdx.x + nodes_per_level] = right_subarr_num_elems;
 				target_tree_node_inds_arr[threadIdx.x + nodes_per_level] =
-					GPUTreeNode::getRightChild(target_tree_node_inds_arr[threadIdx.x]);
-
-				num_subelems_arr[threadIdx.x] = left_subarr_num_elems;
-				target_tree_node_inds_arr[threadIdx.x] =
-					GPUTreeNode::getLeftChild(target_tree_node_inds_arr[threadIdx.x]);
+					GPUTreeNode::getRightChild(curr_target_tree_node_ind);
 			}
 			// Because of how elements have been allocated to this tree, this means that the next level is the last level; in this case, if there are no more threads available to construct the right child, do so (it will not have any children, so if it exists, it will be the last node to handle in its subtree)
 			else if (right_subarr_num_elems > 0)
 			{
-				/*
 				StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::constructNode(
 												tree_root_d, tree_num_elem_slots,
 												pt_arr_d,
-												GPUTreeNode::getRightChild(target_tree_node_inds_arr[threadIdx.x]),
-												dim1_val_ind_arr_d, dim2_val_ind_arr_d,
-													dim2_val_ind_arr_secondary_d,
+												GPUTreeNode::getRightChild(curr_target_tree_node_ind),
+												dim1_val_ind_arr_d,
+													// Must switch primary and secondary dim2 arrays at next level
+													dim2_val_ind_arr_secondary_d, dim2_val_ind_arr_d,
 													max_dim2_val_dim1_array_ind,
-												subelems_start_inds_arr[threadIdx.x],
-												num_subelems_arr[threadIdx.x],
-												left_subarr_num_elems,
-
+												// const pass-by-value
+												right_subarr_start_ind, right_subarr_num_elems,
+												// pass by reference
+												left_subarr_num_elems, right_subarr_start_ind,
+												right_subarr_num_elems
 											);
-				*/
-			}
 
-			num_subelems_arr[threadIdx.x] = left_subarr_num_elems;
-			target_tree_node_inds_arr[threadIdx.x] =
-				GPUTreeNode::getLeftChild(target_tree_node_inds_arr[threadIdx.x]);
+				if (left_subarr_num_elems != 0 || right_subarr_num_elems != 0)
+					// Something has gone very wrong; exit
+					return;
+			}
 		}
+
+		// Every thread must swap its primary and secondary dim2_val_ind_arr pointers in order to have the correct subordering of indices at a given node
+		size_t *temp = dim2_val_ind_arr_d;
+		dim2_val_ind_arr_d = dim2_val_ind_arr_secondary_d;
+		dim2_val_ind_arr_secondary_d = temp;
+
+		__syncthreads();	// Synchronise before starting the next iteration
 	}
 }
