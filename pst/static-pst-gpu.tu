@@ -450,8 +450,8 @@ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::print(std::ostream &
 		temp_root = reinterpret_cast<T *>(new IDType[tot_arr_size_num_max_data_id_types]());
 	
 	if (temp_root == nullptr)
-		throwErr("Error: could not allocate " + std::to_string(num_elem_slots)
-					+ " elements of type " + typeid(T).name() + "to temp_root");
+		throwErr("Error: could not allocate memory for tree with " + std::to_string(num_elem_slots)
+					+ " element slots to temp_root");
 
 	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value
 					|| SizeOfUAtLeastSizeOfV<T, IDType>)
