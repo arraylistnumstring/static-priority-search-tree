@@ -518,7 +518,7 @@ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::print(std::ostrea
 
 	for (auto i = 0; i < num_thread_blocks; i++)
 	{
-		std::cout << "Tree " << i << " (1-indexed):\n";
+		std::cout << "Tree " << i << " (1-indexed) of " << num_thread_blocks << ":\n";
 		std::string prefix = "";
 		std::string child_prefix = "";
 
