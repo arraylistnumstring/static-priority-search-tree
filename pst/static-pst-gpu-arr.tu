@@ -148,7 +148,7 @@ StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPUArr(PointS
 	cudaEvent_t ind2_assign_start, ind2_assign_stop;
 	cudaEvent_t ind2_sort_start, ind2_sort_stop;
 	cudaEvent_t ind_proc_sync_start, ind_proc_sync_stop;
-	cudaEvent_t populate_tree_start, populate_tree_stop;
+	cudaEvent_t populate_trees_start, populate_trees_stop;
 
 	gpuErrorCheck(cudaEventCreate(&ind1_assign_start),
 					"Error in creating start event for timing CUDA PST constructor dimension-1 index assignment on device "
@@ -203,12 +203,12 @@ StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPUArr(PointS
 					+ std::to_string(num_devs) + ": "
 				);
 
-	gpuErrorCheck(cudaEventCreate(&populate_tree_start),
+	gpuErrorCheck(cudaEventCreate(&populate_trees_start),
 					"Error in creating start event for timing CUDA PST tree-populating code on device "
 					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
 					+ std::to_string(num_devs) + ": "
 				);
-	gpuErrorCheck(cudaEventCreate(&populate_tree_stop),
+	gpuErrorCheck(cudaEventCreate(&populate_trees_stop),
 					"Error in creating stop event for timing CUDA PST tree-populating code on device "
 					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
 					+ std::to_string(num_devs) + ": "
@@ -368,7 +368,7 @@ StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPUArr(PointS
 					+ std::to_string(num_devs) + ": "
 				);
 
-	gpuErrorCheck(cudaEventRecord(populate_tree_start),
+	gpuErrorCheck(cudaEventRecord(populate_trees_start),
 					"Error in recording start event for timing tree-populating code on device "
 					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
 					+ std::to_string(num_devs) + ": "
@@ -397,6 +397,83 @@ StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPUArr(PointS
 						 pt_arr_d, dim1_val_ind_arr_d, dim2_val_ind_arr_d,
 						 dim2_val_ind_arr_secondary_d, num_elems);
 	}
+
+#ifdef CONSTR_TIMED
+	gpuErrorCheck(cudaEventRecord(populate_trees_stop),
+					"Error in recording stop event for timing tree-populating code on device "
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+					+ std::to_string(num_devs) + ": "
+				);
+#endif
+
+	// All threads have finished using these arrays; free them and return
+	gpuErrorCheck(cudaFree(dim1_val_ind_arr_d),
+					"Error in freeing array of PointStructTemplate<T, IDType, num_IDs> indices ordered by dimension 1 on device "
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+					+ std::to_string(num_devs) + ": "
+				);
+	gpuErrorCheck(cudaFree(dim2_val_ind_arr_d),
+					"Error in freeing array of PointStructTemplate<T, IDType, num_IDs> indices ordered by dimension 2 on device "
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+					+ std::to_string(num_devs) + ": "
+				);
+	gpuErrorCheck(cudaFree(dim2_val_ind_arr_secondary_d), 
+					"Error in freeing secondary array of PointStructTemplate<T, IDType, num_IDs> indices ordered by dimension 2 on device "
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+					+ std::to_string(num_devs) + ": "
+				);
+
+#ifdef CONSTR_TIMED
+	gpuErrorCheck(cudaEventSynchronize(populate_trees_stop),
+					"Error in blocking CPU execution until completion of stop event for timing CUDA PST tree-populating code on device "
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+					+ std::to_string(num_devs) + ": "
+				);
+
+	float ms = 0;	// milliseconds
+
+	gpuErrorCheck(cudaEventElapsedTime(&ms, ind1_assign_start, ind1_assign_stop),
+					"Error in calculating time elapsed for CUDA PST dimension-1 index assignment on device "
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+					+ std::to_string(num_devs) + ": "
+				);
+	std::cout << "CUDA PST dimension-1 index assignment time: " << ms << " ms\n";
+
+	gpuErrorCheck(cudaEventElapsedTime(&ms, ind1_sort_start, ind1_sort_stop),
+					"Error in calculating time elapsed for CUDA PST dimension-1-based index sorting on device "
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+					+ std::to_string(num_devs) + ": "
+				);
+	std::cout << "CUDA PST dimension-1-based index sorting time: " << ms << " ms\n";
+
+	gpuErrorCheck(cudaEventElapsedTime(&ms, ind2_assign_start, ind2_assign_stop),
+					"Error in calculating time elapsed for CUDA PST dimension-2 index assignment on device "
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+					+ std::to_string(num_devs) + ": "
+				);
+	std::cout << "CUDA PST dimension-2 index assignment time: " << ms << " ms\n";
+
+	gpuErrorCheck(cudaEventElapsedTime(&ms, ind2_sort_start, ind2_sort_stop),
+					"Error in calculating time elapsed for CUDA PST dimension-2-based index sorting on device "
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+					+ std::to_string(num_devs) + ": "
+				);
+	std::cout << "CUDA PST dimension-2-based index sorting time: " << ms << " ms\n";
+
+	gpuErrorCheck(cudaEventElapsedTime(&ms, ind_proc_sync_start, ind_proc_sync_stop),
+					"Error in calculating overall time elapsed for CUDA PST index processing on device "
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+					+ std::to_string(num_devs) + ": "
+				);
+	std::cout << "CUDA PST index processing overall time (from point of view of default stream): " << ms << " ms\n";
+
+	gpuErrorCheck(cudaEventElapsedTime(&ms, populate_trees_start, populate_trees_stop),
+					"Error in calculating time elapsed for CUDA PST tree-populating code on device "
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
+					+ std::to_string(num_devs) + ": "
+				);
+	std::cout << "CUDA PST tree-populating code overall time: " << ms << " ms\n";
+#endif
 }
 
 
