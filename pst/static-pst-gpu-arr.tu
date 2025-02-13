@@ -482,6 +482,60 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 			typename IDType, size_t num_IDs>
 void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::print(std::ostream &os) const
 {
+	if (num_elems == 0)
+	{
+		os << "Tree array is empty\n";
+		return;
+	}
+
+	const size_t tree_arr_size_num_max_data_id_types = calcTreeArrSizeNumMaxDataIDTypes(num_elems, threads_per_block);
+	T *temp_tree_arr;
+	// Use of () after new and new[] causes value-initialisation (to 0) starting in C++03; needed for any nodes that technically contain no data
+	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value
+					|| SizeOfUAtLeastSizeOfV<T, IDType>)
+		// No IDs present or sizeof(T) >= sizeof(IDType), so calculate total array size in units of sizeof(T) so that datatype T's alignment requirements will be satisfied
+		temp_tree_arr = new T[tree_arr_size_num_max_data_id_types]();
+	else
+		// sizeof(IDType) > sizeof(T), so calculate total array size in units of sizeof(IDType) so that datatype IDType's alignment requirements will be satisfied
+		temp_tree_arr = reinterpret_cast<T *>(new IDType[tree_arr_size_num_max_data_id_types]());
+
+	if (temp_tree_arr == nullptr)
+	{
+		if (num_elems % full_tree_num_elem_slots == 0)		// All trees are full trees
+			throwErr("Error: could not allocate memory for tree array containing "
+						+ std::to_string(num_thread_blocks) + " trees with "
+						+ std::to_string(full_tree_num_elem_slots) + " node slots"
+					);
+		else
+			throwErr("Error: could not allocate memory for tree array containing "
+						+ std::to_string(num_thread_blocks) + " trees with "
+						+ std::to_string(full_tree_num_elem_slots)
+						+ " node slots and 1 final tree with "
+						+ std::to_string(num_elems % full_tree_num_elem_slots) + " node slots"
+					);
+	}
+
+
+	for (auto i = 0; i < num_thread_blocks; i++)
+	{
+		std::cout << "Tree " << i << " (1-indexed):\n";
+		std::string prefix = "";
+		std::string child_prefix = "";
+		if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value
+						|| SizeOfUAtLeastSizeOfV<T, IDType>)
+		{
+			printRecur(os, temp_tree_arr + full_tree_size_num_max_data_id_types, 0, num_elem_slots,
+						prefix, child_prefix);
+		}
+		else
+		{
+			printRecur(os, temp_tree_arr + full_tree_size_num_max_data_id_types * sizeof(IDType) / sizeof(T),
+						0, num_elem_slots, prefix, child_prefix);
+		}
+		std::cout << "\n\n";
+	}
+
+	delete[] temp_tree_arr;
 }
 
 
@@ -799,4 +853,43 @@ inline size_t StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcTree
 											+ bitcode_arr_size_num_IDTypes;		// Bitcode array
 
 	return tot_arr_size_num_IDTypes;
+}
+
+
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::printRecur(std::ostream &os,
+																			T *const tree_root,
+																			const size_t curr_ind,
+																			const size_t num_elem_slots,
+																			std::string prefix,
+																			std::string child_prefix
+																		) const
+{
+	os << prefix << '(' << getDim1ValsRoot(tree_root, num_elem_slots)[curr_ind]
+				<< ", " << getDim2ValsRoot(tree_root, num_elem_slots)[curr_ind]
+				<< "; " << getMedDim1ValsRoot(tree_root, num_elem_slots)[curr_ind];
+	if constexpr (HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
+		os << "; " << getIDsRoot(tree_root, num_elem_slots)[curr_ind];
+	os << ')';
+	const unsigned char curr_node_bitcode = getBitcodesRoot(tree_root, num_elem_slots)[curr_ind];
+	if (GPUTreeNode::hasLeftChild(curr_node_bitcode)
+			&& GPUTreeNode::hasRightChild(curr_node_bitcode))
+	{
+		printRecur(os, tree_root, GPUTreeNode::getRightChild(curr_ind), num_elem_slots,
+					'\n' + child_prefix + "├─(R)─ ", child_prefix + "│      ");
+		printRecur(os, tree_root, GPUTreeNode::getLeftChild(curr_ind), num_elem_slots,
+					'\n' + child_prefix + "└─(L)─ ", child_prefix + "       ");
+	}
+	else if (GPUTreeNode::hasRightChild(curr_node_bitcode))
+	{
+		printRecur(os, tree_root, GPUTreeNode::getRightChild(curr_ind), num_elem_slots,
+					'\n' + child_prefix + "└─(R)─ ", child_prefix + "       ");
+	}
+	else if (GPUTreeNode::hasLeftChild(curr_node_bitcode))
+	{
+		printRecur(os, tree_root, GPUTreeNode::getLeftChild(curr_ind), num_elem_slots,
+					'\n' + child_prefix + "└─(L)─ ", child_prefix + "       ");
+	}
+
 }

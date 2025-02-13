@@ -1,7 +1,7 @@
 #ifndef STATIC_PRIORITY_SEARCH_TREE_H
 #define STATIC_PRIORITY_SEARCH_TREE_H
 
-#include <iostream>
+#include <ostream>
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType=void, size_t num_IDs=0>

@@ -208,6 +208,12 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 		inline static size_t calcTreeSizeNumIDTypes(const size_t num_elem_slots);
 
 
+		void printRecur(std::ostream &os, T *const tree_root, const size_t curr_ind,
+							const size_t num_elem_slots, std::string prefix,
+							std::string child_prefix
+						) const;
+
+
 		// Data members
 
 		/*
