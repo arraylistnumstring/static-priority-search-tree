@@ -521,16 +521,28 @@ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::print(std::ostrea
 		std::cout << "Tree " << i << " (1-indexed):\n";
 		std::string prefix = "";
 		std::string child_prefix = "";
+
+		// Decrease repetitive calculations by saving result
+		const bool all_trees_full = num_elems % full_tree_num_elem_slots == 0;
+
+		// Distinguish between number of element slots in final tree and all other trees if necessary
 		if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value
 						|| SizeOfUAtLeastSizeOfV<T, IDType>)
 		{
-			printRecur(os, temp_tree_arr + full_tree_size_num_max_data_id_types, 0, num_elem_slots,
+			printRecur(os, temp_tree_arr + full_tree_size_num_max_data_id_types, 0,
+						all_trees_full ? full_tree_num_elem_slots
+							: (i < num_thread_blocks - 1 ? full_tree_num_elem_slots
+								: calcNumElemSlotsPerTree(num_elems % full_tree_num_elem_slots)),
 						prefix, child_prefix);
 		}
 		else
 		{
 			printRecur(os, temp_tree_arr + full_tree_size_num_max_data_id_types * sizeof(IDType) / sizeof(T),
-						0, num_elem_slots, prefix, child_prefix);
+						0,
+						all_trees_full ? full_tree_num_elem_slots
+							: (i < num_thread_blocks - 1 ? full_tree_num_elem_slots
+								: calcNumElemSlotsPerTree(num_elems % full_tree_num_elem_slots)),
+						prefix, child_prefix);
 		}
 		std::cout << "\n\n";
 	}
