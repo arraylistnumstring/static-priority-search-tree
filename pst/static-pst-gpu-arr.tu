@@ -519,13 +519,13 @@ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::print(std::ostrea
 					|| SizeOfUAtLeastSizeOfV<T, IDType>)
 	{
 		gpuErrorCheck(cudaMemcpy(temp_tree_arr, tree_arr_d,
-									tot_arr_size_num_max_data_id_types * sizeof(T), cudaMemcpyDefault),
+									tree_arr_size_num_max_data_id_types * sizeof(T), cudaMemcpyDefault),
 						"Error in copying array underlying StaticPSTGPU instance from device to host: ");
 	}
 	else
 	{
 		gpuErrorCheck(cudaMemcpy(temp_tree_arr, tree_arr_d,
-									tot_arr_size_num_max_data_id_types * sizeof(IDType), cudaMemcpyDefault),
+									tree_arr_size_num_max_data_id_types * sizeof(IDType), cudaMemcpyDefault),
 						"Error in copying array underlying StaticPSTGPU instance from device to host: ");
 	}
 
