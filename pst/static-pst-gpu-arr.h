@@ -1,7 +1,6 @@
 #ifndef STATIC_PST_GPU_ARR_H
 #define STATIC_PST_GPU_ARR_H
 
-#include "dev-symbols.h"			// For global memory-scoped variable res_arr_ind_d
 #include "gpu-err-chk.h"
 #include "gpu-power-of-2-functions.h"
 #include "gpu-tree-node.h"
@@ -51,6 +50,9 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 		int getDevInd() const {return dev_ind;};
 		cudaDeviceProp getDevProps() const {return dev_props;};
 		int getNumDevs() const {return num_devs;};
+
+
+		// Public search functions
 
 		template <typename RetType=PointStructTemplate<T, IDType, num_IDs>>
 					requires std::disjunction<

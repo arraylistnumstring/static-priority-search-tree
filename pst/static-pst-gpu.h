@@ -2,7 +2,6 @@
 #define STATIC_PST_GPU_H
 
 #include "class-member-checkers.h"
-#include "dev-symbols.h"					// For global memory-scoped variable res_arr_ind_d
 #include "gpu-err-chk.h"
 #include "gpu-power-of-2-functions.h"
 #include "static-priority-search-tree.h"

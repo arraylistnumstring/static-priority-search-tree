@@ -3,6 +3,7 @@
 #include <thrust/sort.h>				// To use parallel sorting algorithm
 
 #include "arr-ind-assign.h"
+#include "dev-symbols.h"					// For global memory-scoped variable res_arr_ind_d
 #include "err-chk.h"
 #include "gpu-tree-node.h"
 
@@ -501,7 +502,7 @@ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::threeSidedSearch(siz
 
 	gpuErrorCheck(cudaMalloc(&res_arr_d, num_elems * sizeof(RetType)),
 					"Error in allocating array to store PointStruct search result on device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of " + std::to_string(num_devs)
 					+ ": ");
 	// Set on-device global result array index to 0
 	unsigned long long res_arr_ind = 0;
@@ -509,7 +510,7 @@ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::threeSidedSearch(siz
 	gpuErrorCheck(cudaMemcpyToSymbol(res_arr_ind_d, &res_arr_ind, sizeof(size_t),
 										0, cudaMemcpyDefault),
 					"Error in initialising global result array index to 0 on device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of " + std::to_string(num_devs)
 					+ ": ");
 
 	// Call global function for on-device search
@@ -525,7 +526,7 @@ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::threeSidedSearch(siz
 										sizeof(unsigned long long), 0,
 										cudaMemcpyDefault),
 					"Error in copying global result array final index from device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of " + std::to_string(num_devs)
 					+ ": ");
 }
 
@@ -553,7 +554,7 @@ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSearch(s
 
 	gpuErrorCheck(cudaMalloc(&res_arr_d, num_elems * sizeof(RetType)),
 					"Error in allocating array to store PointStruct search result on device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of " + std::to_string(num_devs)
 					+ ": ");
 	// Set on-device global result array index to 0
 	unsigned long long res_arr_ind = 0;
@@ -561,7 +562,7 @@ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSearch(s
 	gpuErrorCheck(cudaMemcpyToSymbol(res_arr_ind_d, &res_arr_ind, sizeof(size_t),
 										0, cudaMemcpyDefault),
 					"Error in initialising global result array index to 0 on device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of " + std::to_string(num_devs)
 					+ ": ");
 
 	// Call global function for on-device search
@@ -578,7 +579,7 @@ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSearch(s
 										sizeof(unsigned long long), 0,
 										cudaMemcpyDefault),
 					"Error in copying global result array final index from device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of " + std::to_string(num_devs)
 					+ ": ");
 }
 
@@ -606,7 +607,7 @@ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::twoSidedRightSearch(
 
 	gpuErrorCheck(cudaMalloc(&res_arr_d, num_elems * sizeof(RetType)),
 					"Error in allocating array to store PointStruct search result on device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of " + std::to_string(num_devs)
 					+ ": ");
 	// Set on-device global result array index to 0
 	unsigned long long res_arr_ind = 0;
@@ -614,7 +615,7 @@ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::twoSidedRightSearch(
 	gpuErrorCheck(cudaMemcpyToSymbol(res_arr_ind_d, &res_arr_ind, sizeof(size_t),
 										0, cudaMemcpyDefault),
 					"Error in initialising global result array index to 0 on device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of " + std::to_string(num_devs)
 					+ ": ");
 
 	// Call global function for on-device search
@@ -630,7 +631,7 @@ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::twoSidedRightSearch(
 										sizeof(unsigned long long), 0,
 										cudaMemcpyDefault),
 					"Error in copying global result array final index from device "
-					+ std::to_string(dev_ind) + " of " + std::to_string(num_devs)
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of " + std::to_string(num_devs)
 					+ ": ");
 }
 

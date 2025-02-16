@@ -4,6 +4,7 @@
 
 #include "arr-ind-assign.h"
 #include "class-member-checkers.h"
+#include "dev-symbols.h"			// For global memory-scoped variable res_arr_ind_d
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
@@ -596,6 +597,21 @@ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSearc
 																					T min_dim2_val
 																				)
 {
+	if (num_elems == 0)
+	{
+		std::cout << "Tree is empty; nothing to search\n";
+		num_res_elems = 0;
+		res_arr_d = nullptr;
+		return;
+	}
+
+	gpuErrorCheck(cudaMalloc(&res_arr_d, num_elems * sizeof(RetType)),
+					"Error in allocating array to store PointStruct search result on device "
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of " + std::to_string(num_devs)
+					+ ": ");
+
+	// Set on-device global result array index to 0
+	unsigned long long res_arr_ind = 0;
 }
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
