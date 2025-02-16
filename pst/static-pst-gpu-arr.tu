@@ -620,12 +620,12 @@ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSearc
 					+ ": ");
 
 	// Call global function for on-device search
-	twoSidedLeftSearchGlobal<T, PointStructTemplate, IDType, num_IDs, RetType>
-							<<<num_thread_blocks, threads_per_block,
-								threads_per_block * (sizeof(long long) + sizeof(unsigned char))>>>
-							(tree_arr_d, full_tree_num_elem_slots,
-							 full_tree_size_num_max_data_id_types,
-							 res_arr_d, max_dim1_val, min_dim2_val);
+	twoSidedLeftSearchTreeArrGlobal<T, PointStructTemplate, IDType, num_IDs, RetType>
+									<<<num_thread_blocks, threads_per_block,
+										threads_per_block * (sizeof(long long) + sizeof(unsigned char))>>>
+									(tree_arr_d, full_tree_num_elem_slots,
+									 full_tree_size_num_max_data_id_types,
+									 res_arr_d, max_dim1_val, min_dim2_val);
 
 	// Because all calls to the device are placed in the same stream (queue) and because cudaMemcpy() is (host-)blocking, this code will not return before the computation has completed
 	// res_arr_ind_d points to the next index to write to, meaning that it actually contains the number of elements returned

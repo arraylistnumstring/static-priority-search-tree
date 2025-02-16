@@ -2,11 +2,13 @@
 // Non-member functions can only use at most one template clause
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs, typename RetType>
-__global__ void twoSidedLeftSearchGlobal(T *const tree_arr_d, const size_t full_tree_num_elem_slots,
-										 const size_t full_tree_size_num_max_data_id_types,
-										 RetType *const res_arr_d,
-										 const T max_dim1_val, const T min_dim2_val);
-{
+__global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
+												const size_t full_tree_num_elem_slots,
+												const size_t full_tree_size_num_max_data_id_types,
+												RetType *const res_arr_d,
+												const T max_dim1_val, const T min_dim2_val
+											)
+	{
 	/*
 		By C++ specification 13.7.5 (Templates > Template declarations > Friends), point 9, "a friend function template with a constraint that depends on a template parameter from an enclosing template [is] a definition[...and] does not declare the same[...]function template as a declaration in any other scope."
 
