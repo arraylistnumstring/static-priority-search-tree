@@ -33,4 +33,9 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 		search_inds_arr[threadIdx.x] = 0;
 	else
 		search_inds_arr[threadIdx.x] = StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
+
+	// For twoSidedLeftSearchTreeArrGlobal(), all threads start with their search code set to LEFT_SEARCH
+	search_codes_arr[threadIdx.x] = StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::LEFT_SEARCH;
+
+	__syncthreads();	// Must synchronise before processing to ensure data is properly set
 }
