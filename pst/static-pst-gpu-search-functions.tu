@@ -41,7 +41,7 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 		search_inds_arr[threadIdx.x] = start_node_ind;
 	else
 		search_inds_arr[threadIdx.x] = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
-	// For threeSidedSearchGlobal, each thread starts out with their code set to THREE_SEARCH
+	// For threeSidedSearchGlobal(), each thread starts out with their code set to THREE_SEARCH
 	search_codes_arr[threadIdx.x] = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::THREE_SEARCH;
 
 	__syncthreads();	// Must synchronise before processing to ensure data is properly set
@@ -217,7 +217,7 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 		search_inds_arr[threadIdx.x] = start_node_ind;
 	else
 		search_inds_arr[threadIdx.x] = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
-	// For twoSidedLeftSearchGlobal, all threads start with their search code set to LEFT_SEARCH 
+	// For twoSidedLeftSearchGlobal(), all threads start with their search code set to LEFT_SEARCH
 	search_codes_arr[threadIdx.x] = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::LEFT_SEARCH;
 
 	__syncthreads();	// Must synchronise before processing to ensure data is properly set
@@ -361,7 +361,7 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 		search_inds_arr[threadIdx.x] = start_node_ind;
 	else
 		search_inds_arr[threadIdx.x] = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
-	// For twoSidedRightSearchGlobal, all threads start with their search code set to RIGHT_SEARCH
+	// For twoSidedRightSearchGlobal(), all threads start with their search code set to RIGHT_SEARCH
 	search_codes_arr[threadIdx.x] = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::RIGHT_SEARCH;
 
 	__syncthreads();	// Must synchronise before processing to ensure data is properly set
