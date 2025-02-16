@@ -21,6 +21,18 @@ __global__ void populateTrees(T *const tree_arr_d, const size_t full_tree_num_el
 								size_t *dim2_val_ind_arr_secondary_d,
 								const size_t num_elems);
 
+// C++ allows trailing template type arguments and function parameters to have default values; for template type arguments, it is forbidden for default arguments to be specified for a class template member outside of the class template; for function parameters, one must not declare the default arguments again (as it is regarded as a redefinition, even if the values are the same)
+
+// Cannot overload a global function over a host function, even if the number of arguments differs
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs,
+			typename RetType=PointStructTemplate<T, IDType, num_IDs>
+		 >
+__global__ void twoSidedLeftSearchGlobal(T *const tree_arr_d, const size_t full_tree_num_elem_slots,
+										 const size_t full_tree_size_num_max_data_id_types,
+										 RetType *const res_arr_d,
+										 const T max_dim1_val, const T min_dim2_val);
+
 // Array of shallow on-GPU PSTs that do not require dynamic parallelism to construct or search
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 		 	typename IDType=void, size_t num_IDs=0>
@@ -278,9 +290,26 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 												const size_t num_elems
 											);
 
+	/*
+		As partial specialisation is not allowed (i.e. mixing the (already-instantiated) template types of the enclosing class and the still-generic template type RetType); either replace already-declared types with generic type placeholders (to not overshadow the enclosing template types) and without requires clauses (due to the constraint imposed by C++ specification 13.7.5, point 9); or opt for full specialisation, i.e. replacing RetType with the explicit desired return types.
+
+		Note that as generic type placeholders are used here, no <> specialisation notation is used.
+
+		Cited: C++ specification 13.7.5 (Templates > Template declarations > Friends):
+			Example in point 1.4: allowing for template friend functions to template classes
+			Point 9: template friend declaration with a constraint depending on a template parameter from an enclosing template shall be a definition that does not declare the same function template as any function template in any other scope
+	*/
+	template <typename U, template<typename, typename, size_t> class PtStructTempl, typename IDT, size_t NIDs, typename RetType>
+	friend __global__ void twoSidedLeftSearchGlobal(U *const tree_arr_d,
+													const size_t full_tree_num_elem_slots,
+													const size_t full_tree_size_num_max_data_id_types,
+													RetType *const res_arr_d,
+													const U max_dim1_val, const U min_dim2_val
+												);
 };
 
 #include "static-pst-gpu-arr.tu"
 #include "static-pst-gpu-arr-populate-trees.tu"
+#include "static-pst-gpu-arr-search-functions.tu"
 
 #endif

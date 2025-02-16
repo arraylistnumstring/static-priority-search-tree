@@ -2,10 +2,9 @@
 #include "warp-shuffles.h"
 
 // Utilises dynamic parallelism
-// Shared memory must be at least as large as (number of threads) * (sizeof(long long) + sizeof(signed char))
+// Shared memory must be at least as large as (number of threads) * (sizeof(long long) + sizeof(unsigned char))
 // Correctness only guaranteed for grids with one active block
 // Non-member functions can only use at most one template clause
-// Can only have default template argument(s) listed once overall
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs, typename RetType>
 __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_slots,
@@ -31,10 +30,11 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 	if (blockIdx.x != 0)
 		return;
 
-	extern __shared__ long long search_shared_mem[];
+	// Use char datatype because extern variables must be consistent across all declarations and because char is the smallest possible datatype
+	extern __shared__ char s[];
 	// Node indices for each thread to search
-	long long *search_inds_arr = search_shared_mem;
-	unsigned char *search_codes_arr = reinterpret_cast<unsigned char*>(search_shared_mem + blockDim.x);
+	long long *search_inds_arr = reinterpret_cast<long long *>(s);
+	unsigned char *search_codes_arr = reinterpret_cast<unsigned char *>(search_inds_arr + blockDim.x);
 	// Initialise shared memory
 	// All threads except for thread 0 start by being inactive
 	if (threadIdx.x == 0)
@@ -180,7 +180,7 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 	// End cont_iter loop
 }
 
-// Shared memory must be at least as large as (number of threads) * (sizeof(long long) + sizeof(signed char))
+// Shared memory must be at least as large as (number of threads) * (sizeof(long long) + sizeof(unsigned char))
 // Correctness only guaranteed for grids with one active block
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs, typename RetType>
@@ -206,10 +206,11 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 	if (blockIdx.x != 0)
 		return;
 
-	extern __shared__ long long search_shared_mem[];
+	// Use char datatype because extern variables must be consistent across all declarations and because char is the smallest possible datatype
+	extern __shared__ char s[];
 	// Node indices for each thread to search
-	long long *search_inds_arr = search_shared_mem;
-	unsigned char *search_codes_arr = reinterpret_cast<unsigned char*>(search_shared_mem + blockDim.x);
+	long long *search_inds_arr = reinterpret_cast<long long *>(s);
+	unsigned char *search_codes_arr = reinterpret_cast<unsigned char *>(search_inds_arr + blockDim.x);
 	// Initialise shared memory
 	// All threads except for thread 0 start by being inactive
 	if (threadIdx.x == 0)
@@ -323,7 +324,7 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 	// End cont_iter loop
 }
 
-// Shared memory must be at least as large as (number of threads) * (sizeof(long long) + sizeof(signed char))
+// Shared memory must be at least as large as (number of threads) * (sizeof(long long) + sizeof(unsigned char))
 // Correctness only guaranteed for grids with one active block
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs, typename RetType>
@@ -349,10 +350,11 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 	if (blockIdx.x != 0)
 		return;
 
-	extern __shared__ long long search_shared_mem[];
+	// Use char datatype because extern variables must be consistent across all declarations and because char is the smallest possible datatype
+	extern __shared__ char s[];
 	// Node indices for each thread to search
-	long long *search_inds_arr = search_shared_mem;
-	unsigned char *search_codes_arr = reinterpret_cast<unsigned char*>(search_shared_mem + blockDim.x);
+	long long *search_inds_arr = reinterpret_cast<long long *>(s);
+	unsigned char *search_codes_arr = reinterpret_cast<unsigned char *>(search_inds_arr + blockDim.x);
 	// Initialise shared memory
 	// All threads except for thread 0 start by being inactive
 	if (threadIdx.x == 0)
@@ -493,9 +495,10 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 	if (blockIdx.x != 0)
 		return;
 
-	extern __shared__ long long search_shared_mem[];
+	// Use char datatype because extern variables must be consistent across all declarations and because char is the smallest possible datatype
+	extern __shared__ char s[];
 	// Node indices for each thread to search
-	long long *search_inds_arr = search_shared_mem;
+	long long *search_inds_arr = reinterpret_cast<long long *>(s);
 	// Initialise shared memory
 	// All threads except for thread 0 start by being inactive
 	if (threadIdx.x == 0)

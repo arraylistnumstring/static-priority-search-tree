@@ -1,6 +1,8 @@
 #ifndef STATIC_PST_GPU_H
 #define STATIC_PST_GPU_H
 
+// Only present in .h file due to execution speed-up of friend declaration; otherwise, would place in .tu file, where it is actually used
+#include "arr-ind-assign.h"
 #include "class-member-checkers.h"
 #include "gpu-err-chk.h"
 #include "gpu-power-of-2-functions.h"

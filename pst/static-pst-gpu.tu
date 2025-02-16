@@ -2,7 +2,6 @@
 #include <thrust/execution_policy.h>	// To use thrust::cuda::par::on() stream-specifying execution policy for sorting
 #include <thrust/sort.h>				// To use parallel sorting algorithm
 
-#include "arr-ind-assign.h"
 #include "dev-symbols.h"					// For global memory-scoped variable res_arr_ind_d
 #include "err-chk.h"
 #include "gpu-tree-node.h"
@@ -347,7 +346,8 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 	// Populate tree with a one-block grid and a number of threads per block that is a multiple of the warp size
 	populateTree<<<1, warp_multiplier * dev_props.warpSize,
 					warp_multiplier * dev_props.warpSize * sizeof(size_t) * num_constr_working_arrs>>>
-				(root_d, num_elem_slots, pt_arr_d, dim1_val_ind_arr_d, dim2_val_ind_arr_d, dim2_val_ind_arr_secondary_d, 0, num_elems, 0);
+				(root_d, num_elem_slots, pt_arr_d, dim1_val_ind_arr_d,
+				 dim2_val_ind_arr_d, dim2_val_ind_arr_secondary_d, 0, num_elems, 0);
 
 #ifdef CONSTR_TIMED
 	gpuErrorCheck(cudaEventRecord(populate_tree_stop),
@@ -518,7 +518,7 @@ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::threeSidedSearch(siz
 						  <<<1, warp_multiplier * dev_props.warpSize,
 								warp_multiplier * dev_props.warpSize
 									* (sizeof(long long) + sizeof(unsigned char))>>>
-		(root_d, num_elem_slots, 0, res_arr_d, min_dim1_val, max_dim1_val, min_dim2_val);
+						(root_d, num_elem_slots, 0, res_arr_d, min_dim1_val, max_dim1_val, min_dim2_val);
 
 	// Because all calls to the device are placed in the same stream (queue) and because cudaMemcpy() is (host-)blocking, this code will not return before the computation has completed
 	// res_arr_ind_d points to the next index to write to, meaning that it actually contains the number of elements returned
@@ -571,7 +571,7 @@ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSearch(s
 							<<<1, warp_multiplier * dev_props.warpSize,
 								warp_multiplier * dev_props.warpSize
 									* (sizeof(long long) + sizeof(unsigned char))>>>
-		(root_d, num_elem_slots, 0, res_arr_d, max_dim1_val, min_dim2_val);
+							(root_d, num_elem_slots, 0, res_arr_d, max_dim1_val, min_dim2_val);
 
 	// Because all calls to the device are placed in the same stream (queue) and because cudaMemcpy() is (host-)blocking, this code will not return before the computation has completed
 	// res_arr_ind_d points to the next index to write to, meaning that it actually contains the number of elements returned
@@ -623,7 +623,7 @@ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::twoSidedRightSearch(
 							 <<<1, warp_multiplier * dev_props.warpSize,
 								warp_multiplier * dev_props.warpSize
 									* (sizeof(long long) + sizeof(unsigned char))>>>
-		(root_d, num_elem_slots, 0, res_arr_d, min_dim1_val, min_dim2_val);
+							(root_d, num_elem_slots, 0, res_arr_d, min_dim1_val, min_dim2_val);
 
 	// Because all calls to the device are placed in the same stream (queue) and because cudaMemcpy() is (host-)blocking, this code will not return before the computation has completed
 	// res_arr_ind_d points to the next index to write to, meaning that it actually contains the number of elements returned
@@ -1061,7 +1061,8 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 		twoSidedLeftSearchGlobal<T, PointStructTemplate, IDType, num_IDs, RetType>
 								<<<1, blockDim.x, blockDim.x * (sizeof(long long) + sizeof(unsigned char)),
 									cudaStreamFireAndForget>>>
-			(root_d, num_elem_slots, target_node_ind, res_arr_d, max_dim1_val, min_dim2_val);
+								(root_d, num_elem_slots, target_node_ind,
+								 res_arr_d, max_dim1_val, min_dim2_val);
 	}
 	else	// Inactive thread has ID (threadIdx.x + offset) % blockDim.x
 	{
@@ -1107,7 +1108,7 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 		reportAllNodesGlobal<T, PointStructTemplate, IDType, num_IDs, RetType>
 							<<<1, blockDim.x, blockDim.x * sizeof(long long),
 								cudaStreamFireAndForget>>>
-			(root_d, num_elem_slots, target_node_ind, res_arr_d, min_dim2_val);
+							(root_d, num_elem_slots, target_node_ind, res_arr_d, min_dim2_val);
 	}
 	else	// Inactive thread has ID (threadIdx.x + offset) % blockDim.x
 	{

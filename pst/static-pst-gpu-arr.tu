@@ -618,6 +618,23 @@ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSearc
 					"Error in initialising global result array index to 0 on device "
 					+ std::to_string(dev_ind + 1) + " (1-indexed) of " + std::to_string(num_devs)
 					+ ": ");
+
+	// Call global function for on-device search
+	twoSidedLeftSearchGlobal<T, PointStructTemplate, IDType, num_IDs, RetType>
+							<<<num_thread_blocks, threads_per_block,
+								threads_per_block * (sizeof(long long) + sizeof(unsigned char))>>>
+							(tree_arr_d, full_tree_num_elem_slots,
+							 full_tree_size_num_max_data_id_types,
+							 res_arr_d, max_dim1_val, min_dim2_val);
+
+	// Because all calls to the device are placed in the same stream (queue) and because cudaMemcpy() is (host-)blocking, this code will not return before the computation has completed
+	// res_arr_ind_d points to the next index to write to, meaning that it actually contains the number of elements returned
+	gpuErrorCheck(cudaMemcpyFromSymbol(&num_res_elems, res_arr_ind_d,
+										sizeof(unsigned long long), 0,
+										cudaMemcpyDefault),
+					"Error in copying global result array final index from device "
+					+ std::to_string(dev_ind + 1) + " (1-indexed) of " + std::to_string(num_devs)
+					+ ": ");
 }
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,

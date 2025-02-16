@@ -19,8 +19,8 @@ __global__ void populateTree(T *const root_d, const size_t num_elem_slots,
 	// Use char datatype because extern variables must be consistent across all declarations and because char is the smallest possible datatype
 	extern __shared__ char s[];
 	size_t *subelems_start_inds_arr = reinterpret_cast<size_t *>(s);
-	size_t *num_subelems_arr = reinterpret_cast<size_t *>(s) + blockDim.x;
-	size_t *target_node_inds_arr = reinterpret_cast<size_t *>(s) + (blockDim.x << 1);
+	size_t *num_subelems_arr = subelems_start_inds_arr + blockDim.x;
+	size_t *target_node_inds_arr = num_subelems_arr + blockDim.x;
 	// Initialise shared memory
 	subelems_start_inds_arr[threadIdx.x] = val_ind_arr_start_ind;
 	// All threads except for thread 0 start by being inactive
