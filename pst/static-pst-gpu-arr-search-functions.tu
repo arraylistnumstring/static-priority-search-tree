@@ -30,7 +30,7 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 	// Initialise shared memory
 	// All threads except for thread 0 start by being inactive
 	if (threadIdx.x == 0)
-		search_inds_arr[threadIdx.x] = start_node_ind;
+		search_inds_arr[threadIdx.x] = 0;
 	else
 		search_inds_arr[threadIdx.x] = StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
 }
