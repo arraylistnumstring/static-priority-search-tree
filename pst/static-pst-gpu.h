@@ -377,7 +377,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 				T *dim1_vals_root_d;
 				T *dim2_vals_root_d;
 				T *med_dim1_vals_root_d;
-				(Optional:
+				(If PointStructs have an .id field:
 					IDType *ids_root_d;)
 				unsigned char *bitcodes_root_d;
 		*/
