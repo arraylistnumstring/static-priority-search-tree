@@ -20,7 +20,7 @@ template <typename T, typename U>
 			>::value
 __forceinline__ __device__ U warpPrefixSum(const T mask, U num);
 
-// To be applicable to both IPS and PST, logic that is based on number-of-elements boundary conditions has been removed; instead, the entire block does all calculations, with each thread deciding (in the scope that calls calcAllocReportIndOffset()) whether or not to report a result based on its value of cell_active
+// To be applicable to both IPS and PST, logic that is based on number-of-elements boundary conditions has been removed; instead, the entire block does all calculations, with each thread deciding (in the scope that calls calcAllocReportIndOffset()) whether or not to report a result based on its value of active_data
 /*
 	When only doing intrawarp shuffles, calcAllocReportIndOffset():
 		- Allocates space in the output array; and
@@ -37,9 +37,9 @@ __forceinline__ __device__ U warpPrefixSum(const T mask, U num);
 */
 template <bool interwarp_shfl, typename T>
 	requires std::unsigned_integral<T>
-__forceinline__ __device__ T calcAllocReportIndOffset(const bool cell_active, T *const warp_level_num_elems_arr = nullptr, T *const block_level_start_ind_ptr = nullptr)
+__forceinline__ __device__ T calcAllocReportIndOffset(const bool active_data, T *const warp_level_num_elems_arr = nullptr, T *const block_level_start_ind_ptr = nullptr)
 {
-	T thread_level_num_elems = cell_active ? 1 : 0;
+	T thread_level_num_elems = active_data ? 1 : 0;
 
 	// Generate mask for threads active during intrawarp phase; all threads in warp run this (or else are exited, i.e. simply not running any code at all)
 	// Call to __ballot_sync() is necessary to determine the thread in warp with largest ID that is still active; this ensures correct delegation of reporting of intrawarp offset results to shared memory
@@ -49,7 +49,7 @@ __forceinline__ __device__ T calcAllocReportIndOffset(const bool cell_active, T 
 	// Intrawarp prefix sum
 	thread_level_num_elems = warpPrefixSum(intrawarp_mask, thread_level_num_elems);
 
-	// Exclusive prefix sum result is simply the element in the preceding index of the result of the inclusive prefix sum; note that as each thread is responsible for at most 1 output element, this is effectively thread_level_num_elems - 1_{cell_active}, where 1_{cell_active} is the indicator function for whether the thread's own value of cell_active is true
+	// Exclusive prefix sum result is simply the element in the preceding index of the result of the inclusive prefix sum; note that as each thread is responsible for at most 1 output element, this is effectively thread_level_num_elems - 1_{active_data}, where 1_{active_data} is the indicator function for whether the thread's own value of active_data is true
 	// Use of __shfl_up_sync() in this instance is for generality and for ease of calculation
 	T thread_level_offset = __shfl_up_sync(intrawarp_mask, thread_level_num_elems, 1);
 

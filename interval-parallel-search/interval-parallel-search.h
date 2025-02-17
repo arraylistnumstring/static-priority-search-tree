@@ -76,14 +76,14 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 	for (unsigned long long i = blockIdx.x * blockDim.x;
 			i < num_elems; i += gridDim.x * blockDim.x)
 	{
-		bool cell_active = i + threadIdx.x < num_elems
+		bool active_cell = i + threadIdx.x < num_elems
 							&& pt_arr_d[i + threadIdx.x].dim1_val <= search_val
 							&& search_val <= pt_arr_d[i + threadIdx.x].dim2_val;
 
-		unsigned long long block_level_offset = calcAllocReportIndOffset<true>(cell_active, warp_level_num_elems_arr, &block_level_start_ind);
+		unsigned long long block_level_offset = calcAllocReportIndOffset<true>(active_cell, warp_level_num_elems_arr, &block_level_start_ind);
 
 		// Output to result array
-		if (cell_active)
+		if (active_cell)
 		{
 			if constexpr (std::is_same<RetType, IDType>::value)
 				// Add ID to array
