@@ -654,8 +654,21 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 			}
 		}
 
-		__syncthreads();
-
+		/*
+			No __syncthreads() call necessary here:
+				detInactivity() has no false positives (early, incorrect loop exits):
+					detInactivity() does not exit even without a __syncthreads() call here
+						<=> There are active threads after previous __syncthreads() call
+						<=> There are some active threads when entering the active -> active, INACTIVE ~> active phase
+								(By the nature of the active -> active, INACTIVE ~> active phase, such threads will still be active upon reaching this line)
+						<=> There are active threads in the search, i.e. search is ongoing
+						<=> Loop should continue
+						<=> cont_iter == true
+				detInactivity() has no false negatives (additional, unnecessary loops):
+					Unnecessary loops can only occur when threads are incorrectly polled as active
+						<=> detInactivity() runs in some threads before all potential active -> inactive transition computations have completed
+					This is impossible, as active -> inactive transition computations occur before the previous __syncthreads() call and will thus always complete for all threads before any thread calls detInactivity() in this iteration
+		*/
 
 		StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::detInactivity(search_ind, search_inds_arr, cont_iter);
 
