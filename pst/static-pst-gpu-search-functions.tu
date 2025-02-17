@@ -124,7 +124,7 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 				= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
 		}
 
-		// All threads who would become inactive in this iteration have finished; synchronisation is utilised because one must be certain that INACTIVE -> active writes (by other threads) are not inadvertently overwritten by active -> INACTIVE writes in lines of code above this one
+		// All threads who would become inactive in this iteration have finished; synchronisation is utilised because one must be certain that INACTIVE ~> active writes (with ~> denoting a state change that is externally triggered, i.e. triggered by other threads) are not inadvertently overwritten by active -> INACTIVE writes in lines of code above this one
 		__syncthreads();
 
 
@@ -172,12 +172,25 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 			}
 		}
 
-
-		__syncthreads();
-
-		// No __syncthreads() call is necessary between detInactivity() and the end of the loop, as it can only potentially overlap with the section where active threads become inactive; this poses no issue for correctness, as if there is still work to be done, at least one thread will be guaranteed to remain active and therefore no inactive threads will exit the processing loop
+		/*
+			No __syncthreads() call necessary here:
+				detInactivity() has no false positives (early, incorrect loop exits):
+					detInactivity() does not exit even without a __syncthreads() call here
+						<=> There are active threads after previous __syncthreads() call
+						<=> There are some active threads when entering the active -> active, INACTIVE ~> active phase
+								(By the nature of the active -> active, INACTIVE ~> active phase, such threads will still be active upon reaching this line)
+						<=> There are active threads in the search, i.e. search is ongoing
+						<=> Loop should continue
+						<=> cont_iter == true
+				detInactivity() has no false negatives (additional, unnecessary loops):
+					Unnecessary loops can only occur when threads are incorrectly polled as active
+						<=> detInactivity() runs in some threads before all potential active -> inactive transition computations have completed
+					This is impossible, as active -> inactive transition computations occur before the previous __syncthreads() call and will thus always complete for all threads before any thread calls detInactivity() in this iteration
+		*/
 
 		StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::detInactivity(search_ind, search_inds_arr, cont_iter, &search_code, search_codes_arr);
+
+		// No __syncthreads() call is necessary between detInactivity() and the end of the loop, as it can only potentially overlap with the section where active threads become inactive; this poses no issue for correctness, as if there is still work to be done, at least one thread will be guaranteed to remain active and therefore no inactive threads will exit the processing loop
 	}
 	// End cont_iter loop
 }
@@ -292,7 +305,7 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 				= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
 		}
 
-		// All threads who would become inactive in this iteration have finished; synchronisation is utilised because one must be certain that INACTIVE -> active writes (by other threads) are not inadvertently overwritten by active -> INACTIVE writes in lines of code above this one
+		// All threads who would become inactive in this iteration have finished; synchronisation is utilised because one must be certain that INACTIVE ~> active writes (with ~> denoting a state change that is externally triggered, i.e. triggered by other threads) are not inadvertently overwritten by active -> INACTIVE writes in lines of code above this one
 		__syncthreads();
 
 
@@ -319,11 +332,25 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 			}
 		}
 
-		__syncthreads();
-
-		// No __syncthreads() call is necessary between detInactivity() and the end of the loop, as it can only potentially overlap with the section where active threads become inactive; this poses no issue for correctness, as if there is still work to be done, at least one thread will be guaranteed to remain active and therefore no inactive threads will exit the processing loop
+		/*
+			No __syncthreads() call necessary here:
+				detInactivity() has no false positives (early, incorrect loop exits):
+					detInactivity() does not exit even without a __syncthreads() call here
+						<=> There are active threads after previous __syncthreads() call
+						<=> There are some active threads when entering the active -> active, INACTIVE ~> active phase
+								(By the nature of the active -> active, INACTIVE ~> active phase, such threads will still be active upon reaching this line)
+						<=> There are active threads in the search, i.e. search is ongoing
+						<=> Loop should continue
+						<=> cont_iter == true
+				detInactivity() has no false negatives (additional, unnecessary loops):
+					Unnecessary loops can only occur when threads are incorrectly polled as active
+						<=> detInactivity() runs in some threads before all potential active -> inactive transition computations have completed
+					This is impossible, as active -> inactive transition computations occur before the previous __syncthreads() call and will thus always complete for all threads before any thread calls detInactivity() in this iteration
+		*/
 
 		StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::detInactivity(search_ind, search_inds_arr, cont_iter, &search_code, search_codes_arr);
+
+		// No __syncthreads() call is necessary between detInactivity() and the end of the loop, as it can only potentially overlap with the section where active threads become inactive; this poses no issue for correctness, as if there is still work to be done, at least one thread will be guaranteed to remain active and therefore no inactive threads will exit the processing loop
 	}
 	// End cont_iter loop
 }
@@ -438,7 +465,7 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 				= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
 		}
 
-		// All threads who would become inactive in this iteration have finished; synchronisation is utilised because one must be certain that INACTIVE -> active writes (by other threads) are not inadvertently overwritten by active -> INACTIVE writes in lines of code above this one
+		// All threads who would become inactive in this iteration have finished; synchronisation is utilised because one must be certain that INACTIVE ~> active writes (with ~> denoting a state change that is externally triggered, i.e. triggered by other threads) are not inadvertently overwritten by active -> INACTIVE writes in lines of code above this one
 		__syncthreads();
 
 
@@ -465,12 +492,25 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 			}
 		}
 
-		__syncthreads();
-
-
-		// No __syncthreads() call is necessary between detInactivity() and the end of the loop, as it can only potentially overlap with the section where active threads become inactive; this poses no issue for correctness, as if there is still work to be done, at least one thread will be guaranteed to remain active and therefore no inactive threads will exit the processing loop
+		/*
+			No __syncthreads() call necessary here:
+				detInactivity() has no false positives (early, incorrect loop exits):
+					detInactivity() does not exit even without a __syncthreads() call here
+						<=> There are active threads after previous __syncthreads() call
+						<=> There are some active threads when entering the active -> active, INACTIVE ~> active phase
+								(By the nature of the active -> active, INACTIVE ~> active phase, such threads will still be active upon reaching this line)
+						<=> There are active threads in the search, i.e. search is ongoing
+						<=> Loop should continue
+						<=> cont_iter == true
+				detInactivity() has no false negatives (additional, unnecessary loops):
+					Unnecessary loops can only occur when threads are incorrectly polled as active
+						<=> detInactivity() runs in some threads before all potential active -> inactive transition computations have completed
+					This is impossible, as active -> inactive transition computations occur before the previous __syncthreads() call and will thus always complete for all threads before any thread calls detInactivity() in this iteration
+		*/
 
 		StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::detInactivity(search_ind, search_inds_arr, cont_iter, &search_code, search_codes_arr);
+
+		// No __syncthreads() call is necessary between detInactivity() and the end of the loop, as it can only potentially overlap with the section where active threads become inactive; this poses no issue for correctness, as if there is still work to be done, at least one thread will be guaranteed to remain active and therefore no inactive threads will exit the processing loop
 	}
 	// End cont_iter loop
 }
@@ -578,7 +618,7 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 				= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
 		}
 
-		// All threads who would become inactive in this iteration have finished; synchronisation is utilised because one must be certain that INACTIVE -> active writes (by other threads) are not inadvertently overwritten by active -> INACTIVE writes in lines of code above this one
+		// All threads who would become inactive in this iteration have finished; synchronisation is utilised because one must be certain that INACTIVE ~> active writes (with ~> denoting a state change that is externally triggered, i.e. triggered by other threads) are not inadvertently overwritten by active -> INACTIVE writes in lines of code above this one
 		__syncthreads();
 
 
@@ -617,9 +657,9 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 		__syncthreads();
 
 
-		// No __syncthreads() call is necessary between detInactivity() and the end of the loop, as it can only potentially overlap with the section where active threads become inactive; this poses no issue for correctness, as if there is still work to be done, at least one thread will be guaranteed to remain active and therefore no inactive threads will exit the processing loop
-
 		StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::detInactivity(search_ind, search_inds_arr, cont_iter);
+
+		// No __syncthreads() call is necessary between detInactivity() and the end of the loop, as it can only potentially overlap with the section where active threads become inactive; this poses no issue for correctness, as if there is still work to be done, at least one thread will be guaranteed to remain active and therefore no inactive threads will exit the processing loop
 	}
 	// End cont_iter loop
 }
