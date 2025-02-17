@@ -58,11 +58,11 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 	T curr_node_dim2_val;
 	T curr_node_med_dim1_val;
 	unsigned char curr_node_bitcode;
-	bool node_active;
+	bool active_node;
 
 	while (cont_iter)
 	{
-		node_active = false;
+		active_node = false;
 
 		// active threads -> INACTIVE (if current node goes below the dim2_val threshold or has no children)
 		// Before the next __syncthreads() call, which denotes the end of this section, active threads are the only threads who will modify their own search_inds_arr entry, so it is fine to do so non-atomically; also, this location is outside of the section where threads update each other's indices (which is blocked off by __syncthreads() calls), so it is extra safe
@@ -81,16 +81,16 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 			else	// Thread stays active with respect to this node
 			{
 				// Check if current node satisfies query and should be reported
-				node_active = min_dim1_val <= curr_node_dim1_val
+				active_node = min_dim1_val <= curr_node_dim1_val
 								&& curr_node_dim1_val <= max_dim1_val;
 			}
 		}
 
 		// Intrawarp shuffle; must be executed by all threads regardless of in/activity and search type
-		unsigned long long res_ind_to_access = calcAllocReportIndOffset<false, unsigned long long>(node_active);
+		unsigned long long res_ind_to_access = calcAllocReportIndOffset<false, unsigned long long>(active_node);
 
 		// Report step
-		if (node_active)
+		if (active_node)
 		{
 			if constexpr (std::is_same<RetType, IDType>::value)
 			{
@@ -236,11 +236,11 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 	T curr_node_dim2_val;
 	T curr_node_med_dim1_val;
 	unsigned char curr_node_bitcode;
-	bool node_active;
+	bool active_node;
 
 	while (cont_iter)
 	{
-		node_active = false;
+		active_node = false;
 
 		// active threads -> INACTIVE (if current node goes below the dim2_val threshold or has no children)
 		// Before the next __syncthreads() call, which denotes the end of this section, active threads are the only threads who will modify their own search_inds_arr entry, so it is fine to do so non-atomically; also, this location is outside of the section where threads update each other's indices (which is blocked off by __syncthreads() calls), so it is extra safe
@@ -259,15 +259,15 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 			else	// Thread stays active with respect to this node
 			{
 				// Check if current node satisfies query and should be reported
-				node_active = curr_node_dim1_val <= max_dim1_val;
+				active_node = curr_node_dim1_val <= max_dim1_val;
 			}
 		}
 
 		// Intrawarp shuffle; must be executed by all threads regardless of in/activity and search type
-		unsigned long long res_ind_to_access = calcAllocReportIndOffset<false, unsigned long long>(node_active);
+		unsigned long long res_ind_to_access = calcAllocReportIndOffset<false, unsigned long long>(active_node);
 		
 		// Report step
-		if (node_active)
+		if (active_node)
 		{
 			if constexpr (std::is_same<RetType, IDType>::value)
 			{
@@ -382,11 +382,11 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 	T curr_node_dim2_val;
 	T curr_node_med_dim1_val;
 	unsigned char curr_node_bitcode;
-	bool node_active;
+	bool active_node;
 
 	while (cont_iter)
 	{
-		node_active = false;
+		active_node = false;
 
 		// active threads -> INACTIVE (if current node goes below the dim2_val threshold or has no children)
 		// Before the next __syncthreads() call, which denotes the end of this section, active threads are the only threads who will modify their own search_inds_arr entry, so it is fine to do so non-atomically; also, this location is outside of the section where threads update each other's indices (which is blocked off by __syncthreads() calls), so it is extra safe
@@ -405,15 +405,15 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 			else	// Thread stays active with respect to this node
 			{
 				// Check if current node satisfies query and should be reported
-				node_active = curr_node_dim1_val >= min_dim1_val;
+				active_node = curr_node_dim1_val >= min_dim1_val;
 			}
 		}
 
 		// Intrawarp shuffle; must be executed by all threads regardless of in/activity and search type
-		unsigned long long res_ind_to_access = calcAllocReportIndOffset<false, unsigned long long>(node_active);
+		unsigned long long res_ind_to_access = calcAllocReportIndOffset<false, unsigned long long>(active_node);
 
 		// Report step
-		if (node_active)
+		if (active_node)
 		{
 			if constexpr (std::is_same<RetType, IDType>::value)
 			{
@@ -524,11 +524,11 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 	// curr_node_dim1_val will only be accessed once, so no need to create an automatic variable for it
 	T curr_node_dim2_val;
 	unsigned char curr_node_bitcode;
-	bool node_active;
+	bool active_node;
 
 	while (cont_iter)
 	{
-		node_active = false;
+		active_node = false;
 
 		// active threads -> INACTIVE (if current node goes below the dim2_val threshold or has no children)
 		// Before the next __syncthreads() call, which denotes the end of this section, active threads are the only threads who will modify their own search_inds_arr entry, so it is fine to do so non-atomically; also, this location is outside of the section where threads update each other's indices (which is blocked off by __syncthreads() calls), so it is extra safe
@@ -545,14 +545,14 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 			// Thread stays active with respect to this node
 			else	// min_dim2_val <= curr_node_dim2_val; report node
 			{
-				node_active = true;
+				active_node = true;
 			}
 		}
 
 		// Intrawarp shuffle; must be executed by all threads regardless of in/activity and search type
-		unsigned long long res_ind_to_access = calcAllocReportIndOffset<false, unsigned long long>(node_active);
+		unsigned long long res_ind_to_access = calcAllocReportIndOffset<false, unsigned long long>(active_node);
 
-		if (node_active)
+		if (active_node)
 		{
 			if constexpr (std::is_same<RetType, IDType>::value)
 			{
