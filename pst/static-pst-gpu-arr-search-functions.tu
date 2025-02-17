@@ -8,11 +8,13 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 												RetType *const res_arr_d,
 												const T max_dim1_val, const T min_dim2_val
 											)
-	{
+{
 	/*
 		By C++ specification 13.7.5 (Templates > Template declarations > Friends), point 9, "a friend function template with a constraint that depends on a template parameter from an enclosing template [is] a definition[...and] does not declare the same[...]function template as a declaration in any other scope."
 
 		Moreover, a requires clause is part of a function's signature, such that the presence or lack of a requires clause changes the function which is called or referenced, so all requires clauses must be removed from the corresponding friend function.
+
+		Finally, attempting to use a requires clause for differently named template parameters (e.g. when declaring a friend template) causes a multiple-overload compilation failure, even when such parameters would have evaluated to equivalent dependencies and function signatures.
 
 		Hence, the static_assert here takes the place of the equivalent requires clause.
 	*/
