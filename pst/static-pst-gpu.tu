@@ -1064,11 +1064,10 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 								(root_d, num_elem_slots, target_node_ind,
 								 res_arr_d, max_dim1_val, min_dim2_val);
 	}
-	else	// Inactive thread has ID (threadIdx.x + offset) % blockDim.x
-	{
-		search_inds_arr[(threadIdx.x + offset) % blockDim.x] = target_node_ind;
+	// search_inds_arr[(threadIdx.x + offset) % blockDim.x] = target_node_ind by the result of atomicCAS()
+	// Update search code; activated thread has ID (threadIdx.x + offset) % blockDim.x
+	else
 		search_codes_arr[(threadIdx.x + offset) % blockDim.x] = LEFT_SEARCH;
-	}
 }
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
@@ -1110,14 +1109,10 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 								cudaStreamFireAndForget>>>
 							(root_d, num_elem_slots, target_node_ind, res_arr_d, min_dim2_val);
 	}
-	else	// Inactive thread has ID (threadIdx.x + offset) % blockDim.x
-	{
-		search_inds_arr[(threadIdx.x + offset) % blockDim.x] = target_node_ind;
-
-		// For splitting of work when not called from reportAllNodesGlobal()
-		if (search_codes_arr != nullptr)
-			search_codes_arr[(threadIdx.x + offset) % blockDim.x] = REPORT_ALL;
-	}
+	// search_inds_arr[(threadIdx.x + offset) % blockDim.x] = target_node_ind by the result of atomicCAS()
+	// Update search code if not called from reportAllNodesGlobal(); activated thread has ID (threadIdx.x + offset) % blockDim.x
+	else if (search_codes_arr != nullptr)
+		search_codes_arr[(threadIdx.x + offset) % blockDim.x] = REPORT_ALL;
 }
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
