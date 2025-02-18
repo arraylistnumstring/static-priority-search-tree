@@ -1141,6 +1141,7 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 			*search_code_ptr = search_codes_arr[threadIdx.x];
 	}
 	// Thread remains inactive; check if all other threads are inactive; if so, all processing has completed
+	// Checking all other threads is necessary in order to determine whether to exit overall loop because for blocks with sizes larger than one warp, warp-based scheduling means that threads in some warps may not have completed processing their subtrees while threads in other warps may have already done so; thus, with redelegation of resources, there is no guarantee of any single specific thread being an indicator for the completion status of the block as a whole
 	else if (search_ind == INACTIVE_IND)
 	{
 		int i = 0;
