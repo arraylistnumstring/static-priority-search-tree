@@ -179,7 +179,7 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 						<=> There are active threads after previous __syncthreads() call
 						<=> There are some active threads when entering the active -> active, INACTIVE ~> active phase
 								(By the nature of the active -> active, INACTIVE ~> active phase, such threads will still be active upon reaching this line)
-						<=> There are active threads in the search, i.e. search is ongoing
+						<=> There are active threads in the search, i.e. search is ongoing (at least in this block, which is the only source of nodes to search that can be communicated to threads in this block anyway)
 						<=> Loop should continue
 						<=> cont_iter == true
 				detInactivity() has no false negatives (additional, unnecessary loops):
@@ -339,7 +339,7 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 						<=> There are active threads after previous __syncthreads() call
 						<=> There are some active threads when entering the active -> active, INACTIVE ~> active phase
 								(By the nature of the active -> active, INACTIVE ~> active phase, such threads will still be active upon reaching this line)
-						<=> There are active threads in the search, i.e. search is ongoing
+						<=> There are active threads in the search, i.e. search is ongoing (at least in this block, which is the only source of nodes to search that can be communicated to threads in this block anyway)
 						<=> Loop should continue
 						<=> cont_iter == true
 				detInactivity() has no false negatives (additional, unnecessary loops):
@@ -499,7 +499,7 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 						<=> There are active threads after previous __syncthreads() call
 						<=> There are some active threads when entering the active -> active, INACTIVE ~> active phase
 								(By the nature of the active -> active, INACTIVE ~> active phase, such threads will still be active upon reaching this line)
-						<=> There are active threads in the search, i.e. search is ongoing
+						<=> There are active threads in the search, i.e. search is ongoing (at least in this block, which is the only source of nodes to search that can be communicated to threads in this block anyway)
 						<=> Loop should continue
 						<=> cont_iter == true
 				detInactivity() has no false negatives (additional, unnecessary loops):
@@ -661,7 +661,7 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 						<=> There are active threads after previous __syncthreads() call
 						<=> There are some active threads when entering the active -> active, INACTIVE ~> active phase
 								(By the nature of the active -> active, INACTIVE ~> active phase, such threads will still be active upon reaching this line)
-						<=> There are active threads in the search, i.e. search is ongoing
+						<=> There are active threads in the search, i.e. search is ongoing (at least in this block, which is the only source of nodes to search that can be communicated to threads in this block anyway)
 						<=> Loop should continue
 						<=> cont_iter == true
 				detInactivity() has no false negatives (additional, unnecessary loops):
