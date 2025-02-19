@@ -8,6 +8,8 @@ __global__ void populateTrees(T *const tree_arr_d, const size_t full_tree_num_el
 								size_t *dim2_val_ind_arr_secondary_d,
 								const size_t num_elems)
 {
+	cooperative_groups::thread_block curr_block = cooperative_groups::this_thread_block();
+
 	// Use char datatype because extern variables must be consistent across all declarations and because char is the smallest possible datatype
 	extern __shared__ char s[];
 	size_t *subelems_start_inds_arr = reinterpret_cast<size_t *>(s);
@@ -60,7 +62,7 @@ __global__ void populateTrees(T *const tree_arr_d, const size_t full_tree_num_el
 	// Note: would only need to have one thread block do multiple trees when the number of trees exceeds 2^31 - 1, i.e. the maximum number of blocks permitted in a grid
 	T *const tree_root_d = tree_arr_d + blockIdx.x * full_tree_size_num_Ts;
 
-	__syncthreads();
+	curr_block.sync();
 
 
 	// At any given level of the tree, each thread creates one node; as depth h of a tree has 2^h nodes, the number of active threads at level h is 2^h
@@ -148,6 +150,6 @@ __global__ void populateTrees(T *const tree_arr_d, const size_t full_tree_num_el
 		dim2_val_ind_arr_d = dim2_val_ind_arr_secondary_d;
 		dim2_val_ind_arr_secondary_d = temp;
 
-		__syncthreads();	// Synchronise before starting the next iteration
+		curr_block.sync();	// Synchronise before starting the next iteration
 	}
 }

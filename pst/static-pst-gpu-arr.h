@@ -1,6 +1,8 @@
 #ifndef STATIC_PST_GPU_ARR_H
 #define STATIC_PST_GPU_ARR_H
 
+#include <cooperative_groups.h>
+
 #include "gpu-err-chk.h"
 #include "gpu-power-of-2-functions.h"
 #include "gpu-tree-node.h"

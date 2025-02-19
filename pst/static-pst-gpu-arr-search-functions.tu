@@ -24,6 +24,8 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 					>::value,
 					"RetType is not of type PointStructTemplate<T, IDType, num_IDs>, nor of type IDType");
 
+	cooperative_groups::thread_block curr_block = cooperative_groups::this_thread_block();
+
 	// Use char datatype because extern variables must be consistent across all declarations and because char is the smallest possible datatype
 	extern __shared__ char s[];
 	// Node indices for each thread to search
@@ -39,5 +41,5 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 	// For twoSidedLeftSearchTreeArrGlobal(), all threads start with their search code set to LEFT_SEARCH
 	search_codes_arr[threadIdx.x] = StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::LEFT_SEARCH;
 
-	__syncthreads();	// Must synchronise before processing to ensure data is properly set
+	curr_block.sync();	// Must synchronise before processing to ensure data is properly set
 }
