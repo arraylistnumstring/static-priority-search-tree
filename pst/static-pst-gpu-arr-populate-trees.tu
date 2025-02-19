@@ -121,6 +121,7 @@ __global__ void populateTrees(T *const tree_arr_d, const size_t full_tree_num_el
 			// Because of how elements have been allocated to this tree, this means that the next level is the last level; in this case, if there are no more threads available to construct the right child, do so (it will not have any children, so if it exists, it will be the last node to handle in its subtree)
 			else if (right_subarr_num_elems > 0)
 			{
+				// left_subarr_num_elems, right_subarr_start_ind, right_subarr_num_elems are not used further in this iteration, so can reuse them for construction of the right child leaf
 				StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::constructNode(
 												tree_root_d, tree_num_elem_slots,
 												pt_arr_d,
