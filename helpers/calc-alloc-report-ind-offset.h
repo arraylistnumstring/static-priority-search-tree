@@ -20,9 +20,10 @@ __forceinline__ __device__ T calcAllocReportIndOffset(T thread_level_num_elems)
 			= cooperative_groups::coalesced_threads();
 
 	// Exclusive prefix sum result is simply the element in the preceding index of the result of the inclusive prefix sum; note that as each thread is responsible for at most 1 output element, this is effectively thread_level_num_elems - 1_{active_data}, where 1_{active_data} is the indicator function for whether the thread's own value of active_data is true
-	T thread_level_offset = cooperative_groups::exclusive_scan(intrawarp_active_threads, thread_level_num_elems);
-
-	thread_level_num_elems = cooperative_groups::inclusive_scan(intrawarp_active_threads, thread_level_num_elems);
+	// Because exclusive_scan() takes as its second argument a trivially copyable type, the type is also trivially moveable, i.e. its trivial move constructor does the same ting as the trivial copy constructor (which is to simply copy the underlying bytes from one location to another, non-overlapping location), which thereby means the original value is left undisturbed
+	const T thread_level_offset = cooperative_groups::exclusive_scan(intrawarp_active_threads, thread_level_num_elems);
+	// Inclusive prefix sum includes the calling thread's value in the final sum
+	thread_level_num_elems = thread_level_offset + thread_level_num_elems;
 
 	// Intrawarp: allocate space in output array on per-warp basis
 	T res_arr_output_ind;
@@ -52,9 +53,10 @@ __forceinline__ __device__ T calcAllocReportIndOffset(const cooperative_groups::
 			= cooperative_groups::coalesced_threads();
 
 	// Exclusive prefix sum result is simply the element in the preceding index of the result of the inclusive prefix sum; note that as each thread is responsible for at most 1 output element, this is effectively thread_level_num_elems - 1_{active_data}, where 1_{active_data} is the indicator function for whether the thread's own value of active_data is true
-	T thread_level_offset = cooperative_groups::exclusive_scan(intrawarp_active_threads, thread_level_num_elems);
-
-	thread_level_num_elems = cooperative_groups::inclusive_scan(intrawarp_active_threads, thread_level_num_elems);
+	// Because exclusive_scan() takes as its second argument a trivially copyable type, the type is also trivially moveable, i.e. its trivial move constructor does the same ting as the trivial copy constructor (which is to simply copy the underlying bytes from one location to another, non-overlapping location), which thereby means the original value is left undisturbed
+	const T thread_level_offset = cooperative_groups::exclusive_scan(intrawarp_active_threads, thread_level_num_elems);
+	// Inclusive prefix sum includes the calling thread's value in the final sum
+	thread_level_num_elems = thread_level_offset + thread_level_num_elems;
 
 	// Last active thread in warp puts total number of slots necessary for all active cells in the warp_level_num_elems_arr shared memory array
 	if (intrawarp_active_threads.thread_rank() == intrawarp_active_threads.num_threads() - 1)
@@ -99,6 +101,7 @@ __forceinline__ __device__ T calcAllocReportIndOffset(const cooperative_groups::
 	// Total number of slots needed to store all active metacells processed by block in current iteration is now known and stored in the last element of warp_level_num_elems_arr
 	curr_block.sync();
 
+
 	// Single thread in block allocates space in res_arr_d with atomic operation
 	if (curr_block.thread_rank() == 0)
 	{
@@ -106,17 +109,22 @@ __forceinline__ __device__ T calcAllocReportIndOffset(const cooperative_groups::
 		block_level_start_ind = atomicAdd(&res_arr_ind_d, block_level_num_elems);
 	}
 
+	// Set an arrival token so that when all threads have passed this point (in particular, the thread with linear ID 0 that allocates memory for the block), it is safe to exit the function (and write to the associated location in memory)
+	cooperative_groups::thread_block::arrival_token arrival_token = curr_block.barrier_arrive();
+
 	T warp_level_offset;	// Calculated with exclusive prefix sum
 
 	// All warps acquire their warp-level offset, which is the element of index (warp ID - 1) in warp_level_num_elems_arr
-	// Acquisition of warp-level offset is independent of memory allocation, so can occur anytime that is both after the post-interwarp shuffle __syncthreads() call and before the writing of results to global memory; placed here for optimisation purposes, as all threads other than thread 0 would otherwise be idle between the post-interwarp shuffle __syncthreads() call and the post-memory allocation __syncthread() call
+	// Acquisition of warp-level offset is independent of memory allocation, so can occur anytime that is both after the post-interwarp shuffle curr_block.sync() call and before the writing of results to global memory
 	if (curr_block.thread_rank() / warpSize == 0)
 		warp_level_offset = 0;
 	else
 		warp_level_offset = warp_level_num_elems_arr[curr_block.thread_rank() / warpSize - 1];
 
 	// Block-level start index now known and saved in address pointed to by block_level_start_ind
-	curr_block.sync();
+
+	// Make sure all threads (and in particular, the thread with linear ID 0 that allocates memory for the block) have passed the memory-allocation portion of the code before continuing on with exiting the function (and writing to that portion of memory)
+	curr_block.barrier_wait(std::move(arrival_token));
 
 	// Return block-level offset
 	return warp_level_offset + thread_level_offset;
