@@ -1,5 +1,5 @@
+#include "calc-alloc-report-ind-offset.h"
 #include "gpu-tree-node.h"
-#include "warp-shuffles.h"
 
 // Utilises dynamic parallelism
 // Shared memory must be at least as large as (number of threads) * (sizeof(long long) + sizeof(unsigned char))

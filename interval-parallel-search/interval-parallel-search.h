@@ -3,9 +3,9 @@
 
 #include <cooperative_groups.h>
 
+#include "calc-alloc-report-ind-offset.h"
 #include "dev-symbols.h"	// For global memory-scoped variable res_arr_ind_d
 #include "gpu-err-chk.h"
-#include "warp-shuffles.h"
 
 // Method of Liu et al. (2016): embarrassingly parallel search for active metacells, superficially modified for parity with PST search method
 

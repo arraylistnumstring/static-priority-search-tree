@@ -7,13 +7,13 @@
 #include <nvfunctional>
 #include <type_traits>
 
+#include "calc-alloc-report-ind-offset.h"
 #include "class-member-checkers.h"
 #include "dev-symbols.h"
 #include "exit-status-codes.h"
 #include "gpu-err-chk.h"
 #include "linearise-id.h"
 #include "type-concepts.h"
-#include "warp-shuffles.h"
 
 
 // Calculates metacell grid dimensions and total number of metacells, returning them using the supplied pointer and reference parameters, calculated from inputs of vertex grid dimensions and metacell dimensions
