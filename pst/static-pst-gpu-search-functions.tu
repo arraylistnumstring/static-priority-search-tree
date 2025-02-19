@@ -90,7 +90,7 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 		if (active_node)
 		{
 			// Intrawarp prefix sum: each thread here has one active node to report
-			const unsigned long long res_ind_to_access = calcAllocReportIndOffset(1);
+			const unsigned long long res_ind_to_access = calcAllocReportIndOffset<unsigned long long>(1);
 
 			if constexpr (std::is_same<RetType, IDType>::value)
 			{
@@ -280,7 +280,7 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 		if (active_node)
 		{
 			// Intrawarp prefix sum: each thread here has one active node to report
-			const unsigned long long res_ind_to_access = calcAllocReportIndOffset(1);
+			const unsigned long long res_ind_to_access = calcAllocReportIndOffset<unsigned long long>(1);
 
 			if constexpr (std::is_same<RetType, IDType>::value)
 			{
@@ -440,7 +440,7 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 		if (active_node)
 		{
 			// Intrawarp prefix sum: each thread here has one active node to report
-			const unsigned long long res_ind_to_access = calcAllocReportIndOffset(1);
+			const unsigned long long res_ind_to_access = calcAllocReportIndOffset<unsigned long long>(1);
 
 			if constexpr (std::is_same<RetType, IDType>::value)
 			{
@@ -592,7 +592,7 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 		if (active_node)
 		{
 			// Intrawarp prefix sum: each thread here has one active node to report
-			const unsigned long long res_ind_to_access = calcAllocReportIndOffset(1);
+			const unsigned long long res_ind_to_access = calcAllocReportIndOffset<unsigned long long>(1);
 
 			if constexpr (std::is_same<RetType, IDType>::value)
 			{

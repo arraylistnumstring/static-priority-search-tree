@@ -71,7 +71,7 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 	unsigned long long &block_level_start_ind = *reinterpret_cast<unsigned long long *>(s);
 	unsigned long long *warp_level_num_elems_arr = reinterpret_cast<unsigned long long *>(s) + 1;
 
-	const cooperative_groups::coalesced_group curr_block = cooperative_groups::this_thread_block();
+	const cooperative_groups::thread_block curr_block = cooperative_groups::this_thread_block();
 
 	// Liu et al. kernel; iterate over all PointStructTemplate<T, IDType, num_IDs> elements in pt_arr_d
 	// Due to presence of __syncthreads() calls within for loop (specifically, in calcAllocReportIndOffset()), whole block must iterate if at least one thread has an element to process
@@ -86,8 +86,9 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 
 
 		const unsigned long long block_level_offset
-				= calcAllocReportIndOffset(curr_block, active_cell ? 1 : 0,
-											warp_level_num_elems_arr, block_level_start_ind);
+				= calcAllocReportIndOffset<unsigned long long>(curr_block, active_cell ? 1 : 0,
+																warp_level_num_elems_arr,
+																block_level_start_ind);
 
 		// Output to result array
 		if (active_cell)

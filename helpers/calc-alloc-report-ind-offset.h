@@ -1,5 +1,5 @@
-#ifndef WARP_SHUFFLES_H
-#define WARP_SHUFFLES_H
+#ifndef CALC_ALLOC_REPORT_IND_OFFSET_H
+#define CALC_ALLOC_REPORT_IND_OFFSET_H
 
 #include <cooperative_groups.h>
 #include <cooperative_groups/scan.h>
@@ -9,18 +9,6 @@
 #include "dev-symbols.h"	// Need access to __device__ (global memory) variable res_arr_ind_d
 #include "linearise-id.h"
 
-// Forward declarations
-template <typename T>
-	requires std::unsigned_integral<T>
-__forceinline__ __device__ T fls(T val);
-
-template <typename T, typename U>
-	requires std::conjunction<
-								std::is_integral<T>,
-								std::is_unsigned<T>,
-								std::is_arithmetic<U>
-			>::value
-__forceinline__ __device__ U warpPrefixSum(const T mask, U num);
 
 // Intrawarp version: allocates space in output array and returns for each thread the index res_arr_output_ind at which it can safely write its result to the output array
 template <typename T>
@@ -100,7 +88,7 @@ __forceinline__ __device__ T calcAllocReportIndOffset(const cooperative_groups::
 				T warp_level_num_elems = warp_level_num_elems_arr[i + curr_block.thread_rank()];
 
 				// Interwarp prefix sum: do inclusive prefix sum on warp-level values
-				warp_level_num_elems = cooperative_groups::inclusive_scan(interwapr_active_threads, warp_level_num_elems);
+				warp_level_num_elems = cooperative_groups::inclusive_scan(interwarp_active_threads, warp_level_num_elems);
 
 				// Store result in shared memory, including the effect of the offset
 				warp_level_num_elems_arr[i + curr_block.thread_rank()] = warp_gp_offset + warp_level_num_elems;
@@ -115,7 +103,7 @@ __forceinline__ __device__ T calcAllocReportIndOffset(const cooperative_groups::
 	if (curr_block.thread_rank() == 0)
 	{
 		const T block_level_num_elems = warp_level_num_elems_arr[warps_per_block - 1];
-		*block_level_start_ind = atomicAdd(&res_arr_ind_d, block_level_num_elems);
+		block_level_start_ind = atomicAdd(&res_arr_ind_d, block_level_num_elems);
 	}
 
 	T warp_level_offset;	// Calculated with exclusive prefix sum
@@ -133,55 +121,5 @@ __forceinline__ __device__ T calcAllocReportIndOffset(const cooperative_groups::
 	// Return block-level offset
 	return warp_level_offset + thread_level_offset;
 };
-
-// Helper function fls() for "find last (bit) set", where bits are 0-indexed from least to most significant place value
-template <typename T>
-	requires std::unsigned_integral<T>
-__forceinline__ __device__ T fls(T val)	// Equivalent to truncate(log_2(val))
-{
-	T bit_ind = 0;
-	while (val >>= 1)	// Unsigned right shifts are logical, i.e. zero-filling; loop exits when val evaluates to 0 after the right shift
-		bit_ind++;
-	return bit_ind;
-}
-
-// Calculates inclusive prefix sum using thread-local variables and intra-warp shuffle; returns result in reference variable num
-//	Precondition: inactive threads, if any, are located in one contiguous group that ends at the highest-indexed thread (when ordering by increasing linearised ID)
-template <typename T, typename U>
-	requires std::conjunction<
-								// As std::unsigned_integral<T> evaluates to true/false instead of a type name, instead use its constituent parts separately to achieve the same effect
-								std::is_integral<T>,
-								std::is_unsigned<T>,
-								std::is_arithmetic<U>
-			>::value
-__forceinline__ __device__ U warpPrefixSum(const T mask, U num)
-{
-	// As a comma-delimited declaration does not allow declarations of different types (including variables of different const-ness), create the const-valued shfl_offset_lim outside of the loop initialiser, i.e. before shfl_offset
-	// At time of writing (compute capability 9.0), warp size is 32; hence, fls() will always be at most warpSize - 1 (32 bits, with the leftmost 0-indexed as bit 31), so shfl_offset_lim will evaluate to warpSize if the entire warp is active
-	const T shfl_offset_lim = fls(mask) + 1;
-
-	// Parallel prefix sum returns accurate values as long as the loop runs for every shift size (shfl_offset) that is a power of 2 (with nonnegative exponent) up to the largest power of 2 less than shfl_offset_lim (the latter is at most warpSize)
-#pragma unroll
-	for (T shfl_offset = 1; shfl_offset < shfl_offset_lim; shfl_offset <<= 1)
-	{
-#ifdef DEBUG_SHFL
-		printf("About to begin shfl_offset = %u prefix sum\n\n", shfl_offset);
-#endif
-		// Copies value of variable thread_level_num_elems from thread with lane ID that is shfl_offset less than current thread's lane ID
-		// Threads can only receive data from other threads participating in the __shfl_*sync() call
-		// Attempting to read from an invalid lane ID or non-participating lane causes a thread to read from its own variable
-		U addend = __shfl_up_sync(mask, num, shfl_offset);
-
-		// Only modify num if data came from another thread
-		if (linThreadIDInBlock() % warpSize >= shfl_offset)
-			num += addend;
-
-#ifdef DEBUG_SHFL
-		printf("Completed shfl_offset = %u prefix sum\n\n", shfl_offset);
-#endif
-	}
-
-	return num;
-}
 
 #endif
