@@ -37,10 +37,8 @@ __forceinline__ __device__ U warpPrefixSum(const T mask, U num);
 */
 template <bool interwarp_shfl, typename T>
 	requires std::unsigned_integral<T>
-__forceinline__ __device__ T calcAllocReportIndOffset(const bool active_data, T *const warp_level_num_elems_arr = nullptr, T *const block_level_start_ind_ptr = nullptr)
+__forceinline__ __device__ T calcAllocReportIndOffset(const T thread_level_num_elems, T *const warp_level_num_elems_arr = nullptr, T *const block_level_start_ind_ptr = nullptr)
 {
-	T thread_level_num_elems = active_data ? 1 : 0;
-
 	// Generate mask for threads active during intrawarp phase; all threads in warp run this (or else are exited, i.e. simply not running any code at all)
 	// Call to __ballot_sync() is necessary to determine the thread in warp with largest ID that is still active; this ensures correct delegation of reporting of intrawarp offset results to shared memory
 	// As of time of writing (compute capability 9.0), __ballot_sync() returns an unsigned int
