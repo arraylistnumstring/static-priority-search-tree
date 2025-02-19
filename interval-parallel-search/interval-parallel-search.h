@@ -1,6 +1,8 @@
 #ifndef INTERVAL_PARALLEL_SEARCH_H
 #define INTERVAL_PARALLEL_SEARCH_H
 
+#include <cooperative_groups.h>
+
 #include "dev-symbols.h"	// For global memory-scoped variable res_arr_ind_d
 #include "gpu-err-chk.h"
 #include "warp-shuffles.h"
@@ -69,28 +71,35 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 	unsigned long long &block_level_start_ind = *reinterpret_cast<unsigned long long *>(s);
 	unsigned long long *warp_level_num_elems_arr = reinterpret_cast<unsigned long long *>(s) + 1;
 
+	const cooperative_groups::coalesced_group curr_block = cooperative_groups::this_thread_block();
+
 	// Liu et al. kernel; iterate over all PointStructTemplate<T, IDType, num_IDs> elements in pt_arr_d
 	// Due to presence of __syncthreads() calls within for loop (specifically, in calcAllocReportIndOffset()), whole block must iterate if at least one thread has an element to process
 	// Loop unrolling, as number of loops is known explicitly when kernel is called
 #pragma unroll
-	for (unsigned long long i = blockIdx.x * blockDim.x;
-			i < num_elems; i += gridDim.x * blockDim.x)
+	for (unsigned long long i = blockIdx.x * blockDim.x + blockIdx.y * blockDim.y + blockIdx.z * blockDim.z;
+			i < num_elems; i += gridDim.x * blockDim.x + gridDim.y * blockDim.y + gridDim.z * blockDim.z)
 	{
-		const bool active_cell = i + threadIdx.x < num_elems
-							&& pt_arr_d[i + threadIdx.x].dim1_val <= search_val
-							&& search_val <= pt_arr_d[i + threadIdx.x].dim2_val;
+		const bool active_cell = i + curr_block.thread_rank() < num_elems
+							&& pt_arr_d[i + curr_block.thread_rank()].dim1_val <= search_val
+							&& search_val <= pt_arr_d[i + curr_block.thread_rank()].dim2_val;
 
-		const unsigned long long block_level_offset = calcAllocReportIndOffset<true>(active_cell ? 1 : 0, warp_level_num_elems_arr, &block_level_start_ind);
+
+		const unsigned long long block_level_offset
+				= calcAllocReportIndOffset(curr_block, active_cell ? 1 : 0,
+											warp_level_num_elems_arr, block_level_start_ind);
 
 		// Output to result array
 		if (active_cell)
 		{
 			if constexpr (std::is_same<RetType, IDType>::value)
 				// Add ID to array
-				res_arr_d[block_level_start_ind + block_level_offset] = pt_arr_d[i + threadIdx.x].id;
+				res_arr_d[block_level_start_ind + block_level_offset]
+							= pt_arr_d[i + curr_block.thread_rank()].id;
 			else
 				// Add PtStructTemplate<T, IDType, num_IDs> to array
-				res_arr_d[block_level_start_ind + block_level_offset] = pt_arr_d[i + threadIdx.x];
+				res_arr_d[block_level_start_ind + block_level_offset]
+							= pt_arr_d[i + curr_block.thread_rank()];
 		}
 	}
 };

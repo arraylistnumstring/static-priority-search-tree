@@ -1,6 +1,8 @@
 #ifndef WARP_SHUFFLES_H
 #define WARP_SHUFFLES_H
 
+#include <cooperative_groups.h>
+#include <cooperative_groups/scan.h>
 // Allows use of nvstd::function, an equivalent to std::function that functions on both host and device (but not across the host-device boundary)
 #include <nvfunctional>
 
@@ -20,126 +22,116 @@ template <typename T, typename U>
 			>::value
 __forceinline__ __device__ U warpPrefixSum(const T mask, U num);
 
-// To be applicable to both IPS and PST, logic that is based on number-of-elements boundary conditions has been removed; instead, the entire block does all calculations, with each thread deciding (in the scope that calls calcAllocReportIndOffset()) whether or not to report a result based on its value of active_data
-/*
-	When only doing intrawarp shuffles, calcAllocReportIndOffset():
-		- Allocates space in the output array; and
-		- Returns for each thread the index res_arr_output_ind at which it can safely write its result to the output array.
-
-	When doing intrawarp and interwarp shuffles, calcAllocReportIndOffset():
-		- Allocates space in the output array;
-		- Stores the first index allocated for the block in *block_level_start_ind_ptr (in a safely concurrent way such that this variable can be a location in shared memory); and
-		- Returns for each thread the offset from the first index allocated for the block in the output array, such that a thread can safely write to index (*block_level_start_ind_ptr + block_level_offset) in the output array.
-
-	Pre-conditions:
-		Value of interwarp_shfl must be compile-time determinable
-		warp_level_num_elems_arr == nullptr iff block_level_start_ind_ptr == nullptr iff interwarp_shfl == false
-*/
-template <bool interwarp_shfl, typename T>
+// Intrawarp version: allocates space in output array and returns for each thread the index res_arr_output_ind at which it can safely write its result to the output array
+template <typename T>
 	requires std::unsigned_integral<T>
-__forceinline__ __device__ T calcAllocReportIndOffset(const T thread_level_num_elems, T *const warp_level_num_elems_arr = nullptr, T *const block_level_start_ind_ptr = nullptr)
+__forceinline__ __device__ T calcAllocReportIndOffset(T thread_level_num_elems)
 {
-	// Generate mask for threads active during intrawarp phase; all threads in warp run this (or else are exited, i.e. simply not running any code at all)
-	// Call to __ballot_sync() is necessary to determine the thread in warp with largest ID that is still active; this ensures correct delegation of reporting of intrawarp offset results to shared memory
-	// As of time of writing (compute capability 9.0), __ballot_sync() returns an unsigned int
-	const auto intrawarp_mask = __ballot_sync(0xffffffff, true);
-
-	// Intrawarp prefix sum
-	thread_level_num_elems = warpPrefixSum(intrawarp_mask, thread_level_num_elems);
+	// Intrawarp cooperative group
+	const cooperative_groups::coalesced_group intrawarp_active_threads
+			= cooperative_groups::coalesced_threads();
 
 	// Exclusive prefix sum result is simply the element in the preceding index of the result of the inclusive prefix sum; note that as each thread is responsible for at most 1 output element, this is effectively thread_level_num_elems - 1_{active_data}, where 1_{active_data} is the indicator function for whether the thread's own value of active_data is true
-	// Use of __shfl_up_sync() in this instance is for generality and for ease of calculation
-	T thread_level_offset = __shfl_up_sync(intrawarp_mask, thread_level_num_elems, 1);
+	T thread_level_offset = cooperative_groups::exclusive_scan(intrawarp_active_threads, thread_level_num_elems);
 
-	// First thread in each warp read from its own value, so reset that offset
-	if (threadIdx.x % warpSize == 0)
-		thread_level_offset = 0;
+	thread_level_num_elems = cooperative_groups::inclusive_scan(intrawarp_active_threads, thread_level_num_elems);
 
-	// If only doing intrawarp shuffle, allocate space in output array on a per-warp basis
-	if constexpr (!interwarp_shfl)
+	// Intrawarp: allocate space in output array on per-warp basis
+	T res_arr_output_ind;
+
+	// Last thread in coalesced group allocates total number of slots necessary for all active cells in the output array
+	const auto last_thread_in_group = intrawarp_active_threads.num_threads() - 1;
+	if (intrawarp_active_threads.thread_rank() == last_thread_in_group)
+		// Warp-level start index
+		res_arr_output_ind = atomicAdd(&res_arr_ind_d, thread_level_num_elems);
+
+	// Broadcast warp-level start index to other threads in warp (i.e. all active threads read from last active thread in the warp)
+	res_arr_output_ind = intrawarp_active_threads.shfl(res_arr_output_ind, last_thread_in_group);
+
+	// Add thread-level offset to warp-level start index to find output index for this thread
+	res_arr_output_ind += thread_level_offset;
+
+	return res_arr_output_ind;
+}
+
+// Intrawarp + interwarp version: allocates space in output arra; stores first index allocated for the block in warp_level_num_elems_arr
+template <typename T>
+	requires std::unsigned_integral<T>
+__forceinline__ __device__ T calcAllocReportIndOffset(const cooperative_groups::thread_block &curr_block, T thread_level_num_elems, T *const warp_level_num_elems_arr, T &block_level_start_ind)
+{
+	// Intrawarp cooperative group
+	const cooperative_groups::coalesced_group intrawarp_active_threads
+			= cooperative_groups::coalesced_threads();
+
+	// Exclusive prefix sum result is simply the element in the preceding index of the result of the inclusive prefix sum; note that as each thread is responsible for at most 1 output element, this is effectively thread_level_num_elems - 1_{active_data}, where 1_{active_data} is the indicator function for whether the thread's own value of active_data is true
+	T thread_level_offset = cooperative_groups::exclusive_scan(intrawarp_active_threads, thread_level_num_elems);
+
+	thread_level_num_elems = cooperative_groups::inclusive_scan(intrawarp_active_threads, thread_level_num_elems);
+
+	// Last active thread in warp puts total number of slots necessary for all active cells in the warp_level_num_elems_arr shared memory array
+	if (intrawarp_active_threads.thread_rank() == intrawarp_active_threads.num_threads() - 1)
+		// Place total number of elements in this warp at the slot assigned to this warp in shared memory array warp_level_num_elems_arr
+		warp_level_num_elems_arr[curr_block.thread_rank() / warpSize] = thread_level_num_elems;
+
+	curr_block.sync();		// Warp-level info must be ready to use at the block level
+
+
+	// Interwarp prefix sum (block-level)
+	const auto warps_per_block = curr_block.num_threads() / warpSize
+									+ ((curr_block.num_threads() % warpSize == 0) ? 0 : 1);
+
+	// Being a prefix sum, only one warp should be active in this process for speed and correctness; use the first warp, which is guaranteed to exist
+	if (curr_block.thread_rank() / warpSize == 0)
 	{
-		T res_arr_output_ind;
-
-		// Last active thread in warp allocates total number of slots necessary for all active cells in the output array
-		if (threadIdx.x % warpSize == fls(intrawarp_mask))
-			// Warp-level start index
-			res_arr_output_ind = atomicAdd(&res_arr_ind_d, thread_level_num_elems);
-
-		// Broadcast warp-level start index to other threads in warp (i.e. all active threads read from the last active thread in the warp)
-		res_arr_output_ind = __shfl_sync(intrawarp_mask, res_arr_output_ind, fls(intrawarp_mask));
-
-		// Add thread-level offset to warp-level start index to find output index for this thread
-		res_arr_output_ind += thread_level_offset;
-
-		return res_arr_output_ind;
-	}
-	else	// if constexpr (interwarp_shfl)
-	{
-		// Last active thread in warp puts total number of slots necessary for all active cells in the warp_level_num_elems_arr shared memory array
-		if (threadIdx.x % warpSize == fls(intrawarp_mask))
-			// Place total number of elements in this warp at the slot assigned to this warp in shared memory array warp_level_num_elems_arr
-			warp_level_num_elems_arr[threadIdx.x / warpSize] = thread_level_num_elems;
-
-		__syncthreads();	// Warp-level info must be ready to use at the block level
-
-		// Interwarp prefix sum (block-level)
-		const auto warps_per_block = blockDim.x * blockDim.y * blockDim.z / warpSize
-										+ ((blockDim.x * blockDim.y * blockDim.z % warpSize == 0) ? 0 : 1);
-
-		// Being a prefix sum, only one warp should be active in this process for speed and correctness; use the first warp, which is guaranteed to exist
-		if (threadIdx.x / warpSize == 0)
-		{
-			// If necessary, repeat interwarp prefix sum with base offset of previous iteration until all warps have had their prefix sum calculated
-			// Though would be fine to put __ballot_sync() call in loop initialiser here, as there are currently no __syncwarp() calls within the loop that could cause hang, put within loop anyway in case __syncwarp() calls turn out to be necessary in later design
+		// If necessary, repeat interwarp prefix sum with base offset of previous iteration until all warps have had their prefix sum calculated
 #pragma unroll
-			for (auto i = 0; i < warps_per_block; i += warpSize)
+		for (auto i = 0; i < warps_per_block; i += warpSize)
+		{
+			// Inter-warp condition
+			if (i + curr_block.thread_rank() < warps_per_block)
 			{
-				// Simultaneously serves as a __syncwarp() call to ensure that writes and reads are separated, as well as a mask generator for interwarp prefix sum
-				const auto interwarp_mask = __ballot_sync(0xffffffff, i + threadIdx.x < warps_per_block);
+				// Interwarp cooperative group; must used coalesced_groups in order to use inclusive_scan()
+				const cooperative_groups::coalesced_group interwarp_active_threads
+						= cooperative_groups::coalesced_threads();
 
-				// Inter-warp condition
-				if (i + threadIdx.x < warps_per_block)
-				{
-					// If this is not the first set of warps being processed, set the warp group's offset to be the largest result of the previous iteration's interwarp prefix sum
-					T warp_gp_offset = (i == 0) ? 0 : warp_level_num_elems_arr[i - 1];
+				// If this is not the first set of warps being processed, set the warp group's offset to be the largest result of the previous iteration's interwarp prefix sum
+				const T warp_gp_offset = (i == 0) ? 0 : warp_level_num_elems_arr[i - 1];
 
-					T warp_level_num_elems = warp_level_num_elems_arr[i + threadIdx.x];
+				T warp_level_num_elems = warp_level_num_elems_arr[i + curr_block.thread_rank()];
 
-					// Do inclusive prefix sum on warp-level values
-					// Interwarp prefix sum
-					warp_level_num_elems = warpPrefixSum(interwarp_mask, warp_level_num_elems);
+				// Interwarp prefix sum: do inclusive prefix sum on warp-level values
+				warp_level_num_elems = cooperative_groups::inclusive_scan(interwapr_active_threads, warp_level_num_elems);
 
-					// Store result in shared memory, including the effect of the offset
-					warp_level_num_elems_arr[i + threadIdx.x] = warp_gp_offset + warp_level_num_elems;
-				}
+				// Store result in shared memory, including the effect of the offset
+				warp_level_num_elems_arr[i + curr_block.thread_rank()] = warp_gp_offset + warp_level_num_elems;
 			}
 		}
-
-		// Total number of slots needed to store all active metacells processed by block in current iteration is now known and stored in the last element of warp_level_num_elems_arr
-		__syncthreads();
-
-		// Single thread in block allocates space in res_arr_d with atomic operation
-		if (threadIdx.x == 0)
-		{
-			const T block_level_num_elems = warp_level_num_elems_arr[warps_per_block - 1];
-			*block_level_start_ind_ptr = atomicAdd(&res_arr_ind_d, block_level_num_elems);
-		}
-
-		T warp_level_offset;	// Calculated with exclusive prefix sum
-
-		// All warps acquire their warp-level offset, which is the element of index (warp ID - 1) in warp_level_num_elems_arr
-		// Acquisition of warp-level offset is independent of memory allocation, so can occur anytime that is both after the post-interwarp shuffle __syncthreads() call and before the writing of results to global memory; placed here for optimisation purposes, as all threads other than thread 0 would otherwise be idle between the post-interwarp shuffle __syncthreads() call and the post-memory allocation __syncthread() call
-		if (threadIdx.x / warpSize == 0)
-			warp_level_offset = 0;
-		else
-			warp_level_offset = warp_level_num_elems_arr[threadIdx.x / warpSize - 1];
-
-		// Block-level start index now known and saved in address pointed to by block_level_start_ind_ptr
-		__syncthreads();
-
-		// Return block-level offset
-		return warp_level_offset + thread_level_offset;
 	}
+
+	// Total number of slots needed to store all active metacells processed by block in current iteration is now known and stored in the last element of warp_level_num_elems_arr
+	curr_block.sync();
+
+	// Single thread in block allocates space in res_arr_d with atomic operation
+	if (curr_block.thread_rank() == 0)
+	{
+		const T block_level_num_elems = warp_level_num_elems_arr[warps_per_block - 1];
+		*block_level_start_ind = atomicAdd(&res_arr_ind_d, block_level_num_elems);
+	}
+
+	T warp_level_offset;	// Calculated with exclusive prefix sum
+
+	// All warps acquire their warp-level offset, which is the element of index (warp ID - 1) in warp_level_num_elems_arr
+	// Acquisition of warp-level offset is independent of memory allocation, so can occur anytime that is both after the post-interwarp shuffle __syncthreads() call and before the writing of results to global memory; placed here for optimisation purposes, as all threads other than thread 0 would otherwise be idle between the post-interwarp shuffle __syncthreads() call and the post-memory allocation __syncthread() call
+	if (curr_block.thread_rank() / warpSize == 0)
+		warp_level_offset = 0;
+	else
+		warp_level_offset = warp_level_num_elems_arr[curr_block.thread_rank() / warpSize - 1];
+
+	// Block-level start index now known and saved in address pointed to by block_level_start_ind
+	curr_block.sync();
+
+	// Return block-level offset
+	return warp_level_offset + thread_level_offset;
 };
 
 // Helper function fls() for "find last (bit) set", where bits are 0-indexed from least to most significant place value
