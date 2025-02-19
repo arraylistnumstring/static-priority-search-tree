@@ -13,7 +13,7 @@ __global__ void populateTree(T *const root_d, const size_t num_elem_slots,
 								const size_t target_node_start_ind)
 {
 	// For correctness, only 1 block can ever be active, as synchronisation across blocks (i.e. global synchronisation) is not possible without exiting the kernel entirely
-	if (blockIdx.x != 0 || blockIdx.y != 0 || blockIdx.z != 0)
+	if (blockIdx.x != 0)
 		return;
 
 	cooperative_groups::thread_block curr_block = cooperative_groups::this_thread_block();

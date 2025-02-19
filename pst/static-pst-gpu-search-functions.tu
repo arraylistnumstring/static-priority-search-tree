@@ -29,7 +29,7 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 					"RetType is not of type PointStructTemplate<T, IDType, num_IDs>, nor of type IDType");
 
 	// For correctness, only 1 block can ever be active, as synchronisation across blocks (i.e. global synchronisation) is not possible without exiting the kernel entirely
-	if (blockIdx.x != 0 || blockIdx.y != 0 || blockIdx.z != 0)
+	if (blockIdx.x != 0)
 		return;
 
 	cooperative_groups::thread_block curr_block = cooperative_groups::this_thread_block();
@@ -222,7 +222,7 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 					"RetType is not of type PointStructTemplate<T, IDType, num_IDs>, nor of type IDType");
 
 	// For correctness, only 1 block can ever be active, as synchronisation across blocks (i.e. global synchronisation) is not possible without exiting the kernel entirely
-	if (blockIdx.x != 0 || blockIdx.y != 0 || blockIdx.z != 0)
+	if (blockIdx.x != 0)
 		return;
 
 	cooperative_groups::thread_block curr_block = cooperative_groups::this_thread_block();
@@ -384,7 +384,7 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 					"RetType is not of type PointStructTemplate<T, IDType, num_IDs>, nor of type IDType");
 
 	// For correctness, only 1 block can ever be active, as synchronisation across blocks (i.e. global synchronisation) is not possible without exiting the kernel entirely
-	if (blockIdx.x != 0 || blockIdx.y != 0 || blockIdx.z != 0)
+	if (blockIdx.x != 0)
 		return;
 
 	cooperative_groups::thread_block curr_block = cooperative_groups::this_thread_block();
@@ -546,7 +546,7 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 					"RetType is not of type PointStructTemplate<T, IDType, num_IDs>, nor of type IDType");
 
 	// For correctness, only 1 block can ever be active, as synchronisation across blocks (i.e. global synchronisation) is not possible without exiting the kernel entirely
-	if (blockIdx.x != 0 || blockIdx.y != 0 || blockIdx.z != 0)
+	if (blockIdx.x != 0)
 		return;
 
 	cooperative_groups::thread_block curr_block = cooperative_groups::this_thread_block();
