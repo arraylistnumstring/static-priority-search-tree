@@ -86,12 +86,12 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 			}
 		}
 
-		// Intrawarp shuffle; must be executed by all threads regardless of in/activity and search type
-		const unsigned long long res_ind_to_access = calcAllocReportIndOffset(active_node ? 1 : 0);
-
 		// Report step
 		if (active_node)
 		{
+			// Intrawarp prefix sum: each thread here has one active node to report
+			const unsigned long long res_ind_to_access = calcAllocReportIndOffset(1);
+
 			if constexpr (std::is_same<RetType, IDType>::value)
 			{
 				res_arr_d[res_ind_to_access]
@@ -276,12 +276,12 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 			}
 		}
 
-		// Intrawarp shuffle; must be executed by all threads regardless of in/activity and search type
-		const unsigned long long res_ind_to_access = calcAllocReportIndOffset(active_node ? 1 : 0);
-
 		// Report step
 		if (active_node)
 		{
+			// Intrawarp prefix sum: each thread here has one active node to report
+			const unsigned long long res_ind_to_access = calcAllocReportIndOffset(1);
+
 			if constexpr (std::is_same<RetType, IDType>::value)
 			{
 				res_arr_d[res_ind_to_access]
@@ -436,12 +436,12 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 			}
 		}
 
-		// Intrawarp shuffle; must be executed by all threads regardless of in/activity and search type
-		const unsigned long long res_ind_to_access = calcAllocReportIndOffset(active_node ? 1 : 0);
-
 		// Report step
 		if (active_node)
 		{
+			// Intrawarp prefix sum: each thread here has one active node to report
+			const unsigned long long res_ind_to_access = calcAllocReportIndOffset(1);
+
 			if constexpr (std::is_same<RetType, IDType>::value)
 			{
 				res_arr_d[res_ind_to_access]
@@ -589,11 +589,11 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 			}
 		}
 
-		// Intrawarp shuffle; must be executed by all threads regardless of in/activity and search type
-		const unsigned long long res_ind_to_access = calcAllocReportIndOffset(active_node ? 1 : 0);
-
 		if (active_node)
 		{
+			// Intrawarp prefix sum: each thread here has one active node to report
+			const unsigned long long res_ind_to_access = calcAllocReportIndOffset(1);
+
 			if constexpr (std::is_same<RetType, IDType>::value)
 			{
 				res_arr_d[res_ind_to_access]
