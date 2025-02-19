@@ -77,7 +77,8 @@ __global__ void formMetacellTagsGlobal(T *const vertex_arr_d, PointStruct *const
 					}
 
 					// Warp-level info must be ready to use at the block level
-					const cooperative_groups::thread_block curr_block = this_thread_block();
+					const cooperative_groups::thread_block curr_block
+							= cooperative_groups::this_thread_block();
 					// Equivalent to __syncthreads(), as well as to calling curr_block.barrier_wait(curr_block.barrier_arrive()) (i.e. having no code between the arrival event and the wait event (the latter of which stops all threads until all threads have passed the arrival event)
 					curr_block.sync();
 
