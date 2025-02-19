@@ -79,7 +79,7 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 	const auto threads_per_block = curr_block.num_threads();
 
 	// Liu et al. kernel; iterate over all PointStructTemplate<T, IDType, num_IDs> elements in pt_arr_d
-	// Due to presence of __syncthreads() calls within for loop (specifically, in calcAllocReportIndOffset()), whole block must iterate if at least one thread has an element to process
+	// Due to passing of curr_block to calcAllocReportIndOffset(), whole block must iterate if at least one thread has an element to process
 	// Loop unrolling, as number of loops is known explicitly when kernel is called
 #pragma unroll
 	for (unsigned long long i = linblockID() * threads_per_block;
