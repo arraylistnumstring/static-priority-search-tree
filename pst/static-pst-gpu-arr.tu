@@ -1,3 +1,4 @@
+#include <algorithm>					// To use std::max()
 #include <string>						// To use string-building functions
 #include <thrust/execution_policy.h>	// To use thrust::cuda::par::on() stream-specifying execution policy for sorting
 #include <thrust/sort.h>				// To use parallel sorting algorithm
@@ -675,7 +676,7 @@ size_t StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcGlobalMemNe
 	*/
 	const size_t construct_mem_overhead = num_elems * num_constr_working_arrs * sizeof(size_t);
 	const size_t search_mem_max_overhead = num_elems * sizeof(PointStructTemplate<T, IDType, num_IDs>);
-	global_mem_needed += (construct_mem_overhead > search_mem_max_overhead ? construct_mem_overhead : search_mem_max_overhead);
+	global_mem_needed += std::max(construct_mem_overhead, search_mem_max_overhead);
 
 	return global_mem_needed;
 }

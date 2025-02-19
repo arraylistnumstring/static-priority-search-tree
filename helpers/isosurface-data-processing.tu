@@ -1,3 +1,6 @@
+#include <cooperative_groups.h>
+#include <cooperative_groups/reduce.h>
+
 // Must have point grid and metacell grid dimension values available, in case there is a discrepancy between the maximal possible thread block size and actual metacell size; and/or maximal possible thread grid size and actual metacell grid size
 // To minimise global memory access time (and because the number of objects passed is relatively small for each set of dimensions), use explicitly passed scalar parameters for each dimension
 template <bool interwarp_reduce, typename PointStruct, typename T, typename GridDimType>
@@ -35,39 +38,25 @@ __global__ void formMetacellTagsGlobal(T *const vertex_arr_d, PointStruct *const
 										&& base_vertex_coord_y < pt_grid_dims_y - 1
 										&& base_vertex_coord_z < pt_grid_dims_z - 1;
 
-				// Generate mask for threads active during intrawarp phase; all threads in warp run this (or else are exited, i.e. simply not running any code at all)
-				// Call to __ballot_sync() is necessary to determine the thread in warp with largest ID that is still active
-				// As of time of writing (compute capability 9.0), __ballot_sync() returns an unsigned int
-				const auto intrawarp_mask = __ballot_sync(0xffffffff, valid_voxel);
-
-				// Neither CUDA math library-provided min() and max() functions nor host-only std::min() and std::max() compile when passed as parameters to device functions, so simply use lambdas (that implicitly cast to nvstd::function type when assigned to a variable of that type)
-				nvstd::function<T(const T &, const T &)> min_op
-						= [](const T &num1, const T &num2) -> T
-							{
-								return num1 <= num2 ? num1 : num2;
-							};
-
-				nvstd::function<T(const T &, const T &)> max_op
-						= [](const T &num1, const T &num2) -> T
-							{
-								return num1 >= num2 ? num1 : num2;
-							};
-
+				// Intrawarp reduce
 				if (valid_voxel)
 				{
+					// coalesced_group is a cooperative group composed of all currently active threads in a warp; it allows for library function-based reduce operations that take in a custom operator
+					cooperative_groups::coalesced_group intrawarp_active_threads
+							= cooperative_groups::coalesced_threads();
+
 					getVoxelMinMax(vertex_arr_d, min_vert_val, max_vert_val,
 										base_vertex_coord_x, base_vertex_coord_y, base_vertex_coord_z,
 										pt_grid_dims_x, pt_grid_dims_y, pt_grid_dims_z);
-
 
 					// Intrawarp reduction for metacell min-max val determination
 #ifdef DEBUG
 					printf("About to begin metacell intrawarp reduce\n");
 #endif
 
-					// CUDA-supplied __reduce_*_sync() is only defined for types unsigned and int, and isn't even found for some reason when compiling, so use user-defined warpReduce() instead
-					min_vert_val = warpReduce(intrawarp_mask, min_vert_val, min_op);
-					max_vert_val = warpReduce(intrawarp_mask, max_vert_val, max_op);
+					// Use CUDA math library-provided min() and max() functions, which are overloaded such that all numeric types have their own associated version
+					min_vert_val = cooperative_groups::reduce(intrawarp_active_threads, min_vert_val, min);
+					max_vert_val = cooperative_groups::reduce(intrawarp_active_threads, max_vert_val, max);
 
 #ifdef DEBUG
 					printf("Completed metacell intrawarp reduce\n");
@@ -96,18 +85,19 @@ __global__ void formMetacellTagsGlobal(T *const vertex_arr_d, PointStruct *const
 #pragma unroll
 						for (GridDimType l = 0; l < warps_per_block; l += warpSize)
 						{
-							const auto interwarp_mask = __ballot_sync(0xffffffff,
-																		l + lin_thread_ID_in_block < warps_per_block);
-
 							// Inter-warp condition
 							if (l + lin_thread_ID_in_block < warps_per_block)
 							{
+								// coalesced_group is a cooperative group composed of all currently active threads in a warp; it allows for library function-based reduce operations that take in a custom operator
+								cooperative_groups::coalesced_group interwarp_active_threads
+										= cooperative_groups::coalesced_threads();
+
 								// Get per-warp minimum and maximum vertex values
 								min_vert_val = warp_level_min_vert[l + lin_thread_ID_in_block];
 								max_vert_val = warp_level_max_vert[l + lin_thread_ID_in_block];
 
-								min_vert_val = warpReduce(interwarp_mask, min_vert_val, min_op);
-								max_vert_val = warpReduce(interwarp_mask, max_vert_val, max_op);
+								min_vert_val = cooperative_groups::reduce(interwarp_active_threads, min_vert_val, min);
+								max_vert_val = cooperative_groups::reduce(interwarp_active_threads, max_vert_val, max);
 							}
 						}
 					}
@@ -187,7 +177,7 @@ __global__ void formVoxelTagsGlobal(T *const vertex_arr_d, PointStruct *const vo
 
 template <typename T, typename GridDimType>
 	requires std::is_integral<GridDimType>::value
-__forceinline__ __device__ void getVoxelMinMax(T *const vertex_arr_d, T &min, T &max,
+__forceinline__ __device__ void getVoxelMinMax(T *const vertex_arr_d, T &min_val, T &max_val,
 													const GridDimType base_vertex_coord_x,
 													const GridDimType base_vertex_coord_y,
 													const GridDimType base_vertex_coord_z,
@@ -197,7 +187,7 @@ __forceinline__ __device__ void getVoxelMinMax(T *const vertex_arr_d, T &min, T 
 												)
 {
 	// Each thread accesses the vertex of its voxel with the lowest indices in each dimension and uses this scalar value as the initial value with which future values are compared
-	max = min = vertex_arr_d[lineariseID(base_vertex_coord_x, base_vertex_coord_y, base_vertex_coord_z, pt_grid_dims_x, pt_grid_dims_y)];
+	max_val = min_val = vertex_arr_d[lineariseID(base_vertex_coord_x, base_vertex_coord_y, base_vertex_coord_z, pt_grid_dims_x, pt_grid_dims_y)];
 
 	// Check each vertex of the voxel and get the maximum and minimum values achieved at those vertices
 	for (GridDimType k = 0; k < 2; k++)
@@ -212,8 +202,9 @@ __forceinline__ __device__ void getVoxelMinMax(T *const vertex_arr_d, T &min, T 
 															base_vertex_coord_z + k,
 															pt_grid_dims_x, pt_grid_dims_y
 														)];
-				min = min <= curr_vert_val ? min : curr_vert_val;
-				max = max >= curr_vert_val ? max : curr_vert_val;
+				// Use CUDA math library functions
+				min_val = min(min_val, curr_vert_val);
+				max_val = max(max_val, curr_vert_val);
 			}
 		}
 	}
