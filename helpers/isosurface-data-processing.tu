@@ -16,6 +16,8 @@ __global__ void formMetacellTagsGlobal(T *const vertex_arr_d, PointStruct *const
 	T *warp_level_min_vert = reinterpret_cast<T *>(s);
 	T *warp_level_max_vert = reinterpret_cast<T *>(s) + warps_per_block;
 
+	const cooperative_groups::thread_block curr_block = cooperative_groups::this_thread_block();
+
 	T min_vert_val, max_vert_val;
 	// Repeat over entire voxel grid
 	// Data is z-major, then y-major, then x-major (i.e. x-dimension index changes the fastest, followed by y-index, then z-index)
@@ -63,12 +65,11 @@ __global__ void formMetacellTagsGlobal(T *const vertex_arr_d, PointStruct *const
 #endif
 				}
 
+				const auto lin_thread_ID_in_block = curr_block.thread_rank();
+
 				// Interwarp reduction for metacell min-max val determination
 				if constexpr (interwarp_reduce)
 				{
-					// Note: nvcc does not use more or fewer registers when lin_thread_ID_in_block is replaced with linThreadIDInBlock; however, based on tests, saving the result to a const variable like this is generally more performant than repeating a function call
-					const auto lin_thread_ID_in_block = linThreadIDInBlock();
-
 					// First thread in each warp writes result to shared memory
 					if (lin_thread_ID_in_block % warpSize == 0)
 					{
@@ -77,8 +78,6 @@ __global__ void formMetacellTagsGlobal(T *const vertex_arr_d, PointStruct *const
 					}
 
 					// Warp-level info must be ready to use at the block level
-					const cooperative_groups::thread_block curr_block
-							= cooperative_groups::this_thread_block();
 					// Equivalent to __syncthreads(), as well as to calling curr_block.barrier_wait(curr_block.barrier_arrive()) (i.e. having no code between the arrival event and the wait event (the latter of which stops all threads until all threads have passed the arrival event)
 					curr_block.sync();
 
@@ -107,7 +106,7 @@ __global__ void formMetacellTagsGlobal(T *const vertex_arr_d, PointStruct *const
 				}
 
 				// All threads in first warp have the correct overall result for the metacell; single thread in block writes result to global memory array
-				if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0)
+				if (lin_thread_ID_in_block == 0)
 				{
 					// Cast necessary, as an arithmetic operation (even of two types that are both small, e.g. GridDimType = char) effects an up-casting to a datatype at least as large as int, whereas directly supplied variables remain as the previous type, causing the overall template instantiation of lineariseID to fail
 					GridDimType metacell_ID = lineariseID(base_vertex_coord_x / metacell_dims_x,

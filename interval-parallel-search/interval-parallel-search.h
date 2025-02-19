@@ -6,6 +6,7 @@
 #include "calc-alloc-report-ind-offset.h"
 #include "dev-symbols.h"	// For global memory-scoped variable res_arr_ind_d
 #include "gpu-err-chk.h"
+#include "linearise-id.h"
 
 // Method of Liu et al. (2016): embarrassingly parallel search for active metacells, superficially modified for parity with PST search method
 
@@ -16,7 +17,10 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 	>::value
-void intervalParallelSearch(PointStructTemplate<T, IDType, num_IDs>* pt_arr_d, const size_t num_elems, RetType *&res_arr_d, size_t &num_res_elems, T search_val, const int dev_ind, const int num_devs, const int warp_size, const unsigned num_thread_blocks, const unsigned threads_per_block)
+void intervalParallelSearch(PointStructTemplate<T, IDType, num_IDs>* pt_arr_d, const size_t num_elems,
+							RetType *&res_arr_d, size_t &num_res_elems, T search_val,
+							const int dev_ind, const int num_devs, const int warp_size,
+							const unsigned num_thread_blocks, const unsigned threads_per_block)
 {
 	// Allocate space on GPU for output array, whether metacell tags or IDs
 	gpuErrorCheck(cudaMalloc(&res_arr_d, num_elems * sizeof(RetType)),
@@ -72,13 +76,14 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 	unsigned long long *warp_level_num_elems_arr = reinterpret_cast<unsigned long long *>(s) + 1;
 
 	const cooperative_groups::thread_block curr_block = cooperative_groups::this_thread_block();
+	const auto threads_per_block = curr_block.num_threads();
 
 	// Liu et al. kernel; iterate over all PointStructTemplate<T, IDType, num_IDs> elements in pt_arr_d
 	// Due to presence of __syncthreads() calls within for loop (specifically, in calcAllocReportIndOffset()), whole block must iterate if at least one thread has an element to process
 	// Loop unrolling, as number of loops is known explicitly when kernel is called
 #pragma unroll
-	for (unsigned long long i = blockIdx.x * blockDim.x + blockIdx.y * blockDim.y + blockIdx.z * blockDim.z;
-			i < num_elems; i += gridDim.x * blockDim.x + gridDim.y * blockDim.y + gridDim.z * blockDim.z)
+	for (unsigned long long i = linblockID() * threads_per_block;
+			i < num_elems; i += gridDim.x * gridDim.y * gridDim.z * threads_per_block)
 	{
 		const bool active_cell = i + curr_block.thread_rank() < num_elems
 							&& pt_arr_d[i + curr_block.thread_rank()].dim1_val <= search_val
