@@ -65,16 +65,14 @@ __global__ void formMetacellTagsGlobal(T *const vertex_arr_d, PointStruct *const
 #endif
 				}
 
-				const auto lin_thread_ID_in_block = curr_block.thread_rank();
-
 				// Interwarp reduction for metacell min-max val determination
 				if constexpr (interwarp_reduce)
 				{
 					// First thread in each warp writes result to shared memory
-					if (lin_thread_ID_in_block % warpSize == 0)
+					if (curr_block.thread_rank() % warpSize == 0)
 					{
-						warp_level_min_vert[lin_thread_ID_in_block / warpSize] = min_vert_val;
-						warp_level_max_vert[lin_thread_ID_in_block / warpSize] = max_vert_val;
+						warp_level_min_vert[curr_block.thread_rank() / warpSize] = min_vert_val;
+						warp_level_max_vert[curr_block.thread_rank() / warpSize] = max_vert_val;
 					}
 
 					// Warp-level info must be ready to use at the block level
@@ -82,21 +80,21 @@ __global__ void formMetacellTagsGlobal(T *const vertex_arr_d, PointStruct *const
 					curr_block.sync();
 
 					// Only one warp should be active for speed and correctness
-					if (lin_thread_ID_in_block / warpSize == 0)
+					if (curr_block.thread_rank() / warpSize == 0)
 					{
 #pragma unroll
 						for (GridDimType l = 0; l < warps_per_block; l += warpSize)
 						{
 							// Inter-warp condition
-							if (l + lin_thread_ID_in_block < warps_per_block)
+							if (l + curr_block.thread_rank() < warps_per_block)
 							{
 								// coalesced_group is a cooperative group composed of all currently active threads in a warp; it allows for library function-based reduce operations that take in a custom operator
 								cooperative_groups::coalesced_group interwarp_active_threads
 										= cooperative_groups::coalesced_threads();
 
 								// Get per-warp minimum and maximum vertex values
-								min_vert_val = warp_level_min_vert[l + lin_thread_ID_in_block];
-								max_vert_val = warp_level_max_vert[l + lin_thread_ID_in_block];
+								min_vert_val = warp_level_min_vert[l + curr_block.thread_rank()];
+								max_vert_val = warp_level_max_vert[l + curr_block.thread_rank()];
 
 								min_vert_val = cooperative_groups::reduce(interwarp_active_threads, min_vert_val, min);
 								max_vert_val = cooperative_groups::reduce(interwarp_active_threads, max_vert_val, max);
@@ -106,7 +104,7 @@ __global__ void formMetacellTagsGlobal(T *const vertex_arr_d, PointStruct *const
 				}
 
 				// All threads in first warp have the correct overall result for the metacell; single thread in block writes result to global memory array
-				if (lin_thread_ID_in_block == 0)
+				if (curr_block.thread_rank() == 0)
 				{
 					// Cast necessary, as an arithmetic operation (even of two types that are both small, e.g. GridDimType = char) effects an up-casting to a datatype at least as large as int, whereas directly supplied variables remain as the previous type, causing the overall template instantiation of lineariseID to fail
 					GridDimType metacell_ID = lineariseID(base_vertex_coord_x / metacell_dims_x,

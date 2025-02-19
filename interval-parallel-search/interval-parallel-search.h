@@ -76,14 +76,13 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 	unsigned long long *warp_level_num_elems_arr = reinterpret_cast<unsigned long long *>(s) + 1;
 
 	const cooperative_groups::thread_block curr_block = cooperative_groups::this_thread_block();
-	const auto threads_per_block = curr_block.num_threads();
 
 	// Liu et al. kernel; iterate over all PointStructTemplate<T, IDType, num_IDs> elements in pt_arr_d
 	// Due to passing of curr_block to calcAllocReportIndOffset(), whole block must iterate if at least one thread has an element to process
 	// Loop unrolling, as number of loops is known explicitly when kernel is called
 #pragma unroll
-	for (unsigned long long i = linblockID() * threads_per_block;
-			i < num_elems; i += gridDim.x * gridDim.y * gridDim.z * threads_per_block)
+	for (unsigned long long i = linblockID() * curr_block.num_threads();
+			i < num_elems; i += gridDim.x * gridDim.y * gridDim.z * curr_block.num_threads())
 	{
 		const bool active_cell = i + curr_block.thread_rank() < num_elems
 							&& pt_arr_d[i + curr_block.thread_rank()].dim1_val <= search_val

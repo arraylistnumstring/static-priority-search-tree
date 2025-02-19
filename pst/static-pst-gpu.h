@@ -1,6 +1,8 @@
 #ifndef STATIC_PST_GPU_H
 #define STATIC_PST_GPU_H
 
+#include <cooperative_groups.h>
+
 // Only present in .h file due to execution speed-up of friend declaration; otherwise, would place in .tu file, where it is actually used
 #include "arr-ind-assign.h"
 #include "class-member-checkers.h"

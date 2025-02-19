@@ -29,8 +29,10 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 					"RetType is not of type PointStructTemplate<T, IDType, num_IDs>, nor of type IDType");
 
 	// For correctness, only 1 block can ever be active, as synchronisation across blocks (i.e. global synchronisation) is not possible without exiting the kernel entirely
-	if (blockIdx.x != 0)
+	if (blockIdx.x != 0 || blockIdx.y != 0 || blockIdx.z != 0)
 		return;
+
+	cooperative_groups::thread_block curr_block = cooperative_groups::this_thread_block();
 
 	// Use char datatype because extern variables must be consistent across all declarations and because char is the smallest possible datatype
 	extern __shared__ char s[];
@@ -46,7 +48,7 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 	// For threeSidedSearchGlobal(), each thread starts out with their code set to THREE_SEARCH
 	search_codes_arr[threadIdx.x] = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::THREE_SEARCH;
 
-	__syncthreads();	// Must synchronise before processing to ensure data is properly set
+	curr_block.sync();	// Must synchronise before processing to ensure data is properly set
 
 
 	bool cont_iter = true;	// Loop-continuing flag
@@ -65,7 +67,7 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 		active_node = false;
 
 		// active threads -> INACTIVE (if current node goes below the dim2_val threshold or has no children)
-		// Before the next __syncthreads() call, which denotes the end of this section, active threads are the only threads who will modify their own search_inds_arr entry, so it is fine to do so non-atomically; also, this location is outside of the section where threads update each other's indices (which is blocked off by __syncthreads() calls), so it is extra safe
+		// Before the next curr_block.sync() call, which denotes the end of this section, active threads are the only threads who will modify their own search_inds_arr entry, so it is fine to do so non-atomically; also, this location is outside of the section where threads update each other's indices (which is blocked off by curr_block.sync() calls), so it is extra safe
 		if (search_ind != StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND)
 		{
 			curr_node_dim1_val = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getDim1ValsRoot(root_d, num_elem_slots)[search_ind];
@@ -125,7 +127,7 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 		}
 
 		// All threads who would become inactive in this iteration have finished; synchronisation is utilised because one must be certain that INACTIVE ~> active writes (with ~> denoting a state change that is externally triggered, i.e. triggered by other threads) are not inadvertently overwritten by active -> INACTIVE writes in lines of code above this one
-		__syncthreads();
+		curr_block.sync();
 
 
 		// active threads -> active threads
@@ -173,10 +175,10 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 		}
 
 		/*
-			No __syncthreads() call necessary here:
+			No curr_block.sync() call necessary here:
 				detInactivity() has no false positives (early, incorrect loop exits):
-					detInactivity() does not exit even without a __syncthreads() call here
-						<=> There are active threads after previous __syncthreads() call
+					detInactivity() does not exit even without a curr_block.sync() call here
+						<=> There are active threads after previous curr_block.sync() call
 						<=> There are some active threads when entering the active -> active, INACTIVE ~> active phase
 								(By the nature of the active -> active, INACTIVE ~> active phase, such threads will still be active upon reaching this line)
 						<=> There are active threads in the search, i.e. search is ongoing (at least in this block, which is the only source of nodes to search that can be communicated to threads in this block anyway)
@@ -185,12 +187,12 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 				detInactivity() has no false negatives (additional, unnecessary loops):
 					Unnecessary loops can only occur when threads are incorrectly polled as active
 						<=> detInactivity() runs in some threads before all potential active -> inactive transition computations have completed
-					This is impossible, as active -> inactive transition computations occur before the previous __syncthreads() call and will thus always complete for all threads before any thread calls detInactivity() in this iteration
+					This is impossible, as active -> inactive transition computations occur before the previous curr_block.sync() call and will thus always complete for all threads before any thread calls detInactivity() in this iteration
 		*/
 
 		StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::detInactivity(search_ind, search_inds_arr, cont_iter, &search_code, search_codes_arr);
 
-		// No __syncthreads() call is necessary between detInactivity() and the end of the loop, as it can only potentially overlap with the section where active threads become inactive; this poses no issue for correctness, as if there is still work to be done, at least one thread will be guaranteed to remain active and therefore no inactive threads will exit the processing loop
+		// No curr_block.sync() call is necessary between detInactivity() and the end of the loop, as it can only potentially overlap with the section where active threads become inactive; this poses no issue for correctness, as if there is still work to be done, at least one thread will be guaranteed to remain active and therefore no inactive threads will exit the processing loop
 	}
 	// End cont_iter loop
 }
@@ -220,8 +222,10 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 					"RetType is not of type PointStructTemplate<T, IDType, num_IDs>, nor of type IDType");
 
 	// For correctness, only 1 block can ever be active, as synchronisation across blocks (i.e. global synchronisation) is not possible without exiting the kernel entirely
-	if (blockIdx.x != 0)
+	if (blockIdx.x != 0 || blockIdx.y != 0 || blockIdx.z != 0)
 		return;
+
+	cooperative_groups::thread_block curr_block = cooperative_groups::this_thread_block();
 
 	// Use char datatype because extern variables must be consistent across all declarations and because char is the smallest possible datatype
 	extern __shared__ char s[];
@@ -237,7 +241,7 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 	// For twoSidedLeftSearchGlobal(), all threads start with their search code set to LEFT_SEARCH
 	search_codes_arr[threadIdx.x] = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::LEFT_SEARCH;
 
-	__syncthreads();	// Must synchronise before processing to ensure data is properly set
+	curr_block.sync();	// Must synchronise before processing to ensure data is properly set
 
 
 	bool cont_iter = true;	// Loop-continuing flag
@@ -256,7 +260,7 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 		active_node = false;
 
 		// active threads -> INACTIVE (if current node goes below the dim2_val threshold or has no children)
-		// Before the next __syncthreads() call, which denotes the end of this section, active threads are the only threads who will modify their own search_inds_arr entry, so it is fine to do so non-atomically; also, this location is outside of the section where threads update each other's indices (which is blocked off by __syncthreads() calls), so it is extra safe
+		// Before the next curr_block.sync() call, which denotes the end of this section, active threads are the only threads who will modify their own search_inds_arr entry, so it is fine to do so non-atomically; also, this location is outside of the section where threads update each other's indices (which is blocked off by curr_block.sync() calls), so it is extra safe
 		if (search_ind != StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND)
 		{
 			curr_node_dim1_val = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getDim1ValsRoot(root_d, num_elem_slots)[search_ind];
@@ -306,7 +310,7 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 		}
 
 		// All threads who would become inactive in this iteration have finished; synchronisation is utilised because one must be certain that INACTIVE ~> active writes (with ~> denoting a state change that is externally triggered, i.e. triggered by other threads) are not inadvertently overwritten by active -> INACTIVE writes in lines of code above this one
-		__syncthreads();
+		curr_block.sync();
 
 
 		// active threads -> active threads
@@ -333,10 +337,10 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 		}
 
 		/*
-			No __syncthreads() call necessary here:
+			No curr_block.sync() call necessary here:
 				detInactivity() has no false positives (early, incorrect loop exits):
-					detInactivity() does not exit even without a __syncthreads() call here
-						<=> There are active threads after previous __syncthreads() call
+					detInactivity() does not exit even without a curr_block.sync() call here
+						<=> There are active threads after previous curr_block.sync() call
 						<=> There are some active threads when entering the active -> active, INACTIVE ~> active phase
 								(By the nature of the active -> active, INACTIVE ~> active phase, such threads will still be active upon reaching this line)
 						<=> There are active threads in the search, i.e. search is ongoing (at least in this block, which is the only source of nodes to search that can be communicated to threads in this block anyway)
@@ -345,12 +349,12 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 				detInactivity() has no false negatives (additional, unnecessary loops):
 					Unnecessary loops can only occur when threads are incorrectly polled as active
 						<=> detInactivity() runs in some threads before all potential active -> inactive transition computations have completed
-					This is impossible, as active -> inactive transition computations occur before the previous __syncthreads() call and will thus always complete for all threads before any thread calls detInactivity() in this iteration
+					This is impossible, as active -> inactive transition computations occur before the previous curr_block.sync() call and will thus always complete for all threads before any thread calls detInactivity() in this iteration
 		*/
 
 		StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::detInactivity(search_ind, search_inds_arr, cont_iter, &search_code, search_codes_arr);
 
-		// No __syncthreads() call is necessary between detInactivity() and the end of the loop, as it can only potentially overlap with the section where active threads become inactive; this poses no issue for correctness, as if there is still work to be done, at least one thread will be guaranteed to remain active and therefore no inactive threads will exit the processing loop
+		// No curr_block.sync() call is necessary between detInactivity() and the end of the loop, as it can only potentially overlap with the section where active threads become inactive; this poses no issue for correctness, as if there is still work to be done, at least one thread will be guaranteed to remain active and therefore no inactive threads will exit the processing loop
 	}
 	// End cont_iter loop
 }
@@ -380,8 +384,10 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 					"RetType is not of type PointStructTemplate<T, IDType, num_IDs>, nor of type IDType");
 
 	// For correctness, only 1 block can ever be active, as synchronisation across blocks (i.e. global synchronisation) is not possible without exiting the kernel entirely
-	if (blockIdx.x != 0)
+	if (blockIdx.x != 0 || blockIdx.y != 0 || blockIdx.z != 0)
 		return;
+
+	cooperative_groups::thread_block curr_block = cooperative_groups::this_thread_block();
 
 	// Use char datatype because extern variables must be consistent across all declarations and because char is the smallest possible datatype
 	extern __shared__ char s[];
@@ -397,7 +403,7 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 	// For twoSidedRightSearchGlobal(), all threads start with their search code set to RIGHT_SEARCH
 	search_codes_arr[threadIdx.x] = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::RIGHT_SEARCH;
 
-	__syncthreads();	// Must synchronise before processing to ensure data is properly set
+	curr_block.sync();	// Must synchronise before processing to ensure data is properly set
 
 
 	bool cont_iter = true;	// Loop-continuing flag
@@ -416,7 +422,7 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 		active_node = false;
 
 		// active threads -> INACTIVE (if current node goes below the dim2_val threshold or has no children)
-		// Before the next __syncthreads() call, which denotes the end of this section, active threads are the only threads who will modify their own search_inds_arr entry, so it is fine to do so non-atomically; also, this location is outside of the section where threads update each other's indices (which is blocked off by __syncthreads() calls), so it is extra safe
+		// Before the next curr_block.sync() call, which denotes the end of this section, active threads are the only threads who will modify their own search_inds_arr entry, so it is fine to do so non-atomically; also, this location is outside of the section where threads update each other's indices (which is blocked off by curr_block.sync() calls), so it is extra safe
 		if (search_ind != StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND)
 		{
 			curr_node_dim1_val = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getDim1ValsRoot(root_d, num_elem_slots)[search_ind];
@@ -466,7 +472,7 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 		}
 
 		// All threads who would become inactive in this iteration have finished; synchronisation is utilised because one must be certain that INACTIVE ~> active writes (with ~> denoting a state change that is externally triggered, i.e. triggered by other threads) are not inadvertently overwritten by active -> INACTIVE writes in lines of code above this one
-		__syncthreads();
+		curr_block.sync();
 
 
 		// active threads -> active threads
@@ -493,10 +499,10 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 		}
 
 		/*
-			No __syncthreads() call necessary here:
+			No curr_block.sync() call necessary here:
 				detInactivity() has no false positives (early, incorrect loop exits):
-					detInactivity() does not exit even without a __syncthreads() call here
-						<=> There are active threads after previous __syncthreads() call
+					detInactivity() does not exit even without a curr_block.sync() call here
+						<=> There are active threads after previous curr_block.sync() call
 						<=> There are some active threads when entering the active -> active, INACTIVE ~> active phase
 								(By the nature of the active -> active, INACTIVE ~> active phase, such threads will still be active upon reaching this line)
 						<=> There are active threads in the search, i.e. search is ongoing (at least in this block, which is the only source of nodes to search that can be communicated to threads in this block anyway)
@@ -505,12 +511,12 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 				detInactivity() has no false negatives (additional, unnecessary loops):
 					Unnecessary loops can only occur when threads are incorrectly polled as active
 						<=> detInactivity() runs in some threads before all potential active -> inactive transition computations have completed
-					This is impossible, as active -> inactive transition computations occur before the previous __syncthreads() call and will thus always complete for all threads before any thread calls detInactivity() in this iteration
+					This is impossible, as active -> inactive transition computations occur before the previous curr_block.sync() call and will thus always complete for all threads before any thread calls detInactivity() in this iteration
 		*/
 
 		StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::detInactivity(search_ind, search_inds_arr, cont_iter, &search_code, search_codes_arr);
 
-		// No __syncthreads() call is necessary between detInactivity() and the end of the loop, as it can only potentially overlap with the section where active threads become inactive; this poses no issue for correctness, as if there is still work to be done, at least one thread will be guaranteed to remain active and therefore no inactive threads will exit the processing loop
+		// No curr_block.sync() call is necessary between detInactivity() and the end of the loop, as it can only potentially overlap with the section where active threads become inactive; this poses no issue for correctness, as if there is still work to be done, at least one thread will be guaranteed to remain active and therefore no inactive threads will exit the processing loop
 	}
 	// End cont_iter loop
 }
@@ -540,8 +546,10 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 					"RetType is not of type PointStructTemplate<T, IDType, num_IDs>, nor of type IDType");
 
 	// For correctness, only 1 block can ever be active, as synchronisation across blocks (i.e. global synchronisation) is not possible without exiting the kernel entirely
-	if (blockIdx.x != 0)
+	if (blockIdx.x != 0 || blockIdx.y != 0 || blockIdx.z != 0)
 		return;
+
+	cooperative_groups::thread_block curr_block = cooperative_groups::this_thread_block();
 
 	// Use char datatype because extern variables must be consistent across all declarations and because char is the smallest possible datatype
 	extern __shared__ char s[];
@@ -554,7 +562,7 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 	else
 		search_inds_arr[threadIdx.x] = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
 
-	__syncthreads();	// Must synchronise before processing to ensure data is properly set
+	curr_block.sync();	// Must synchronise before processing to ensure data is properly set
 
 
 	bool cont_iter = true;	// Loop-continuing flag
@@ -571,7 +579,7 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 		active_node = false;
 
 		// active threads -> INACTIVE (if current node goes below the dim2_val threshold or has no children)
-		// Before the next __syncthreads() call, which denotes the end of this section, active threads are the only threads who will modify their own search_inds_arr entry, so it is fine to do so non-atomically; also, this location is outside of the section where threads update each other's indices (which is blocked off by __syncthreads() calls), so it is extra safe
+		// Before the next curr_block.sync() call, which denotes the end of this section, active threads are the only threads who will modify their own search_inds_arr entry, so it is fine to do so non-atomically; also, this location is outside of the section where threads update each other's indices (which is blocked off by curr_block.sync() calls), so it is extra safe
 		if (search_ind != StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND)
 		{
 			curr_node_dim2_val = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getDim2ValsRoot(root_d, num_elem_slots)[search_ind];
@@ -619,7 +627,7 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 		}
 
 		// All threads who would become inactive in this iteration have finished; synchronisation is utilised because one must be certain that INACTIVE ~> active writes (with ~> denoting a state change that is externally triggered, i.e. triggered by other threads) are not inadvertently overwritten by active -> INACTIVE writes in lines of code above this one
-		__syncthreads();
+		curr_block.sync();
 
 
 		// active threads -> active threads
@@ -655,10 +663,10 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 		}
 
 		/*
-			No __syncthreads() call necessary here:
+			No curr_block.sync() call necessary here:
 				detInactivity() has no false positives (early, incorrect loop exits):
-					detInactivity() does not exit even without a __syncthreads() call here
-						<=> There are active threads after previous __syncthreads() call
+					detInactivity() does not exit even without a curr_block.sync() call here
+						<=> There are active threads after previous curr_block.sync() call
 						<=> There are some active threads when entering the active -> active, INACTIVE ~> active phase
 								(By the nature of the active -> active, INACTIVE ~> active phase, such threads will still be active upon reaching this line)
 						<=> There are active threads in the search, i.e. search is ongoing (at least in this block, which is the only source of nodes to search that can be communicated to threads in this block anyway)
@@ -667,12 +675,12 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 				detInactivity() has no false negatives (additional, unnecessary loops):
 					Unnecessary loops can only occur when threads are incorrectly polled as active
 						<=> detInactivity() runs in some threads before all potential active -> inactive transition computations have completed
-					This is impossible, as active -> inactive transition computations occur before the previous __syncthreads() call and will thus always complete for all threads before any thread calls detInactivity() in this iteration
+					This is impossible, as active -> inactive transition computations occur before the previous curr_block.sync() call and will thus always complete for all threads before any thread calls detInactivity() in this iteration
 		*/
 
 		StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::detInactivity(search_ind, search_inds_arr, cont_iter);
 
-		// No __syncthreads() call is necessary between detInactivity() and the end of the loop, as it can only potentially overlap with the section where active threads become inactive; this poses no issue for correctness, as if there is still work to be done, at least one thread will be guaranteed to remain active and therefore no inactive threads will exit the processing loop
+		// No curr_block.sync() call is necessary between detInactivity() and the end of the loop, as it can only potentially overlap with the section where active threads become inactive; this poses no issue for correctness, as if there is still work to be done, at least one thread will be guaranteed to remain active and therefore no inactive threads will exit the processing loop
 	}
 	// End cont_iter loop
 }

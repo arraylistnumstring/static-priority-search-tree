@@ -13,8 +13,10 @@ __global__ void populateTree(T *const root_d, const size_t num_elem_slots,
 								const size_t target_node_start_ind)
 {
 	// For correctness, only 1 block can ever be active, as synchronisation across blocks (i.e. global synchronisation) is not possible without exiting the kernel entirely
-	if (blockIdx.x != 0)
+	if (blockIdx.x != 0 || blockIdx.y != 0 || blockIdx.z != 0)
 		return;
+
+	cooperative_groups::thread_block curr_block = cooperative_groups::this_thread_block();
 
 	// Use char datatype because extern variables must be consistent across all declarations and because char is the smallest possible datatype
 	extern __shared__ char s[];
@@ -30,7 +32,7 @@ __global__ void populateTree(T *const root_d, const size_t num_elem_slots,
 		num_subelems_arr[threadIdx.x] = 0;
 	target_node_inds_arr[threadIdx.x] = target_node_start_ind;
 
-	__syncthreads();
+	curr_block.sync();
 
 	// To minimise the total number of dynamic parallelism kernel launches, after the threads fully branch out into a subtree (with each thread constructing one node), for the next iteration, have the threads recongregate at thread ID 0's new node in the tree and repeat the process
 	while (*num_subelems_arr > 0)
@@ -143,7 +145,7 @@ __global__ void populateTree(T *const root_d, const size_t num_elem_slots,
 			dim2_val_ind_arr_d = dim2_val_ind_arr_secondary_d;
 			dim2_val_ind_arr_secondary_d = temp;
 
-			__syncthreads();	// Synchronise before starting the next iteration
+			curr_block.sync();	// Synchronise before starting the next iteration
 		}
 	}
 }
