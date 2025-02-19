@@ -42,7 +42,7 @@ __global__ void formMetacellTagsGlobal(T *const vertex_arr_d, PointStruct *const
 				if (valid_voxel)
 				{
 					// coalesced_group is a cooperative group composed of all currently active threads in a warp; it allows for library function-based reduce operations that take in a custom operator
-					cooperative_groups::coalesced_group intrawarp_active_threads
+					const cooperative_groups::coalesced_group intrawarp_active_threads
 							= cooperative_groups::coalesced_threads();
 
 					getVoxelMinMax(vertex_arr_d, min_vert_val, max_vert_val,
@@ -77,7 +77,9 @@ __global__ void formMetacellTagsGlobal(T *const vertex_arr_d, PointStruct *const
 					}
 
 					// Warp-level info must be ready to use at the block level
-					__syncthreads();
+					const cooperative_groups::thread_block curr_block = this_thread_block();
+					// Equivalent to __syncthreads(), as well as to calling curr_block.barrier_wait(curr_block.barrier_arrive()) (i.e. having no code between the arrival event and the wait event (the latter of which stops all threads until all threads have passed the arrival event)
+					curr_block.sync();
 
 					// Only one warp should be active for speed and correctness
 					if (lin_thread_ID_in_block / warpSize == 0)
