@@ -67,7 +67,7 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 		active_node = false;
 
 		// active threads -> INACTIVE (if current node goes below the dim2_val threshold or has no children)
-		// Before the next curr_block.sync() call, which denotes the end of this section, active threads are the only threads who will modify their own search_inds_arr entry, so it is fine to do so non-atomically; also, this location is outside of the section where threads update each other's indices (which is blocked off by curr_block.sync() calls), so it is extra safe
+		// Before the next curr_block.sync() call, which denotes the end of this section, active threads are the only threads who will modify their own search_inds_arr entry, so it is fine to do so non-atomically
 		if (search_ind != StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND)
 		{
 			curr_node_dim1_val = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getDim1ValsRoot(root_d, num_elem_slots)[search_ind];
@@ -260,7 +260,7 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 		active_node = false;
 
 		// active threads -> INACTIVE (if current node goes below the dim2_val threshold or has no children)
-		// Before the next curr_block.sync() call, which denotes the end of this section, active threads are the only threads who will modify their own search_inds_arr entry, so it is fine to do so non-atomically; also, this location is outside of the section where threads update each other's indices (which is blocked off by curr_block.sync() calls), so it is extra safe
+		// Before the next curr_block.sync() call, which denotes the end of this section, active threads are the only threads who will modify their own search_inds_arr entry, so it is fine to do so non-atomically
 		if (search_ind != StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND)
 		{
 			curr_node_dim1_val = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getDim1ValsRoot(root_d, num_elem_slots)[search_ind];
@@ -422,7 +422,7 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 		active_node = false;
 
 		// active threads -> INACTIVE (if current node goes below the dim2_val threshold or has no children)
-		// Before the next curr_block.sync() call, which denotes the end of this section, active threads are the only threads who will modify their own search_inds_arr entry, so it is fine to do so non-atomically; also, this location is outside of the section where threads update each other's indices (which is blocked off by curr_block.sync() calls), so it is extra safe
+		// Before the next curr_block.sync() call, which denotes the end of this section, active threads are the only threads who will modify their own search_inds_arr entry, so it is fine to do so non-atomically
 		if (search_ind != StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND)
 		{
 			curr_node_dim1_val = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getDim1ValsRoot(root_d, num_elem_slots)[search_ind];
@@ -569,7 +569,7 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 
 	long long search_ind = search_inds_arr[threadIdx.x];
 
-	// curr_node_dim1_val will only be accessed once, so no need to create an automatic variable for it
+	// curr_node_dim1_val will only be accessed at most once (during reporting if RetType == PointStructs) so no need to create an automatic variable for it
 	T curr_node_dim2_val;
 	unsigned char curr_node_bitcode;
 	bool active_node;
@@ -579,7 +579,7 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 		active_node = false;
 
 		// active threads -> INACTIVE (if current node goes below the dim2_val threshold or has no children)
-		// Before the next curr_block.sync() call, which denotes the end of this section, active threads are the only threads who will modify their own search_inds_arr entry, so it is fine to do so non-atomically; also, this location is outside of the section where threads update each other's indices (which is blocked off by curr_block.sync() calls), so it is extra safe
+		// Before the next curr_block.sync() call, which denotes the end of this section, active threads are the only threads who will modify their own search_inds_arr entry, so it is fine to do so non-atomically
 		if (search_ind != StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND)
 		{
 			curr_node_dim2_val = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getDim2ValsRoot(root_d, num_elem_slots)[search_ind];
