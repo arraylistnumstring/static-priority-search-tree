@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
 				// Curly braces necessary around try blocks
 				test_info.rand_seed = std::stoull(argv[i], nullptr, 0);
 			}
-			catch (std::invalid_argument const &ex)
+			catch (const std::invalid_argument &ex)
 			{
 				std::cerr << "Invalid argument for random seed: " << argv[i] << '\n';
 				return ExitStatusCodes::INVALID_ARG_ERR;
@@ -155,7 +155,7 @@ int main(int argc, char *argv[])
 			{
 				test_info.threads_per_block = std::stoul(argv[i]);
 			}
-			catch (std::invalid_argument const &ex)
+			catch (const std::invalid_argument &ex)
 			{
 				std::cerr << "Invalid argument for number of threads per block: " << argv[i] << '\n';
 				return ExitStatusCodes::INVALID_ARG_ERR;
@@ -181,7 +181,7 @@ int main(int argc, char *argv[])
 			{
 				test_info.num_thread_blocks = std::stoul(argv[i]);
 			}
-			catch (std::invalid_argument const &ex)
+			catch (const std::invalid_argument &ex)
 			{
 				std::cerr << "Invalid argument for number of thread blocks: " << argv[i] << '\n';
 				return ExitStatusCodes::INVALID_ARG_ERR;
@@ -233,7 +233,7 @@ int main(int argc, char *argv[])
 			{
 				test_info.num_elems = std::stoull(argv[i], nullptr, 0);
 			}
-			catch (std::invalid_argument const &ex)
+			catch (const std::invalid_argument &ex)
 			{
 				std::cerr << "Invalid argument for number of elements: " << argv[i] << '\n';
 				return ExitStatusCodes::INVALID_ARG_ERR;

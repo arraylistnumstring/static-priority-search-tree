@@ -192,7 +192,7 @@ int main(int argc, char *argv[])
 				// Curly braces necessary around try block
 				test_info.warps_per_block = std::stoul(argv[i], nullptr, 0);
 			}
-			catch (std::invalid_argument const &ex)
+			catch (const std::invalid_argument &ex)
 			{
 				std::cerr << "Invalid argument for number of warps per thread block: " << argv[i] << '\n';
 				return ExitStatusCodes::INVALID_ARG_ERR;

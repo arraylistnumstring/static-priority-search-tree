@@ -137,7 +137,7 @@ struct PSTTestInfoStruct
 
 			treeTypeWrap(pst_tester);
 		}
-		catch (std::invalid_argument const &ex)
+		catch (const std::invalid_argument &ex)
 		{
 			std::cerr << "Invalid argument for tree value range and/or search range\n";
 			std::exit(ExitStatusCodes::INVALID_ARG_ERR);
@@ -302,7 +302,7 @@ struct PSTTestInfoStruct
 					pt_grid_dims[i] = conv_func(pt_grid_dim_strings[i]);
 					metacell_dims[i] = conv_func(metacell_dim_strings[i]);
 				}
-				catch (std::invalid_argument const &ex)
+				catch (const std::invalid_argument &ex)
 				{
 					std::cerr << "Invalid argument for point grid and/or metacell dimension " << i << '\n';
 					std::exit(ExitStatusCodes::INVALID_ARG_ERR);
