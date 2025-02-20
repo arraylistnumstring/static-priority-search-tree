@@ -621,12 +621,27 @@ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSearc
 					+ ": ");
 
 	// Call global function for on-device search
-	twoSidedLeftSearchTreeArrGlobal<T, PointStructTemplate, IDType, num_IDs, RetType>
-									<<<num_thread_blocks, threads_per_block,
-										threads_per_block * (sizeof(long long) + sizeof(unsigned char))>>>
-									(tree_arr_d, full_tree_num_elem_slots,
-									 full_tree_size_num_max_data_id_types,
-									 res_arr_d, max_dim1_val, min_dim2_val);
+	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value
+					|| SizeOfUAtLeastSizeOfV<T, IDType>)
+	{
+		// No ID or sizeof(T) >= sizeof(IDType); full_tree_size_num_max_data_id_types is already in units of sizeof(T)
+		twoSidedLeftSearchTreeArrGlobal<T, PointStructTemplate, IDType, num_IDs, RetType>
+										<<<num_thread_blocks, threads_per_block,
+											threads_per_block * (sizeof(long long) + sizeof(unsigned char))>>>
+										(tree_arr_d, full_tree_num_elem_slots,
+										 full_tree_size_num_max_data_id_types,
+										 res_arr_d, max_dim1_val, min_dim2_val);
+	}
+	else
+	{
+		// sizeof(IDType) > sizeof(T), and the latter is guaranteed to be a factor of the former
+		twoSidedLeftSearchTreeArrGlobal<T, PointStructTemplate, IDType, num_IDs, RetType>
+										<<<num_thread_blocks, threads_per_block,
+											threads_per_block * (sizeof(long long) + sizeof(unsigned char))>>>
+										(tree_arr_d, full_tree_num_elem_slots,
+										 full_tree_size_num_max_data_id_types * sizeof(IDType) / sizeof(T),
+										 res_arr_d, max_dim1_val, min_dim2_val);
+	}
 
 	// Because all calls to the device are placed in the same stream (queue) and because cudaMemcpy() is (host-)blocking, this code will not return before the computation has completed
 	// res_arr_ind_d points to the next index to write to, meaning that it actually contains the number of elements returned

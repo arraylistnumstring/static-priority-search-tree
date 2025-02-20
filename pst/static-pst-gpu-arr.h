@@ -32,7 +32,7 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 		 >
 __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 												const size_t full_tree_num_elem_slots,
-												const size_t full_tree_size_num_max_data_id_types,
+												const size_t full_tree_size_num_Ts,
 												RetType *const res_arr_d,
 												const T max_dim1_val, const T min_dim2_val
 											);
@@ -311,7 +311,7 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 	template <typename U, template<typename, typename, size_t> class PtStructTempl, typename IDT, size_t NIDs, typename RetType>
 	friend __global__ void twoSidedLeftSearchTreeArrGlobal(U *const tree_arr_d,
 															const size_t full_tree_num_elem_slots,
-															const size_t full_tree_size_num_max_data_id_types,
+															const size_t full_tree_size_num_Ts,
 															RetType *const res_arr_d,
 															const U max_dim1_val, const U min_dim2_val
 														);
