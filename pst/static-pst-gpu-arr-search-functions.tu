@@ -126,7 +126,7 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 				res_arr_d[block_level_start_ind + block_level_offset].dim2_val = curr_node_dim2_val;
 				if constexpr (HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
 					res_arr_d[block_level_start_ind + block_level_offset].id
-							= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(tree_root_d, tree_num_elem_slots)[search_ind];
+							= StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(tree_root_d, tree_num_elem_slots)[search_ind];
 			}
 		}
 
@@ -135,7 +135,7 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 				&& !GPUTreeNode::hasChildren(curr_node_bitcode))
 		{
 			search_inds_arr[threadIdx.x] = search_ind
-				= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
+				= StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
 		}
 
 
