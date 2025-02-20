@@ -58,9 +58,9 @@ class CPURecurTreeNode
 		// Current index is this-root
 		// Addition and subtraction (+, -) have higher precedence than bitshift operators (<<, >>)
 		// root needs to be passed into get*() functions as nested class are not connected to any instances of the outer class in C++
-		inline CPURecurTreeNode &getLeftChild(CPURecurTreeNode *root) const {return root[(this-root << 1) + 1];};
-		inline CPURecurTreeNode &getRightChild(CPURecurTreeNode *root) const {return root[(this-root << 1) + 2];};
-		inline CPURecurTreeNode &getParent(CPURecurTreeNode *root) const {return root[this-root-1 >> 1];};
+		inline CPURecurTreeNode &getLeftChild(CPURecurTreeNode *const root) const {return root[(this-root << 1) + 1];};
+		inline CPURecurTreeNode &getRightChild(CPURecurTreeNode *const root) const {return root[(this-root << 1) + 2];};
+		inline CPURecurTreeNode &getParent(CPURecurTreeNode *const root) const {return root[this-root-1 >> 1];};
 		inline bool hasChildren() const {return static_cast<bool> (code & (HAS_LEFT_CHILD | HAS_RIGHT_CHILD));};
 		inline bool hasLeftChild() const {return static_cast<bool> (code & HAS_LEFT_CHILD);};
 		inline bool hasRightChild() const {return static_cast<bool> (code & HAS_RIGHT_CHILD);};
