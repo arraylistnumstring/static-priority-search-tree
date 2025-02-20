@@ -173,6 +173,34 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 		};
 
 
+		// Search-related helper functions
+		template <typename RetType=PointStructTemplate<T, IDType, num_IDs>>
+			requires std::disjunction<
+								std::is_same<RetType, IDType>,
+								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+				>::value
+		__forceinline__ __device__ static void doLeftSearchDelegation(const bool range_split_poss,
+																		const unsigned char curr_node_bitcode,
+																		unsigned &target_thread_offset,
+																		long long &search_ind,
+																		long long *const search_inds_arr,
+																		unsigned char &search_code,
+																		unsigned char *const search_codes_arr
+																	);
+
+		template <typename RetType>
+			requires std::disjunction<
+								std::is_same<RetType, IDType>,
+								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+				>::value
+		__forceinline__ __device__ static void doReportAllNodesDelegation(const unsigned char curr_node_bitcode,
+																			unsigned &target_thread_offset,
+																			long long &search_ind,
+																			long long *const search_inds_arr,
+																			unsigned char *const search_codes_arr
+																		);
+
+
 		// Data-accessing helper functions
 
 		// Helper functions for getting start indices for various arrays

@@ -627,7 +627,8 @@ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSearc
 		// No ID or sizeof(T) >= sizeof(IDType); full_tree_size_num_max_data_id_types is already in units of sizeof(T)
 		twoSidedLeftSearchTreeArrGlobal<T, PointStructTemplate, IDType, num_IDs, RetType>
 										<<<num_thread_blocks, threads_per_block,
-											threads_per_block * (sizeof(long long) + sizeof(unsigned char))>>>
+											threads_per_block * (sizeof(long long) + sizeof(unsigned char))
+												+ (1 + threads_per_block / warpSize + (threads_per_block % warpSize == 0 ? 0 : 1)>>>
 										(tree_arr_d, full_tree_num_elem_slots,
 										 full_tree_size_num_max_data_id_types,
 										 num_elems, res_arr_d, max_dim1_val, min_dim2_val);
@@ -637,7 +638,8 @@ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSearc
 		// sizeof(IDType) > sizeof(T), and the latter is guaranteed to be a factor of the former
 		twoSidedLeftSearchTreeArrGlobal<T, PointStructTemplate, IDType, num_IDs, RetType>
 										<<<num_thread_blocks, threads_per_block,
-											threads_per_block * (sizeof(long long) + sizeof(unsigned char))>>>
+											threads_per_block * (sizeof(long long) + sizeof(unsigned char))
+												+ (1 + threads_per_block / warpSize + (threads_per_block % warpSize == 0 ? 0 : 1)>>>
 										(tree_arr_d, full_tree_num_elem_slots,
 										 full_tree_size_num_max_data_id_types * sizeof(IDType) / sizeof(T),
 										 num_elems, res_arr_d, max_dim1_val, min_dim2_val);
@@ -830,6 +832,114 @@ __forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, 
 			else
 				dim2_val_ind_arr_secondary_d[right_dim2_subarr_iter_ind++] = dim2_val_ind_arr_d[i];
 		}
+	}
+}
+
+
+// Search-related helper functions
+
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+template <typename RetType>
+	requires std::disjunction<
+						std::is_same<RetType, IDType>,
+						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+		>::value
+__forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doLeftSearchDelegation(
+																const bool range_split_poss,
+																const unsigned char curr_node_bitcode,
+																unsigned &target_thread_offset,
+																long long &search_ind,
+																long long *const search_inds_arr,
+																unsigned char &search_code,
+																unsigned char *const search_codes_arr
+															)
+{
+	// Report all nodes in left subtree, continue left search in right subtree
+	// Though the upper bound of the dimension-1 search range is typically open, if there are duplicates of the median point and one happens to be allocated to each subtree, both trees must be traversed for correctness
+	if (range_split_poss)
+	{
+		// If current node has two children, parallelise search at each child
+		if (GPUTreeNode::hasLeftChild(curr_node_bitcode)
+				&& GPUTreeNode::hasRightChild(curr_node_bitcode))
+		{
+			// Delegate work of reporting all nodes in left child to another thread if one is available; otherwise, process that node here
+			if (threadIdx.x + target_thread_offset < blockDim.x)
+			{
+				search_inds_arr[threadIdx.x + target_thread_offset] = GPUTreeNode::getLeftChild(search_ind);
+				search_codes_arr[threadIdx.x + target_thread_offset] = SearchCodes::REPORT_ALL;
+
+				target_thread_offset <<= 1;
+			}
+			else
+			{
+			}
+
+			// Prepare to search right subtree in the next iteration
+			search_inds_arr[threadIdx.x] = search_ind = GPUTreeNode::getRightChild(search_ind);
+		}
+		// Node only has a left child; report all on left child
+		else if (GPUTreeNode::hasLeftChild(curr_node_bitcode))
+		{
+			search_inds_arr[threadIdx.x] = search_ind = GPUTreeNode::getLeftChild(search_ind);
+			search_codes_arr[threadIdx.x] = search_code = REPORT_ALL;
+		}
+		// Node only has a right child; search on right child
+		else if (GPUTreeNode::hasRightChild(curr_node_bitcode))
+		{
+			search_inds_arr[threadIdx.x] = search_ind = GPUTreeNode::getRightChild(search_ind);
+		}
+	}
+	// !split_range_poss
+	// Only left subtree can possibly contain valid entries; search left subtree
+	else if (GPUTreeNode::hasLeftChild(curr_node_bitcode))
+	{
+		search_inds_arr[threadIdx.x] = search_ind = GPUTreeNode::getLeftChild(search_ind);
+	}
+}
+
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+template <typename RetType>
+	requires std::disjunction<
+						std::is_same<RetType, IDType>,
+						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+		>::value
+__forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodesDelegation(
+																const unsigned char curr_node_bitcode,
+																unsigned &target_thread_offset,
+																long long &search_ind,
+																long long *const search_inds_arr,
+																unsigned char *const search_codes_arr
+															)
+{
+	if (GPUTreeNode::hasLeftChild(curr_node_bitcode)
+			&& GPUTreeNode::hasRightChild(curr_node_bitcode))
+	{
+		// Delegate reporting of all nodes in right child to another thread if one is available; otherwise, process that node here
+		if (threadIdx.x + target_thread_offset < blockDim.x)
+		{
+			search_inds_arr[threadIdx.x + target_thread_offset] = GPUTreeNode::getRightChild(search_ind);
+			search_codes_arr[threadIdx.x + target_thread_offset] = SearchCodes::REPORT_ALL;
+
+			target_thread_offset <<= 1;
+		}
+		else
+		{
+		}
+
+		// Prepare for next iteration; because thread is already reporting all nodes (subject to the dimension-2 value boundary), search_codes_arr[threadIdx.x] == REPORT_ALL already
+		search_inds_arr[threadIdx.x] = search_ind = GPUTreeNode::getLeftChild(search_ind);
+	}
+	// Node only has a left child; report all on left child
+	else if (GPUTreeNode::hasLeftChild(curr_node_bitcode))
+	{
+		search_inds_arr[threadIdx.x] = search_ind = GPUTreeNode::getLeftChild(search_ind);
+	}
+	// Node only has a right child; report all on right child
+	else if (GPUTreeNode::hasRightChild(curr_node_bitcode))
+	{
+		search_inds_arr[threadIdx.x] = search_ind = GPUTreeNode::getRightChild(search_ind);
 	}
 }
 

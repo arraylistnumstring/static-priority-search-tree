@@ -113,7 +113,7 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 		if (active_node)
 		{
 			// Intrawarp prefix sum: each thread here has one active node to report
-			// const unsigned long long res_ind_to_access = calcAllocReportIndOffset<unsigned long long>(1);
+			//const unsigned long long res_ind_to_access = calcAllocReportIndOffset<unsigned long long>(1);
 
 			if constexpr (std::is_same<RetType, IDType>::value)
 			{
@@ -145,6 +145,28 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 
 		// active threads -> active threads
 		// INACTIVE threads -> active threads (activation by active threads only)
-
+		if (search_ind != StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND)
+		{
+			if (search_code == StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::LEFT_SEARCH)	// Currently a search-type query
+			{
+				StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::doLeftSearchDelegation(
+																curr_node_med_dim1_val <= max_dim1_val,
+																curr_node_bitcode,
+																target_thread_offset,
+																search_ind, search_inds_arr,
+																search_codes_arr
+															);
+			}
+			else	// Already a report all-type query
+			{
+				StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodesDelegation(
+																curr_node_bitcode,
+																tree_root_d, tree_num_elem_slots,
+																res_arr_d, min_dim2_val,
+																search_ind, search_inds_arr,
+																search_codes_arr
+															);
+			}
+		}
 	}
 }
