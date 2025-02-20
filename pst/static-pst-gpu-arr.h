@@ -174,11 +174,6 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 
 
 		// Search-related helper functions
-		template <typename RetType=PointStructTemplate<T, IDType, num_IDs>>
-			requires std::disjunction<
-								std::is_same<RetType, IDType>,
-								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-				>::value
 		__forceinline__ __device__ static void doLeftSearchDelegation(const bool range_split_poss,
 																		const unsigned char curr_node_bitcode,
 																		unsigned &target_thread_offset,
@@ -188,11 +183,6 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 																		unsigned char *const search_codes_arr
 																	);
 
-		template <typename RetType>
-			requires std::disjunction<
-								std::is_same<RetType, IDType>,
-								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-				>::value
 		__forceinline__ __device__ static void doReportAllNodesDelegation(const unsigned char curr_node_bitcode,
 																			unsigned &target_thread_offset,
 																			long long &search_ind,

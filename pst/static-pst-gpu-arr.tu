@@ -628,7 +628,7 @@ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSearc
 		twoSidedLeftSearchTreeArrGlobal<T, PointStructTemplate, IDType, num_IDs, RetType>
 										<<<num_thread_blocks, threads_per_block,
 											threads_per_block * (sizeof(long long) + sizeof(unsigned char))
-												+ (1 + threads_per_block / warpSize + (threads_per_block % warpSize == 0 ? 0 : 1)>>>
+												+ (1 + threads_per_block / dev_props.warpSize + (threads_per_block % dev_props.warpSize == 0 ? 0 : 1))>>>
 										(tree_arr_d, full_tree_num_elem_slots,
 										 full_tree_size_num_max_data_id_types,
 										 num_elems, res_arr_d, max_dim1_val, min_dim2_val);
@@ -639,7 +639,7 @@ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSearc
 		twoSidedLeftSearchTreeArrGlobal<T, PointStructTemplate, IDType, num_IDs, RetType>
 										<<<num_thread_blocks, threads_per_block,
 											threads_per_block * (sizeof(long long) + sizeof(unsigned char))
-												+ (1 + threads_per_block / warpSize + (threads_per_block % warpSize == 0 ? 0 : 1)>>>
+												+ (1 + threads_per_block / dev_props.warpSize + (threads_per_block % dev_props.warpSize == 0 ? 0 : 1))>>>
 										(tree_arr_d, full_tree_num_elem_slots,
 										 full_tree_size_num_max_data_id_types * sizeof(IDType) / sizeof(T),
 										 num_elems, res_arr_d, max_dim1_val, min_dim2_val);
@@ -840,12 +840,7 @@ __forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, 
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-template <typename RetType>
-	requires std::disjunction<
-						std::is_same<RetType, IDType>,
-						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-		>::value
-__forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doLeftSearchDelegation(
+__forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::doLeftSearchDelegation(
 																const bool range_split_poss,
 																const unsigned char curr_node_bitcode,
 																unsigned &target_thread_offset,
@@ -863,7 +858,7 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 		if (GPUTreeNode::hasLeftChild(curr_node_bitcode)
 				&& GPUTreeNode::hasRightChild(curr_node_bitcode))
 		{
-			// Delegate work of reporting all nodes in left child to another thread if one is available; otherwise, process that node here
+			// Delegate work of reporting all nodes in left child to another thread if one is available; otherwise, process that node here (maximum one such node)
 			if (threadIdx.x + target_thread_offset < blockDim.x)
 			{
 				search_inds_arr[threadIdx.x + target_thread_offset] = GPUTreeNode::getLeftChild(search_ind);
@@ -900,12 +895,7 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-template <typename RetType>
-	requires std::disjunction<
-						std::is_same<RetType, IDType>,
-						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
-		>::value
-__forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodesDelegation(
+__forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodesDelegation(
 																const unsigned char curr_node_bitcode,
 																unsigned &target_thread_offset,
 																long long &search_ind,

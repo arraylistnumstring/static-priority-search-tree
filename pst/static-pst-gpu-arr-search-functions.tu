@@ -71,6 +71,8 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 	bool cont_iter = true;	// Loop-continuing flag
 
 	long long search_ind = search_inds_arr[threadIdx.x];
+	unsigned char search_code = search_codes_arr[threadIdx.x];
+	unsigned target_thread_offset = nextGreaterPowerOf2(threadIdx.x);
 
 	T curr_node_dim1_val;
 	T curr_node_dim2_val;
@@ -142,7 +144,6 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 		// All threads who would become inactive in this iteration have finished; synchronisation is utilised because one must be certain that INACTIVE ~> active writes (with ~> denoting a state change that is externally triggered, i.e. triggered by other threads) are not inadvertently overwritten by active -> INACTIVE writes in lines of code above this one
 		curr_block.sync();
 
-
 		// active threads -> active threads
 		// INACTIVE threads -> active threads (activation by active threads only)
 		if (search_ind != StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND)
@@ -154,15 +155,14 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 																curr_node_bitcode,
 																target_thread_offset,
 																search_ind, search_inds_arr,
-																search_codes_arr
+																search_code, search_codes_arr
 															);
 			}
 			else	// Already a report all-type query
 			{
 				StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodesDelegation(
 																curr_node_bitcode,
-																tree_root_d, tree_num_elem_slots,
-																res_arr_d, min_dim2_val,
+																target_thread_offset,
 																search_ind, search_inds_arr,
 																search_codes_arr
 															);
