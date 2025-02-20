@@ -5,6 +5,7 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 												const size_t full_tree_num_elem_slots,
 												const size_t full_tree_size_num_Ts,
+												const size_t num_elems,
 												RetType *const res_arr_d,
 												const T max_dim1_val, const T min_dim2_val
 											)
