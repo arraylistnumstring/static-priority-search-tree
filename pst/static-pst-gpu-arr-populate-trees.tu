@@ -2,8 +2,8 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 			typename IDType, size_t num_IDs>
 __global__ void populateTrees(T *const tree_arr_d, const size_t full_tree_num_elem_slots,
 								const size_t full_tree_size_num_Ts,
-								PointStructTemplate<T, IDType, num_IDs> *const pt_arr_d,
 								const size_t num_elems,
+								PointStructTemplate<T, IDType, num_IDs> *const pt_arr_d,
 								size_t *const dim1_val_ind_arr_d,
 								size_t *dim2_val_ind_arr_d,
 								size_t *dim2_val_ind_arr_secondary_d)
