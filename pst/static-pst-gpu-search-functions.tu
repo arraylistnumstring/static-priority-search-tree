@@ -137,40 +137,48 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 			if (search_code == StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::THREE_SEARCH)	// Currently a three-sided query
 			{
 				// Do 3-sided search delegation
-				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::do3SidedSearchDelegation(curr_node_bitcode,
+				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::do3SidedSearchDelegation(
+															curr_node_bitcode,
 															root_d, num_elem_slots,
 															res_arr_d,
 															min_dim1_val, max_dim1_val,
 															curr_node_med_dim1_val, min_dim2_val,
 															search_ind, search_inds_arr,
-															search_code, search_codes_arr);
+															search_code, search_codes_arr
+														);
 			}
 			else if (search_code == StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::LEFT_SEARCH)
 			{
 				// Do left search delegation
-				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doLeftSearchDelegation(curr_node_med_dim1_val <= max_dim1_val,
+				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doLeftSearchDelegation(
+															curr_node_med_dim1_val <= max_dim1_val,
 															curr_node_bitcode,
 															root_d, num_elem_slots,
 															res_arr_d, min_dim2_val,
 															search_ind, search_inds_arr,
-															search_code, search_codes_arr);
+															search_code, search_codes_arr
+														);
 			}
 			else if (search_code == StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::RIGHT_SEARCH)
 			{
-				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doRightSearchDelegation(curr_node_med_dim1_val >= min_dim1_val,
+				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doRightSearchDelegation(
+															curr_node_med_dim1_val >= min_dim1_val,
 															curr_node_bitcode,
 															root_d, num_elem_slots,
 															res_arr_d, min_dim2_val,
 															search_ind, search_inds_arr,
-															search_code, search_codes_arr);
+															search_code, search_codes_arr
+														);
 			}
 			else	// search_code == REPORT_ALL
 			{
-				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodesDelegation(curr_node_bitcode,
-																root_d, num_elem_slots,
-																res_arr_d, min_dim2_val,
-																search_ind, search_inds_arr,
-																search_codes_arr);
+				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodesDelegation(
+															curr_node_bitcode,
+															root_d, num_elem_slots,
+															res_arr_d, min_dim2_val,
+															search_ind, search_inds_arr,
+															search_codes_arr
+														);
 			}
 		}
 
@@ -319,20 +327,24 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 		{
 			if (search_code == StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::LEFT_SEARCH)	// Currently a search-type query
 			{
-				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doLeftSearchDelegation(curr_node_med_dim1_val <= max_dim1_val,
+				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doLeftSearchDelegation(
+															curr_node_med_dim1_val <= max_dim1_val,
 															curr_node_bitcode,
 															root_d, num_elem_slots,
 															res_arr_d, min_dim2_val,
 															search_ind, search_inds_arr,
-															search_code, search_codes_arr);
+															search_code, search_codes_arr
+														);
 			}
 			else	// Already a report all-type query
 			{
-				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodesDelegation(curr_node_bitcode,
+				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodesDelegation(
+																curr_node_bitcode,
 																root_d, num_elem_slots,
 																res_arr_d, min_dim2_val,
 																search_ind, search_inds_arr,
-																search_codes_arr);
+																search_codes_arr
+															);
 			}
 		}
 
@@ -481,20 +493,24 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 		{
 			if (search_code == StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::RIGHT_SEARCH)	// Currently a search-type query
 			{
-				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doRightSearchDelegation(curr_node_med_dim1_val >= min_dim1_val,
+				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doRightSearchDelegation(
+															curr_node_med_dim1_val >= min_dim1_val,
 															curr_node_bitcode,
 															root_d, num_elem_slots,
 															res_arr_d, min_dim2_val,
 															search_ind, search_inds_arr,
-															search_code, search_codes_arr);
+															search_code, search_codes_arr
+														);
 			}
 			else	// Already a report all-type query
 			{
-				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodesDelegation(curr_node_bitcode,
+				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodesDelegation(
+																curr_node_bitcode,
 																root_d, num_elem_slots,
 																res_arr_d, min_dim2_val,
 																search_ind, search_inds_arr,
-																search_codes_arr);
+																search_codes_arr
+															);
 			}
 		}
 
