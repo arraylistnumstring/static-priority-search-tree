@@ -41,22 +41,24 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T, PointStructTemplate,
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 				>::value
-		void threeSidedSearch(size_t &num_res_elems, RetType *&res_arr, T min_dim1_val,
-								T max_dim1_val, T min_dim2_val);
+		void threeSidedSearch(size_t &num_res_elems, RetType *&res_arr,
+								const T min_dim1_val, const T max_dim1_val, const T min_dim2_val);
 
 		template <typename RetType=PointStructTemplate<T, IDType, num_IDs>>
 			requires std::disjunction<
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 				>::value
-		void twoSidedLeftSearch(size_t &num_res_elems, RetType *&res_arr, T max_dim1_val, T min_dim2_val);
+		void twoSidedLeftSearch(size_t &num_res_elems, RetType *&res_arr,
+								const T max_dim1_val, const T min_dim2_val);
 
 		template <typename RetType=PointStructTemplate<T, IDType, num_IDs>>
 			requires std::disjunction<
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 				>::value
-		void twoSidedRightSearch(size_t &num_res_elems, RetType *&res_arr, T min_dim1_val, T min_dim2_val);
+		void twoSidedRightSearch(size_t &num_res_elems, RetType *&res_arr,
+									const T min_dim1_val, const T min_dim2_val);
 
 	private:
 		// Want unique copies of each tree, so no assignment or copying allowed

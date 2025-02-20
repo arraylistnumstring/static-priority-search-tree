@@ -198,7 +198,12 @@ template <typename RetType>
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 		>::value
-void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::threeSidedSearch(size_t &num_res_elems, RetType *&res_arr, T min_dim1_val, T max_dim1_val, T min_dim2_val)
+void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::threeSidedSearch(size_t &num_res_elems,
+																					RetType *&res_arr,
+																					const T min_dim1_val,
+																					const T max_dim1_val,
+																					const T min_dim2_val
+																				)
 {
 	if (num_elems == 0)
 	{
@@ -221,11 +226,6 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::threeSidedSearch
 	long long search_ind;
 	unsigned char search_code;
 
-	T curr_node_dim1_val;
-	T curr_node_dim2_val;
-	T curr_node_med_dim1_val;
-	unsigned char curr_node_bitcode;
-
 	// Stacks are synchronised, so 1 stack is empty exactly when both are
 	while (!search_inds_stack.empty())
 	{
@@ -235,10 +235,10 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::threeSidedSearch
 		search_codes_stack.pop();
 
 		// Note that because this program is single-threaded, there is never a chance of inactivity, as the lone thread only terminates when there is no more work to be done; hence, there is no INACTIVE_IND check (when comparing to the analogous GPU version)
-		curr_node_dim1_val = getDim1ValsRoot(root, num_elem_slots)[search_ind];
-		curr_node_dim2_val = getDim2ValsRoot(root, num_elem_slots)[search_ind];
-		curr_node_med_dim1_val = getMedDim1ValsRoot(root, num_elem_slots)[search_ind];
-		curr_node_bitcode = getBitcodesRoot(root, num_elem_slots)[search_ind];
+		const T curr_node_dim1_val = getDim1ValsRoot(root, num_elem_slots)[search_ind];
+		const T curr_node_dim2_val = getDim2ValsRoot(root, num_elem_slots)[search_ind];
+		const T curr_node_med_dim1_val = getMedDim1ValsRoot(root, num_elem_slots)[search_ind];
+		const unsigned char curr_node_bitcode = getBitcodesRoot(root, num_elem_slots)[search_ind];
 
 		// Only process node if its dimension-2 value satisfies the dimension-2 search bound
 		if (min_dim2_val <= curr_node_dim2_val)
@@ -307,7 +307,11 @@ template <typename RetType>
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 		>::value
-void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSearch(size_t &num_res_elems, RetType *&res_arr, T max_dim1_val, T min_dim2_val)
+void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSearch(size_t &num_res_elems,
+																					RetType *&res_arr,
+																					const T max_dim1_val,
+																					const T min_dim2_val
+																				)
 {
 	if (num_elems == 0)
 	{
@@ -330,11 +334,6 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSear
 	long long search_ind;
 	unsigned char search_code;
 
-	T curr_node_dim1_val;
-	T curr_node_dim2_val;
-	T curr_node_med_dim1_val;
-	unsigned char curr_node_bitcode;
-
 	// Stacks are synchronised, so 1 stack is empty exactly when both are
 	while (!search_inds_stack.empty())
 	{
@@ -344,10 +343,10 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSear
 		search_codes_stack.pop();
 
 		// Note that because this program is single-threaded, there is never a chance of inactivity, as the lone thread only terminates when there is no more work to be done; hence, there is no INACTIVE_IND check (when comparing to the analogous GPU version)
-		curr_node_dim1_val = getDim1ValsRoot(root, num_elem_slots)[search_ind];
-		curr_node_dim2_val = getDim2ValsRoot(root, num_elem_slots)[search_ind];
-		curr_node_med_dim1_val = getMedDim1ValsRoot(root, num_elem_slots)[search_ind];
-		curr_node_bitcode = getBitcodesRoot(root, num_elem_slots)[search_ind];
+		const T curr_node_dim1_val = getDim1ValsRoot(root, num_elem_slots)[search_ind];
+		const T curr_node_dim2_val = getDim2ValsRoot(root, num_elem_slots)[search_ind];
+		const T curr_node_med_dim1_val = getMedDim1ValsRoot(root, num_elem_slots)[search_ind];
+		const unsigned char curr_node_bitcode = getBitcodesRoot(root, num_elem_slots)[search_ind];
 
 		// Only process node if its dimension-2 value satisfies the dimension-2 search bound
 		if (min_dim2_val <= curr_node_dim2_val)
@@ -399,7 +398,11 @@ template <typename RetType>
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 		>::value
-void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::twoSidedRightSearch(size_t &num_res_elems, RetType *&res_arr, T min_dim1_val, T min_dim2_val)
+void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::twoSidedRightSearch(size_t &num_res_elems,
+																					RetType *&res_arr,
+																					const T min_dim1_val,
+																					const T min_dim2_val
+																				)
 {
 	if (num_elems == 0)
 	{
@@ -422,11 +425,6 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::twoSidedRightSea
 	long long search_ind;
 	unsigned char search_code;
 
-	T curr_node_dim1_val;
-	T curr_node_dim2_val;
-	T curr_node_med_dim1_val;
-	unsigned char curr_node_bitcode;
-
 	// Stacks are synchronised, so 1 stack is empty exactly when both are
 	while (!search_inds_stack.empty())
 	{
@@ -436,10 +434,10 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::twoSidedRightSea
 		search_codes_stack.pop();
 
 		// Note that because this program is single-threaded, there is never a chance of inactivity, as the lone thread only terminates when there is no more work to be done; hence, there is no INACTIVE_IND check (when comparing to the analogous GPU version)
-		curr_node_dim1_val = getDim1ValsRoot(root, num_elem_slots)[search_ind];
-		curr_node_dim2_val = getDim2ValsRoot(root, num_elem_slots)[search_ind];
-		curr_node_med_dim1_val = getMedDim1ValsRoot(root, num_elem_slots)[search_ind];
-		curr_node_bitcode = getBitcodesRoot(root, num_elem_slots)[search_ind];
+		const T curr_node_dim1_val = getDim1ValsRoot(root, num_elem_slots)[search_ind];
+		const T curr_node_dim2_val = getDim2ValsRoot(root, num_elem_slots)[search_ind];
+		const T curr_node_med_dim1_val = getMedDim1ValsRoot(root, num_elem_slots)[search_ind];
+		const unsigned char curr_node_bitcode = getBitcodesRoot(root, num_elem_slots)[search_ind];
 
 		// Only process node if its dimension-2 value satisfies the dimension-2 search bound
 		if (min_dim2_val <= curr_node_dim2_val)
@@ -487,20 +485,22 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::twoSidedRightSea
 // static keyword should only be used when declaring a function in the header file
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::constructNode(T *const root,
-										const size_t num_elem_slots,
-										PointStructTemplate<T, IDType, num_IDs> *const pt_arr,
-										const size_t target_node_ind,
-										const size_t num_elems,
-										size_t *const dim1_val_ind_arr,
-										size_t *const dim2_val_ind_arr,
-										size_t *const dim2_val_ind_arr_secondary,
-										const size_t max_dim2_val_dim1_array_ind,
-										std::stack<size_t> &subelems_start_inds,
-										std::stack<size_t> &num_subelems_stack,
-										size_t &left_subarr_num_elems,
-										size_t &right_subarr_start_ind,
-										size_t &right_subarr_num_elems)
+void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::constructNode(
+													T *const root,
+													const size_t num_elem_slots,
+													PointStructTemplate<T, IDType, num_IDs> *const pt_arr,
+													const size_t target_node_ind,
+													const size_t num_elems,
+													size_t *const dim1_val_ind_arr,
+													size_t *const dim2_val_ind_arr,
+													size_t *const dim2_val_ind_arr_secondary,
+													const size_t max_dim2_val_dim1_array_ind,
+													std::stack<size_t> &subelems_start_inds,
+													std::stack<size_t> &num_subelems_stack,
+													size_t &left_subarr_num_elems,
+													size_t &right_subarr_start_ind,
+													size_t &right_subarr_num_elems
+												)
 {
 	size_t median_dim1_val_ind;
 
@@ -598,8 +598,8 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 			typename IDType, size_t num_IDs>
 void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::do3SidedSearchDelegation(
 											const unsigned char curr_node_bitcode,
-											T min_dim1_val, T max_dim1_val,
-											T curr_node_med_dim1_val,
+											const T min_dim1_val, const T max_dim1_val,
+											const T curr_node_med_dim1_val,
 											const long long search_ind,
 											std::stack<long long> &search_inds_stack,
 											std::stack<unsigned char> &search_codes_stack

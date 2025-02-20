@@ -15,16 +15,16 @@ void populateTree (T *const root, const size_t num_elem_slots,
 	std::stack<size_t> target_node_inds;
 	target_node_inds.push(0);
 
-	size_t left_subarr_num_elems;
-	size_t right_subarr_start_ind;
-	size_t right_subarr_num_elems;
-
-	size_t *curr_iter_dim2_val_ind_arr;
-	size_t *curr_iter_dim2_val_ind_arr_secondary;
-
 	// All stacks pop and push simulatenously, so only checking one suffices
 	while (!subelems_start_inds.empty())
 	{
+		size_t left_subarr_num_elems;
+		size_t right_subarr_start_ind;
+		size_t right_subarr_num_elems;
+
+		size_t *curr_iter_dim2_val_ind_arr;
+		size_t *curr_iter_dim2_val_ind_arr_secondary;
+
 		/*
 			Because the GPU code won't need to travel back up levels, it is unnecessary to track which array was used at a particular level; however, as the iterative CPU version needs to go to potentially arbitrary levels, it must be able to determine the level in which a node resides to determine which array to use as the primary and which to use as the secondary
 			First node, in level 1 (1-indexed), uses the original primary/secondary designations, and subsequent levels alternate
@@ -42,7 +42,7 @@ void populateTree (T *const root, const size_t num_elem_slots,
 		}
 
 		// Find index in dim1_val_ind_arr of PointStruct with maximal dim2_val 
-		long long array_search_res_ind = StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::binarySearch(pt_arr, dim1_val_ind_arr,
+		const long long array_search_res_ind = StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::binarySearch(pt_arr, dim1_val_ind_arr,
 																		pt_arr[curr_iter_dim2_val_ind_arr[subelems_start_inds.top()]],
 																		subelems_start_inds.top(),
 																		num_subelems_stack.top());
@@ -69,7 +69,7 @@ void populateTree (T *const root, const size_t num_elem_slots,
 		subelems_start_inds.pop();
 		num_subelems_stack.pop();
 
-		size_t curr_node_ind = target_node_inds.top();
+		const size_t curr_node_ind = target_node_inds.top();
 		target_node_inds.pop();
 
 	#ifdef DEBUG
@@ -82,7 +82,7 @@ void populateTree (T *const root, const size_t num_elem_slots,
 		for (size_t i = 0; i < 10; i++)
 			std::cout << '\n';
 
-		unsigned char curr_node_bitcode = StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::getBitcodesRoot(root, num_elem_slots)[curr_node_ind];
+		const unsigned char curr_node_bitcode = StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::getBitcodesRoot(root, num_elem_slots)[curr_node_ind];
 		std::cout << "Current node has left child: " << CPUIterTreeNode::hasLeftChild(curr_node_bitcode) << '\n';
 		std::cout << "Current node has right child: " << CPUIterTreeNode::hasRightChild(curr_node_bitcode) << '\n';
 		std::cout << "Current node has children: " << CPUIterTreeNode::hasChildren(curr_node_bitcode) << '\n';
