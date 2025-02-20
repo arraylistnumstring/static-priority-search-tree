@@ -139,7 +139,7 @@ __global__ void populateTrees(T *const tree_arr_d, const size_t full_tree_num_el
 											);
 
 				// Check and make sure that the node just processed will be a leaf
-				assert(left_subarr_num_elems == 0 && right_subarr_num_elems == 0)
+				assert(left_subarr_num_elems == 0 && right_subarr_num_elems == 0);
 			}
 		}
 
