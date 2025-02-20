@@ -10,10 +10,11 @@
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
 StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPUArr(PointStructTemplate<T, IDType, num_IDs> *const pt_arr_d,
-																			size_t num_elems,
+																			const size_t num_elems,
 																			const unsigned threads_per_block,
-																			int dev_ind, int num_devs,
-																			cudaDeviceProp dev_props)
+																			const int dev_ind,
+																			const int num_devs,
+																			const cudaDeviceProp &dev_props)
 	/*
 		All trees except potentially the last tree in the array are complete trees in order to reduce internal fragmentation
 		In order to reduce dynamic parallelism cost in construction and communication overhead in search, make each complete tree have enough elements such that each thread is active at least once (so that differing block sizes that are not powers of 2 will have an effect on performance) and will only process at most two elements in the last level (which is the only level where it is possible to have an insufficient number of threads available), allowing for a constant number of resources to handle this (relatively common) edge case
@@ -578,9 +579,9 @@ template <typename RetType>
 				>::value
 void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::threeSidedSearch(size_t &num_res_elems,
 																				RetType *&res_arr_d,
-																				T min_dim1_val,
-																				T max_dim1_val,
-																				T min_dim2_val
+																				const T min_dim1_val,
+																				const T max_dim1_val,
+																				const T min_dim2_val
 																			)
 {
 }
@@ -594,8 +595,8 @@ template <typename RetType>
 				>::value
 void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSearch(size_t &num_res_elems,
 																					RetType *&res_arr_d,
-																					T max_dim1_val,
-																					T min_dim2_val
+																					const T max_dim1_val,
+																					const T min_dim2_val
 																				)
 {
 	if (num_elems == 0)
@@ -664,8 +665,8 @@ template <typename RetType>
 				>::value
 void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::twoSidedRightSearch(size_t &num_res_elems,
 																					RetType *&res_arr_d,
-																					T min_dim1_val,
-																					T min_dim2_val
+																					const T min_dim1_val,
+																					const T min_dim2_val
 																				)
 {
 }
@@ -706,7 +707,7 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 __forceinline__ __device__ long long StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::binarySearch(
 															PointStructTemplate<T, IDType, num_IDs> *const pt_arr_d,
 															size_t *const dim1_val_ind_arr_d,
-															PointStructTemplate<T, IDType, num_IDs> const &elem_to_find,
+															const PointStructTemplate<T, IDType, num_IDs> &elem_to_find,
 															const size_t init_ind,
 															const size_t num_elems
 														)
@@ -1071,5 +1072,4 @@ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::printRecur(std::o
 		printRecur(os, tree_root, GPUTreeNode::getLeftChild(curr_ind), num_elem_slots,
 					'\n' + child_prefix + "└─(L)─ ", child_prefix + "       ");
 	}
-
 }

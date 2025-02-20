@@ -46,9 +46,9 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 {
 	public:
 		// {} is value-initialisation; for structs, this is zero-initialisation
-		StaticPSTGPUArr(PointStructTemplate<T, IDType, num_IDs> *const pt_arr_d, size_t num_elems,
-							const unsigned threads_per_block, int dev_ind=0, int num_devs=1,
-							cudaDeviceProp dev_props={}
+		StaticPSTGPUArr(PointStructTemplate<T, IDType, num_IDs> *const pt_arr_d, const size_t num_elems,
+							const unsigned threads_per_block, const int dev_ind=0, const int num_devs=1,
+							const cudaDeviceProp &dev_props={}
 						);
 		// Since arrays were allocated continguously, only need to free one of the array pointers
 		virtual ~StaticPSTGPUArr()
@@ -78,7 +78,7 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 										std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 						>::value
 		void threeSidedSearch(size_t &num_res_elems, RetType *&res_arr_d,
-								T min_dim1_val, T max_dim1_val, T min_dim2_val);
+								const T min_dim1_val, const T max_dim1_val, const T min_dim2_val);
 
 		template <typename RetType=PointStructTemplate<T, IDType, num_IDs>>
 					requires std::disjunction<
@@ -86,7 +86,7 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 										std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 						>::value
 		void twoSidedLeftSearch(size_t &num_res_elems, RetType *&res_arr_d,
-								T max_dim1_val, T min_dim2_val);
+								const T max_dim1_val, const T min_dim2_val);
 
 		template <typename RetType=PointStructTemplate<T, IDType, num_IDs>>
 					requires std::disjunction<
@@ -94,7 +94,7 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 										std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 						>::value
 		void twoSidedRightSearch(size_t &num_res_elems, RetType *&res_arr_d,
-									T min_dim1_val, T min_dim2_val);
+									const T min_dim1_val, const T min_dim2_val);
 
 
 		// Calculate minimum amount of global memory that must be available for allocation on the GPU for construction and search to run correctly
@@ -140,7 +140,7 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 		// Must be a static function because it is called during construction
 		__forceinline__ __device__ static long long binarySearch(PointStructTemplate<T, IDType, num_IDs> *const pt_arr_d,
 																	size_t *const dim1_val_ind_arr_d,
-																	PointStructTemplate<T, IDType, num_IDs> const &elem_to_find,
+																	const PointStructTemplate<T, IDType, num_IDs> &elem_to_find,
 																	const size_t init_ind,
 																	const size_t num_elems
 																);
@@ -162,7 +162,7 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 		__forceinline__ __device__ static void setNode(T *const root_d,
 														const size_t node_ind,
 														const size_t num_elem_slots,
-														PointStructTemplate<T, IDType, num_IDs> const &source_data,
+														const PointStructTemplate<T, IDType, num_IDs> &source_data,
 														const T median_dim1_val)
 		{
 			getDim1ValsRoot(root_d, num_elem_slots)[node_ind] = source_data.dim1_val;

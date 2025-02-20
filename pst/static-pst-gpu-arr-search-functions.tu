@@ -74,15 +74,14 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 	unsigned char search_code = search_codes_arr[threadIdx.x];
 	unsigned target_thread_offset = nextGreaterPowerOf2(threadIdx.x);
 
-	T curr_node_dim1_val;
-	T curr_node_dim2_val;
-	T curr_node_med_dim1_val;
-	unsigned char curr_node_bitcode;
-	bool active_node;
-
 	while (cont_iter)
 	{
-		active_node = false;
+		T curr_node_dim1_val;
+		T curr_node_dim2_val;
+		T curr_node_med_dim1_val;
+		unsigned char curr_node_bitcode;
+
+		bool active_node = false;
 
 		// active threads -> INACTIVE (if current node goes below the dim2_val threshold or has no children)
 		// Before the next curr_block.sync() call, which denotes the end of this section, active threads are the only threads who will modify their own search_inds_arr entry, so it is fine to do so non-atomically
