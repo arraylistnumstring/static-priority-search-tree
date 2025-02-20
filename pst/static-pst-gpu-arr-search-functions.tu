@@ -44,6 +44,23 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 	// For twoSidedLeftSearchTreeArrGlobal(), all threads start with their search code set to LEFT_SEARCH
 	search_codes_arr[threadIdx.x] = StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::LEFT_SEARCH;
 
+	// Calculate number of slots in this thread block's assigned tree
+	size_t tree_num_elem_slots;
+	if (num_elems % full_tree_num_elem_slots == 0)		// All trees are full trees
+		tree_num_elem_slots = full_tree_num_elem_slots;
+	else	// All trees except last are full trees
+	{
+		if (blockIdx.x < gridDim.x - 1)
+			tree_num_elem_slots = full_tree_num_elem_slots;
+		// Last tree has (num_elems % full_tree_num_elem_slots) elements
+		else
+		{
+			const size_t last_tree_num_elems = num_elems % full_tree_num_elem_slots;
+
+			tree_num_elem_slots = StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcNumElemSlotsPerTree(last_tree_num_elems);
+		}
+	}
+
 	// Note: would only need to have one thread block do multiple trees when the number of trees exceeds 2^31 - 1, i.e. the maximum number of blocks permitted in a grid
 	T *const tree_root_d = tree_arr_d + blockIdx.x * full_tree_size_num_Ts;
 
@@ -68,10 +85,10 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 		// Before the next curr_block.sync() call, which denotes the end of this section, active threads are the only threads who will modify their own search_inds_arr entry, so it is fine to do so non-atomically
 		if (search_ind != StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND)
 		{
-			curr_node_dim1_val = StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::getDim1ValsRoot(tree_root_d, full_tree_num_elem_slots)[search_ind];
-			curr_node_dim2_val = StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::getDim2ValsRoot(tree_root_d, full_tree_num_elem_slots)[search_ind];
-			curr_node_med_dim1_val = StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::getMedDim1ValsRoot(tree_root_d, full_tree_num_elem_slots)[search_ind];
-			curr_node_bitcode = StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::getBitcodesRoot(tree_root_d, full_tree_num_elem_slots)[search_ind];
+			curr_node_dim1_val = StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::getDim1ValsRoot(tree_root_d, tree_num_elem_slots)[search_ind];
+			curr_node_dim2_val = StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::getDim2ValsRoot(tree_root_d, tree_num_elem_slots)[search_ind];
+			curr_node_med_dim1_val = StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::getMedDim1ValsRoot(tree_root_d, tree_num_elem_slots)[search_ind];
+			curr_node_bitcode = StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::getBitcodesRoot(tree_root_d, tree_num_elem_slots)[search_ind];
 		}
 
 		if (min_dim2_val > curr_node_dim2_val)
@@ -100,7 +117,7 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 			if constexpr (std::is_same<RetType, IDType>::value)
 			{
 				res_arr_d[block_level_start_ind + block_level_offset]
-						= StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(tree_root_d, full_tree_num_elem_slots)[search_ind];
+						= StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(tree_root_d, tree_num_elem_slots)[search_ind];
 			}
 			else
 			{
@@ -108,7 +125,7 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 				res_arr_d[block_level_start_ind + block_level_offset].dim2_val = curr_node_dim2_val;
 				if constexpr (HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
 					res_arr_d[block_level_start_ind + block_level_offset].id
-							= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(tree_root_d, num_elem_slots)[search_ind];
+							= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(tree_root_d, tree_num_elem_slots)[search_ind];
 			}
 		}
 
