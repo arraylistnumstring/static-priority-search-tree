@@ -892,7 +892,7 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 																unsigned char *const search_codes_arr)
 {
 	// Report all nodes in left subtree, "recurse" search on right
-	// Because reportAllNodesGlobal uses less shared memory, prefer launching reportAllNodesGlobal over launching a search when utilising dynamic parallelism
+	// Because reportAllNodesGlobal() uses less shared memory, prefer launching reportAllNodesGlobal() over launching a search when utilising dynamic parallelism
 	// Though the upper bound of the dimension-1 search range is typically open, if there are duplicates of the median point and one happens to be allocated to each subtree, both trees must be traversed for correctness
 	if (range_split_poss)
 	{
@@ -949,7 +949,7 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 																unsigned char *const search_codes_arr)
 {
 	// Report all nodes in right subtree, "recurse" search on left
-	// Because reportAllNodesGlobal uses less shared memory, prefer launching reportAllNodesGlobal over launching a search when utilising dynamic parallelism
+	// Because reportAllNodesGlobal() uses less shared memory, prefer launching reportAllNodesGlobal() over launching a search when utilising dynamic parallelism
 	if (range_split_poss)
 	{
 		// If current node has two children, parallelise search at each child
