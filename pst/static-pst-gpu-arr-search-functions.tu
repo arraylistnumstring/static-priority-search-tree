@@ -56,6 +56,7 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 
 	T curr_node_dim1_val;
 	T curr_node_dim2_val;
+	T curr_node_med_dim1_val;
 	unsigned char curr_node_bitcode;
 	bool active_node;
 
