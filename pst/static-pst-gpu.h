@@ -172,7 +172,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		// Must be a static function because it is called during construction
 		__forceinline__ __device__ static long long binarySearch(PointStructTemplate<T, IDType, num_IDs> *const pt_arr_d,
 																	size_t *const dim1_val_ind_arr_d,
-																	PointStructTemplate<T, IDType, num_IDs> const &elem_to_find,
+																	const PointStructTemplate<T, IDType, num_IDs> &elem_to_find,
 																	const size_t init_ind,
 																	const size_t num_elems
 																);
@@ -194,7 +194,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		__forceinline__ __device__ static void setNode(T *const root_d,
 														const size_t node_ind,
 														const size_t num_elem_slots,
-														PointStructTemplate<T, IDType, num_IDs> const &source_data,
+														const PointStructTemplate<T, IDType, num_IDs> &source_data,
 														const T median_dim1_val)
 		{
 			getDim1ValsRoot(root_d, num_elem_slots)[node_ind] = source_data.dim1_val;

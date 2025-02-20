@@ -85,7 +85,7 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T, PointStructTemplate,
 								);
 
 		static void setNode(T *const root, const size_t node_ind, const size_t num_elem_slots,
-							PointStructTemplate<T, IDType, num_IDs> const &source_data,
+							const PointStructTemplate<T, IDType, num_IDs> &source_data,
 							const T median_dim1_val)
 		{
 			getDim1ValsRoot(root, num_elem_slots)[node_ind] = source_data.dim1_val;
@@ -177,7 +177,7 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T, PointStructTemplate,
 		// Returns index in dim1_val_ind_arr of elem_to_find
 		static long long binarySearch(PointStructTemplate<T, IDType, num_IDs> *const pt_arr,
 										size_t *const dim1_val_ind_arr,
-										PointStructTemplate<T, IDType, num_IDs> const &elem_to_find,
+										const PointStructTemplate<T, IDType, num_IDs> &elem_to_find,
 										const size_t init_ind, const size_t num_elems
 									);
 
