@@ -57,9 +57,8 @@ __global__ void populateTree(T *const root_d, const size_t num_elem_slots,
 													subelems_start_inds_arr[threadIdx.x],
 													num_subelems_arr[threadIdx.x]);
 
-				if (array_search_res_ind == -1)
-					// Something has gone very wrong; exit
-					return;
+				// Check to make sure array_search_res_ind is a valid index (which it should be, since it's an element of pt_arr to begin with)
+				assert(array_search_res_ind != -1);
 
 				// Note: potential sign conversion issue when computer memory becomes of size 2^64
 				const size_t max_dim2_val_dim1_array_ind = array_search_res_ind;

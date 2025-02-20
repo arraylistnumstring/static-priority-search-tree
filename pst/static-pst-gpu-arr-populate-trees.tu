@@ -85,9 +85,8 @@ __global__ void populateTrees(T *const tree_arr_d, const size_t full_tree_num_el
 												subelems_start_inds_arr[threadIdx.x],
 												num_subelems_arr[threadIdx.x]);
 
-			if (array_search_res_ind == -1)
-				// Something has gone very wrong; exit
-				return;
+			// Check to make sure array_search_res_ind is a valid index (which it should be, since it's an element of pt_arr to begin with)
+			assert(array_search_res_ind != -1);
 
 			// Note: potential sign conversion issue when computer memory becomes of size 2^64
 			const size_t max_dim2_val_dim1_array_ind = array_search_res_ind;
@@ -139,9 +138,8 @@ __global__ void populateTrees(T *const tree_arr_d, const size_t full_tree_num_el
 												right_subarr_num_elems
 											);
 
-				if (left_subarr_num_elems != 0 || right_subarr_num_elems != 0)
-					// Something has gone very wrong; exit
-					return;
+				// Check and make sure that the node just processed will be a leaf
+				assert(left_subarr_num_elems == 0 && right_subarr_num_elems == 0)
 			}
 		}
 
