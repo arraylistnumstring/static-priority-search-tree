@@ -81,7 +81,7 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 	// Due to passing of curr_block to calcAllocReportIndOffset(), whole block must iterate if at least one thread has an element to process
 	// Loop unrolling, as number of loops is known explicitly when kernel is called
 #pragma unroll
-	for (unsigned long long i = linblockID() * curr_block.num_threads();
+	for (unsigned long long i = linBlockID() * curr_block.num_threads();
 			i < num_elems; i += gridDim.x * gridDim.y * gridDim.z * curr_block.num_threads())
 	{
 		const bool active_cell = i + curr_block.thread_rank() < num_elems
