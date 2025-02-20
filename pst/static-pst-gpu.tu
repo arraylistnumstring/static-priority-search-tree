@@ -823,7 +823,8 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 																long long &search_ind,
 																long long *const search_inds_arr,
 																unsigned char &search_code,
-																unsigned char *const search_codes_arr)
+																unsigned char *const search_codes_arr
+															)
 {
 	// Splitting of query is only possible if the current node has two children and min_dim1_val <= curr_node_med_dim1_val <= max_dim1_val; the equality on max_dim1_val is for the edge case where a median point may be duplicated, with one copy going to the left subtree and the other to the right subtree
 	if (min_dim1_val <= curr_node_med_dim1_val
@@ -889,7 +890,8 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 																long long &search_ind,
 																long long *const search_inds_arr,
 																unsigned char &search_code,
-																unsigned char *const search_codes_arr)
+																unsigned char *const search_codes_arr
+															)
 {
 	// Report all nodes in left subtree, "recurse" search on right
 	// Because reportAllNodesGlobal() uses less shared memory, prefer launching reportAllNodesGlobal() over launching a search when utilising dynamic parallelism
@@ -946,7 +948,8 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 																long long &search_ind,
 																long long *const search_inds_arr,
 																unsigned char &search_code,
-																unsigned char *const search_codes_arr)
+																unsigned char *const search_codes_arr
+															)
 {
 	// Report all nodes in right subtree, "recurse" search on left
 	// Because reportAllNodesGlobal() uses less shared memory, prefer launching reportAllNodesGlobal() over launching a search when utilising dynamic parallelism
@@ -999,7 +1002,8 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 																const T min_dim2_val,
 																long long &search_ind,
 																long long *const search_inds_arr,
-																unsigned char *const search_codes_arr)
+																unsigned char *const search_codes_arr
+															)
 {
 	if (GPUTreeNode::hasLeftChild(curr_node_bitcode)
 			&& GPUTreeNode::hasRightChild(curr_node_bitcode))
@@ -1009,7 +1013,7 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 									res_arr_d, min_dim2_val,
 									search_inds_arr, search_codes_arr);
 
-		// Prepare for next iteration; because execution is already in this branch, search_codes_arr[threadIdx.x] == REPORT_ALL already
+		// Prepare for next iteration; because thread is already reporting all nodes (subject to the dimension-2 value boundary), search_codes_arr[threadIdx.x] == REPORT_ALL already
 		search_inds_arr[threadIdx.x] = search_ind = GPUTreeNode::getLeftChild(search_ind);
 	}
 	// Node only has a left child; report all on left child
@@ -1039,7 +1043,8 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 																const T max_dim1_val,
 																const T min_dim2_val,
 																long long *const search_inds_arr,
-																unsigned char *const search_codes_arr)
+																unsigned char *const search_codes_arr
+															)
 {
 	// Find next inactive thread by iterating through search_inds_arr atomically
 	// offset < blockDim.x check comes before atomicCAS() operation because short-circuit evaluation and wrapping of result will ensure atomicCAS() does not activate after all potential target indices have been checked (of which none were empty)
@@ -1085,7 +1090,8 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 																RetType *const res_arr_d,
 																const T min_dim2_val,
 																long long *const search_inds_arr,
-																unsigned char *const search_codes_arr)
+																unsigned char *const search_codes_arr
+															)
 {
 	// Find next inactive thread by iterating through search_inds_arr atomically
 	// offset < blockDim.x check comes before atomicCAS() operation because short-circuit evaluation and wrapping of result will ensure atomicCAS() does not activate after all potential target indices have been checked (of which none were empty)
