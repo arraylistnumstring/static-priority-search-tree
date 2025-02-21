@@ -152,6 +152,8 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 				StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::doLeftSearchDelegation(
 																curr_node_med_dim1_val <= max_dim1_val,
 																curr_node_bitcode,
+																tree_root_d, tree_num_elem_slots,
+																res_arr_d, min_dim2_val,
 																target_thread_offset,
 																search_ind, search_inds_arr,
 																search_code, search_codes_arr
