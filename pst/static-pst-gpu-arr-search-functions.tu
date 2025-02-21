@@ -183,5 +183,3 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 	}
 	// End cont_iter loop
 }
-	}
-}

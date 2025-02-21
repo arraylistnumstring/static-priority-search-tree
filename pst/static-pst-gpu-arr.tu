@@ -1027,7 +1027,7 @@ __forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, 
 	if (search_inds_arr[threadIdx.x] != INACTIVE_IND)
 	{
 		search_ind = search_inds_arr[threadIdx.x];
-		search_code_ptr = search_codes_arr[threadIdx.x];
+		search_code = search_codes_arr[threadIdx.x];
 	}
 	// search_inds_arr[threadIdx.x] == INACTIVE_IND
 	// Thread remains inactive; check if all other threads that would lead to this thread's activation are inactive; if so, all processing has completed
