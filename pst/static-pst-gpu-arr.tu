@@ -492,12 +492,20 @@ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::print(std::ostrea
 	}
 
 	const size_t tree_arr_size_num_max_data_id_types = calcTreeArrSizeNumMaxDataIDTypes(num_elems, threads_per_block);
-	size_t tree_arr_size_num_max_Ts;
+	const size_t full_tree_size_num_max_data_id_types = calcTreeSizeNumMaxDataIDTypes(full_tree_num_elem_slots);
+	size_t tree_arr_size_num_Ts;
+	size_t full_tree_size_num_Ts;
 	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value
 					|| SizeOfUAtLeastSizeOfV<T, IDType>)
-		tree_arr_size_num_max_Ts = tree_arr_size_num_max_data_id_types;
+	{
+		tree_arr_size_num_Ts = tree_arr_size_num_max_data_id_types;
+		full_tree_size_num_Ts = full_tree_size_num_max_data_id_types;
+	}
 	else
-		tree_arr_size_num_max_Ts = tree_arr_size_num_max_data_id_types * sizeof(IDType) / sizeof(T);
+	{
+		tree_arr_size_num_Ts = tree_arr_size_num_max_data_id_types * sizeof(IDType) / sizeof(T);
+		full_tree_size_num_Ts = full_tree_size_num_max_data_id_types * sizeof(IDType) / sizeof(T);
+	}
 
 	T *const temp_tree_arr = new T[tree_arr_size_num_max_data_id_types]();
 
@@ -518,7 +526,7 @@ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::print(std::ostrea
 	}
 
 	gpuErrorCheck(cudaMemcpy(temp_tree_arr, tree_arr_d,
-								tree_arr_size_num_max_Ts * sizeof(T), cudaMemcpyDefault),
+								tree_arr_size_num_Ts * sizeof(T), cudaMemcpyDefault),
 					"Error in copying array underlying StaticPSTGPU instance from device to host: ");
 
 	for (auto i = 0; i < num_thread_blocks; i++)
@@ -531,7 +539,7 @@ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::print(std::ostrea
 		const bool all_trees_full = num_elems % full_tree_num_elem_slots == 0;
 
 		// Distinguish between number of element slots in final tree and all other trees if necessary
-		printRecur(os, temp_tree_arr + i * full_tree_size_num_max_Ts, 0,
+		printRecur(os, temp_tree_arr + i * full_tree_size_num_Ts, 0,
 					all_trees_full ? full_tree_num_elem_slots
 						: (i < num_thread_blocks - 1 ? full_tree_num_elem_slots
 							: calcNumElemSlotsPerTree(num_elems % full_tree_num_elem_slots)),
