@@ -192,7 +192,16 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 																		unsigned char *const search_codes_arr
 																	);
 
+		template <typename RetType>
+					requires std::disjunction<
+										std::is_same<RetType, IDType>,
+										std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+						>::value
 		__forceinline__ __device__ static void doReportAllNodesDelegation(const unsigned char curr_node_bitcode,
+																			T *const tree_root_d,
+																			const size_t tree_num_elem_slots,
+																			RetType *const res_arr_d,
+																			const T min_dim2_val,
 																			unsigned &target_thread_offset,
 																			long long &search_ind,
 																			long long *const search_inds_arr,

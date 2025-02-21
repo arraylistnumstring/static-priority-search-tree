@@ -904,7 +904,7 @@ __forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, 
 
 					const unsigned char left_child_bitcode = StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::getBitcodesRoot(tree_root_d, tree_num_elem_slots)[left_child_search_ind];
 
-					// Trigger error if just-processed node has a child to search
+					// Trigger error if just-processed node (which should be a leaf) has a child to search
 					assert(!GPUTreeNode::hasChildren(left_child_bitcode));
 				}
 			}
@@ -934,8 +934,17 @@ __forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, 
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
+template <typename RetType>
+			requires std::disjunction<
+								std::is_same<RetType, IDType>,
+								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
+				>::value
 __forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodesDelegation(
 																const unsigned char curr_node_bitcode,
+																T *const tree_root_d,
+																const size_t tree_num_elem_slots,
+																RetType *const res_arr_d,
+																const T min_dim2_val,
 																unsigned &target_thread_offset,
 																long long &search_ind,
 																long long *const search_inds_arr,
@@ -955,6 +964,35 @@ __forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, 
 		}
 		else
 		{
+			const long long right_child_search_ind = GPUTreeNode::getRightChild(search_ind);
+			const T right_child_dim2_val = StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::getDim2ValsRoot(tree_root_d, tree_num_elem_slots)[right_child_search_ind];
+
+			// Check if right child, which cannot have a thread delegated to it, must be reported
+			if (right_child_dim2_val >= min_dim2_val)
+			{
+				// Use coalesced threads to allocate space, as not all threads are guaranteed to need to run this code for reporting right leaf children
+				// Intrawarp prefix sum: each thread here has one active node to report
+				const unsigned long long res_ind_to_access = calcAllocReportIndOffset<unsigned long long>(1);
+
+				if constexpr (std::is_same<RetType, IDType>::value)
+				{
+					res_arr_d[res_ind_to_access]
+						= StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(tree_root_d, tree_num_elem_slots)[search_ind];
+				}
+				else
+				{
+					res_arr_d[res_ind_to_access].dim1_val = StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::getDim1ValsRoot(tree_root_d, tree_num_elem_slots)[right_child_search_ind];
+					res_arr_d[res_ind_to_access].dim2_val = right_child_dim2_val;
+					if constexpr (HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
+						res_arr_d[res_ind_to_access].id
+							= StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(tree_root_d, tree_num_elem_slots)[search_ind];
+				}
+
+				const unsigned char right_child_bitcode = StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::getBitcodesRoot(tree_root_d, tree_num_elem_slots)[right_child_search_ind];
+
+				// Trigger error if just-processed node (which should be a leaf) has a child to search
+				assert(!GPUTreeNode::hasChildren(right_child_bitcode));
+			}
 		}
 
 		// Prepare for next iteration; because thread is already reporting all nodes (subject to the dimension-2 value boundary), search_codes_arr[threadIdx.x] == REPORT_ALL already
