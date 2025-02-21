@@ -492,15 +492,14 @@ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::print(std::ostrea
 	}
 
 	const size_t tree_arr_size_num_max_data_id_types = calcTreeArrSizeNumMaxDataIDTypes(num_elems, threads_per_block);
-	T *temp_tree_arr;
-	// Use of () after new and new[] causes value-initialisation (to 0) starting in C++03; needed for any nodes that technically contain no data
+	size_t tree_arr_size_num_max_Ts;
 	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value
 					|| SizeOfUAtLeastSizeOfV<T, IDType>)
-		// No IDs present or sizeof(T) >= sizeof(IDType), so calculate total array size in units of sizeof(T) so that datatype T's alignment requirements will be satisfied
-		temp_tree_arr = new T[tree_arr_size_num_max_data_id_types]();
+		tree_arr_size_num_max_Ts = tree_arr_size_num_max_data_id_types;
 	else
-		// sizeof(IDType) > sizeof(T), so calculate total array size in units of sizeof(IDType) so that datatype IDType's alignment requirements will be satisfied
-		temp_tree_arr = reinterpret_cast<T *>(new IDType[tree_arr_size_num_max_data_id_types]());
+		tree_arr_size_num_max_Ts = tree_arr_size_num_max_data_id_types * sizeof(IDType) / sizeof(T);
+
+	T *const temp_tree_arr = new T[tree_arr_size_num_max_data_id_types]();
 
 	if (temp_tree_arr == nullptr)
 	{
@@ -518,19 +517,9 @@ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::print(std::ostrea
 					);
 	}
 
-	if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value
-					|| SizeOfUAtLeastSizeOfV<T, IDType>)
-	{
-		gpuErrorCheck(cudaMemcpy(temp_tree_arr, tree_arr_d,
-									tree_arr_size_num_max_data_id_types * sizeof(T), cudaMemcpyDefault),
-						"Error in copying array underlying StaticPSTGPU instance from device to host: ");
-	}
-	else
-	{
-		gpuErrorCheck(cudaMemcpy(temp_tree_arr, tree_arr_d,
-									tree_arr_size_num_max_data_id_types * sizeof(IDType), cudaMemcpyDefault),
-						"Error in copying array underlying StaticPSTGPU instance from device to host: ");
-	}
+	gpuErrorCheck(cudaMemcpy(temp_tree_arr, tree_arr_d,
+								tree_arr_size_num_max_Ts * sizeof(T), cudaMemcpyDefault),
+					"Error in copying array underlying StaticPSTGPU instance from device to host: ");
 
 	for (auto i = 0; i < num_thread_blocks; i++)
 	{
@@ -542,24 +531,11 @@ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::print(std::ostrea
 		const bool all_trees_full = num_elems % full_tree_num_elem_slots == 0;
 
 		// Distinguish between number of element slots in final tree and all other trees if necessary
-		if constexpr (!HasID<PointStructTemplate<T, IDType, num_IDs>>::value
-						|| SizeOfUAtLeastSizeOfV<T, IDType>)
-		{
-			printRecur(os, temp_tree_arr + full_tree_size_num_max_data_id_types, 0,
-						all_trees_full ? full_tree_num_elem_slots
-							: (i < num_thread_blocks - 1 ? full_tree_num_elem_slots
-								: calcNumElemSlotsPerTree(num_elems % full_tree_num_elem_slots)),
-						prefix, child_prefix);
-		}
-		else
-		{
-			printRecur(os, temp_tree_arr + full_tree_size_num_max_data_id_types * sizeof(IDType) / sizeof(T),
-						0,
-						all_trees_full ? full_tree_num_elem_slots
-							: (i < num_thread_blocks - 1 ? full_tree_num_elem_slots
-								: calcNumElemSlotsPerTree(num_elems % full_tree_num_elem_slots)),
-						prefix, child_prefix);
-		}
+		printRecur(os, temp_tree_arr + i * full_tree_size_num_max_Ts, 0,
+					all_trees_full ? full_tree_num_elem_slots
+						: (i < num_thread_blocks - 1 ? full_tree_num_elem_slots
+							: calcNumElemSlotsPerTree(num_elems % full_tree_num_elem_slots)),
+					prefix, child_prefix);
 		std::cout << "\n\n";
 	}
 
