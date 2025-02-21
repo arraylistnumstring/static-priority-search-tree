@@ -3,7 +3,7 @@
 
 template <typename U>
 	requires std::unsigned_integral<U>
-__forceinline__ __host__ __device__ U expOfLeastPowerOf2(const U num)
+__forceinline__ __host__ __device__ U expOfMaxPowerOf2BoundedBy(const U num)
 {
 	unsigned exp = 0;
 	// Repeat loop until exp is sufficiently large that 2^exp >= num
@@ -14,7 +14,7 @@ __forceinline__ __host__ __device__ U expOfLeastPowerOf2(const U num)
 
 template <typename U>
 	requires std::unsigned_integral<U>
-__forceinline__ __host__ __device__ U expOfNextGreaterPowerOf2(const U num)
+__forceinline__ __host__ __device__ U expOfMinPowerOf2GreaterThan(const U num)
 {
 	/*
 		Smallest power of 2 greater than num is equal to 2^ceil(lg(num + 1))
@@ -29,17 +29,17 @@ __forceinline__ __host__ __device__ U expOfNextGreaterPowerOf2(const U num)
 // Helper function for calculating the smallest power of 2 greater than or equal to num
 template <typename U>
 	requires std::unsigned_integral<U>
-__forceinline__ __host__ __device__ U leastPowerOf2(const U num)
+__forceinline__ __host__ __device__ U MaxPowerOf2BoundedBy(const U num)
 {
-	return 1 << expOfLeastPowerOf2(num);
+	return 1 << expOfMaxPowerOf2BoundedBy(num);
 };
 
 // Helper function for calculating the next power of 2 greater than num
 template <typename U>
 	requires std::unsigned_integral<U>
-__forceinline__ __host__ __device__ U nextGreaterPowerOf2(const U num)
+__forceinline__ __host__ __device__ U minPowerOf2GreaterThan(const U num)
 {
-	return 1 << expOfNextGreaterPowerOf2(num);
+	return 1 << expOfMinPowerOf2GreaterThan(num);
 };
 
 

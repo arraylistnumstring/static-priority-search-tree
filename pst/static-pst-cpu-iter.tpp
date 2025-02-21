@@ -14,8 +14,8 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 			typename IDType, size_t num_IDs>
 StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::StaticPSTCPUIter(PointStructTemplate<T, IDType, num_IDs> *const pt_arr, size_t num_elems)
 	// Member initialiser list must be followed by definition
-	// Number of element slots in each container subarray is nextGreaterPowerOf2(num_elems) - 1
-	: num_elem_slots(num_elems == 0 ? 0 : nextGreaterPowerOf2(num_elems) - 1),
+	// Number of element slots in each container subarray is minPowerOf2GreaterThan(num_elems) - 1
+	: num_elem_slots(num_elems == 0 ? 0 : minPowerOf2GreaterThan(num_elems) - 1),
 	num_elems(num_elems)
 {
 	if (num_elems == 0)
@@ -125,7 +125,7 @@ StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::StaticPSTCPUIter(Poin
 		Explicitly printed to sanity-check the corresponding code in StaticPSTGPU
 	*/
 	const size_t cudaWarpSize = 32;
-	std::cout << "Would call populateTree() with " << 1 << " block, " << nextGreaterPowerOf2(cudaWarpSize - 1) << " threads, " << (nextGreaterPowerOf2(cudaWarpSize - 1) * sizeof(size_t) << 1) << " B of shared memory\n";
+	std::cout << "Would call populateTree() with " << 1 << " block, " << minPowerOf2GreaterThan(cudaWarpSize - 1) << " threads, " << (minPowerOf2GreaterThan(cudaWarpSize - 1) * sizeof(size_t) << 1) << " B of shared memory\n";
 #endif
 
 #ifdef CONSTR_TIMED
@@ -789,7 +789,7 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 			typename IDType, size_t num_IDs>
 template <typename U>
 	requires std::unsigned_integral<U>
-U StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::expOfNextGreaterPowerOf2(const U num)
+U StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::expOfMinPowerOf2GreaterThan(const U num)
 {
 	/*
 		Smallest power of 2 greater than num is equal to 2^ceil(lg(num + 1))

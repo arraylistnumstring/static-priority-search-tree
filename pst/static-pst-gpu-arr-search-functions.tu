@@ -72,7 +72,7 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 
 	long long search_ind = search_inds_arr[threadIdx.x];
 	unsigned char search_code = search_codes_arr[threadIdx.x];
-	unsigned target_thread_offset = nextGreaterPowerOf2(threadIdx.x);
+	unsigned target_thread_offset = minPowerOf2GreaterThan(threadIdx.x);
 
 	while (cont_iter)
 	{
@@ -171,5 +171,32 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 															);
 			}
 		}
+
+		/*
+			No curr_block.sync() call necessary here:
+				detInactivity() has no false positives (early, incorrect loop exits):
+					detInactivity() does not exit even without a curr_block.sync() call here
+						<=> There are active threads after previous curr_block.sync() call
+						<=> There are some active threads when entering the active -> active, INACTIVE ~> active phase
+								(By the nature of the active -> active, INACTIVE ~> active phase, such threads will still be active upon reaching this line)
+						<=> There are active threads in the search, i.e. search is ongoing (at least in this block, which is the only source of nodes to search that can be communicated to threads in this block anyway)
+						<=> Loop should continue
+						<=> cont_iter == true
+				detInactivity() has no false negatives (additional, unnecessary loops):
+					Unnecessary loops can only occur when threads are incorrectly polled as active
+						<=> detInactivity() runs in some threads before all potential active -> inactive transition computations have completed
+					This is impossible, as active -> inactive transition computations occur before the previous curr_block.sync() call and will thus always complete for all threads before any thread calls detInactivity() in this iteration
+		*/
+
+		StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::detInactivity(
+													target_thread_offset, search_ind,
+													search_inds_arr, cont_iter,
+													&search_code, search_codes_arr
+												);
+
+		// No curr_block.sync() call is necessary between detInactivity() and the end of the loop, as it can only potentially overlap with the section where active threads become inactive; this poses no issue for correctness, as if there is still work to be done, at least one thread will be guaranteed to remain active and therefore no inactive threads will exit the processing loop
+	}
+	// End cont_iter loop
+}
 	}
 }

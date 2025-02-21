@@ -30,7 +30,7 @@ void populateTree (T *const root, const size_t num_elem_slots,
 			First node, in level 1 (1-indexed), uses the original primary/secondary designations, and subsequent levels alternate
 			Must use 1-indexed location as input parameter in order for all nodes of the same level to require the same amount of bitshifting; with this scheme, the first level requires 1 bitshift, the second requires 2, etc. As all odd levels use the original designations of primary and secondary arrays and because calculated output values are either 0 or 1, which translate directly to true (1) or false (0), no equality check is needed.
 		*/
-		if (StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::expOfNextGreaterPowerOf2(target_node_inds.top() + 1) % 2)
+		if (StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::expOfMinPowerOf2GreaterThan(target_node_inds.top() + 1) % 2)
 		{
 			curr_iter_dim2_val_ind_arr = dim2_val_ind_arr;
 			curr_iter_dim2_val_ind_arr_secondary = dim2_val_ind_arr_secondary;

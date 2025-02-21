@@ -20,7 +20,7 @@ StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPU(PointStructT
 		Minimum number of array slots necessary to construct any complete tree with num_elems elements is 1 less than the smallest power of 2 greater than num_elems
 		Tree is fully balanced by construction, with the placement of nodes in the partially empty last row being deterministic, but not necessarily with the same alignment for a given total number of elements
 	*/
-	// Number of element slots in each container subarray is nextGreaterPowerOf2(num_elems) - 1
+	// Number of element slots in each container subarray is minPowerOf2GreaterThan(num_elems) - 1
 	: num_elem_slots(num_elems == 0 ? 0 : calcNumElemSlots(num_elems)),
 	num_elems(num_elems),
 	dev_ind(dev_ind),
@@ -1146,7 +1146,7 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 	// Checking all other threads is necessary in order to determine whether to exit overall loop because for blocks with sizes larger than one warp, warp-based scheduling means that threads in some warps may not have completed processing their subtrees while threads in other warps may have already done so; thus, with redelegation of resources, there is no guarantee of any single specific thread being an indicator for the completion status of the block as a whole
 	else if (search_ind == INACTIVE_IND)
 	{
-		int i = 0;
+		unsigned i = 0;
 		for (i = 0; i < blockDim.x; i++)
 			if (search_inds_arr[i] != INACTIVE_IND)
 				break;
@@ -1162,7 +1162,7 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 			typename IDType, size_t num_IDs>
 inline size_t StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::calcTotArrSizeNumMaxDataIDTypes(const size_t num_elems)
 {
-	// Number of element slots in each container subarray is nextGreaterPowerOf2(num_elems) - 1
+	// Number of element slots in each container subarray is minPowerOf2GreaterThan(num_elems) - 1
 	// Class member num_elem_slots is not available due to being in a static function, so must re-calculate it here
 	const size_t num_elem_slots = calcNumElemSlots(num_elems);
 

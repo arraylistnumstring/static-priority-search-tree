@@ -348,8 +348,8 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 				Minimum number of array slots necessary to construct any complete tree with num_elems elements is 1 less than the smallest power of 2 greater than num_elems
 				Tree is fully balanced by construction, with the placement of nodes in the partially empty last row being deterministic, but input-dependent
 			*/
-			// Number of element slots in each container subarray is nextGreaterPowerOf2(num_elems) - 1
-			return nextGreaterPowerOf2(num_elems) - 1;
+			// Number of element slots in each container subarray is minPowerOf2GreaterThan(num_elems) - 1
+			return minPowerOf2GreaterThan(num_elems) - 1;
 		};
 
 		// Calculate size of array allocated for the tree in units of number of elements of type T or IDType, whichever is larger

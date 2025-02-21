@@ -1011,13 +1011,47 @@ __forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, 
 }
 
 
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
+__forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::detInactivity(
+														unsigned target_thread_offset,
+														long long &search_ind,
+														long long *const search_inds_arr,
+														bool &cont_iter,
+														unsigned char &search_code,
+														unsigned char *const search_codes_arr
+													)
+{
+	// INACTIVE threads check whether they should be active in the next iteration; if not, and this thread will never be activated, set iteration toggle to false
+
+	// Thread has been assigned work; update local variables accordingly
+	if (search_ind == INACTIVE_IND
+			&& search_inds_arr[threadIdx.x] != INACTIVE_IND)
+	{
+		search_ind = search_inds_arr[threadIdx.x];
+		search_code_ptr = search_codes_arr[threadIdx.x];
+	}
+	// Thread remains inactive; check if all other threads that would lead to this thread's activation are inactive; if so, all processing has completed
+	else if (search_ind == INACTIVE_IND)
+	{
+		auto source_thread_offset = target_thread_offset >> 1;
+		auto source_thread_id = threadIdx.x - source_thread_offset;
+		while (source_thread_offset > 0)
+		{
+			source_thread_offset >>= 1;
+			source_thread_id -= source_thread_offset;
+		}
+	}
+}
+
+
 // Data footprint calculation functions
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
 inline size_t StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcTreeArrSizeNumMaxDataIDTypes(const size_t num_elems, const unsigned threads_per_block)
 {
-	// Full trees are trees that are complete and have nextGreaterPowerOf2(threads_per_block) - 1 elements
+	// Full trees are trees that are complete and have minPowerOf2GreaterThan(threads_per_block) - 1 elements
 	const size_t full_tree_num_elem_slots = calcNumElemSlotsPerTree(threads_per_block);
 	const size_t full_tree_size_num_max_data_id_types = calcTreeSizeNumMaxDataIDTypes(full_tree_num_elem_slots);
 
