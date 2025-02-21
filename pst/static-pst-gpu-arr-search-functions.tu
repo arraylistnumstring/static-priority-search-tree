@@ -175,7 +175,7 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 			StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::detInactivity(search_ind,
 																					search_inds_arr,
 																					cont_iter,
-																					&search_code,
+																					search_code,
 																					search_codes_arr
 																				);
 
