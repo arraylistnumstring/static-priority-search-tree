@@ -1014,7 +1014,6 @@ __forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
 __forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::detInactivity(
-														unsigned target_thread_offset,
 														long long &search_ind,
 														long long *const search_inds_arr,
 														bool &cont_iter,
@@ -1025,21 +1024,28 @@ __forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, 
 	// INACTIVE threads check whether they should be active in the next iteration; if not, and this thread will never be activated, set iteration toggle to false
 
 	// Thread has been assigned work; update local variables accordingly
-	if (search_ind == INACTIVE_IND
-			&& search_inds_arr[threadIdx.x] != INACTIVE_IND)
+	if (search_inds_arr[threadIdx.x] != INACTIVE_IND)
 	{
 		search_ind = search_inds_arr[threadIdx.x];
 		search_code_ptr = search_codes_arr[threadIdx.x];
 	}
+	// search_inds_arr[threadIdx.x] == INACTIVE_IND
 	// Thread remains inactive; check if all other threads that would lead to this thread's activation are inactive; if so, all processing has completed
-	else if (search_ind == INACTIVE_IND)
+	else if (threadIdx.x == 0)
+		cont_iter = false;
+	else
 	{
-		auto source_thread_offset = target_thread_offset >> 1;
-		auto source_thread_id = threadIdx.x - source_thread_offset;
-		while (source_thread_offset > 0)
+		for (auto trigger_thread_offset = maxPowerOf2AtMost(threadIdx.x),
+					source_thread_id = threadIdx.x - trigger_thread_offset;
+				trigger_thread_offset > 0;
+				trigger_thread_offset = maxPowerOf2AtMost(source_thread_id),
+					source_thread_id -= trigger_thread_offset
+			)
 		{
-			source_thread_offset >>= 1;
-			source_thread_id -= source_thread_offset;
+			if (search_inds_arr[source_thread_id] != INACTIVE_IND)
+				break;
+			else if (source_thread_id == 0) 	// && search_inds_arr[source_thread_id] == INACTIVE_IND
+				cont_iter = false;
 		}
 	}
 }

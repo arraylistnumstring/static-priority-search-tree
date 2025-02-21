@@ -1134,8 +1134,7 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 	// INACTIVE threads check whether they should be active in the next iteration; if not, and all threads are inactive, set iteration toggle to false
 
 	// Thread has been assigned work; update local variables accordingly
-	if (search_ind == INACTIVE_IND
-			&& search_inds_arr[threadIdx.x] != INACTIVE_IND)
+	if (search_inds_arr[threadIdx.x] != INACTIVE_IND)
 	{
 		search_ind = search_inds_arr[threadIdx.x];
 		// These two should always have or not have values of nullptr at the same time, but check both just in case
@@ -1143,9 +1142,9 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 			*search_code_ptr = search_codes_arr[threadIdx.x];
 	}
 	// Thread remains inactive; check if all other threads are inactive; if so, all processing has completed
-	// Checking all other threads is necessary in order to determine whether to exit overall loop because for blocks with sizes larger than one warp, warp-based scheduling means that threads in some warps may not have completed processing their subtrees while threads in other warps may have already done so; thus, with redelegation of resources, there is no guarantee of any single specific thread being an indicator for the completion status of the block as a whole
-	else if (search_ind == INACTIVE_IND)
+	else	// search_inds_arr[threadIdx.x] == INACTIVE_IND
 	{
+		// Checking all other threads is necessary in order to determine whether to exit overall loop because for blocks with sizes larger than one warp, warp-based scheduling means that threads in some warps may not have completed processing their subtrees while threads in other warps may have already done so; thus, with redelegation of resources, there is no guarantee of any single specific thread being an indicator for the completion status of the block as a whole
 		unsigned i = 0;
 		for (i = 0; i < blockDim.x; i++)
 			if (search_inds_arr[i] != INACTIVE_IND)
