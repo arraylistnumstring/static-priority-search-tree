@@ -850,7 +850,7 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 			search_codes_arr[threadIdx.x] = search_code = SearchCodes::RIGHT_SEARCH;
 		}
 		// No left child, so perform a two-sided left query on the right child
-		else
+		else if (GPUTreeNode::hasRightChild(curr_node_bitcode))
 		{
 			search_inds_arr[threadIdx.x] = search_ind = GPUTreeNode::getRightChild(search_ind);
 			search_codes_arr[threadIdx.x] = search_code = SearchCodes::LEFT_SEARCH;

@@ -182,16 +182,8 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 		}
 
 		/*
-			No curr_block.sync() call necessary here:
-				Early action of detInactivity() causes no false positives (early, incorrect loop exits):
-					detInactivity() does not cause an early, incorrect loop exit even without a curr_block.sync() call here
-						<=> There are active threads after previous curr_block.sync() call
-						<=> There are some active threads when entering the active -> active, INACTIVE ~> active phase
-							(By the nature of the active -> active, INACTIVE ~> active phase, such threads will still be active upon reaching this line)
-						<=> There are active threads in the search, i.e. search is ongoing (at least in this block, which is the only source of nodes to search that can be communicated to threads in this block anyway)
-						<=> Loop should continue
-						<=> cont_iter == true
-			However, a curr_block.sync() call improves efficiency, as it ensures that all active threads have written to an inactive thread's shared memory slot (if its search splits) before any inactive threads poll said shared memory slot, preventing inactive threads from returning to the beginning of the loop and doing nothing in that iteration other than participate in warp shuffles and the prior curr_block.sync() call, even though there is work for it to be done.
+			curr_block.sync() call necessary here:
+				If an active thread deactivates itself in the lines right before the prior curr_block.sync() call while other active threads have not completed their delegation step, then when the delegating threads search for an INACTIVE thread to which to delegate, delegators may incorrectly delegate to an INACTIVE thread that is waiting at the curr_block.sync() call. The delegatee will then proceed to be incorrectly activated and incorrectly continue the search at the node that caused it to deactivate, potentially failing to report search-satisfying nodes (the node delegated to it and the subtree rooted there), as well as report garbage values from its incorrectly continued search
 		*/
 		curr_block.sync();
 
@@ -350,17 +342,10 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 															);
 			}
 		}
+
 		/*
-			No curr_block.sync() call necessary here:
-				Early action of detInactivity() causes no false positives (early, incorrect loop exits):
-					detInactivity() does not cause an early, incorrect loop exit even without a curr_block.sync() call here
-						<=> There are active threads after previous curr_block.sync() call
-						<=> There are some active threads when entering the active -> active, INACTIVE ~> active phase
-							(By the nature of the active -> active, INACTIVE ~> active phase, such threads will still be active upon reaching this line)
-						<=> There are active threads in the search, i.e. search is ongoing (at least in this block, which is the only source of nodes to search that can be communicated to threads in this block anyway)
-						<=> Loop should continue
-						<=> cont_iter == true
-			However, a curr_block.sync() call improves efficiency, as it ensures that all active threads have written to an inactive thread's shared memory slot (if its search splits) before any inactive threads poll said shared memory slot, preventing inactive threads from returning to the beginning of the loop and doing nothing in that iteration other than participate in warp shuffles and the prior curr_block.sync() call, even though there is work for it to be done.
+			curr_block.sync() call necessary here:
+				If an active thread deactivates itself in the lines right before the prior curr_block.sync() call while other active threads have not completed their delegation step, then when the delegating threads search for an INACTIVE thread to which to delegate, delegators may incorrectly delegate to an INACTIVE thread that is waiting at the curr_block.sync() call. The delegatee will then proceed to be incorrectly activated and incorrectly continue the search at the node that caused it to deactivate, potentially failing to report search-satisfying nodes (the node delegated to it and the subtree rooted there), as well as report garbage values from its incorrectly continued search
 		*/
 		curr_block.sync();
 
@@ -521,16 +506,8 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 		}
 
 		/*
-			No curr_block.sync() call necessary here:
-				Early action of detInactivity() causes no false positives (early, incorrect loop exits):
-					detInactivity() does not cause an early, incorrect loop exit even without a curr_block.sync() call here
-						<=> There are active threads after previous curr_block.sync() call
-						<=> There are some active threads when entering the active -> active, INACTIVE ~> active phase
-							(By the nature of the active -> active, INACTIVE ~> active phase, such threads will still be active upon reaching this line)
-						<=> There are active threads in the search, i.e. search is ongoing (at least in this block, which is the only source of nodes to search that can be communicated to threads in this block anyway)
-						<=> Loop should continue
-						<=> cont_iter == true
-			However, a curr_block.sync() call improves efficiency, as it ensures that all active threads have written to an inactive thread's shared memory slot (if its search splits) before any inactive threads poll said shared memory slot, preventing inactive threads from returning to the beginning of the loop and doing nothing in that iteration other than participate in warp shuffles and the prior curr_block.sync() call, even though there is work for it to be done.
+			curr_block.sync() call necessary here:
+				If an active thread deactivates itself in the lines right before the prior curr_block.sync() call while other active threads have not completed their delegation step, then when the delegating threads search for an INACTIVE thread to which to delegate, delegators may incorrectly delegate to an INACTIVE thread that is waiting at the curr_block.sync() call. The delegatee will then proceed to be incorrectly activated and incorrectly continue the search at the node that caused it to deactivate, potentially failing to report search-satisfying nodes (the node delegated to it and the subtree rooted there), as well as report garbage values from its incorrectly continued search
 		*/
 		curr_block.sync();
 
@@ -661,44 +638,17 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 		// If thread remains active, it must have at least one child
 		if (search_ind != StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND)
 		{
-			if (GPUTreeNode::hasLeftChild(curr_node_bitcode)
-					&& GPUTreeNode::hasRightChild(curr_node_bitcode))
-			{
-				// Delegate reporting of all nodes in right child to another thread and/or block
-				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::splitReportAllNodesWork(root_d, num_elem_slots,
-															GPUTreeNode::getRightChild(search_ind),
-															res_arr_d, min_dim2_val,
-															search_inds_arr);
-
-				// Prepare to report all nodes in the next iteration
-				search_inds_arr[threadIdx.x] = search_ind
-						= GPUTreeNode::getLeftChild(search_ind);
-			}
-			// Node only has a left child; report all on left child
-			else if (GPUTreeNode::hasLeftChild(curr_node_bitcode))
-			{
-				search_inds_arr[threadIdx.x] = search_ind
-					= GPUTreeNode::getLeftChild(search_ind);
-			}
-			// Node only has a right child; report all on right child
-			else if (GPUTreeNode::hasRightChild(curr_node_bitcode))
-			{
-				search_inds_arr[threadIdx.x] = search_ind
-					= GPUTreeNode::getRightChild(search_ind);
-			}
+			StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodesDelegation(
+																curr_node_bitcode,
+																root_d, num_elem_slots,
+																res_arr_d, min_dim2_val,
+																search_ind, search_inds_arr
+															);
 		}
 
 		/*
-			No curr_block.sync() call necessary here:
-				Early action of detInactivity() causes no false positives (early, incorrect loop exits):
-					detInactivity() does not cause an early, incorrect loop exit even without a curr_block.sync() call here
-						<=> There are active threads after previous curr_block.sync() call
-						<=> There are some active threads when entering the active -> active, INACTIVE ~> active phase
-							(By the nature of the active -> active, INACTIVE ~> active phase, such threads will still be active upon reaching this line)
-						<=> There are active threads in the search, i.e. search is ongoing (at least in this block, which is the only source of nodes to search that can be communicated to threads in this block anyway)
-						<=> Loop should continue
-						<=> cont_iter == true
-			However, a curr_block.sync() call improves efficiency, as it ensures that all active threads have written to an inactive thread's shared memory slot (if its search splits) before any inactive threads poll said shared memory slot, preventing inactive threads from returning to the beginning of the loop and doing nothing in that iteration other than participate in warp shuffles and the prior curr_block.sync() call, even though there is work for it to be done.
+			curr_block.sync() call necessary here:
+				If an active thread deactivates itself in the lines right before the prior curr_block.sync() call while other active threads have not completed their delegation step, then when the delegating threads search for an INACTIVE thread to which to delegate, delegators may incorrectly delegate to an INACTIVE thread that is waiting at the curr_block.sync() call. The delegatee will then proceed to be incorrectly activated and incorrectly continue the search at the node that caused it to deactivate, potentially failing to report search-satisfying nodes (the node delegated to it and the subtree rooted there), as well as report garbage values from its incorrectly continued search
 		*/
 		curr_block.sync();
 
