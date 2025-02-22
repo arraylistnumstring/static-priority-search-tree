@@ -904,16 +904,12 @@ __forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, 
 		}
 		// Node only has a right child; search on right child
 		else if (GPUTreeNode::hasRightChild(curr_node_bitcode))
-		{
 			search_inds_arr[threadIdx.x] = search_ind = GPUTreeNode::getRightChild(search_ind);
-		}
 	}
 	// !split_range_poss
 	// Only left subtree can possibly contain valid entries; search left subtree
 	else if (GPUTreeNode::hasLeftChild(curr_node_bitcode))
-	{
 		search_inds_arr[threadIdx.x] = search_ind = GPUTreeNode::getLeftChild(search_ind);
-	}
 }
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
@@ -984,14 +980,10 @@ __forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, 
 	}
 	// Node only has a left child; report all on left child
 	else if (GPUTreeNode::hasLeftChild(curr_node_bitcode))
-	{
 		search_inds_arr[threadIdx.x] = search_ind = GPUTreeNode::getLeftChild(search_ind);
-	}
 	// Node only has a right child; report all on right child
 	else if (GPUTreeNode::hasRightChild(curr_node_bitcode))
-	{
 		search_inds_arr[threadIdx.x] = search_ind = GPUTreeNode::getRightChild(search_ind);
-	}
 }
 
 
