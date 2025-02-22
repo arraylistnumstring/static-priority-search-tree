@@ -1039,6 +1039,27 @@ __forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, 
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
+__forceinline__ __device__ size_t StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcCurrTreeNumElemSlots(const size_t num_elems, const size_t full_tree_num_elem_slots)
+{
+	if (num_elems % full_tree_num_elem_slots == 0)		// All trees are full trees
+		tree_num_elem_slots = full_tree_num_elem_slots;
+	else	// All trees except last are full trees
+	{
+		// All blocks except last populate full trees
+		if (blockIdx.x < gridDim.x - 1)
+			tree_num_elem_slots = full_tree_num_elem_slots;
+		// Last tree has (num_elems % full_tree_num_elem_slots) elements
+		else
+		{
+			const size_t last_tree_num_elems = num_elems % full_tree_num_elem_slots;
+
+			tree_num_elem_slots = StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcNumElemSlotsPerTree(last_tree_num_elems);
+		}
+	}
+}
+
+template <typename T, template<typename, typename, size_t> class PointStructTemplate,
+			typename IDType, size_t num_IDs>
 inline size_t StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcTreeArrSizeNumMaxDataIDTypes(const size_t num_elems, const unsigned threads_per_block)
 {
 	// Full trees are trees that are complete and have minPowerOf2GreaterThan(threads_per_block) - 1 elements

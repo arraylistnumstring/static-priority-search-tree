@@ -248,6 +248,9 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 
 		// Data footprint calculation functions
 
+		// Helper function for each thread to calculate the number of element slots in the tree it is assigned
+		__forceinline__ __device__ static size_t calcCurrTreeNumElemSlots(const size_t num_elems, const size_t full_tree_num_elem_slots);
+
 		// Helper function for calculating minimum number of array slots necessary to construct a complete tree with num_elems elements
 		__forceinline__ __host__ __device__ static size_t calcNumElemSlotsPerTree(const size_t num_elems_per_tree)
 		{

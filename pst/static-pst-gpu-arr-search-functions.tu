@@ -46,21 +46,7 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 	search_codes_arr[threadIdx.x] = StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::LEFT_SEARCH;
 
 	// Calculate number of slots in this thread block's assigned tree
-	size_t tree_num_elem_slots;
-	if (num_elems % full_tree_num_elem_slots == 0)		// All trees are full trees
-		tree_num_elem_slots = full_tree_num_elem_slots;
-	else	// All trees except last are full trees
-	{
-		if (blockIdx.x < gridDim.x - 1)
-			tree_num_elem_slots = full_tree_num_elem_slots;
-		// Last tree has (num_elems % full_tree_num_elem_slots) elements
-		else
-		{
-			const size_t last_tree_num_elems = num_elems % full_tree_num_elem_slots;
-
-			tree_num_elem_slots = StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcNumElemSlotsPerTree(last_tree_num_elems);
-		}
-	}
+	const size_t tree_num_elem_slots = StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcCurrTreeNumElemSlots(num_elems, full_tree_num_elem_slots);
 
 	// Note: would only need to have one thread block do multiple trees when the number of trees exceeds 2^31 - 1, i.e. the maximum number of blocks permitted in a grid
 	T *const tree_root_d = tree_arr_d + blockIdx.x * full_tree_size_num_Ts;
@@ -143,8 +129,7 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 		// All threads who would become inactive in this iteration have finished; synchronisation is utilised because one must be certain that INACTIVE ~> active writes (with ~> denoting a state change that is externally triggered, i.e. triggered by other threads) are not inadvertently overwritten by active -> INACTIVE writes in lines of code above this one
 		curr_block.sync();
 
-		// active threads -> active threads
-		// INACTIVE threads -> active threads (activation by active threads only)
+		// active threads -> active threads; each active thread whose search splits sends a "wake-up" message to an INACTIVE thread's shared memory slot, for that (currently INACTIVE) thread to later read and become active
 		if (search_ind != StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND)
 		{
 			if (search_code == StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::LEFT_SEARCH)	// Currently a search-type query
