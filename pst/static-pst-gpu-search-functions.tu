@@ -130,8 +130,7 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 		curr_block.sync();
 
 
-		// active threads -> active threads
-		// INACTIVE threads -> active threads (external reactivation by active threads only)
+		// active threads -> active threads; each active thread whose search splits sends a "wake-up" message to an INACTIVE thread's shared memory slot, for that (currently INACTIVE) thread to later read and become active
 		if (search_ind != StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND)
 		{
 			if (search_code == StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::THREE_SEARCH)	// Currently a three-sided query
@@ -181,7 +180,23 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 														);
 			}
 		}
-		else	// search_ind == INACTIVE_IND
+
+		/*
+			No curr_block.sync() call necessary here:
+				Early action of detInactivity() causes no false positives (early, incorrect loop exits):
+					detInactivity() does not cause an early, incorrect loop exit even without a curr_block.sync() call here
+						<=> There are active threads after previous curr_block.sync() call
+						<=> There are some active threads when entering the active -> active, INACTIVE ~> active phase
+							(By the nature of the active -> active, INACTIVE ~> active phase, such threads will still be active upon reaching this line)
+						<=> There are active threads in the search, i.e. search is ongoing (at least in this block, which is the only source of nodes to search that can be communicated to threads in this block anyway)
+						<=> Loop should continue
+						<=> cont_iter == true
+			However, a curr_block.sync() call improves efficiency, as it ensures that all active threads have written to an inactive thread's shared memory slot (if its search splits) before any inactive threads poll said shared memory slot, preventing inactive threads from returning to the beginning of the loop and doing nothing in that iteration other than participate in warp shuffles and the prior curr_block.sync() call, even though there is work for it to be done.
+		*/
+		curr_block.sync();
+
+
+		if (search_ind == StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND)
 			StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::detInactivity(search_ind,
 																					search_inds_arr,
 																					cont_iter,
@@ -310,8 +325,7 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 		curr_block.sync();
 
 
-		// active threads -> active threads
-		// INACTIVE threads -> active threads (external reactivation by active threads only)
+		// active threads -> active threads; each active thread whose search splits sends a "wake-up" message to an INACTIVE thread's shared memory slot, for that (currently INACTIVE) thread to later read and become active
 		if (search_ind != StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND)
 		{
 			if (search_code == StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::LEFT_SEARCH)	// Currently a search-type query
@@ -336,7 +350,22 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 															);
 			}
 		}
-		else	// search_ind == INACTIVE_IND
+		/*
+			No curr_block.sync() call necessary here:
+				Early action of detInactivity() causes no false positives (early, incorrect loop exits):
+					detInactivity() does not cause an early, incorrect loop exit even without a curr_block.sync() call here
+						<=> There are active threads after previous curr_block.sync() call
+						<=> There are some active threads when entering the active -> active, INACTIVE ~> active phase
+							(By the nature of the active -> active, INACTIVE ~> active phase, such threads will still be active upon reaching this line)
+						<=> There are active threads in the search, i.e. search is ongoing (at least in this block, which is the only source of nodes to search that can be communicated to threads in this block anyway)
+						<=> Loop should continue
+						<=> cont_iter == true
+			However, a curr_block.sync() call improves efficiency, as it ensures that all active threads have written to an inactive thread's shared memory slot (if its search splits) before any inactive threads poll said shared memory slot, preventing inactive threads from returning to the beginning of the loop and doing nothing in that iteration other than participate in warp shuffles and the prior curr_block.sync() call, even though there is work for it to be done.
+		*/
+		curr_block.sync();
+
+
+		if (search_ind == StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND)
 			StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::detInactivity(search_ind,
 																					search_inds_arr,
 																					cont_iter,
@@ -465,8 +494,7 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 		curr_block.sync();
 
 
-		// active threads -> active threads
-		// INACTIVE threads -> active threads (external reactivation by active threads only)
+		// active threads -> active threads; each active thread whose search splits sends a "wake-up" message to an INACTIVE thread's shared memory slot, for that (currently INACTIVE) thread to later read and become active
 		if (search_ind != StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND)
 		{
 			if (search_code == StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::RIGHT_SEARCH)	// Currently a search-type query
@@ -491,7 +519,23 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 															);
 			}
 		}
-		else	// search_ind == INACTIVE_IND
+
+		/*
+			No curr_block.sync() call necessary here:
+				Early action of detInactivity() causes no false positives (early, incorrect loop exits):
+					detInactivity() does not cause an early, incorrect loop exit even without a curr_block.sync() call here
+						<=> There are active threads after previous curr_block.sync() call
+						<=> There are some active threads when entering the active -> active, INACTIVE ~> active phase
+							(By the nature of the active -> active, INACTIVE ~> active phase, such threads will still be active upon reaching this line)
+						<=> There are active threads in the search, i.e. search is ongoing (at least in this block, which is the only source of nodes to search that can be communicated to threads in this block anyway)
+						<=> Loop should continue
+						<=> cont_iter == true
+			However, a curr_block.sync() call improves efficiency, as it ensures that all active threads have written to an inactive thread's shared memory slot (if its search splits) before any inactive threads poll said shared memory slot, preventing inactive threads from returning to the beginning of the loop and doing nothing in that iteration other than participate in warp shuffles and the prior curr_block.sync() call, even though there is work for it to be done.
+		*/
+		curr_block.sync();
+
+
+		if (search_ind == StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND)
 			StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::detInactivity(search_ind,
 																					search_inds_arr,
 																					cont_iter,
@@ -613,8 +657,7 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 		curr_block.sync();
 
 
-		// active threads -> active threads
-		// INACTIVE threads -> active threads (external reactivation by active threads only)
+		// active threads -> active threads; each active thread whose search splits sends a "wake-up" message to an INACTIVE thread's shared memory slot, for that (currently INACTIVE) thread to later read and become active
 		// If thread remains active, it must have at least one child
 		if (search_ind != StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND)
 		{
@@ -644,7 +687,23 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 					= GPUTreeNode::getRightChild(search_ind);
 			}
 		}
-		else	// search_ind == INACTIVE_IND
+
+		/*
+			No curr_block.sync() call necessary here:
+				Early action of detInactivity() causes no false positives (early, incorrect loop exits):
+					detInactivity() does not cause an early, incorrect loop exit even without a curr_block.sync() call here
+						<=> There are active threads after previous curr_block.sync() call
+						<=> There are some active threads when entering the active -> active, INACTIVE ~> active phase
+							(By the nature of the active -> active, INACTIVE ~> active phase, such threads will still be active upon reaching this line)
+						<=> There are active threads in the search, i.e. search is ongoing (at least in this block, which is the only source of nodes to search that can be communicated to threads in this block anyway)
+						<=> Loop should continue
+						<=> cont_iter == true
+			However, a curr_block.sync() call improves efficiency, as it ensures that all active threads have written to an inactive thread's shared memory slot (if its search splits) before any inactive threads poll said shared memory slot, preventing inactive threads from returning to the beginning of the loop and doing nothing in that iteration other than participate in warp shuffles and the prior curr_block.sync() call, even though there is work for it to be done.
+		*/
+		curr_block.sync();
+
+
+		if (search_ind == StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND)
 			StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::detInactivity(search_ind,
 																					search_inds_arr,
 																					cont_iter
