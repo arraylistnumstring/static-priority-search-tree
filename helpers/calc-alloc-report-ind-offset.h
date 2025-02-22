@@ -45,7 +45,7 @@ template <typename T>
 __forceinline__ __device__ T calcAllocReportIndOffset(const cooperative_groups::thread_block &curr_block,
 														const T curr_thread_num_elems,
 														T *const warp_level_num_elems_arr,
-														T &block_level_start_ind
+														T &block_level_res_start_ind
 													)
 {
 	// Intrawarp cooperative group
@@ -104,7 +104,7 @@ __forceinline__ __device__ T calcAllocReportIndOffset(const cooperative_groups::
 	if (curr_block.thread_rank() == 0)
 	{
 		const T block_level_num_elems = warp_level_num_elems_arr[warps_per_block - 1];
-		block_level_start_ind = atomicAdd(&res_arr_ind_d, block_level_num_elems);
+		block_level_res_start_ind = atomicAdd(&res_arr_ind_d, block_level_num_elems);
 	}
 
 	// Set an arrival token so that when all threads have passed this point (in particular, the thread with linear ID 0 that allocates memory for the block), it is safe to exit the function (and write to the associated location in memory)
@@ -119,10 +119,10 @@ __forceinline__ __device__ T calcAllocReportIndOffset(const cooperative_groups::
 	else
 		warp_offset_in_block = warp_level_num_elems_arr[curr_block.thread_rank() / warpSize - 1];
 
-	// Block-level start index now known and saved in address pointed to by block_level_start_ind
-
 	// Make sure all threads (and in particular, the thread with linear ID 0 that allocates memory for the block) have passed the memory-allocation portion of the code before continuing on with exiting the function (and writing to that portion of memory)
 	curr_block.barrier_wait(std::move(alloc_block_res_mem_arrival_token));
+
+	// At this point, block-level start index for reporting results guaranteed to be known and saved in shared memory reference variable block_level_res_start_ind
 
 	// Return thread offset in block
 	return warp_offset_in_block + thread_offset_in_warp;

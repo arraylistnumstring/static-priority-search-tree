@@ -72,7 +72,7 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 {
 	// Use char datatype because extern variables must be consistent across all declarations and because char is the smallest possible datatype
 	extern __shared__ char s[];
-	unsigned long long &block_level_start_ind = *reinterpret_cast<unsigned long long *>(s);
+	unsigned long long &block_level_res_start_ind = *reinterpret_cast<unsigned long long *>(s);
 	unsigned long long *warp_level_num_elems_arr = reinterpret_cast<unsigned long long *>(s) + 1;
 
 	const cooperative_groups::thread_block curr_block = cooperative_groups::this_thread_block();
@@ -92,18 +92,18 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 		const unsigned long long thread_offset_in_block
 				= calcAllocReportIndOffset<unsigned long long>(curr_block, active_cell ? 1 : 0,
 																warp_level_num_elems_arr,
-																block_level_start_ind);
+																block_level_res_start_ind);
 
 		// Output to result array
 		if (active_cell)
 		{
 			if constexpr (std::is_same<RetType, IDType>::value)
 				// Add ID to array
-				res_arr_d[block_level_start_ind + thread_offset_in_block]
+				res_arr_d[block_level_res_start_ind + thread_offset_in_block]
 							= pt_arr_d[i + curr_block.thread_rank()].id;
 			else
 				// Add PtStructTemplate<T, IDType, num_IDs> to array
-				res_arr_d[block_level_start_ind + thread_offset_in_block]
+				res_arr_d[block_level_res_start_ind + thread_offset_in_block]
 							= pt_arr_d[i + curr_block.thread_rank()];
 		}
 	}
