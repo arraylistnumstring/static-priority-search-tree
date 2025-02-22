@@ -89,7 +89,7 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 							&& search_val <= pt_arr_d[i + curr_block.thread_rank()].dim2_val;
 
 
-		const unsigned long long block_level_offset
+		const unsigned long long thread_offset_in_block
 				= calcAllocReportIndOffset<unsigned long long>(curr_block, active_cell ? 1 : 0,
 																warp_level_num_elems_arr,
 																block_level_start_ind);
@@ -99,11 +99,11 @@ __global__ void intervalParallelSearchGlobal(PointStructTemplate<T, IDType, num_
 		{
 			if constexpr (std::is_same<RetType, IDType>::value)
 				// Add ID to array
-				res_arr_d[block_level_start_ind + block_level_offset]
+				res_arr_d[block_level_start_ind + thread_offset_in_block]
 							= pt_arr_d[i + curr_block.thread_rank()].id;
 			else
 				// Add PtStructTemplate<T, IDType, num_IDs> to array
-				res_arr_d[block_level_start_ind + block_level_offset]
+				res_arr_d[block_level_start_ind + thread_offset_in_block]
 							= pt_arr_d[i + curr_block.thread_rank()];
 		}
 	}
