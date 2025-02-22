@@ -41,10 +41,8 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 	unsigned char *search_codes_arr = reinterpret_cast<unsigned char *>(search_inds_arr + blockDim.x);
 	// Initialise shared memory
 	// All threads except for thread 0 start by being inactive
-	if (threadIdx.x == 0)
-		search_inds_arr[threadIdx.x] = start_node_ind;
-	else
-		search_inds_arr[threadIdx.x] = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
+	search_inds_arr[threadIdx.x] = threadIdx.x == 0 ? start_node_ind
+												: StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
 	// For threeSidedSearchGlobal(), each thread starts out with their code set to THREE_SEARCH
 	search_codes_arr[threadIdx.x] = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::THREE_SEARCH;
 
@@ -248,12 +246,12 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 	unsigned char *search_codes_arr = reinterpret_cast<unsigned char *>(search_inds_arr + blockDim.x);
 	// Initialise shared memory
 	// All threads except for thread 0 start by being inactive
-	if (threadIdx.x == 0)
-		search_inds_arr[threadIdx.x] = start_node_ind;
-	else
-		search_inds_arr[threadIdx.x] = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
-	// For twoSidedLeftSearchGlobal(), all threads start with their search code set to LEFT_SEARCH
-	search_codes_arr[threadIdx.x] = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::LEFT_SEARCH;
+	search_inds_arr[threadIdx.x] = threadIdx.x == 0 ? start_node_ind
+												: StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
+	// For twoSidedLeftSearchGlobal(), thread 0 has its search code set to LEFT_SEARCH, while all others have their search code set to REPORT_ALL (since splits will only ever result in REPORT_ALLs being delegated)
+	search_codes_arr[threadIdx.x] = threadIdx.x == 0 ?
+											StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::LEFT_SEARCH
+												: StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::REPORT_ALL;
 
 	curr_block.sync();	// Must synchronise before processing to ensure data is properly set
 
@@ -420,12 +418,12 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 	unsigned char *search_codes_arr = reinterpret_cast<unsigned char *>(search_inds_arr + blockDim.x);
 	// Initialise shared memory
 	// All threads except for thread 0 start by being inactive
-	if (threadIdx.x == 0)
-		search_inds_arr[threadIdx.x] = start_node_ind;
-	else
-		search_inds_arr[threadIdx.x] = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
-	// For twoSidedRightSearchGlobal(), all threads start with their search code set to RIGHT_SEARCH
-	search_codes_arr[threadIdx.x] = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::RIGHT_SEARCH;
+	search_inds_arr[threadIdx.x] = threadIdx.x == 0 ? start_node_ind
+												: StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
+	// For twoSidedRightSearchGlobal(), thread 0 has its search code set to RIGHT_SEARCH, while all others have their search code set to REPORT_ALL (since splits will only ever result in REPORT_ALLs being delegated)
+	search_codes_arr[threadIdx.x] = threadIdx.x == 0 ?
+											StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::RIGHT_SEARCH
+												: StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::REPORT_ALL;
 
 	curr_block.sync();	// Must synchronise before processing to ensure data is properly set
 
@@ -591,10 +589,8 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 	long long *search_inds_arr = reinterpret_cast<long long *>(s);
 	// Initialise shared memory
 	// All threads except for thread 0 start by being inactive
-	if (threadIdx.x == 0)
-		search_inds_arr[threadIdx.x] = start_node_ind;
-	else
-		search_inds_arr[threadIdx.x] = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
+	search_inds_arr[threadIdx.x] = threadIdx.x == 0 ? start_node_ind
+												: StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
 
 	curr_block.sync();	// Must synchronise before processing to ensure data is properly set
 
