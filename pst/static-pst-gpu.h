@@ -34,7 +34,7 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 			typename RetType=PointStructTemplate<T, IDType, num_IDs>
 		 >
 __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_slots,
-										const size_t start_node_ind,
+										const long long start_node_ind,
 										RetType *const res_arr_d,
 										const T min_dim1_val, const T max_dim1_val,
 										const T min_dim2_val);
@@ -44,7 +44,7 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 			typename RetType=PointStructTemplate<T, IDType, num_IDs>
 		 >
 __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_slots,
-											const size_t start_node_ind,
+											const long long start_node_ind,
 											RetType *const res_arr_d,
 											const T max_dim1_val, const T min_dim2_val);
 
@@ -53,7 +53,7 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 			typename RetType=PointStructTemplate<T, IDType, num_IDs>
 		 >
 __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem_slots,
-											const size_t start_node_ind,
+											const long long start_node_ind,
 											RetType *const res_arr_d,
 											const T min_dim1_val, const T min_dim2_val);
 
@@ -62,7 +62,7 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 			typename RetType=PointStructTemplate<T, IDType, num_IDs>
 		 >
 __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slots,
-										const size_t start_node_ind,
+										const long long start_node_ind,
 										RetType *const res_arr_d,
 										const T min_dim2_val);
 
@@ -444,7 +444,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 	template <typename U, template<typename, typename, size_t> class PtStructTempl, typename IDT, size_t NIDs, typename RetType>
 	friend __global__ void threeSidedSearchGlobal(U *const root_d,
 													const size_t num_elem_slots,
-													const size_t start_node_ind,
+													const long long start_node_ind,
 													RetType *const res_arr_d,
 													const U min_dim1_val,
 													const U max_dim1_val,
@@ -454,7 +454,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 	template <typename U, template<typename, typename, size_t> class PtStructTempl, typename IDT, size_t NIDs, typename RetType>
 	friend __global__ void twoSidedLeftSearchGlobal(U *const root_d,
 													const size_t num_elem_slots,
-													const size_t start_node_ind,
+													const long long start_node_ind,
 													RetType *const res_arr_d,
 													const U max_dim1_val,
 													const U min_dim2_val
@@ -463,7 +463,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 	template <typename U, template<typename, typename, size_t> class PtStructTempl, typename IDT, size_t NIDs, typename RetType>
 	friend __global__ void twoSidedRightSearchGlobal(U *const root_d,
 														const size_t num_elem_slots,
-														const size_t start_node_ind,
+														const long long start_node_ind,
 														RetType *const res_arr_d,
 														const U min_dim1_val,
 														const U min_dim2_val
@@ -472,7 +472,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 	template <typename U, template<typename, typename, size_t> class PtStructTempl, typename IDT, size_t NIDs, typename RetType>
 	friend __global__ void reportAllNodesGlobal(U *const root_d,
 												const size_t num_elem_slots,
-												const size_t start_node_ind,
+												const long long start_node_ind,
 												RetType *const res_arr_d,
 												const U min_dim2_val
 											);

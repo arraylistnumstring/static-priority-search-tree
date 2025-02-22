@@ -1033,6 +1033,8 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 			typename IDType, size_t num_IDs>
 __forceinline__ __device__ size_t StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcCurrTreeNumElemSlots(const size_t num_elems, const size_t full_tree_num_elem_slots)
 {
+	size_t tree_num_elem_slots;
+
 	if (num_elems % full_tree_num_elem_slots == 0)		// All trees are full trees
 		tree_num_elem_slots = full_tree_num_elem_slots;
 	else	// All trees except last are full trees
@@ -1048,6 +1050,8 @@ __forceinline__ __device__ size_t StaticPSTGPUArr<T, PointStructTemplate, IDType
 			tree_num_elem_slots = StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcNumElemSlotsPerTree(last_tree_num_elems);
 		}
 	}
+
+	return tree_num_elem_slots;
 }
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,

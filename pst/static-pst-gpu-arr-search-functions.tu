@@ -42,7 +42,7 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 
 	// Initialise shared memory
 	// All threads except for thread 0 in each block start by being inactive
-	search_inds_arr[threadIdx.x] = search_ind = threadIdx.x == 0 ? start_node_ind
+	search_inds_arr[threadIdx.x] = search_ind = threadIdx.x == 0 ? 0
 													: StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
 	// For twoSidedLeftSearchTreeArrGlobal(), thread 0 has its search code set to LEFT_SEARCH, while all others have their search code set to REPORT_ALL (since splits will only ever result in REPORT_ALLs being delegated)
 	search_codes_arr[threadIdx.x] = search_code = threadIdx.x == 0 ?

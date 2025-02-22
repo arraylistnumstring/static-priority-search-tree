@@ -8,7 +8,7 @@
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs, typename RetType>
 __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_slots,
-										const size_t start_node_ind,
+										const long long start_node_ind,
 										RetType *const res_arr_d,
 										const T min_dim1_val, const T max_dim1_val,
 										const T min_dim2_val)
@@ -209,7 +209,7 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs, typename RetType>
 __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_slots,
-											const size_t start_node_ind,
+											const long long start_node_ind,
 											RetType *const res_arr_d,
 											const T max_dim1_val, const T min_dim2_val)
 {
@@ -249,7 +249,7 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 	search_inds_arr[threadIdx.x] = search_ind = threadIdx.x == 0 ? start_node_ind
 													: StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
 	// For twoSidedLeftSearchGlobal(), thread 0 has its search code set to LEFT_SEARCH, while all others have their search code set to REPORT_ALL (since splits will only ever result in REPORT_ALLs being delegated)
-	search_codes_arr[threadIdx.x] = search_codes = threadIdx.x == 0 ?
+	search_codes_arr[threadIdx.x] = search_code = threadIdx.x == 0 ?
 														StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::LEFT_SEARCH
 															: StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::REPORT_ALL;
 
@@ -376,7 +376,7 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs, typename RetType>
 __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem_slots,
-											const size_t start_node_ind,
+											const long long start_node_ind,
 											RetType *const res_arr_d,
 											const T min_dim1_val, const T min_dim2_val)
 {
@@ -542,7 +542,7 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs, typename RetType>
 __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slots,
-										const size_t start_node_ind,
+										const long long start_node_ind,
 										RetType *const res_arr_d,
 										const T min_dim2_val)
 {
