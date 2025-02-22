@@ -108,7 +108,7 @@ __forceinline__ __device__ T calcAllocReportIndOffset(const cooperative_groups::
 	}
 
 	// Set an arrival token so that when all threads have passed this point (in particular, the thread with linear ID 0 that allocates memory for the block), it is safe to exit the function (and write to the associated location in memory)
-	cooperative_groups::thread_block::arrival_token arrival_token = curr_block.barrier_arrive();
+	cooperative_groups::thread_block::arrival_token alloc_block_res_mem_arrival_token = curr_block.barrier_arrive();
 
 	T warp_offset_in_block;	// Calculated with exclusive prefix sum
 
@@ -122,7 +122,7 @@ __forceinline__ __device__ T calcAllocReportIndOffset(const cooperative_groups::
 	// Block-level start index now known and saved in address pointed to by block_level_start_ind
 
 	// Make sure all threads (and in particular, the thread with linear ID 0 that allocates memory for the block) have passed the memory-allocation portion of the code before continuing on with exiting the function (and writing to that portion of memory)
-	curr_block.barrier_wait(std::move(arrival_token));
+	curr_block.barrier_wait(std::move(alloc_block_res_mem_arrival_token));
 
 	// Return thread offset in block
 	return warp_offset_in_block + thread_offset_in_warp;
