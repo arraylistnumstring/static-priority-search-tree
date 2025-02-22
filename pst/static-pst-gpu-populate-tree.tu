@@ -136,12 +136,16 @@ __global__ void populateTree(T *const root_d, const size_t num_elem_slots,
 				}
 			}
 
+			// Only one curr_block.sync() call is needed in the loop because inactive threads do nothing to modify their own state-control variables (specifically, affecting neither their in/activity nor their continued participation in the loop); they only swap their local dimension-2 index array pointers
+			cooperative_groups::thread_block::arrival_token process_curr_node_arrival_token = curr_block.barrier_arrive();
+
 			// Every thread must swap its primary and secondary dim2_val_ind_arr pointers in order to have the correct subordering of indices at a given node
 			size_t *temp = dim2_val_ind_arr_d;
 			dim2_val_ind_arr_d = dim2_val_ind_arr_secondary_d;
 			dim2_val_ind_arr_secondary_d = temp;
 
-			curr_block.sync();	// Synchronise before starting the next iteration
+			// Synchronise before starting the next iteration so that inactive threads that should be activated will know so
+			curr_block.barrier_wait(std::move(process_curr_node_arrival_token));
 		}
 	}
 }
