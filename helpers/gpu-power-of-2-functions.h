@@ -52,7 +52,7 @@ __forceinline__ __host__ __device__ U maxPowerOf2AtMost(const U num)
 		return 0;
 	else
 		return 1 << expOfMaxPowerOf2AtMost(num);
-}
+};
 
 // Helper function for calculating the smallest power of 2 greater than or equal to num
 template <typename U>
