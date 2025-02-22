@@ -26,10 +26,7 @@ __global__ void populateTree(T *const root_d, const size_t num_elem_slots,
 	// Initialise shared memory
 	subelems_start_inds_arr[threadIdx.x] = val_ind_arr_start_ind;
 	// All threads except for thread 0 start by being inactive
-	if (threadIdx.x == 0)
-		num_subelems_arr[threadIdx.x] = num_elems;
-	else
-		num_subelems_arr[threadIdx.x] = 0;
+	num_subelems_arr[threadIdx.x] = threadIdx.x == 0 ? num_elems : 0;
 	target_node_inds_arr[threadIdx.x] = target_node_start_ind;
 
 	curr_block.sync();

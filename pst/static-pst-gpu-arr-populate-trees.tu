@@ -23,10 +23,7 @@ __global__ void populateTrees(T *const tree_arr_d, const size_t full_tree_num_el
 	const size_t tree_num_elem_slots = StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::calcCurrTreeNumElemSlots(num_elems, full_tree_num_elem_slots);
 
 	// All threads except for thread 0 in each block start by being inactive
-	if (threadIdx.x == 0)
-		num_subelems_arr[threadIdx.x] = tree_num_elem_slots;
-	else
-		num_subelems_arr[threadIdx.x] = 0;
+	num_subelems_arr[threadIdx.x] = threadIdx.x == 0 ? tree_num_elem_slots : 0;
 
 	// Note: would only need to have one thread block do multiple trees when the number of trees exceeds 2^31 - 1, i.e. the maximum number of blocks permitted in a grid
 	T *const tree_root_d = tree_arr_d + blockIdx.x * full_tree_size_num_Ts;
