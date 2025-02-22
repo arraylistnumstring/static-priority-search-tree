@@ -39,30 +39,35 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 	// Node indices for each thread to search
 	long long *search_inds_arr = reinterpret_cast<long long *>(s);
 	unsigned char *search_codes_arr = reinterpret_cast<unsigned char *>(search_inds_arr + blockDim.x);
+
+	// Place declarations here so that can be initialised when shared memory is initialised
+	long long search_ind;
+	unsigned char search_code;
+
 	// Initialise shared memory
 	// All threads except for thread 0 start by being inactive
-	search_inds_arr[threadIdx.x] = threadIdx.x == 0 ? start_node_ind
-												: StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
+	search_inds_arr[threadIdx.x] = search_ind = threadIdx.x == 0 ? start_node_ind
+													: StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
 	// For threeSidedSearchGlobal(), each thread starts out with their code set to THREE_SEARCH
-	search_codes_arr[threadIdx.x] = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::THREE_SEARCH;
+	search_codes_arr[threadIdx.x] = search_code = StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::THREE_SEARCH;
 
-	curr_block.sync();	// Must synchronise before processing to ensure data is properly set
-
+	// Take advantage of potential speed-ups associated with doing local variable updates while waiting for shared memory to be initialised
+	cooperative_groups::thread_block::arrival_token shared_mem_init_arrival_token = curr_block.barrier_arrive();
 
 	bool cont_iter = true;	// Loop-continuing flag
 
-	long long search_ind = search_inds_arr[threadIdx.x];
-	unsigned char search_code = search_codes_arr[threadIdx.x];
+	// Must synchronise before processing to ensure data is properly set
+	curr_block.barrier_wait(std::move(shared_mem_init_arrival_token));
 
-	T curr_node_dim1_val;
-	T curr_node_dim2_val;
-	T curr_node_med_dim1_val;
-	unsigned char curr_node_bitcode;
-	bool active_node;
 
 	while (cont_iter)
 	{
-		active_node = false;
+		T curr_node_dim1_val;
+		T curr_node_dim2_val;
+		T curr_node_med_dim1_val;
+		unsigned char curr_node_bitcode;
+
+		bool active_node = false;
 
 		// active threads -> INACTIVE (if current node goes below the dim2_val threshold or has no children)
 		// Before the next curr_block.sync() call, which denotes the end of this section, active threads are the only threads who will modify their own search_inds_arr entry, so it is fine to do so non-atomically
@@ -244,32 +249,37 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 	// Node indices for each thread to search
 	long long *search_inds_arr = reinterpret_cast<long long *>(s);
 	unsigned char *search_codes_arr = reinterpret_cast<unsigned char *>(search_inds_arr + blockDim.x);
+
+	// Place declarations here so that can be initialised when shared memory is initialised
+	long long search_ind;
+	unsigned char search_code;
+
 	// Initialise shared memory
 	// All threads except for thread 0 start by being inactive
-	search_inds_arr[threadIdx.x] = threadIdx.x == 0 ? start_node_ind
-												: StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
+	search_inds_arr[threadIdx.x] = search_ind = threadIdx.x == 0 ? start_node_ind
+													: StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
 	// For twoSidedLeftSearchGlobal(), thread 0 has its search code set to LEFT_SEARCH, while all others have their search code set to REPORT_ALL (since splits will only ever result in REPORT_ALLs being delegated)
-	search_codes_arr[threadIdx.x] = threadIdx.x == 0 ?
-											StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::LEFT_SEARCH
-												: StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::REPORT_ALL;
+	search_codes_arr[threadIdx.x] = search_codes = threadIdx.x == 0 ?
+														StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::LEFT_SEARCH
+															: StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::REPORT_ALL;
 
-	curr_block.sync();	// Must synchronise before processing to ensure data is properly set
-
+	// Take advantage of potential speed-ups associated with doing local variable updates while waiting for shared memory to be initialised
+	cooperative_groups::thread_block::arrival_token shared_mem_init_arrival_token = curr_block.barrier_arrive();
 
 	bool cont_iter = true;	// Loop-continuing flag
 
-	long long search_ind = search_inds_arr[threadIdx.x];
-	unsigned char search_code = search_codes_arr[threadIdx.x];
+	// Must synchronise before processing to ensure data is properly set
+	curr_block.barrier_wait(std::move(shared_mem_init_arrival_token));
 
-	T curr_node_dim1_val;
-	T curr_node_dim2_val;
-	T curr_node_med_dim1_val;
-	unsigned char curr_node_bitcode;
-	bool active_node;
 
 	while (cont_iter)
 	{
-		active_node = false;
+		T curr_node_dim1_val;
+		T curr_node_dim2_val;
+		T curr_node_med_dim1_val;
+		unsigned char curr_node_bitcode;
+
+		bool active_node = false;
 
 		// active threads -> INACTIVE (if current node goes below the dim2_val threshold or has no children)
 		// Before the next curr_block.sync() call, which denotes the end of this section, active threads are the only threads who will modify their own search_inds_arr entry, so it is fine to do so non-atomically
@@ -416,32 +426,36 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 	// Node indices for each thread to search
 	long long *search_inds_arr = reinterpret_cast<long long *>(s);
 	unsigned char *search_codes_arr = reinterpret_cast<unsigned char *>(search_inds_arr + blockDim.x);
+
+	// Place declarations here so that can be initialised when shared memory is initialised
+	long long search_ind;
+	unsigned char search_code;
+
 	// Initialise shared memory
 	// All threads except for thread 0 start by being inactive
-	search_inds_arr[threadIdx.x] = threadIdx.x == 0 ? start_node_ind
-												: StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
+	search_inds_arr[threadIdx.x] = search_ind = threadIdx.x == 0 ? start_node_ind
+													: StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
 	// For twoSidedRightSearchGlobal(), thread 0 has its search code set to RIGHT_SEARCH, while all others have their search code set to REPORT_ALL (since splits will only ever result in REPORT_ALLs being delegated)
-	search_codes_arr[threadIdx.x] = threadIdx.x == 0 ?
-											StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::RIGHT_SEARCH
-												: StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::REPORT_ALL;
+	search_codes_arr[threadIdx.x] = search_code = threadIdx.x == 0 ?
+													StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::RIGHT_SEARCH
+														: StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::REPORT_ALL;
 
-	curr_block.sync();	// Must synchronise before processing to ensure data is properly set
-
+	// Take advantage of potential speed-ups associated with doing local variable updates while waiting for shared memory to be initialised
+	cooperative_groups::thread_block::arrival_token shared_mem_init_arrival_token = curr_block.barrier_arrive();
 
 	bool cont_iter = true;	// Loop-continuing flag
 
-	long long search_ind = search_inds_arr[threadIdx.x];
-	unsigned char search_code = search_codes_arr[threadIdx.x];
+	// Must synchronise before processing to ensure data is properly set
+	curr_block.barrier_wait(std::move(shared_mem_init_arrival_token));
 
-	T curr_node_dim1_val;
-	T curr_node_dim2_val;
-	T curr_node_med_dim1_val;
-	unsigned char curr_node_bitcode;
-	bool active_node;
 
 	while (cont_iter)
 	{
-		active_node = false;
+		T curr_node_dim1_val;
+		T curr_node_dim2_val;
+		T curr_node_med_dim1_val;
+		unsigned char curr_node_bitcode;
+		bool active_node = false;
 
 		// active threads -> INACTIVE (if current node goes below the dim2_val threshold or has no children)
 		// Before the next curr_block.sync() call, which denotes the end of this section, active threads are the only threads who will modify their own search_inds_arr entry, so it is fine to do so non-atomically
@@ -587,26 +601,30 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 	extern __shared__ char s[];
 	// Node indices for each thread to search
 	long long *search_inds_arr = reinterpret_cast<long long *>(s);
+
+	// Place declaration here so that can be initialised when shared memory is initialised
+	long long search_ind;
+
 	// Initialise shared memory
 	// All threads except for thread 0 start by being inactive
-	search_inds_arr[threadIdx.x] = threadIdx.x == 0 ? start_node_ind
+	search_inds_arr[threadIdx.x] = search_ind = threadIdx.x == 0 ? start_node_ind
 												: StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
 
-	curr_block.sync();	// Must synchronise before processing to ensure data is properly set
-
+	// Take advantage of potential speed-ups associated with doing local variable updates while waiting for shared memory to be initialised
+	cooperative_groups::thread_block::arrival_token shared_mem_init_arrival_token = curr_block.barrier_arrive();
 
 	bool cont_iter = true;	// Loop-continuing flag
 
-	long long search_ind = search_inds_arr[threadIdx.x];
+	// Must synchronise before processing to ensure data is properly set
+	curr_block.barrier_wait(std::move(shared_mem_init_arrival_token));
 
-	// curr_node_dim1_val will only be accessed at most once (during reporting if RetType == PointStructs) so no need to create an automatic variable for it
-	T curr_node_dim2_val;
-	unsigned char curr_node_bitcode;
-	bool active_node;
 
 	while (cont_iter)
 	{
-		active_node = false;
+		// curr_node_dim1_val will only be accessed at most once (during reporting if RetType == PointStructs) so no need to create an automatic variable for it
+		T curr_node_dim2_val;
+		unsigned char curr_node_bitcode;
+		bool active_node = false;
 
 		// active threads -> INACTIVE (if current node goes below the dim2_val threshold or has no children)
 		// Before the next curr_block.sync() call, which denotes the end of this section, active threads are the only threads who will modify their own search_inds_arr entry, so it is fine to do so non-atomically
