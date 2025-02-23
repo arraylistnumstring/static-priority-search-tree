@@ -91,7 +91,17 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 			}
 		}
 
+
 		// Report step
+
+		/*
+			Note that though interwarp reductions are possible and correct if interwarp calcAllocReportIndOffset() is called here (along with adding the associated shared memory slots, shared memory declarations and substituting res_arr_d[res_arr_ind_to_access] with res_arr_d[block_level_res_start_ind + thread_offset_in_block]), interwarp reductions are only occasionally faster (by about ~0.03 ms) and generally slower (by about ~0.1 ms) than intrawarp-only reductions
+		const unsigned long long thread_offset_in_block
+				= calcAllocReportIndOffset<unsigned long long>(curr_block, active_node ? 1 : 0,
+																warp_level_num_elems_arr,
+																block_level_res_start_ind);
+		*/
+
 		if (active_node)
 		{
 			// Intrawarp prefix sum: each thread here has one active node to report
@@ -299,7 +309,17 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 			}
 		}
 
+
 		// Report step
+
+		/*
+			Note that though interwarp reductions are possible and correct if interwarp calcAllocReportIndOffset() is called here (along with adding the associated shared memory slots, shared memory declarations and substituting res_arr_d[res_arr_ind_to_access] with res_arr_d[block_level_res_start_ind + thread_offset_in_block]), interwarp reductions are only occasionally faster (by about ~0.03 ms) and generally slower (by about ~0.1 ms) than intrawarp-only reductions
+		const unsigned long long thread_offset_in_block
+				= calcAllocReportIndOffset<unsigned long long>(curr_block, active_node ? 1 : 0,
+																warp_level_num_elems_arr,
+																block_level_res_start_ind);
+		*/
+
 		if (active_node)
 		{
 			// Intrawarp prefix sum: each thread here has one active node to report
@@ -472,7 +492,17 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 			}
 		}
 
+
 		// Report step
+
+		/*
+			Note that though interwarp reductions are possible and correct if interwarp calcAllocReportIndOffset() is called here (along with adding the associated shared memory slots, shared memory declarations and substituting res_arr_d[res_arr_ind_to_access] with res_arr_d[block_level_res_start_ind + thread_offset_in_block]), interwarp reductions are only occasionally faster (by about ~0.03 ms) and generally slower (by about ~0.1 ms) than intrawarp-only reductions
+		const unsigned long long thread_offset_in_block
+				= calcAllocReportIndOffset<unsigned long long>(curr_block, active_node ? 1 : 0,
+																warp_level_num_elems_arr,
+																block_level_res_start_ind);
+		*/
+
 		if (active_node)
 		{
 			// Intrawarp prefix sum: each thread here has one active node to report
@@ -631,10 +661,19 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 			}
 			// Thread stays active with respect to this node
 			else	// min_dim2_val <= curr_node_dim2_val; report node
-			{
 				active_node = true;
-			}
 		}
+
+
+		// Report step
+
+		/*
+			Note that though interwarp reductions are possible and correct if interwarp calcAllocReportIndOffset() is called here (along with adding the associated shared memory slots, shared memory declarations and substituting res_arr_d[res_arr_ind_to_access] with res_arr_d[block_level_res_start_ind + thread_offset_in_block]), interwarp reductions are only occasionally faster (by about ~0.03 ms) and generally slower (by about ~0.1 ms) than intrawarp-only reductions
+		const unsigned long long thread_offset_in_block
+				= calcAllocReportIndOffset<unsigned long long>(curr_block, active_node ? 1 : 0,
+																warp_level_num_elems_arr,
+																block_level_res_start_ind);
+		*/
 
 		if (active_node)
 		{
