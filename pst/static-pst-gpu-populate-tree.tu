@@ -136,7 +136,10 @@ __global__ void populateTree(T *const root_d, const size_t num_elem_slots,
 				}
 			}
 
-			// Only one curr_block.sync() call is needed in the loop because inactive threads do nothing to modify their own state-control variables (specifically, affecting neither their in/activity nor their continued participation in the loop); they only swap their local dimension-2 index array pointers
+			/*
+				Only one curr_block.sync() call is needed in the loop because inactive threads do nothing to modify their own state-control variables (specifically, affecting neither their in/activity nor their continued participation in the loop); they only swap their local dimension-2 index array pointers
+				Additionally, a curr_block.sync() call at the end of an iteration effectively serves as a curr_block.sync() call at the beginning of the loop as well (as does the initial curr_block.sync() call before the loop), preventing any given iteration (and its associated updates to shared memory) from impacting any other iteration (where said info would be read) incorrectly
+			*/
 			cooperative_groups::thread_block::arrival_token process_curr_node_arrival_token = curr_block.barrier_arrive();
 
 			// Every thread must swap its primary and secondary dim2_val_ind_arr pointers in order to have the correct subordering of indices at a given node
