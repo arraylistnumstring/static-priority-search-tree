@@ -399,6 +399,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		const static unsigned char num_val_subarrs = 3;
 
 		// Without explicit instantiation, enums do not take up any space
+		// To save shared memory usage, reportAllNodesGlobal() has no search_codes array, so use the search index array to indicate an inactive thread instead
 		enum IndexCodes
 		{
 			INACTIVE_IND = -1
