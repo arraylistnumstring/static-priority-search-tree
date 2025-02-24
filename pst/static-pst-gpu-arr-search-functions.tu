@@ -29,11 +29,8 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 
 	// Use char datatype because extern variables must be consistent across all declarations and because char is the smallest possible datatype
 	extern __shared__ char s[];
-	// For interwarp reductions
-	unsigned long long &block_level_res_start_ind = *reinterpret_cast<unsigned long long *>(s);
-	unsigned long long *warp_level_num_elems_arr = reinterpret_cast<unsigned long long *>(s) + 1;
 	// Node indices for each thread to search
-	long long *search_inds_arr = reinterpret_cast<long long *>(warp_level_num_elems_arr + blockDim.x / warpSize + (blockDim.x % warpSize == 0 ? 0 : 1));
+	long long *search_inds_arr = reinterpret_cast<long long *>(s);
 	unsigned char *search_codes_arr = reinterpret_cast<unsigned char *>(search_inds_arr + blockDim.x);
 
 	// Place declarations here so that can be initialised when shared memory is initialised
@@ -96,28 +93,22 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 		}
 
 		// Report step
-		// Intrawarp and interwarp prefix sum
-		const unsigned long long thread_offset_in_block
-				= calcAllocReportIndOffset<unsigned long long>(curr_block, active_node ? 1 : 0,
-																warp_level_num_elems_arr,
-																block_level_res_start_ind);
-
 		if (active_node)
 		{
 			// Intrawarp prefix sum: each thread here has one active node to report
-			//const unsigned long long res_ind_to_access = calcAllocReportIndOffset<unsigned long long>(1);
+			const unsigned long long res_ind_to_access = calcAllocReportIndOffset<unsigned long long>(1);
 
 			if constexpr (std::is_same<RetType, IDType>::value)
 			{
-				res_arr_d[block_level_res_start_ind + thread_offset_in_block]
+				res_arr_d[res_ind_to_access]
 						= StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(tree_root_d, tree_num_elem_slots)[search_ind];
 			}
 			else
 			{
-				res_arr_d[block_level_res_start_ind + thread_offset_in_block].dim1_val = curr_node_dim1_val;
-				res_arr_d[block_level_res_start_ind + thread_offset_in_block].dim2_val = curr_node_dim2_val;
+				res_arr_d[res_ind_to_access].dim1_val = curr_node_dim1_val;
+				res_arr_d[res_ind_to_access].dim2_val = curr_node_dim2_val;
 				if constexpr (HasID<PointStructTemplate<T, IDType, num_IDs>>::value)
-					res_arr_d[block_level_res_start_ind + thread_offset_in_block].id
+					res_arr_d[res_ind_to_access].id
 							= StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::getIDsRoot(tree_root_d, tree_num_elem_slots)[search_ind];
 			}
 		}

@@ -7,6 +7,10 @@
 #include "class-member-checkers.h"
 #include "dev-symbols.h"			// For global memory-scoped variable res_arr_ind_d
 
+
+extern __device__ unsigned long long res_arr_ind_d;		// Declared in dev-symbols.h
+
+
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
 StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::StaticPSTGPUArr(PointStructTemplate<T, IDType, num_IDs> *const pt_arr_d,
@@ -599,8 +603,7 @@ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSearc
 	// Set on-device global result array index to 0
 	const unsigned long long res_arr_ind_init = 0;
 	// Copying to a defined symbol requires use of an extant symbol; note that a symbol is neither a pointer nor a direct data value, but instead the handle by which the variable is denoted, with look-up necessary to generate a pointer if cudaMemcpy() is used (whereas cudaMemcpyToSymbol()/cudaMemcpyFromSymbol() do the lookup and memory copy altogether)
-	gpuErrorCheck(cudaMemcpyToSymbol(res_arr_ind_d, &res_arr_ind_init, sizeof(size_t),
-										0, cudaMemcpyDefault),
+	gpuErrorCheck(cudaMemcpyToSymbol(res_arr_ind_d, &res_arr_ind_init, sizeof(size_t)),
 					"Error in initialising global result array index to 0 on device "
 					+ std::to_string(dev_ind + 1) + " (1-indexed) of " + std::to_string(num_devs)
 					+ ": ");
@@ -612,8 +615,7 @@ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSearc
 		// No ID or sizeof(T) >= sizeof(IDType); full_tree_size_num_max_data_id_types is already in units of sizeof(T)
 		twoSidedLeftSearchTreeArrGlobal<T, PointStructTemplate, IDType, num_IDs, RetType>
 										<<<num_thread_blocks, threads_per_block,
-											threads_per_block * (sizeof(long long) + sizeof(unsigned char))
-												+ (1 + threads_per_block / dev_props.warpSize + (threads_per_block % dev_props.warpSize == 0 ? 0 : 1))>>>
+											threads_per_block * (sizeof(long long) + sizeof(unsigned char))>>>
 										(tree_arr_d, full_tree_num_elem_slots,
 										 full_tree_size_num_max_data_id_types,
 										 num_elems, res_arr_d, max_dim1_val, min_dim2_val);
@@ -623,8 +625,7 @@ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSearc
 		// sizeof(IDType) > sizeof(T), and the latter is guaranteed to be a factor of the former
 		twoSidedLeftSearchTreeArrGlobal<T, PointStructTemplate, IDType, num_IDs, RetType>
 										<<<num_thread_blocks, threads_per_block,
-											threads_per_block * (sizeof(long long) + sizeof(unsigned char))
-												+ (1 + threads_per_block / dev_props.warpSize + (threads_per_block % dev_props.warpSize == 0 ? 0 : 1))>>>
+											threads_per_block * (sizeof(long long) + sizeof(unsigned char))>>>
 										(tree_arr_d, full_tree_num_elem_slots,
 										 full_tree_size_num_max_data_id_types * sizeof(IDType) / sizeof(T),
 										 num_elems, res_arr_d, max_dim1_val, min_dim2_val);
@@ -632,9 +633,7 @@ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSearc
 
 	// Because all calls to the device are placed in the same stream (queue) and because cudaMemcpy() is (host-)blocking, this code will not return before the computation has completed
 	// res_arr_ind_d points to the next index to write to, meaning that it actually contains the number of elements returned
-	gpuErrorCheck(cudaMemcpyFromSymbol(&num_res_elems, res_arr_ind_d,
-										sizeof(unsigned long long), 0,
-										cudaMemcpyDefault),
+	gpuErrorCheck(cudaMemcpyFromSymbol(&num_res_elems, res_arr_ind_d, sizeof(unsigned long long)),
 					"Error in copying global result array final index from device "
 					+ std::to_string(dev_ind + 1) + " (1-indexed) of " + std::to_string(num_devs)
 					+ ": ");
