@@ -10,6 +10,9 @@
 #include "linearise-id.h"
 
 
+extern __device__ unsigned long long res_arr_ind_d;		// Declared in dev-symbols.h
+
+
 // Intrawarp version: allocates space in output array and returns for each thread the index res_arr_output_ind at which it can safely write its result to the output array
 template <typename T>
 	requires std::unsigned_integral<T>

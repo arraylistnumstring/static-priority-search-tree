@@ -8,6 +8,10 @@
 #include "gpu-err-chk.h"
 #include "linearise-id.h"
 
+
+extern __device__ unsigned long long res_arr_ind_d;		// Declared in dev-symbols.h
+
+
 // Method of Liu et al. (2016): embarrassingly parallel search for active metacells, superficially modified for parity with PST search method
 
 // Given an array of PointStructTemplate<T, IDType, num_IDs>, return an on-device array of either points or IDs, each point pt or ID for point pt satisfies search_val \in [pt.dim1_val, pt.dim2_val])
