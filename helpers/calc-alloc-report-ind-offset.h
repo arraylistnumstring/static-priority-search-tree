@@ -129,6 +129,7 @@ __forceinline__ __device__ T calcAllocReportIndOffset(const cooperative_groups::
 
 	// Return thread offset in block
 	return warp_offset_in_block + thread_offset_in_warp;
-};
+}
+
 
 #endif
