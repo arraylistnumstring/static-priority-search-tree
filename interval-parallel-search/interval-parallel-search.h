@@ -36,8 +36,7 @@ void intervalParallelSearch(PointStructTemplate<T, IDType, num_IDs>* pt_arr_d, c
 	// Set on-device global result array index to 0
 	unsigned long long res_arr_ind = 0;
 	// Copying to a defined symbol requires use of an extant symbol; note that a symbol is neither a pointer nor a direct data value, but instead the handle by which the variable is denoted, with look-up necessary to generate a pointer if cudaMemcpy() is used (whereas cudaMemcpyToSymbol()/cudaMemcpyFromSymbol() do the lookup and memory copy altogether)
-	gpuErrorCheck(cudaMemcpyToSymbol(res_arr_ind_d, &res_arr_ind, sizeof(size_t),
-										0, cudaMemcpyDefault),
+	gpuErrorCheck(cudaMemcpyToSymbol(res_arr_ind_d, &res_arr_ind, sizeof(size_t)),
 					"Error in initialising global result array index to 0 on device "
 					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
 					+ std::to_string(num_devs) + ": "
@@ -54,8 +53,7 @@ void intervalParallelSearch(PointStructTemplate<T, IDType, num_IDs>* pt_arr_d, c
 	
 	// Because all calls to the device are placed in the same stream (queue) and because cudaMemcpy() is (host-)blocking, this code will not return before the computation has completed
 	// res_arr_ind_d points to the next index to write to, meaning that it actually contains the number of elements returned
-	gpuErrorCheck(cudaMemcpyFromSymbol(&num_res_elems, res_arr_ind_d,
-										sizeof(unsigned long long), 0, cudaMemcpyDefault),
+	gpuErrorCheck(cudaMemcpyFromSymbol(&num_res_elems, res_arr_ind_d, sizeof(unsigned long long)),
 					"Error in copying global result array final index from device "
 					+ std::to_string(dev_ind + 1) + " (1-indexed) of "
 					+ std::to_string(num_devs) + ": "

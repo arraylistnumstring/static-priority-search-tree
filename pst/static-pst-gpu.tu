@@ -512,8 +512,7 @@ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::threeSidedSearch(siz
 	// Set on-device global result array index to 0
 	const unsigned long long res_arr_ind_init = 0;
 	// Copying to a defined symbol requires use of an extant symbol; note that a symbol is neither a pointer nor a direct data value, but instead the handle by which the variable is denoted, with look-up necessary to generate a pointer if cudaMemcpy() is used (whereas cudaMemcpyToSymbol()/cudaMemcpyFromSymbol() do the lookup and memory copy altogether)
-	gpuErrorCheck(cudaMemcpyToSymbol(res_arr_ind_d, &res_arr_ind_init, sizeof(size_t),
-										0, cudaMemcpyDefault),
+	gpuErrorCheck(cudaMemcpyToSymbol(res_arr_ind_d, &res_arr_ind_init, sizeof(size_t)),
 					"Error in initialising global result array index to 0 on device "
 					+ std::to_string(dev_ind + 1) + " (1-indexed) of " + std::to_string(num_devs)
 					+ ": ");
@@ -564,8 +563,7 @@ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSearch(s
 	// Set on-device global result array index to 0
 	const unsigned long long res_arr_ind_init = 0;
 	// Copying to a defined symbol requires use of an extant symbol; note that a symbol is neither a pointer nor a direct data value, but instead the handle by which the variable is denoted, with look-up necessary to generate a pointer if cudaMemcpy() is used (whereas cudaMemcpyToSymbol()/cudaMemcpyFromSymbol() do the lookup and memory copy altogether)
-	gpuErrorCheck(cudaMemcpyToSymbol(res_arr_ind_d, &res_arr_ind_init, sizeof(size_t),
-										0, cudaMemcpyDefault),
+	gpuErrorCheck(cudaMemcpyToSymbol(res_arr_ind_d, &res_arr_ind_init, sizeof(size_t)),
 					"Error in initialising global result array index to 0 on device "
 					+ std::to_string(dev_ind + 1) + " (1-indexed) of " + std::to_string(num_devs)
 					+ ": ");
@@ -617,8 +615,7 @@ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::twoSidedRightSearch(
 	// Set on-device global result array index to 0
 	const unsigned long long res_arr_ind_init = 0;
 	// Copying to a defined symbol requires use of an extant symbol; note that a symbol is neither a pointer nor a direct data value, but instead the handle by which the variable is denoted, with look-up necessary to generate a pointer if cudaMemcpy() is used (whereas cudaMemcpyToSymbol()/cudaMemcpyFromSymbol() do the lookup and memory copy altogether)
-	gpuErrorCheck(cudaMemcpyToSymbol(res_arr_ind_d, &res_arr_ind_init, sizeof(size_t),
-										0, cudaMemcpyDefault),
+	gpuErrorCheck(cudaMemcpyToSymbol(res_arr_ind_d, &res_arr_ind_init, sizeof(size_t)),
 					"Error in initialising global result array index to 0 on device "
 					+ std::to_string(dev_ind + 1) + " (1-indexed) of " + std::to_string(num_devs)
 					+ ": ");
