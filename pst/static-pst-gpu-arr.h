@@ -317,17 +317,14 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 		const static unsigned char num_val_subarrs = 3;
 
 		// Without explicit instantiation, enums do not take up any space
-		enum IndexCodes
-		{
-			INACTIVE_IND = -1
-		};
-
 		enum SearchCodes
 		{
+			UNACTIVATED,
 			REPORT_ABOVE,
 			LEFT_SEARCH,
 			RIGHT_SEARCH,
-			THREE_SEARCH
+			THREE_SEARCH,
+			DEACTIVATED
 		};
 
 

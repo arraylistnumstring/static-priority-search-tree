@@ -39,12 +39,11 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 
 	// Initialise shared memory
 	// All threads except for thread 0 in each block start by being inactive
-	search_inds_arr[threadIdx.x] = search_ind = threadIdx.x == 0 ? 0
-													: StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
+	search_inds_arr[threadIdx.x] = search_ind = 0;
 	// For twoSidedLeftSearchTreeArrGlobal(), thread 0 has its search code set to LEFT_SEARCH, while all others have their search code set to REPORT_ABOVE (since splits will only ever result in REPORT_ABOVEs being delegated)
 	search_codes_arr[threadIdx.x] = search_code = threadIdx.x == 0 ?
 													StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::LEFT_SEARCH
-														: StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::REPORT_ABOVE;
+														: StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::UNACTIVATED;
 
 	// Take advantage of potential speed-ups associated with doing local variable updates while waiting for shared memory to be initialised
 	cooperative_groups::thread_block::arrival_token shared_mem_init_arrival_token = curr_block.barrier_arrive();
@@ -55,7 +54,6 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 	// Note: would only need to have one thread block do multiple trees when the number of trees exceeds 2^31 - 1, i.e. the maximum number of blocks permitted in a grid
 	T *const tree_root_d = tree_arr_d + blockIdx.x * full_tree_size_num_Ts;
 
-	bool cont_iter = true;	// Loop-continuing flag
 	unsigned target_thread_offset = minPowerOf2GreaterThan(threadIdx.x);
 
 	// Must synchronise before processing to ensure data is properly set
@@ -73,7 +71,9 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 
 		// active threads -> INACTIVE (if current node goes below the dim2_val threshold or has no children)
 		// Before the next curr_block.sync() call, which denotes the end of this section, active threads are the only threads who will modify their own search_inds_arr entry, so it is fine to do so non-atomically
-		if (search_ind != StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND)
+		if (search_code != StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::UNACTIVATED
+				&& search_code != StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::DEACTIVATED
+			)
 		{
 			curr_node_dim1_val = StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::getDim1ValsRoot(tree_root_d, tree_num_elem_slots)[search_ind];
 			curr_node_dim2_val = StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::getDim2ValsRoot(tree_root_d, tree_num_elem_slots)[search_ind];
@@ -83,8 +83,8 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 
 		if (min_dim2_val > curr_node_dim2_val)
 		{
-			search_inds_arr[threadIdx.x] = search_ind
-					= StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
+			search_codes_arr[threadIdx.x] = search_code
+					= StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::DEACTIVATED;
 		}
 		else	// Thread stays active with respect to this node
 		{
@@ -114,11 +114,12 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 		}
 
 		// Check if a currently active thread will become inactive because current node has no children
-		if (search_ind != StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND
+		if (search_ind != StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::UNACTIVATED
+				&& search_ind != StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::DEACTIVATED
 				&& !GPUTreeNode::hasChildren(curr_node_bitcode))
 		{
-			search_inds_arr[threadIdx.x] = search_ind
-				= StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
+			search_codes_arr[threadIdx.x] = search_code
+				= StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::DEACTIVATED;
 		}
 
 		// All threads who would become inactive in this iteration have finished; synchronisation is utilised because one must be certain that INACTIVE ~> active writes (with ~> denoting a state change that is externally triggered, i.e. triggered by other threads) are not inadvertently overwritten by active -> INACTIVE writes in lines of code above this one
@@ -126,7 +127,8 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 
 
 		// active threads -> active threads; each active thread whose search splits sends a "wake-up" message to an INACTIVE thread's shared memory slot, for that (currently INACTIVE) thread to later read and become active
-		if (search_ind != StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND)
+		if (search_ind != StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::UNACTIVATED
+				&& search_ind != StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::DEACTIVATED)
 		{
 			if (search_code == StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::LEFT_SEARCH)	// Currently a search-type query
 			{
@@ -163,7 +165,7 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 
 
 		// INACTIVE threads -> active threads (by reading their shared memory slots if activated by an already-active thread); or INACTIVE threads -> exit loop (if all possible threads that could activate this thread have already become inactive)
-		if (search_ind == StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND)
+		if (search_ind == StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::UNACTIVATED)
 			StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::detInactivity(search_ind,
 																					search_inds_arr,
 																					cont_iter,
