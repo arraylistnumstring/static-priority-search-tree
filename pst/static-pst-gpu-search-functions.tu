@@ -187,9 +187,9 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 															search_code, search_codes_arr
 														);
 			}
-			else	// search_code == REPORT_ALL
+			else	// search_code == REPORT_ABOVE
 			{
-				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodesDelegation(
+				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doReportAboveDelegation(
 															curr_node_bitcode,
 															root_d, num_elem_slots,
 															res_arr_d, min_dim2_val,
@@ -265,10 +265,10 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 	// All threads except for thread 0 start by being inactive
 	search_inds_arr[threadIdx.x] = search_ind = threadIdx.x == 0 ? start_node_ind
 													: StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
-	// For twoSidedLeftSearchGlobal(), thread 0 has its search code set to LEFT_SEARCH, while all others have their search code set to REPORT_ALL (since splits will only ever result in REPORT_ALLs being delegated)
+	// For twoSidedLeftSearchGlobal(), thread 0 has its search code set to LEFT_SEARCH, while all others have their search code set to REPORT_ABOVE (since splits will only ever result in REPORT_ABOVEs being delegated)
 	search_codes_arr[threadIdx.x] = search_code = threadIdx.x == 0 ?
 														StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::LEFT_SEARCH
-															: StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::REPORT_ALL;
+															: StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::REPORT_ABOVE;
 
 	// Take advantage of potential speed-ups associated with doing local variable updates while waiting for shared memory to be initialised
 	cooperative_groups::thread_block::arrival_token shared_mem_init_arrival_token = curr_block.barrier_arrive();
@@ -373,7 +373,7 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 			}
 			else	// Already a report all-type query
 			{
-				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodesDelegation(
+				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doReportAboveDelegation(
 																curr_node_bitcode,
 																root_d, num_elem_slots,
 																res_arr_d, min_dim2_val,
@@ -449,10 +449,10 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 	// All threads except for thread 0 start by being inactive
 	search_inds_arr[threadIdx.x] = search_ind = threadIdx.x == 0 ? start_node_ind
 													: StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
-	// For twoSidedRightSearchGlobal(), thread 0 has its search code set to RIGHT_SEARCH, while all others have their search code set to REPORT_ALL (since splits will only ever result in REPORT_ALLs being delegated)
+	// For twoSidedRightSearchGlobal(), thread 0 has its search code set to RIGHT_SEARCH, while all others have their search code set to REPORT_ABOVE (since splits will only ever result in REPORT_ABOVEs being delegated)
 	search_codes_arr[threadIdx.x] = search_code = threadIdx.x == 0 ?
 													StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::RIGHT_SEARCH
-														: StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::REPORT_ALL;
+														: StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::REPORT_ABOVE;
 
 	// Take advantage of potential speed-ups associated with doing local variable updates while waiting for shared memory to be initialised
 	cooperative_groups::thread_block::arrival_token shared_mem_init_arrival_token = curr_block.barrier_arrive();
@@ -556,7 +556,7 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 			}
 			else	// Already a report all-type query
 			{
-				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodesDelegation(
+				StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doReportAboveDelegation(
 																curr_node_bitcode,
 																root_d, num_elem_slots,
 																res_arr_d, min_dim2_val,
@@ -592,7 +592,7 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 // Correctness only guaranteed for grids with one active block
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs, typename RetType>
-__global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slots,
+__global__ void reportAboveGlobal(T *const root_d, const size_t num_elem_slots,
 										const long long start_node_ind,
 										RetType *const res_arr_d,
 										const T min_dim2_val)
@@ -717,7 +717,7 @@ __global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slot
 		// If thread remains active, it must have at least one child
 		if (search_ind != StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND)
 		{
-			StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodesDelegation(
+			StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doReportAboveDelegation(
 																curr_node_bitcode,
 																root_d, num_elem_slots,
 																res_arr_d, min_dim2_val,

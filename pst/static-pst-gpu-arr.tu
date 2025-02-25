@@ -855,7 +855,7 @@ __forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, 
 			if (threadIdx.x + target_thread_offset < blockDim.x)
 			{
 				search_inds_arr[threadIdx.x + target_thread_offset] = GPUTreeNode::getLeftChild(search_ind);
-				search_codes_arr[threadIdx.x + target_thread_offset] = SearchCodes::REPORT_ALL;
+				search_codes_arr[threadIdx.x + target_thread_offset] = SearchCodes::REPORT_ABOVE;
 
 				target_thread_offset <<= 1;
 			}
@@ -899,7 +899,7 @@ __forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, 
 		else if (GPUTreeNode::hasLeftChild(curr_node_bitcode))
 		{
 			search_inds_arr[threadIdx.x] = search_ind = GPUTreeNode::getLeftChild(search_ind);
-			search_codes_arr[threadIdx.x] = search_code = REPORT_ALL;
+			search_codes_arr[threadIdx.x] = search_code = REPORT_ABOVE;
 		}
 		// Node only has a right child; search on right child
 		else if (GPUTreeNode::hasRightChild(curr_node_bitcode))
@@ -918,7 +918,7 @@ template <typename RetType>
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 				>::value
-__forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodesDelegation(
+__forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::doReportAboveDelegation(
 																const unsigned char curr_node_bitcode,
 																T *const tree_root_d,
 																const size_t tree_num_elem_slots,
@@ -937,7 +937,7 @@ __forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, 
 		if (threadIdx.x + target_thread_offset < blockDim.x)
 		{
 			search_inds_arr[threadIdx.x + target_thread_offset] = GPUTreeNode::getRightChild(search_ind);
-			search_codes_arr[threadIdx.x + target_thread_offset] = SearchCodes::REPORT_ALL;
+			search_codes_arr[threadIdx.x + target_thread_offset] = SearchCodes::REPORT_ABOVE;
 
 			target_thread_offset <<= 1;
 		}
@@ -974,7 +974,7 @@ __forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, 
 			}
 		}
 
-		// Prepare for next iteration; because thread is already reporting all nodes (subject to the dimension-2 value boundary), search_codes_arr[threadIdx.x] == REPORT_ALL already
+		// Prepare for next iteration; because thread is already reporting all nodes (subject to the dimension-2 value boundary), search_codes_arr[threadIdx.x] == REPORT_ABOVE already
 		search_inds_arr[threadIdx.x] = search_ind = GPUTreeNode::getLeftChild(search_ind);
 	}
 	// Node only has a left child; report all on left child

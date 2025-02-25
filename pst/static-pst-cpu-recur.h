@@ -152,7 +152,7 @@ class StaticPSTCPURecur : public StaticPrioritySearchTree<T, PointStructTemplate
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 				>::value
-		void reportAllNodes(RetType *&res_arr, size_t &num_res_elems, size_t &res_arr_size,
+		void reportAbove(RetType *&res_arr, size_t &num_res_elems, size_t &res_arr_size,
 							const CPURecurTreeNode<T, PointStructTemplate, IDType, num_IDs> &subtree_root,
 							const T min_dim2_val
 						);

@@ -895,7 +895,7 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 															)
 {
 	// Report all nodes in left subtree, "recurse" search on right
-	// Because reportAllNodesGlobal() uses less shared memory, prefer launching reportAllNodesGlobal() over launching a search when utilising dynamic parallelism
+	// Because reportAboveGlobal() uses less shared memory, prefer launching reportAboveGlobal() over launching a search when utilising dynamic parallelism
 	// Though the upper bound of the dimension-1 search range is typically open, if there are duplicates of the median point and one happens to be allocated to each subtree, both trees must be traversed for correctness
 	if (range_split_poss)
 	{
@@ -904,7 +904,7 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 				&& GPUTreeNode::hasRightChild(curr_node_bitcode))
 		{
 			// Delegate work of reporting all nodes in left child to another thread and/or block
-			splitReportAllNodesWork(root_d, num_elem_slots, GPUTreeNode::getLeftChild(search_ind),
+			splitReportAboveWork(root_d, num_elem_slots, GPUTreeNode::getLeftChild(search_ind),
 										res_arr_d, min_dim2_val,
 										search_inds_arr, search_codes_arr);
 
@@ -916,7 +916,7 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 		else if (GPUTreeNode::hasLeftChild(curr_node_bitcode))
 		{
 			search_inds_arr[threadIdx.x] = search_ind = GPUTreeNode::getLeftChild(search_ind);
-			search_codes_arr[threadIdx.x] = search_code = REPORT_ALL;
+			search_codes_arr[threadIdx.x] = search_code = REPORT_ABOVE;
 		}
 		// Node only has a right child; search on right child
 		else if (GPUTreeNode::hasRightChild(curr_node_bitcode))
@@ -949,7 +949,7 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 															)
 {
 	// Report all nodes in right subtree, "recurse" search on left
-	// Because reportAllNodesGlobal() uses less shared memory, prefer launching reportAllNodesGlobal() over launching a search when utilising dynamic parallelism
+	// Because reportAboveGlobal() uses less shared memory, prefer launching reportAboveGlobal() over launching a search when utilising dynamic parallelism
 	if (range_split_poss)
 	{
 		// If current node has two children, parallelise search at each child
@@ -957,7 +957,7 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 				&& GPUTreeNode::hasRightChild(curr_node_bitcode))
 		{
 			// Delegate work of reporting all nodes in right child to another thread and/or block
-			splitReportAllNodesWork(root_d, num_elem_slots, GPUTreeNode::getRightChild(search_ind),
+			splitReportAboveWork(root_d, num_elem_slots, GPUTreeNode::getRightChild(search_ind),
 										res_arr_d, min_dim2_val,
 										search_inds_arr, search_codes_arr);
 
@@ -968,7 +968,7 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 		else if (GPUTreeNode::hasRightChild(curr_node_bitcode))
 		{
 			search_inds_arr[threadIdx.x] = search_ind = GPUTreeNode::getRightChild(search_ind);
-			search_codes_arr[threadIdx.x] = search_code = REPORT_ALL;
+			search_codes_arr[threadIdx.x] = search_code = REPORT_ABOVE;
 		}
 		// Node only has a left child; search on left child
 		else if (GPUTreeNode::hasLeftChild(curr_node_bitcode))
@@ -987,7 +987,7 @@ template <typename RetType>
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 		>::value
-__forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodesDelegation(
+__forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::doReportAboveDelegation(
 																const unsigned char curr_node_bitcode,
 																T *const root_d,
 																const size_t num_elem_slots,
@@ -1002,11 +1002,11 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 			&& GPUTreeNode::hasRightChild(curr_node_bitcode))
 	{
 		// Delegate reporting of all nodes in right child to another thread and/or block
-		splitReportAllNodesWork(root_d, num_elem_slots, GPUTreeNode::getRightChild(search_ind),
+		splitReportAboveWork(root_d, num_elem_slots, GPUTreeNode::getRightChild(search_ind),
 									res_arr_d, min_dim2_val,
 									search_inds_arr, search_codes_arr);
 
-		// Prepare for next iteration; because thread is already reporting all nodes (subject to the dimension-2 value boundary), search_codes_arr[threadIdx.x] == REPORT_ALL already
+		// Prepare for next iteration; because thread is already reporting all nodes (subject to the dimension-2 value boundary), search_codes_arr[threadIdx.x] == REPORT_ABOVE already
 		search_inds_arr[threadIdx.x] = search_ind = GPUTreeNode::getLeftChild(search_ind);
 	}
 	// Node only has a left child; report all on left child
@@ -1072,7 +1072,7 @@ template <typename RetType>
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 		>::value
-__forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::splitReportAllNodesWork(
+__forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::splitReportAboveWork(
 																T *const root_d,
 																const size_t num_elem_slots,
 																const size_t target_node_ind,
@@ -1100,15 +1100,15 @@ __forceinline__ __device__ void StaticPSTGPU<T, PointStructTemplate, IDType, num
 		// report-all searches never become normal searches again, so do not need shared memory for a search_codes_arr, just a search_inds_arr
 		// For sufficiently complicated code (such as this one), the compiler cannot deduce types on its own, so supply the (template) types explicitly here
 		// Note that cudaStreamFireAndForget is not defined with the legacy CUDA debugger backend, and so cannot be used with such debuggers
-		reportAllNodesGlobal<T, PointStructTemplate, IDType, num_IDs, RetType>
+		reportAboveGlobal<T, PointStructTemplate, IDType, num_IDs, RetType>
 							<<<1, blockDim.x, blockDim.x * sizeof(long long),
 								cudaStreamFireAndForget>>>
 							(root_d, num_elem_slots, target_node_ind, res_arr_d, min_dim2_val);
 	}
 	// search_inds_arr[(threadIdx.x + offset) % blockDim.x] = target_node_ind by the result of atomicCAS()
-	// Update search code if not called from reportAllNodesGlobal(); activated thread has ID (threadIdx.x + offset) % blockDim.x
+	// Update search code if not called from reportAboveGlobal(); activated thread has ID (threadIdx.x + offset) % blockDim.x
 	else if (search_codes_arr != nullptr)
-		search_codes_arr[(threadIdx.x + offset) % blockDim.x] = REPORT_ALL;
+		search_codes_arr[(threadIdx.x + offset) % blockDim.x] = REPORT_ABOVE;
 }
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,

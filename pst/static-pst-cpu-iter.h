@@ -117,7 +117,7 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T, PointStructTemplate,
 										std::stack<long long> &search_inds_stack,
 										std::stack<unsigned char> &search_codes_stack
 									);
-		void doReportAllNodesDelegation(const unsigned char curr_node_bitcode,
+		void doReportAboveDelegation(const unsigned char curr_node_bitcode,
 										const long long search_ind,
 										std::stack<long long> &search_inds_stack,
 										std::stack<unsigned char> &search_codes_stack
@@ -210,7 +210,7 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T, PointStructTemplate,
 		// enum name : type gives the enum an explicit underlying type; type chosen to correspond to that given to the enum SearchCodes of StaticPSTGPU
 		enum SearchCodes : unsigned char
 		{
-			REPORT_ALL,
+			REPORT_ABOVE,
 			LEFT_SEARCH,
 			RIGHT_SEARCH,
 			THREE_SEARCH

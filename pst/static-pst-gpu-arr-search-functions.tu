@@ -41,10 +41,10 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 	// All threads except for thread 0 in each block start by being inactive
 	search_inds_arr[threadIdx.x] = search_ind = threadIdx.x == 0 ? 0
 													: StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
-	// For twoSidedLeftSearchTreeArrGlobal(), thread 0 has its search code set to LEFT_SEARCH, while all others have their search code set to REPORT_ALL (since splits will only ever result in REPORT_ALLs being delegated)
+	// For twoSidedLeftSearchTreeArrGlobal(), thread 0 has its search code set to LEFT_SEARCH, while all others have their search code set to REPORT_ABOVE (since splits will only ever result in REPORT_ABOVEs being delegated)
 	search_codes_arr[threadIdx.x] = search_code = threadIdx.x == 0 ?
 													StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::LEFT_SEARCH
-														: StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::REPORT_ALL;
+														: StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::REPORT_ABOVE;
 
 	// Take advantage of potential speed-ups associated with doing local variable updates while waiting for shared memory to be initialised
 	cooperative_groups::thread_block::arrival_token shared_mem_init_arrival_token = curr_block.barrier_arrive();
@@ -142,7 +142,7 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 			}
 			else	// Already a report all-type query
 			{
-				StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodesDelegation(
+				StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::doReportAboveDelegation(
 																curr_node_bitcode,
 																tree_root_d, tree_num_elem_slots,
 																res_arr_d, min_dim2_val,

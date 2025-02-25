@@ -61,7 +61,7 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 			typename IDType, size_t num_IDs,
 			typename RetType=PointStructTemplate<T, IDType, num_IDs>
 		 >
-__global__ void reportAllNodesGlobal(T *const root_d, const size_t num_elem_slots,
+__global__ void reportAboveGlobal(T *const root_d, const size_t num_elem_slots,
 										const long long start_node_ind,
 										RetType *const res_arr_d,
 										const T min_dim2_val);
@@ -263,7 +263,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 				>::value
-		__forceinline__ __device__ static void doReportAllNodesDelegation(const unsigned char curr_node_bitcode,
+		__forceinline__ __device__ static void doReportAboveDelegation(const unsigned char curr_node_bitcode,
 																T *const root_d,
 																const size_t num_elem_slots,
 																RetType *const res_arr_d,
@@ -292,7 +292,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 								std::is_same<RetType, IDType>,
 								std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 				>::value
-		__forceinline__ __device__ static void splitReportAllNodesWork(T *const root_d,
+		__forceinline__ __device__ static void splitReportAboveWork(T *const root_d,
 																		const size_t num_elem_slots,
 																		const size_t target_node_ind,
 																		RetType *const res_arr_d,
@@ -399,7 +399,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 		const static unsigned char num_val_subarrs = 3;
 
 		// Without explicit instantiation, enums do not take up any space
-		// To save shared memory usage, reportAllNodesGlobal() has no search_codes array, so use the search index array to indicate an inactive thread instead
+		// To save shared memory usage, reportAboveGlobal() has no search_codes array, so use the search index array to indicate an inactive thread instead
 		enum IndexCodes
 		{
 			INACTIVE_IND = -1
@@ -407,7 +407,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 
 		enum SearchCodes
 		{
-			REPORT_ALL,
+			REPORT_ABOVE,
 			LEFT_SEARCH,
 			RIGHT_SEARCH,
 			THREE_SEARCH
@@ -471,7 +471,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 													);
 
 	template <typename U, template<typename, typename, size_t> class PtStructTempl, typename IDT, size_t NIDs, typename RetType>
-	friend __global__ void reportAllNodesGlobal(U *const root_d,
+	friend __global__ void reportAboveGlobal(U *const root_d,
 												const size_t num_elem_slots,
 												const long long start_node_ind,
 												RetType *const res_arr_d,

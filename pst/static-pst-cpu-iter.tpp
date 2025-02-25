@@ -287,7 +287,7 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::threeSidedSearch
 				}
 				else	// Already a report all-type query
 				{
-					doReportAllNodesDelegation(curr_node_bitcode,
+					doReportAboveDelegation(curr_node_bitcode,
 												search_ind, search_inds_stack,
 												search_codes_stack);
 				}
@@ -378,7 +378,7 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSear
 				}
 				else	// Already a report all-type query
 				{
-					doReportAllNodesDelegation(curr_node_bitcode,
+					doReportAboveDelegation(curr_node_bitcode,
 												search_ind, search_inds_stack,
 												search_codes_stack);
 				}
@@ -469,7 +469,7 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::twoSidedRightSea
 				}
 				else	// Already a report all-type query
 				{
-					doReportAllNodesDelegation(curr_node_bitcode,
+					doReportAboveDelegation(curr_node_bitcode,
 												search_ind, search_inds_stack,
 												search_codes_stack);
 				}
@@ -657,7 +657,7 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::doLeftSearchDele
 		if (CPUIterTreeNode::hasLeftChild(curr_node_bitcode))
 		{
 			search_inds_stack.push(CPUIterTreeNode::getLeftChild(search_ind));
-			search_codes_stack.push(REPORT_ALL);
+			search_codes_stack.push(REPORT_ABOVE);
 		}
 		// If current node has right child, search right child
 		if (CPUIterTreeNode::hasRightChild(curr_node_bitcode))
@@ -698,7 +698,7 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::doRightSearchDel
 		if (CPUIterTreeNode::hasRightChild(curr_node_bitcode))
 		{
 			search_inds_stack.push(CPUIterTreeNode::getRightChild(search_ind));
-			search_codes_stack.push(REPORT_ALL);
+			search_codes_stack.push(REPORT_ABOVE);
 		}
 	}
 	// !range_split_poss
@@ -712,7 +712,7 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::doRightSearchDel
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodesDelegation(
+void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::doReportAboveDelegation(
 											const unsigned char curr_node_bitcode,
 											const long long search_ind,
 											std::stack<long long> &search_inds_stack,
@@ -722,12 +722,12 @@ void StaticPSTCPUIter<T, PointStructTemplate, IDType, num_IDs>::doReportAllNodes
 	if (CPUIterTreeNode::hasLeftChild(curr_node_bitcode))
 	{
 		search_inds_stack.push(CPUIterTreeNode::getLeftChild(search_ind));
-		search_codes_stack.push(REPORT_ALL);
+		search_codes_stack.push(REPORT_ABOVE);
 	}
 	if (CPUIterTreeNode::hasRightChild(curr_node_bitcode))
 	{
 		search_inds_stack.push(CPUIterTreeNode::getRightChild(search_ind));
-		search_codes_stack.push(REPORT_ALL);
+		search_codes_stack.push(REPORT_ABOVE);
 	}
 }
 

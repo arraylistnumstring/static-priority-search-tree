@@ -432,7 +432,7 @@ void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSea
 	{
 		if (subtree_root.hasLeftChild())
 			// Report all nodes in left subtree with dim2_val higher than min_dim2_val
-			reportAllNodes(res_arr, num_res_elems, res_arr_size, subtree_root.getLeftChild(root), min_dim2_val);
+			reportAbove(res_arr, num_res_elems, res_arr_size, subtree_root.getLeftChild(root), min_dim2_val);
 		if (subtree_root.hasRightChild())
 			twoSidedLeftSearchRecur(res_arr, num_res_elems, res_arr_size, subtree_root.getRightChild(root), max_dim1_val, min_dim2_val);
 	}
@@ -477,7 +477,7 @@ void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::twoSidedRightSe
 	{
 		if (subtree_root.hasRightChild())
 			// Report all nodes in right subtree with dim2_val higher than min_dim2_val
-			reportAllNodes(res_arr, num_res_elems, res_arr_size, subtree_root.getRightChild(root), min_dim2_val);
+			reportAbove(res_arr, num_res_elems, res_arr_size, subtree_root.getRightChild(root), min_dim2_val);
 		if (subtree_root.hasLeftChild())
 			twoSidedRightSearchRecur(res_arr, num_res_elems, res_arr_size, subtree_root.getLeftChild(root), min_dim1_val, min_dim2_val);
 	}
@@ -493,7 +493,7 @@ template <typename RetType>
 						std::is_same<RetType, IDType>,
 						std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 		>::value
-void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::reportAllNodes(
+void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::reportAbove(
 															RetType *&res_arr, size_t &num_res_elems,
 															size_t &res_arr_size,
 															const CPURecurTreeNode<T, PointStructTemplate, IDType, num_IDs> &subtree_root,
@@ -512,7 +512,7 @@ void StaticPSTCPURecur<T, PointStructTemplate, IDType, num_IDs>::reportAllNodes(
 		resizeArray(res_arr, res_arr_size, res_arr_size << 1);
 
 	if (subtree_root.hasLeftChild())
-		reportAllNodes(res_arr, num_res_elems, res_arr_size, subtree_root.getLeftChild(root), min_dim2_val);
+		reportAbove(res_arr, num_res_elems, res_arr_size, subtree_root.getLeftChild(root), min_dim2_val);
 	if (subtree_root.hasRightChild())
-		reportAllNodes(res_arr, num_res_elems, res_arr_size, subtree_root.getRightChild(root), min_dim2_val);
+		reportAbove(res_arr, num_res_elems, res_arr_size, subtree_root.getRightChild(root), min_dim2_val);
 }

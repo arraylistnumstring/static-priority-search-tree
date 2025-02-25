@@ -197,7 +197,7 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 										std::is_same<RetType, IDType>,
 										std::is_same<RetType, PointStructTemplate<T, IDType, num_IDs>>
 						>::value
-		__forceinline__ __device__ static void doReportAllNodesDelegation(const unsigned char curr_node_bitcode,
+		__forceinline__ __device__ static void doReportAboveDelegation(const unsigned char curr_node_bitcode,
 																			T *const tree_root_d,
 																			const size_t tree_num_elem_slots,
 																			RetType *const res_arr_d,
@@ -324,7 +324,7 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 
 		enum SearchCodes
 		{
-			REPORT_ALL,
+			REPORT_ABOVE,
 			LEFT_SEARCH,
 			RIGHT_SEARCH,
 			THREE_SEARCH
