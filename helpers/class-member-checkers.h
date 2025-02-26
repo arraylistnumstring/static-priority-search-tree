@@ -3,6 +3,7 @@
 
 #include <type_traits>
 
+
 // Create type trait to determine whether a struct possesses an ID field .id
 // Source:
 //	https://stackoverflow.com/a/16000226

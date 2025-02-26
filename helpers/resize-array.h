@@ -3,6 +3,7 @@
 
 #include <cstring>		// To use memcpy()
 
+
 // Note that one needs not use template template parameters (i.e. template parameters that take templates) if the inner, encapsulated template type is not important to the code
 template <typename T>
 void resizeArray(T *&pt_arr, size_t &pt_arr_size, const size_t new_pt_arr_size)

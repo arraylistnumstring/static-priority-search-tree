@@ -2,10 +2,11 @@
 #define POINT_STRUCT_H
 
 #include <cstring>		// To use memcpy()
-#include <iostream>
+#include <ostream>
 #include <type_traits>	// To use static_assert()
 
 #include "print-array.h"
+
 
 // Struct to prevent instantiation of base, unspecialised version of PointStruct; templating necessary in order to defer failure of static_assert() until attempt to instantiate primary template of PointStruct
 // Source:

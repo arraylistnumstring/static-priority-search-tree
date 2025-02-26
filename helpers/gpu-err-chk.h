@@ -5,6 +5,7 @@
 
 #include "err-chk.h"
 
+
 void gpuErrorCheck(cudaError_t cuda_err, std::string err_str)
 {
 	if (cuda_err != cudaSuccess)

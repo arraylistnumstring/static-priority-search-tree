@@ -3,6 +3,7 @@
 
 #include <type_traits>
 
+
 // For enums, first value (if unspecified) is guaranteed to be 0, and all other unspecified values have value (previous enum's value) + 1
 enum Dims { X_DIM_IND, Y_DIM_IND, Z_DIM_IND, NUM_DIMS };
 

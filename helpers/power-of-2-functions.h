@@ -3,6 +3,7 @@
 
 #include <concepts>
 
+
 // Generates exponent for maximal power of 2 less than or equal to num
 template <typename U>
 	requires std::unsigned_integral<U>

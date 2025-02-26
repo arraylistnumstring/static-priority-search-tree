@@ -5,6 +5,7 @@
 
 #include "linearise-id.h"
 
+
 template <typename T, typename GridDimType>
 std::ostream &print3DArray(std::ostream &os, T *const T_arr,
 							const GridDimType start_inds[Dims::NUM_DIMS],

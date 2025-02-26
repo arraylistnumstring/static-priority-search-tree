@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <string>
 
+
 void throwErr(std::string err_str)
 {
 	throw std::runtime_error(err_str);

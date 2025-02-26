@@ -3,6 +3,7 @@
 
 #include "class-member-checkers.h"
 
+
 // Pre-condition: HasID<PointStruct>::value <=> id_distr_ptr != nullptr
 template <class PointStruct, typename T, typename IDDistrib, typename Distrib, typename RandNumEng>
 PointStruct *generateRandPts(const size_t num_elems, Distrib &val_distr, RandNumEng &rand_num_eng,

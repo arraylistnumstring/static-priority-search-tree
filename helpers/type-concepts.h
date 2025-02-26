@@ -3,6 +3,7 @@
 
 #include <type_traits>
 
+
 template <typename T>
 concept NonVoidType = !std::is_void<T>::value;
 

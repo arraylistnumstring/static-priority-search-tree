@@ -1,6 +1,9 @@
 #include <cooperative_groups.h>
 #include <cooperative_groups/reduce.h>
 
+#include "linearise-id.h"
+
+
 // Must have point grid and metacell grid dimension values available, in case there is a discrepancy between the maximal possible thread block size and actual metacell size; and/or maximal possible thread grid size and actual metacell grid size
 // To minimise global memory access time (and because the number of objects passed is relatively small for each set of dimensions), use explicitly passed scalar parameters for each dimension
 template <bool interwarp_reduce, typename PointStruct, typename T, typename GridDimType>

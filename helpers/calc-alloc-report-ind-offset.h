@@ -1,6 +1,7 @@
 #ifndef CALC_ALLOC_REPORT_IND_OFFSET_H
 #define CALC_ALLOC_REPORT_IND_OFFSET_H
 
+#include <concepts>
 #include <cooperative_groups.h>
 #include <cooperative_groups/scan.h>
 // Allows use of nvstd::function, an equivalent to std::function that functions on both host and device (but not across the host-device boundary)
