@@ -3,7 +3,7 @@
 
 #include <cooperative_groups.h>
 
-#include "gpu-err-chk.h"
+#include "calc-alloc-report-ind-offset.h"
 #include "gpu-power-of-2-functions.h"
 #include "gpu-tree-node.h"
 #include "static-priority-search-tree.h"
@@ -186,8 +186,8 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 																		RetType *const res_arr_d,
 																		const T min_dim2_val,
 																		unsigned &target_thread_offset,
-																		long long &search_ind,
-																		long long *const search_inds_arr,
+																		size_t &search_ind,
+																		size_t *const search_inds_arr,
 																		unsigned char &search_code,
 																		unsigned char *const search_codes_arr
 																	);
@@ -203,14 +203,14 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 																			RetType *const res_arr_d,
 																			const T min_dim2_val,
 																			unsigned &target_thread_offset,
-																			long long &search_ind,
-																			long long *const search_inds_arr,
+																			size_t &search_ind,
+																			size_t *const search_inds_arr,
 																			unsigned char *const search_codes_arr
 																		);
 
 		// Helper function for threads to determine whether all iterations have ended
-		__forceinline__ __device__ static void detNextIterState(long long &search_ind,
-																long long *const search_inds_arr,
+		__forceinline__ __device__ static void detNextIterState(size_t &search_ind,
+																size_t *const search_inds_arr,
 																unsigned char &search_code,
 																unsigned char *const search_codes_arr
 															);

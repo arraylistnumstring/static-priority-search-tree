@@ -1,4 +1,4 @@
-// Shared memory must be at least as large (number of threads) * (sizeof(long long) + sizeof(unsigned char))
+// Shared memory must be at least as large (number of threads) * (sizeof(size_t) + sizeof(unsigned char))
 // Non-member functions can only use at most one template clause
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs, typename RetType>

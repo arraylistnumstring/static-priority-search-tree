@@ -6,6 +6,7 @@
 #include "arr-ind-assign.h"
 #include "class-member-checkers.h"
 #include "dev-symbols.h"			// For global memory-scoped variable res_arr_ind_d
+#include "gpu-err-chk.h"
 
 
 extern __device__ unsigned long long res_arr_ind_d;		// Declared in dev-symbols.h
@@ -615,7 +616,7 @@ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSearc
 		// No ID or sizeof(T) >= sizeof(IDType); full_tree_size_num_max_data_id_types is already in units of sizeof(T)
 		twoSidedLeftSearchTreeArrGlobal<T, PointStructTemplate, IDType, num_IDs, RetType>
 										<<<num_thread_blocks, threads_per_block,
-											threads_per_block * (sizeof(long long) + sizeof(unsigned char))>>>
+											threads_per_block * (sizeof(size_t) + sizeof(unsigned char))>>>
 										(tree_arr_d, full_tree_num_elem_slots,
 										 full_tree_size_num_max_data_id_types,
 										 num_elems, res_arr_d, max_dim1_val, min_dim2_val);
@@ -625,7 +626,7 @@ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::twoSidedLeftSearc
 		// sizeof(IDType) > sizeof(T), and the latter is guaranteed to be a factor of the former
 		twoSidedLeftSearchTreeArrGlobal<T, PointStructTemplate, IDType, num_IDs, RetType>
 										<<<num_thread_blocks, threads_per_block,
-											threads_per_block * (sizeof(long long) + sizeof(unsigned char))>>>
+											threads_per_block * (sizeof(size_t) + sizeof(unsigned char))>>>
 										(tree_arr_d, full_tree_num_elem_slots,
 										 full_tree_size_num_max_data_id_types * sizeof(IDType) / sizeof(T),
 										 num_elems, res_arr_d, max_dim1_val, min_dim2_val);
@@ -837,8 +838,8 @@ __forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, 
 																RetType *const res_arr_d,
 																const T min_dim2_val,
 																unsigned &target_thread_offset,
-																long long &search_ind,
-																long long *const search_inds_arr,
+																size_t &search_ind,
+																size_t *const search_inds_arr,
 																unsigned char &search_code,
 																unsigned char *const search_codes_arr
 															)
@@ -862,7 +863,7 @@ __forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, 
 			// Otherwise, process that node here (maximum one such node)
 			else
 			{
-				const long long left_child_search_ind = GPUTreeNode::getLeftChild(search_ind);
+				const size_t left_child_search_ind = GPUTreeNode::getLeftChild(search_ind);
 				const T left_child_dim2_val = StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::getDim2ValsRoot(tree_root_d, tree_num_elem_slots)[left_child_search_ind];
 
 				// Check if left child, which cannot have a thread delegated to it, must be reported
@@ -926,8 +927,8 @@ __forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, 
 																RetType *const res_arr_d,
 																const T min_dim2_val,
 																unsigned &target_thread_offset,
-																long long &search_ind,
-																long long *const search_inds_arr,
+																size_t &search_ind,
+																size_t *const search_inds_arr,
 																unsigned char *const search_codes_arr
 															)
 {
@@ -944,7 +945,7 @@ __forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, 
 		}
 		else
 		{
-			const long long right_child_search_ind = GPUTreeNode::getRightChild(search_ind);
+			const size_t right_child_search_ind = GPUTreeNode::getRightChild(search_ind);
 			const T right_child_dim2_val = StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::getDim2ValsRoot(tree_root_d, tree_num_elem_slots)[right_child_search_ind];
 
 			// Check if right child, which cannot have a thread delegated to it, must be reported
@@ -990,8 +991,8 @@ __forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
 __forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::detNextIterState(
-														long long &search_ind,
-														long long *const search_inds_arr,
+														size_t &search_ind,
+														size_t *const search_inds_arr,
 														unsigned char &search_code,
 														unsigned char *const search_codes_arr
 													)
