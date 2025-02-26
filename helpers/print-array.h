@@ -1,7 +1,7 @@
 #ifndef PRINT_ARRAY_H
 #define PRINT_ARRAY_H
 
-#include <iostream>
+#include <ostream>
 
 #include "linearise-id.h"
 

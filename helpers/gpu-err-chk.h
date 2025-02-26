@@ -1,7 +1,7 @@
 #ifndef GPU_ERR_CHK_H
 #define GPU_ERR_CHK_H
 
-#include <stdexcept>	// To use std::runtime_error
+#include <string>
 
 #include "err-chk.h"
 

@@ -5,6 +5,7 @@
 #include <iostream>
 // Allows use of nvstd::function, an equivalent to std::function that functions on both host and device (but not across the host-device boundary)
 #include <nvfunctional>
+#include <string>
 #include <type_traits>
 
 #include "calc-alloc-report-ind-offset.h"
