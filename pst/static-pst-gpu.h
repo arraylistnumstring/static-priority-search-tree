@@ -7,7 +7,7 @@
 #include "arr-ind-assign.h"
 #include "class-member-checkers.h"
 #include "gpu-err-chk.h"
-#include "gpu-power-of-2-functions.h"
+#include "power-of-2-functions.h"
 #include "static-priority-search-tree.h"
 #include "type-concepts.h"
 

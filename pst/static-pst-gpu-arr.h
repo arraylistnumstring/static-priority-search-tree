@@ -4,8 +4,8 @@
 #include <cooperative_groups.h>
 
 #include "calc-alloc-report-ind-offset.h"
-#include "gpu-power-of-2-functions.h"
 #include "gpu-tree-node.h"
+#include "power-of-2-functions.h"
 #include "static-priority-search-tree.h"
 #include "type-concepts.h"
 
