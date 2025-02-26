@@ -2,11 +2,17 @@
 #define INTERVAL_PARALLEL_SEARCH_H
 
 #include <cooperative_groups.h>
+#include <type_traits>
 
 #include "calc-alloc-report-ind-offset.h"
-#include "dev-symbols.h"	// For global memory-scoped variable res_arr_ind_d
+#include "dev-symbols.h"					// For global memory-scoped variable res_arr_ind_d
 #include "gpu-err-chk.h"
 #include "linearise-id.h"
+
+
+#ifdef DEBUG_SEARCH
+#include <iostream>
+#endif
 
 
 extern __device__ unsigned long long res_arr_ind_d;		// Declared in dev-symbols.h

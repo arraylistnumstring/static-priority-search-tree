@@ -4,8 +4,8 @@
 #include <algorithm>
 #include <cstdlib>		// To use std::exit()
 #include <functional>
-#include <random>
 #include <string>
+#include <type_traits>
 
 #include "exit-status-codes.h"
 #include "ips-tester.h"

@@ -1,5 +1,6 @@
 #include <algorithm>	// To use sort()
 #include <iostream>
+#include <type_traits>
 
 #include "interval-parallel-search.h"
 #include "isosurface-data-processing.h"

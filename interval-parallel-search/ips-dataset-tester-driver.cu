@@ -6,6 +6,12 @@
 #include "ips-test-info-struct.h"
 #include "linearise-id.h"			// For NUM_DIMS definition
 
+
+#ifdef DEBUG_TEST
+#include <iostream>
+#endif
+
+
 int main(int argc, char *argv[])
 {
 #ifdef DEBUG_TEST
