@@ -5,6 +5,7 @@
 
 #include "class-member-checkers.h"
 #include "cpu-iter-tree-node.h"
+#include "power-of-2-functions.h"
 #include "static-priority-search-tree.h"
 #include "type-concepts.h"
 
@@ -163,15 +164,6 @@ class StaticPSTCPUIter : public StaticPrioritySearchTree<T, PointStructTemplate,
 		template <size_t num_T_subarrs>
 			requires NonVoidType<IDType>
 		inline static size_t calcTotArrSizeNumIDTypes(const size_t num_elem_slots);
-
-		// Helper function for calculating the next power of 2 greater than num
-		template <typename U>
-			requires std::unsigned_integral<U>
-		static U minPowerOf2GreaterThan(const U num)
-			{return 1 << expOfMinPowerOf2GreaterThan(num);};
-		template <typename U>
-			requires std::unsigned_integral<U>
-		static U expOfMinPowerOf2GreaterThan(const U num);
 
 		// From the specification of C, pointers are const if the const qualifier appears to the right of the corresponding *
 		// Returns index in dim1_val_ind_arr of elem_to_find
