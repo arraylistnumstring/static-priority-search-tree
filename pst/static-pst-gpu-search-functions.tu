@@ -141,7 +141,7 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 
 		/*
 			curr_block.sync() call necessary here:
-				If a delegator thread delegates to the current thread, completes its search and deactivates itself while the current thread has yet to completely execute detInactivity() (i.e. by checking its shared memory slot before the delegator thread has delegated to it, then not progressing further in the code before the delegator thread exits), the current thread may incorrectly fail to get its newly delegated node, run the loop-exiting search instead and, in the (low-probability, but not impossible) case that all other threads have exited, prematurely exit the loop without searching its own assigned subtree
+				If a delegator thread delegates to the current thread, completes its search and deactivates itself while the current thread has yet to completely execute detNextIterState() (i.e. by checking its shared memory slot before the delegator thread has delegated to it, then not progressing further in the code before the delegator thread exits), the current thread may incorrectly fail to get its newly delegated node, run the loop-exiting search instead and, in the (low-probability, but not impossible) case that all other threads have exited, prematurely exit the loop without searching its own assigned subtree
 
 			curr_block.sync() calls delimit the delegation code on both sides because any set of commands that occupy the same curr_block.sync()-delimited chunk can be executed concurrently (by different threads) with no guarantee as to their ordering. Thus, in a loop, because the end loops back to the beginning (until the iteration condition is broken), having only one curr_block.sync() call is equivalent to the loop being comprised of only one curr_block.sync()-delimited chunk
 		*/
@@ -201,7 +201,7 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 
 		/*
 			curr_block.sync() call necessary here:
-				If a delegator thread delegates to the current thread, completes its search and deactivates itself while the current thread has yet to completely execute detInactivity() (i.e. by checking its shared memory slot before the delegator thread has delegated to it, then not progressing further in the code before the delegator thread exits), the current thread may incorrectly fail to get its newly delegated node, run the loop-exiting search instead and, in the (low-probability, but not impossible) case that all other threads have exited, prematurely exit the loop without searching its own assigned subtree
+				If a delegator thread delegates to the current thread, completes its search and deactivates itself while the current thread has yet to completely execute detNextIterState() (i.e. by checking its shared memory slot before the delegator thread has delegated to it, then not progressing further in the code before the delegator thread exits), the current thread may incorrectly fail to get its newly delegated node, run the loop-exiting search instead and, in the (low-probability, but not impossible) case that all other threads have exited, prematurely exit the loop without searching its own assigned subtree
 
 			curr_block.sync() calls delimit the delegation code on both sides because any set of commands that occupy the same curr_block.sync()-delimited chunk can be executed concurrently (by different threads) with no guarantee as to their ordering. Thus, in a loop, because the end loops back to the beginning (until the iteration condition is broken), having only one curr_block.sync() call is equivalent to the loop being comprised of only one curr_block.sync()-delimited chunk
 		*/
@@ -209,14 +209,14 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 
 
 		if (search_ind == StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND)
-			StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::detInactivity(search_ind,
+			StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::detNextIterState(search_ind,
 																					search_inds_arr,
 																					cont_iter,
 																					&search_code,
 																					search_codes_arr
 																				);
 
-		// No curr_block.sync() call is necessary between detInactivity() and the end of the loop, as it can only potentially overlap with the section where active threads become inactive; this poses no issue for correctness, as if there is still work to be done, at least one thread will be guaranteed to remain active and therefore no inactive threads will exit the processing loop
+		// No curr_block.sync() call is necessary between detNextIterState() and the end of the loop, as it can only potentially overlap with the section where active threads become inactive; this poses no issue for correctness, as if there is still work to be done, at least one thread will be guaranteed to remain active and therefore no inactive threads will exit the processing loop
 	}
 	// End cont_iter loop
 }
@@ -350,7 +350,7 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 
 		/*
 			curr_block.sync() call necessary here:
-				If a delegator thread delegates to the current thread, completes its search and deactivates itself while the current thread has yet to completely execute detInactivity() (i.e. by checking its shared memory slot before the delegator thread has delegated to it, then not progressing further in the code before the delegator thread exits), the current thread may incorrectly fail to get its newly delegated node, run the loop-exiting search instead and, in the (low-probability, but not impossible) case that all other threads have exited, prematurely exit the loop without searching its own assigned subtree
+				If a delegator thread delegates to the current thread, completes its search and deactivates itself while the current thread has yet to completely execute detNextIterState() (i.e. by checking its shared memory slot before the delegator thread has delegated to it, then not progressing further in the code before the delegator thread exits), the current thread may incorrectly fail to get its newly delegated node, run the loop-exiting search instead and, in the (low-probability, but not impossible) case that all other threads have exited, prematurely exit the loop without searching its own assigned subtree
 
 			curr_block.sync() calls delimit the delegation code on both sides because any set of commands that occupy the same curr_block.sync()-delimited chunk can be executed concurrently (by different threads) with no guarantee as to their ordering. Thus, in a loop, because the end loops back to the beginning (until the iteration condition is broken), having only one curr_block.sync() call is equivalent to the loop being comprised of only one curr_block.sync()-delimited chunk
 		*/
@@ -385,7 +385,7 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 
 		/*
 			curr_block.sync() call necessary here:
-				If a delegator thread delegates to the current thread, completes its search and deactivates itself while the current thread has yet to completely execute detInactivity() (i.e. by checking its shared memory slot before the delegator thread has delegated to it, then not progressing further in the code before the delegator thread exits), the current thread may incorrectly fail to get its newly delegated node, run the loop-exiting search instead and, in the (low-probability, but not impossible) case that all other threads have exited, prematurely exit the loop without searching its own assigned subtree
+				If a delegator thread delegates to the current thread, completes its search and deactivates itself while the current thread has yet to completely execute detNextIterState() (i.e. by checking its shared memory slot before the delegator thread has delegated to it, then not progressing further in the code before the delegator thread exits), the current thread may incorrectly fail to get its newly delegated node, run the loop-exiting search instead and, in the (low-probability, but not impossible) case that all other threads have exited, prematurely exit the loop without searching its own assigned subtree
 
 			curr_block.sync() calls delimit the delegation code on both sides because any set of commands that occupy the same curr_block.sync()-delimited chunk can be executed concurrently (by different threads) with no guarantee as to their ordering. Thus, in a loop, because the end loops back to the beginning (until the iteration condition is broken), having only one curr_block.sync() call is equivalent to the loop being comprised of only one curr_block.sync()-delimited chunk
 		*/
@@ -393,14 +393,14 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 
 
 		if (search_ind == StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND)
-			StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::detInactivity(search_ind,
+			StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::detNextIterState(search_ind,
 																					search_inds_arr,
 																					cont_iter,
 																					&search_code,
 																					search_codes_arr
 																				);
 
-		// No curr_block.sync() call is necessary between detInactivity() and the end of the loop, as it can only potentially overlap with the section where active threads become inactive; this poses no issue for correctness, as if there is still work to be done, at least one thread will be guaranteed to remain active and therefore no inactive threads will exit the processing loop
+		// No curr_block.sync() call is necessary between detNextIterState() and the end of the loop, as it can only potentially overlap with the section where active threads become inactive; this poses no issue for correctness, as if there is still work to be done, at least one thread will be guaranteed to remain active and therefore no inactive threads will exit the processing loop
 	}
 	// End cont_iter loop
 }
@@ -533,7 +533,7 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 
 		/*
 			curr_block.sync() call necessary here:
-				If a delegator thread delegates to the current thread, completes its search and deactivates itself while the current thread has yet to completely execute detInactivity() (i.e. by checking its shared memory slot before the delegator thread has delegated to it, then not progressing further in the code before the delegator thread exits), the current thread may incorrectly fail to get its newly delegated node, run the loop-exiting search instead and, in the (low-probability, but not impossible) case that all other threads have exited, prematurely exit the loop without searching its own assigned subtree
+				If a delegator thread delegates to the current thread, completes its search and deactivates itself while the current thread has yet to completely execute detNextIterState() (i.e. by checking its shared memory slot before the delegator thread has delegated to it, then not progressing further in the code before the delegator thread exits), the current thread may incorrectly fail to get its newly delegated node, run the loop-exiting search instead and, in the (low-probability, but not impossible) case that all other threads have exited, prematurely exit the loop without searching its own assigned subtree
 
 			curr_block.sync() calls delimit the delegation code on both sides because any set of commands that occupy the same curr_block.sync()-delimited chunk can be executed concurrently (by different threads) with no guarantee as to their ordering. Thus, in a loop, because the end loops back to the beginning (until the iteration condition is broken), having only one curr_block.sync() call is equivalent to the loop being comprised of only one curr_block.sync()-delimited chunk
 		*/
@@ -568,7 +568,7 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 
 		/*
 			curr_block.sync() call necessary here:
-				If a delegator thread delegates to the current thread, completes its search and deactivates itself while the current thread has yet to completely execute detInactivity() (i.e. by checking its shared memory slot before the delegator thread has delegated to it, then not progressing further in the code before the delegator thread exits), the current thread may incorrectly fail to get its newly delegated node, run the loop-exiting search instead and, in the (low-probability, but not impossible) case that all other threads have exited, prematurely exit the loop without searching its own assigned subtree
+				If a delegator thread delegates to the current thread, completes its search and deactivates itself while the current thread has yet to completely execute detNextIterState() (i.e. by checking its shared memory slot before the delegator thread has delegated to it, then not progressing further in the code before the delegator thread exits), the current thread may incorrectly fail to get its newly delegated node, run the loop-exiting search instead and, in the (low-probability, but not impossible) case that all other threads have exited, prematurely exit the loop without searching its own assigned subtree
 
 			curr_block.sync() calls delimit the delegation code on both sides because any set of commands that occupy the same curr_block.sync()-delimited chunk can be executed concurrently (by different threads) with no guarantee as to their ordering. Thus, in a loop, because the end loops back to the beginning (until the iteration condition is broken), having only one curr_block.sync() call is equivalent to the loop being comprised of only one curr_block.sync()-delimited chunk
 		*/
@@ -576,14 +576,14 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 
 
 		if (search_ind == StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND)
-			StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::detInactivity(search_ind,
+			StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::detNextIterState(search_ind,
 																					search_inds_arr,
 																					cont_iter,
 																					&search_code,
 																					search_codes_arr
 																				);
 
-		// No curr_block.sync() call is necessary between detInactivity() and the end of the loop, as it can only potentially overlap with the section where active threads become inactive; this poses no issue for correctness, as if there is still work to be done, at least one thread will be guaranteed to remain active and therefore no inactive threads will exit the processing loop
+		// No curr_block.sync() call is necessary between detNextIterState() and the end of the loop, as it can only potentially overlap with the section where active threads become inactive; this poses no issue for correctness, as if there is still work to be done, at least one thread will be guaranteed to remain active and therefore no inactive threads will exit the processing loop
 	}
 	// End cont_iter loop
 }
@@ -706,7 +706,7 @@ __global__ void reportAboveGlobal(T *const root_d, const size_t num_elem_slots,
 
 		/*
 			curr_block.sync() call necessary here:
-				If a delegator thread delegates to the current thread, completes its search and deactivates itself while the current thread has yet to completely execute detInactivity() (i.e. by checking its shared memory slot before the delegator thread has delegated to it, then not progressing further in the code before the delegator thread exits), the current thread may incorrectly fail to get its newly delegated node, run the loop-exiting search instead and, in the (low-probability, but not impossible) case that all other threads have exited, prematurely exit the loop without searching its own assigned subtree
+				If a delegator thread delegates to the current thread, completes its search and deactivates itself while the current thread has yet to completely execute detNextIterState() (i.e. by checking its shared memory slot before the delegator thread has delegated to it, then not progressing further in the code before the delegator thread exits), the current thread may incorrectly fail to get its newly delegated node, run the loop-exiting search instead and, in the (low-probability, but not impossible) case that all other threads have exited, prematurely exit the loop without searching its own assigned subtree
 
 			curr_block.sync() calls delimit the delegation code on both sides because any set of commands that occupy the same curr_block.sync()-delimited chunk can be executed concurrently (by different threads) with no guarantee as to their ordering. Thus, in a loop, because the end loops back to the beginning (until the iteration condition is broken), having only one curr_block.sync() call is equivalent to the loop being comprised of only one curr_block.sync()-delimited chunk
 		*/
@@ -727,7 +727,7 @@ __global__ void reportAboveGlobal(T *const root_d, const size_t num_elem_slots,
 
 		/*
 			curr_block.sync() call necessary here:
-				If a delegator thread delegates to the current thread, completes its search and deactivates itself while the current thread has yet to completely execute detInactivity() (i.e. by checking its shared memory slot before the delegator thread has delegated to it, then not progressing further in the code before the delegator thread exits), the current thread may incorrectly fail to get its newly delegated node, run the loop-exiting search instead and, in the (low-probability, but not impossible) case that all other threads have exited, prematurely exit the loop without searching its own assigned subtree
+				If a delegator thread delegates to the current thread, completes its search and deactivates itself while the current thread has yet to completely execute detNextIterState() (i.e. by checking its shared memory slot before the delegator thread has delegated to it, then not progressing further in the code before the delegator thread exits), the current thread may incorrectly fail to get its newly delegated node, run the loop-exiting search instead and, in the (low-probability, but not impossible) case that all other threads have exited, prematurely exit the loop without searching its own assigned subtree
 
 			curr_block.sync() calls delimit the delegation code on both sides because any set of commands that occupy the same curr_block.sync()-delimited chunk can be executed concurrently (by different threads) with no guarantee as to their ordering. Thus, in a loop, because the end loops back to the beginning (until the iteration condition is broken), having only one curr_block.sync() call is equivalent to the loop being comprised of only one curr_block.sync()-delimited chunk
 		*/
@@ -735,12 +735,12 @@ __global__ void reportAboveGlobal(T *const root_d, const size_t num_elem_slots,
 
 
 		if (search_ind == StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND)
-			StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::detInactivity(search_ind,
+			StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::detNextIterState(search_ind,
 																					search_inds_arr,
 																					cont_iter
 																				);
 
-		// No curr_block.sync() call is necessary between detInactivity() and the end of the loop, as it can only potentially overlap with the section where active threads become inactive; this poses no issue for correctness, as if there is still work to be done, at least one thread will be guaranteed to remain active and therefore no inactive threads will exit the processing loop
+		// No curr_block.sync() call is necessary between detNextIterState() and the end of the loop, as it can only potentially overlap with the section where active threads become inactive; this poses no issue for correctness, as if there is still work to be done, at least one thread will be guaranteed to remain active and therefore no inactive threads will exit the processing loop
 	}
 	// End cont_iter loop
 }

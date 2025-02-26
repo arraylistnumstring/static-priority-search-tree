@@ -302,7 +302,7 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 																	);
 
 		// Helper function for threads to determine whether all iterations have ended
-		__forceinline__ __device__ static void detInactivity(long long &search_ind,
+		__forceinline__ __device__ static void detNextIterState(long long &search_ind,
 																long long *const search_inds_arr,
 																bool &cont_iter,
 																unsigned char *const search_code = nullptr,

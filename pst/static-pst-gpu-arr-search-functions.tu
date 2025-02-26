@@ -175,12 +175,12 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 
 		// INACTIVE threads -> active threads (by reading their shared memory slots if activated by an already-active thread); or INACTIVE threads -> exit loop (if all possible threads that could activate this thread have already become inactive)
 		if (search_ind == StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::UNACTIVATED)
-			StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::detInactivity(search_ind,
-																					search_inds_arr,
-																					cont_iter,
-																					search_code,
-																					search_codes_arr
-																				);
+			StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::detNextIterState(search_ind,
+																						search_inds_arr,
+																						cont_iter,
+																						search_code,
+																						search_codes_arr
+																					);
 
 	}
 	// End cont_iter loop
