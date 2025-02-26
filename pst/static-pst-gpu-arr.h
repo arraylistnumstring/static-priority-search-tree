@@ -319,12 +319,12 @@ class StaticPSTGPUArr: public StaticPrioritySearchTree<T, PointStructTemplate, I
 		// Without explicit instantiation, enums do not take up any space
 		enum SearchCodes
 		{
-			UNACTIVATED,
+			UNACTIVATED,	// Not yet activated
 			REPORT_ABOVE,
 			LEFT_SEARCH,
 			RIGHT_SEARCH,
 			THREE_SEARCH,
-			DEACTIVATED
+			DEACTIVATED		// Will never be activated
 		};
 
 

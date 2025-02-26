@@ -30,11 +30,11 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 	// Use char datatype because extern variables must be consistent across all declarations and because char is the smallest possible datatype
 	extern __shared__ char s[];
 	// Node indices for each thread to search
-	long long *search_inds_arr = reinterpret_cast<long long *>(s);
+	size_t *search_inds_arr = reinterpret_cast<size_t *>(s);
 	unsigned char *search_codes_arr = reinterpret_cast<unsigned char *>(search_inds_arr + blockDim.x);
 
 	// Place declarations here so that can be initialised when shared memory is initialised
-	long long search_ind;
+	size_t search_ind;
 	unsigned char search_code;
 
 	// Initialise shared memory
@@ -60,7 +60,8 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 	curr_block.barrier_wait(std::move(shared_mem_init_arrival_token));
 
 
-	while (cont_iter)
+	// By design, threads that have been DEACTIVATED are never re-activated
+	while (search_code != StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::DEACTIVATED)
 	{
 		T curr_node_dim1_val;
 		T curr_node_dim2_val;
@@ -69,8 +70,8 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 
 		bool active_node = false;
 
-		// active threads -> INACTIVE (if current node goes below the dim2_val threshold or has no children)
-		// Before the next curr_block.sync() call, which denotes the end of this section, active threads are the only threads who will modify their own search_inds_arr entry, so it is fine to do so non-atomically
+		// active threads -> DEACTIVATED (if current node goes below the dim2_val threshold or has no children)
+		// active threads are the only threads who will modify their own search_inds_arr entry, so it is fine to do so non-atomically
 		if (search_code != StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::UNACTIVATED
 				&& search_code != StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::DEACTIVATED
 			)
@@ -79,23 +80,27 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 			curr_node_dim2_val = StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::getDim2ValsRoot(tree_root_d, tree_num_elem_slots)[search_ind];
 			curr_node_med_dim1_val = StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::getMedDim1ValsRoot(tree_root_d, tree_num_elem_slots)[search_ind];
 			curr_node_bitcode = StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::getBitcodesRoot(tree_root_d, tree_num_elem_slots)[search_ind];
+
+			if (min_dim2_val > curr_node_dim2_val)
+			{
+				search_codes_arr[threadIdx.x] = search_code
+						= StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::DEACTIVATED;
+			}
+			else	// Thread stays active with respect to this node
+			{
+				// Check if current node satisfies query and should be reported
+				active_node = curr_node_dim1_val <= max_dim1_val;
+			}
 		}
 
-		if (min_dim2_val > curr_node_dim2_val)
-		{
-			search_codes_arr[threadIdx.x] = search_code
-					= StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::DEACTIVATED;
-		}
-		else	// Thread stays active with respect to this node
-		{
-			// Check if current node satisfies query and should be reported
-			active_node = curr_node_dim1_val <= max_dim1_val;
-		}
 
 		// Report step
+
+		// Interwarp prefix sum is infeasible here, as block-level synchronisation cannot filter out threads by activity level and, while the prefix sum itself would be correct among all active threads, the atomic increment of the global space-allocating index variable res_arr_ind_d would need to be done by a determinstically designated thread. Doing so would require said thread to poll all other threads for their activity levels, and would defeat the purpose of a more lightweight deactivation design that only needs to poll the chain of threads that would potentially activate the current thread (O(lg(threadIdx.x)) operations)
+
 		if (active_node)
 		{
-			// Intrawarp prefix sum: each thread here has one active node to report
+			// Intrawarp prefix sum: each thread here has one active node to report; works correctly no matter how many threads are not participating
 			const unsigned long long res_ind_to_access = calcAllocReportIndOffset<unsigned long long>(1);
 
 			if constexpr (std::is_same<RetType, IDType>::value)
@@ -122,11 +127,10 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 				= StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::DEACTIVATED;
 		}
 
-		// All threads who would become inactive in this iteration have finished; synchronisation is utilised because one must be certain that INACTIVE ~> active writes (with ~> denoting a state change that is externally triggered, i.e. triggered by other threads) are not inadvertently overwritten by active -> INACTIVE writes in lines of code above this one
-		curr_block.sync();
+		// DEACTIVATED threads never reactivate, so no race conditions exist regarding writing to their search_codes_arr shared memory slot
 
 
-		// active threads -> active threads; each active thread whose search splits sends a "wake-up" message to an INACTIVE thread's shared memory slot, for that (currently INACTIVE) thread to later read and become active
+		// State transition: active -> active; each active thread whose search splits sends an "activation" message to an UNACTIVATED thread's shared memory slot, for that (currently UNACTIVATED) thread to later read and become active
 		if (search_ind != StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::UNACTIVATED
 				&& search_ind != StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::DEACTIVATED)
 		{
@@ -156,10 +160,15 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 		}
 
 		/*
-			curr_block.sync() call necessary here:
-				If a delegator thread delegates to the current thread, completes its search and deactivates itself while the current thread has yet to completely execute detInactivity() (i.e. by checking its shared memory slot before the delegator thread has delegated to it, then not progressing further in the code before the delegator thread exits), the current thread may incorrectly fail to get its newly delegated node, run the loop-exiting search instead, see that all potential delegators have exited, and prematurely exit the loop without searching its own assigned subtree
+			curr_block.sync() call necessary:
+				Necessary to prevent the possibility (potentially remote, though unignorable due to lack of transparency regarding how the warp scheduler schedules warp executions) that the warp scheduler finds UNACTIVATED threads to be heuristically better to run (e.g. because of lower resource consumption than active threads) and only runs UNACTIVATED threads, which will never exit because the active threads have not DEACTIVATED, and have not progressed in their search sufficiently (or at all) and therefore have not delegated any work to UNACTIVATED threads
 
-			curr_block.sync() calls delimit the delegation code on both sides because any set of commands that occupy the same curr_block.sync()-delimited chunk can be executed concurrently (by different threads) with no guarantee as to their ordering. Thus, in a loop, because the end loops back to the beginning (until the iteration condition is broken), having only one curr_block.sync() call is equivalent to the loop being comprised of only one curr_block.sync()-delimited chunk
+				curr_block.sync() placed here to maximise the likelihood that an UNACTIVATED delegatee will become activated as soon as possible after being delegated a node
+
+			Additional curr_block.sync() call not necessary (for blocking off the delegation code from the remainder of the code):
+				Baseline scenario: UNACTIVATED thread is a delegatee (has a delegation "message" in its shared_codes_arr slot) and activates itself, and at least one other thread in the chain of threads that would delegate to the current thread is active
+				Even if all threads in the delegation chain exit, an UNACTIVATED delegatee will read the delegation "message" in its shared_codes_arr slot and activate itself, whence it will no longer be susceptible to future writes by other threads; an UNACTIVATED non-delegatee in this scenario will correctly become DEACTIVATED
+				Otherwise, if the search must continue, an UNACTIVATED non-delegatee thread will either correctly see that a thread in the chain of delegators to it is still active and respond by staying in the loop; or see that all threads in its chain of delegators are DEACTIVATED, and itself become DEACTIVATED since no threads remain to activate it
 		*/
 		curr_block.sync();
 
@@ -173,7 +182,6 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 																					search_codes_arr
 																				);
 
-		// No curr_block.sync() call is necessary between detInactivity() and the end of the loop, as it can only potentially overlap with the section where active threads become inactive; this poses no issue for correctness, as if there is still work to be done, at least one thread will be guaranteed to remain active and therefore no inactive threads will exit the processing loop
 	}
 	// End cont_iter loop
 }
