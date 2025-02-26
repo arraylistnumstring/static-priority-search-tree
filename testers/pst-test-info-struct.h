@@ -1,11 +1,12 @@
 #ifndef PST_TEST_INFO_STRUCT_H
 #define PST_TEST_INFO_STRUCT_H
 
-#include <algorithm>
 #include <cstdlib>		// To use std::exit()
 #include <functional>	// To use std::function
+#include <iostream>
 #include <random>
 #include <string>
+#include <type_traits>
 
 #include "exit-status-codes.h"
 #include "linearise-id.h"			// For NUM_DIMS definition

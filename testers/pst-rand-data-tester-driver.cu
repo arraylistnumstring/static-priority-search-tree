@@ -1,8 +1,11 @@
+#include <algorithm>	// To use transform()
+#include <iostream>
 #include <string>	// To use stoi() and string operators for command-line argument parsing
 
 #include "exit-status-codes.h"		// For consistent exit status codes
 #include "pst-tester.h"
 #include "pst-test-info-struct.h"
+
 
 int main(int argc, char *argv[])
 {

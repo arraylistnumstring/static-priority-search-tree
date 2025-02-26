@@ -1,14 +1,10 @@
 #include <algorithm>	// To use transform()
+#include <iostream>
 #include <string>		// To use stoi() and string operators for command-line argument parsing
 
 #include "exit-status-codes.h"		// For consistent exit status codes
 #include "ips-tester.h"
 #include "ips-test-info-struct.h"
-
-
-#ifdef DEBUG_TEST
-#include <iostream>
-#endif
 
 
 int main(int argc, char *argv[])

@@ -1,10 +1,13 @@
+#include <algorithm>	// To use transform()
 #include <filesystem>	// To use filesystem existence checks
+#include <iostream>
 #include <string>		// To use stoi() and string operators for command-line argument parsing
 
-#include "exit-status-codes.h"				// For consistent exit status codes
-#include "linearise-id.h"		// For NUM_DIMS definition
+#include "exit-status-codes.h"		// For consistent exit status codes
+#include "linearise-id.h"			// For NUM_DIMS definition
 #include "pst-tester.h"
 #include "pst-test-info-struct.h"
+
 
 int main(int argc, char *argv[])
 {
