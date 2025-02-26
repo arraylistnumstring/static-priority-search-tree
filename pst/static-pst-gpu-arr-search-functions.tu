@@ -54,6 +54,7 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 	// Note: would only need to have one thread block do multiple trees when the number of trees exceeds 2^31 - 1, i.e. the maximum number of blocks permitted in a grid
 	T *const tree_root_d = tree_arr_d + blockIdx.x * full_tree_size_num_Ts;
 
+	// Due to possessing enough threads in each block (and therefore for each tree, up to the leaf level), delegate search splits like in subtree construction: with thread offsets that are successive powers of 2 (but only increasing the offset when a delegation actually occurs)
 	unsigned target_thread_offset = minPowerOf2GreaterThan(threadIdx.x);
 
 	// Must synchronise before processing to ensure data is properly set
@@ -177,7 +178,6 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 		if (search_ind == StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::UNACTIVATED)
 			StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::detNextIterState(search_ind,
 																						search_inds_arr,
-																						cont_iter,
 																						search_code,
 																						search_codes_arr
 																					);

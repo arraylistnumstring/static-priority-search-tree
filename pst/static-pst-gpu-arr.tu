@@ -851,7 +851,7 @@ __forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, 
 		if (GPUTreeNode::hasLeftChild(curr_node_bitcode)
 				&& GPUTreeNode::hasRightChild(curr_node_bitcode))
 		{
-			// Delegate work of reporting all nodes in left child to another thread if one is available; otherwise, process that node here (maximum one such node)
+			// Delegate work of reporting all nodes in left child to another thread if one is available
 			if (threadIdx.x + target_thread_offset < blockDim.x)
 			{
 				search_inds_arr[threadIdx.x + target_thread_offset] = GPUTreeNode::getLeftChild(search_ind);
@@ -859,6 +859,7 @@ __forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, 
 
 				target_thread_offset <<= 1;
 			}
+			// Otherwise, process that node here (maximum one such node)
 			else
 			{
 				const long long left_child_search_ind = GPUTreeNode::getLeftChild(search_ind);
@@ -991,23 +992,22 @@ template <typename T, template<typename, typename, size_t> class PointStructTemp
 __forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::detNextIterState(
 														long long &search_ind,
 														long long *const search_inds_arr,
-														bool &cont_iter,
 														unsigned char &search_code,
 														unsigned char *const search_codes_arr
 													)
 {
-	// INACTIVE threads check whether they should be active in the next iteration; if not, and this thread will never be activated, set iteration toggle to false
+	// UNACTIVATED threads check whether they should be active in the next iteration; if not, and this thread will never be activated, set this thread to be DEACTIVATED
 
 	// Thread has been assigned work; update local variables accordingly
-	if (search_inds_arr[threadIdx.x] != INACTIVE_IND)
+	if (search_codes_arr[threadIdx.x] != UNACTIVATED)
 	{
 		search_ind = search_inds_arr[threadIdx.x];
 		search_code = search_codes_arr[threadIdx.x];
 	}
-	// search_inds_arr[threadIdx.x] == INACTIVE_IND
-	// Thread remains inactive; check if all other threads that would lead to this thread's activation are inactive; if so, all processing has completed
+	// search_codes_arr[threadIdx.x] == UNACTIVATED
+	// Thread remains UNACTIVATED; check if all other threads that would lead to this thread's activation are inactive; if so, set current thread to DEACTIVATED: all processing relevant to this thread has completed
 	else if (threadIdx.x == 0)
-		cont_iter = false;
+		search_codes_arr[threadIdx.x] = search_code = DEACTIVATED;
 	else
 	{
 		for (auto trigger_thread_offset = maxPowerOf2AtMost(threadIdx.x),
@@ -1017,10 +1017,13 @@ __forceinline__ __device__ void StaticPSTGPUArr<T, PointStructTemplate, IDType, 
 					source_thread_id -= trigger_thread_offset
 			)
 		{
-			if (search_inds_arr[source_thread_id] != INACTIVE_IND)
+			// Check once in case value changes between evaluation of different parts of condition
+			const unsigned char source_thread_search_code = search_codes_arr[source_thread_id];
+			if (source_thread_search_code != UNACTIVATED
+					&& source_thread_search_code != DEACTIVATED)
 				break;
-			else if (source_thread_id == 0) 	// && search_inds_arr[source_thread_id] == INACTIVE_IND
-				cont_iter = false;
+			else if (source_thread_id == 0)	// && search_inds_arr[source_thread_id] == DEACTIVATED, as thread 0 is never UNACTIVATED
+				search_codes_arr[threadIdx.x] = search_code = DEACTIVATED;
 		}
 	}
 }
