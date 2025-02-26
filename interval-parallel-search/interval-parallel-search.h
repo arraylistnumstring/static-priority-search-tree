@@ -7,7 +7,6 @@
 #include "calc-alloc-report-ind-offset.h"
 #include "dev-symbols.h"					// For global memory-scoped variable res_arr_ind_d
 #include "gpu-err-chk.h"
-#include "linearise-id.h"
 
 
 #ifdef DEBUG_SEARCH

@@ -1,5 +1,6 @@
 #include <algorithm>	// To use sort()
 #include <cstring>		// To use memcpy()
+#include <iostream>
 #include <string>		// To use string-building functions
 
 #include "err-chk.h"

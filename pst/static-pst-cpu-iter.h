@@ -1,7 +1,9 @@
 #ifndef STATIC_PST_CPU_ITER_H
 #define STATIC_PST_CPU_ITER_H
 
+#include <ostream>
 #include <stack>
+#include <type_traits>
 
 #include "class-member-checkers.h"
 #include "cpu-iter-tree-node.h"

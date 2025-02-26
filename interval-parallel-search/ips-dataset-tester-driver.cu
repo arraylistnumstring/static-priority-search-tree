@@ -1,3 +1,4 @@
+#include <algorithm>	// To use transform()
 #include <filesystem>	// To use filesystem existence checks
 #include <string>		// To use stoi() and string operators for command-line argument parsing
 

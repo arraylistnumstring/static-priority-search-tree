@@ -1,6 +1,8 @@
 #ifndef CPU_RECUR_TREE_NODE_H
 #define CPU_RECUR_TREE_NODE_H
 
+#include <ostream>
+
 #include "class-member-checkers.h"
 
 

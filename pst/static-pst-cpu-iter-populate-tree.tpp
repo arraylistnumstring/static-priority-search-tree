@@ -1,3 +1,8 @@
+#ifdef DEBUG
+#include <iostream>
+#endif
+
+
 // Uses stack instead of dynamic parallelism
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>

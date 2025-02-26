@@ -13,6 +13,7 @@
 #include "dev-symbols.h"
 #include "exit-status-codes.h"
 #include "gpu-err-chk.h"
+#include "linearise-id.h"
 #include "type-concepts.h"
 
 

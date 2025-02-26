@@ -3,6 +3,7 @@
 
 #include <limits>		// To get numeric limits of each datatype
 #include <random>		// To use std::mt19937
+#include <string>
 #include <type_traits>
 
 #include "err-chk.h"

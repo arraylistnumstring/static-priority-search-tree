@@ -1,9 +1,9 @@
 #ifndef IPS_TEST_INFO_STRUCT_H
 #define IPS_TEST_INFO_STRUCT_H
 
-#include <algorithm>
 #include <cstdlib>		// To use std::exit()
 #include <functional>
+#include <isotream>
 #include <string>
 #include <type_traits>
 
