@@ -1,3 +1,10 @@
+// For use of std::move(); CUDA automatically gives it __host__ __device__ qualifiers, unless explicitly specified against during compilation (CUDA Programming Guide 14.5.22.3)
+#include <utility>
+
+#include "calc-alloc-report-ind-offset.h"
+#include "gpu-tree-node.h"
+
+
 // Shared memory must be at least as large (number of threads) * (sizeof(size_t) + sizeof(unsigned char))
 // Non-member functions can only use at most one template clause
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
@@ -174,14 +181,13 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 		curr_block.sync();
 
 
-		// INACTIVE threads -> active threads (by reading their shared memory slots if activated by an already-active thread); or INACTIVE threads -> exit loop (if all possible threads that could activate this thread have already become inactive)
+		// UNACTIVATED -> active (if thread has been delegated a node to search); or UNACTIVATED -> DEACTIVATED (if all possible threads in the chain of delegators that could activate this thread have already become DEACTIVATED)
 		if (search_ind == StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::UNACTIVATED)
 			StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::detNextIterState(search_ind,
 																						search_inds_arr,
 																						search_code,
 																						search_codes_arr
 																					);
-
 	}
-	// End cont_iter loop
+	// End processing loop
 }

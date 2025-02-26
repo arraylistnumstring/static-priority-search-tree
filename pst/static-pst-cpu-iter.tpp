@@ -4,12 +4,14 @@
 #include <string>		// To use string-building functions
 
 #include "err-chk.h"
+#include "power-of-2-functions.h"
 #include "resize-array.h"
 
 #ifdef CONSTR_TIMED
 #include <chrono>		// To use std::chrono::steady_clock (a monotonic clock suitable for interval measurements) and related functions
 #include <ctime>		// To use std::clock_t (CPU timer; pauses when CPU pauses, etc.)
 #endif
+
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>

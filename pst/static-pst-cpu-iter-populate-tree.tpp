@@ -1,3 +1,5 @@
+#include "power-of-2-functions.h"
+
 #ifdef DEBUG
 #include <iostream>
 #endif
@@ -6,7 +8,7 @@
 // Uses stack instead of dynamic parallelism
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>
-void populateTree (T *const root, const size_t num_elem_slots,
+void populateTree(T *const root, const size_t num_elem_slots,
 					PointStructTemplate<T, IDType, num_IDs> *const pt_arr,
 					size_t *const dim1_val_ind_arr, size_t *dim2_val_ind_arr,
 					size_t *dim2_val_ind_arr_secondary,

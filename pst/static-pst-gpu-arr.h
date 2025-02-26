@@ -2,9 +2,11 @@
 #define STATIC_PST_GPU_ARR_H
 
 #include <cooperative_groups.h>
+#include <ostream>
+#include <type_traits>
 
 #include "calc-alloc-report-ind-offset.h"
-#include "gpu-tree-node.h"
+#include "class-member-checkers.h"
 #include "power-of-2-functions.h"
 #include "static-priority-search-tree.h"
 #include "type-concepts.h"

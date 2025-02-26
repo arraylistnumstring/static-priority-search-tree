@@ -2,9 +2,9 @@
 #define STATIC_PST_GPU_H
 
 #include <cooperative_groups.h>
+#include <ostream>
+#include <type_traits>
 
-// Only present in .h file due to execution speed-up of friend declaration; otherwise, would place in .tu file, where it is actually used
-#include "arr-ind-assign.h"
 #include "class-member-checkers.h"
 #include "gpu-err-chk.h"
 #include "power-of-2-functions.h"
@@ -429,9 +429,6 @@ class StaticPSTGPU: public StaticPrioritySearchTree<T, PointStructTemplate, IDTy
 											const size_t val_ind_arr_start_ind, const size_t num_elems,
 											const size_t target_node_start_ind
 										);
-
-	// Non-template friend; while not strictly necessary, the friend declaration's presence decreases construction time on average by around 200 - 500 ms across all block sizes
-	friend __global__ void arrIndAssign(size_t *const ind_arr, const size_t num_elems);
 
 	/*
 		As partial specialisation is not allowed (i.e. mixing the (already-instantiated) template types of the enclosing class and the still-generic template type RetType); either replace already-declared types with generic type placeholders (to not overshadow the enclosing template types) and without requires clauses (due to the constraint imposed by C++ specification 13.7.5, point 9); or opt for full specialisation, i.e. replacing RetType with the explicit desired return types.

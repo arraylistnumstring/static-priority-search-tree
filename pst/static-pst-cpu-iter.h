@@ -7,7 +7,6 @@
 
 #include "class-member-checkers.h"
 #include "cpu-iter-tree-node.h"
-#include "power-of-2-functions.h"
 #include "static-priority-search-tree.h"
 #include "type-concepts.h"
 

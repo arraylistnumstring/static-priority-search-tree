@@ -2,8 +2,11 @@
 #include <cstring>		// To use memcpy()
 #include <string>		// To use string-building functions
 
+
+#ifdef DEBUG
 #include "print-array.h"
-#include "resize-array.h"
+#endif
+
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType, size_t num_IDs>

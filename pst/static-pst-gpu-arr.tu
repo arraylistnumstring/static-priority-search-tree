@@ -1,12 +1,14 @@
-#include <algorithm>					// To use std::max()
+#include <algorithm>					// To use std::max() and std::min()
+#include <iostream>
 #include <string>						// To use string-building functions
 #include <thrust/execution_policy.h>	// To use thrust::cuda::par::on() stream-specifying execution policy for sorting
 #include <thrust/sort.h>				// To use parallel sorting algorithm
 
 #include "arr-ind-assign.h"
-#include "class-member-checkers.h"
-#include "dev-symbols.h"			// For global memory-scoped variable res_arr_ind_d
+#include "dev-symbols.h"				// For global memory-scoped variable res_arr_ind_d
+#include "err-chk.h"
 #include "gpu-err-chk.h"
+#include "gpu-tree-node.h"
 
 
 extern __device__ unsigned long long res_arr_ind_d;		// Declared in dev-symbols.h

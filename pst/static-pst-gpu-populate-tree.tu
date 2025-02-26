@@ -1,4 +1,8 @@
+// For use of std::move(); CUDA automatically gives it __host__ __device__ qualifiers, unless explicitly specified against during compilation (CUDA Programming Guide 14.5.22.3)
+#include <utility>
+
 #include "gpu-tree-node.h"
+
 
 // Utilises dynamic parallelism
 // Shared memory must be at least as large as (total number of threads) * sizeof(size_t) * num_constr_working_arrs (currently 3)

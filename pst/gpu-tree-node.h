@@ -1,6 +1,7 @@
 #ifndef GPU_TREE_NODE_H
 #define GPU_TREE_NODE_H
 
+
 class GPUTreeNode
 {
 	public:

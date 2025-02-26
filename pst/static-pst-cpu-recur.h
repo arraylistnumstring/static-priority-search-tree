@@ -1,9 +1,13 @@
 #ifndef STATIC_PST_CPU_RECUR_H
 #define STATIC_PST_CPU_RECUR_H
 
+#include <ostream>
+#include <type_traits>
+
 #include "cpu-recur-tree-node.h"
 #include "resize-array.h"
 #include "static-priority-search-tree.h"
+
 
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType=void, size_t num_IDs=0>

@@ -3,6 +3,7 @@
 
 #include <ostream>
 
+
 template <typename T, template<typename, typename, size_t> class PointStructTemplate,
 			typename IDType=void, size_t num_IDs=0>
 class StaticPrioritySearchTree

@@ -1,10 +1,14 @@
 #include <algorithm>					// To use std::max()
+#include <iostream>
 #include <string>						// To use string-building functions
 #include <thrust/execution_policy.h>	// To use thrust::cuda::par::on() stream-specifying execution policy for sorting
 #include <thrust/sort.h>				// To use parallel sorting algorithm
 
+// Note that while not strictly necessary, declaring arrIndAssign() as a (non-template) friend decreases construction time on average by around 200 - 500 ms across all block sizes (would also require moving this include directive to the .h file instead
+#include "arr-ind-assign.h"
 #include "dev-symbols.h"					// For global memory-scoped variable res_arr_ind_d
 #include "err-chk.h"
+#include "gpu-err-chk.h"
 #include "gpu-tree-node.h"
 
 
