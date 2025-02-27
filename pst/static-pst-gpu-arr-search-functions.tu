@@ -137,6 +137,13 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 
 		// DEACTIVATED threads never reactivate, so no race conditions exist regarding writing to their search_codes_arr shared memory slot
 
+		/*
+			curr_block.sync() call necessary here:
+				If a delegator thread delegates to the current thread, completes its search and deactivates itself while the current thread has yet to completely execute detNextIterState() (i.e. by checking its shared memory slot before the delegator thread has delegated to it, then not progressing further in the code before the delegator thread exits), the current thread may incorrectly fail to get its newly delegated node, run the loop-exiting search instead and, in the (low-probability, but not impossible) case that all other threads in its delegation chain have exited, prematurely exit the loop without searching its own assigned subtree
+
+			curr_block.sync() calls delimit the delegation code on both sides because any set of commands that occupy the same curr_block.sync()-delimited chunk can be executed concurrently (by different threads) with no guarantee as to their ordering. Thus, in a loop, because the end loops back to the beginning (until the iteration condition is broken), having only one curr_block.sync() call is equivalent to the loop being comprised of only one curr_block.sync()-delimited chunk
+		*/
+		curr_block.sync();
 
 		// State transition: active -> active; each active thread whose search splits sends an "activation" message to an UNACTIVATED thread's shared memory slot, for that (currently UNACTIVATED) thread to later read and become active
 		if (search_code != StaticPSTGPUArr<T, PointStructTemplate, IDType, num_IDs>::SearchCodes::UNACTIVATED
@@ -168,15 +175,10 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 		}
 
 		/*
-			curr_block.sync() call necessary:
-				Necessary to prevent the possibility (potentially remote, though unignorable due to lack of transparency regarding how the warp scheduler schedules warp executions) that the warp scheduler finds UNACTIVATED threads to be heuristically better to run (e.g. because of lower resource consumption than active threads) and only runs UNACTIVATED threads, which will never exit because the active threads have not DEACTIVATED, and have not progressed in their search sufficiently (or at all) and therefore have not delegated any work to UNACTIVATED threads
+			curr_block.sync() call necessary here:
+				If a delegator thread delegates to the current thread, completes its search and deactivates itself while the current thread has yet to completely execute detNextIterState() (i.e. by checking its shared memory slot before the delegator thread has delegated to it, then not progressing further in the code before the delegator thread exits), the current thread may incorrectly fail to get its newly delegated node, run the loop-exiting search instead and, in the (low-probability, but not impossible) case that all other threads in its delegation chain have exited, prematurely exit the loop without searching its own assigned subtree
 
-				curr_block.sync() placed here to maximise the likelihood that an UNACTIVATED delegatee will become activated as soon as possible after being delegated a node
-
-			Additional curr_block.sync() call not necessary (for blocking off the delegation code from the remainder of the code):
-				Baseline scenario: UNACTIVATED thread is a delegatee (has a delegation "message" in its shared_codes_arr slot) and activates itself, and at least one other thread in the chain of threads that would delegate to the current thread is active
-				Even if all threads in the delegation chain exit, an UNACTIVATED delegatee will read the delegation "message" in its shared_codes_arr slot and activate itself, whence it will no longer be susceptible to future writes by other threads; an UNACTIVATED non-delegatee in this scenario will correctly become DEACTIVATED
-				Otherwise, if the search must continue, an UNACTIVATED non-delegatee thread will either correctly see that a thread in the chain of delegators to it is still active and respond by staying in the loop; or see that all threads in its chain of delegators are DEACTIVATED, and itself become DEACTIVATED since no threads remain to activate it
+			curr_block.sync() calls delimit the delegation code on both sides because any set of commands that occupy the same curr_block.sync()-delimited chunk can be executed concurrently (by different threads) with no guarantee as to their ordering. Thus, in a loop, because the end loops back to the beginning (until the iteration condition is broken), having only one curr_block.sync() call is equivalent to the loop being comprised of only one curr_block.sync()-delimited chunk
 		*/
 		curr_block.sync();
 
