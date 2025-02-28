@@ -218,8 +218,6 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 																					&search_code,
 																					search_codes_arr
 																				);
-
-		// No curr_block.sync() call is necessary between detNextIterState() and the end of the loop, as it can only potentially overlap with the section where active threads become inactive; this poses no issue for correctness, as if there is still work to be done, at least one thread will be guaranteed to remain active and therefore no inactive threads will exit the processing loop
 	}
 	// End cont_iter loop
 }
@@ -401,8 +399,6 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 																					&search_code,
 																					search_codes_arr
 																				);
-
-		// No curr_block.sync() call is necessary between detNextIterState() and the end of the loop, as it can only potentially overlap with the section where active threads become inactive; this poses no issue for correctness, as if there is still work to be done, at least one thread will be guaranteed to remain active and therefore no inactive threads will exit the processing loop
 	}
 	// End cont_iter loop
 }
@@ -583,8 +579,6 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 																					&search_code,
 																					search_codes_arr
 																				);
-
-		// No curr_block.sync() call is necessary between detNextIterState() and the end of the loop, as it can only potentially overlap with the section where active threads become inactive; this poses no issue for correctness, as if there is still work to be done, at least one thread will be guaranteed to remain active and therefore no inactive threads will exit the processing loop
 	}
 	// End cont_iter loop
 }
@@ -739,8 +733,6 @@ __global__ void reportAboveGlobal(T *const root_d, const size_t num_elem_slots,
 																					search_inds_arr,
 																					cont_iter
 																				);
-
-		// No curr_block.sync() call is necessary between detNextIterState() and the end of the loop, as it can only potentially overlap with the section where active threads become inactive; this poses no issue for correctness, as if there is still work to be done, at least one thread will be guaranteed to remain active and therefore no inactive threads will exit the processing loop
 	}
 	// End cont_iter loop
 }
