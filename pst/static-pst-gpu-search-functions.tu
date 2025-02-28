@@ -66,6 +66,10 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 
 	while (cont_iter)
 	{
+		// Set arrival token here, which, due to the nature of the loop, is effectively an arrival token for the end of detNextIterState(); as detNextIterState() and this section of code are all writes to one's own state, there is no race condition between these two sections
+		cooperative_groups::thread_block::arrival_token det_next_iter_state_arrival_token
+				= curr_block.barrier_arrive();
+
 		T curr_node_dim1_val;
 		T curr_node_dim2_val;
 		T curr_node_med_dim1_val;
@@ -143,13 +147,8 @@ __global__ void threeSidedSearchGlobal(T *const root_d, const size_t num_elem_sl
 				= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
 		}
 
-		/*
-			curr_block.sync() call necessary here:
-				If a delegator thread delegates to the current thread, completes its search and deactivates itself while the current thread has yet to completely execute detNextIterState() (i.e. by checking its shared memory slot before the delegator thread has delegated to it, then not progressing further in the code before the delegator thread exits), the current thread may incorrectly fail to get its newly delegated node, run the loop-exiting search instead and, in the (low-probability, but not impossible) case that all other threads have exited, prematurely exit the loop without searching its own assigned subtree
-
-			curr_block.sync() calls delimit the delegation code on both sides because any set of commands that occupy the same curr_block.sync()-delimited chunk can be executed concurrently (by different threads) with no guarantee as to their ordering. Thus, in a loop, because the end loops back to the beginning (until the iteration condition is broken), having only one curr_block.sync() call is equivalent to the loop being comprised of only one curr_block.sync()-delimited chunk
-		*/
-		curr_block.sync();
+		// In order for any delegation code to run correctly, it can only be run when there are no threads attempting to exit the loop (in case of scheduling causing concurrent interleaving between a delegator's delegation commands and a delegatee's check of its shared memory slot)
+		curr_block.barrier_wait(std::move(det_next_iter_state_arrival_token));
 
 
 		// active threads -> active threads; each active thread whose search splits sends a "wake-up" message to an INACTIVE thread's shared memory slot, for that (currently INACTIVE) thread to later read and become active
@@ -285,6 +284,10 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 
 	while (cont_iter)
 	{
+		// Set arrival token here, which, due to the nature of the loop, is effectively an arrival token for the end of detNextIterState(); as detNextIterState() and this section of code are all writes to one's own state, there is no race condition between these two sections
+		cooperative_groups::thread_block::arrival_token det_next_iter_state_arrival_token
+				= curr_block.barrier_arrive();
+
 		T curr_node_dim1_val;
 		T curr_node_dim2_val;
 		T curr_node_med_dim1_val;
@@ -352,13 +355,8 @@ __global__ void twoSidedLeftSearchGlobal(T *const root_d, const size_t num_elem_
 				= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
 		}
 
-		/*
-			curr_block.sync() call necessary here:
-				If a delegator thread delegates to the current thread, completes its search and deactivates itself while the current thread has yet to completely execute detNextIterState() (i.e. by checking its shared memory slot before the delegator thread has delegated to it, then not progressing further in the code before the delegator thread exits), the current thread may incorrectly fail to get its newly delegated node, run the loop-exiting search instead and, in the (low-probability, but not impossible) case that all other threads have exited, prematurely exit the loop without searching its own assigned subtree
-
-			curr_block.sync() calls delimit the delegation code on both sides because any set of commands that occupy the same curr_block.sync()-delimited chunk can be executed concurrently (by different threads) with no guarantee as to their ordering. Thus, in a loop, because the end loops back to the beginning (until the iteration condition is broken), having only one curr_block.sync() call is equivalent to the loop being comprised of only one curr_block.sync()-delimited chunk
-		*/
-		curr_block.sync();
+		// In order for any delegation code to run correctly, it can only be run when there are no threads attempting to exit the loop (in case of scheduling causing concurrent interleaving between a delegator's delegation commands and a delegatee's check of its shared memory slot)
+		curr_block.barrier_wait(std::move(det_next_iter_state_arrival_token));
 
 
 		// active threads -> active threads; each active thread whose search splits sends a "wake-up" message to an INACTIVE thread's shared memory slot, for that (currently INACTIVE) thread to later read and become active
@@ -469,6 +467,10 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 
 	while (cont_iter)
 	{
+		// Set arrival token here, which, due to the nature of the loop, is effectively an arrival token for the end of detNextIterState(); as detNextIterState() and this section of code are all writes to one's own state, there is no race condition between these two sections
+		cooperative_groups::thread_block::arrival_token det_next_iter_state_arrival_token
+				= curr_block.barrier_arrive();
+
 		T curr_node_dim1_val;
 		T curr_node_dim2_val;
 		T curr_node_med_dim1_val;
@@ -535,13 +537,8 @@ __global__ void twoSidedRightSearchGlobal(T *const root_d, const size_t num_elem
 				= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
 		}
 
-		/*
-			curr_block.sync() call necessary here:
-				If a delegator thread delegates to the current thread, completes its search and deactivates itself while the current thread has yet to completely execute detNextIterState() (i.e. by checking its shared memory slot before the delegator thread has delegated to it, then not progressing further in the code before the delegator thread exits), the current thread may incorrectly fail to get its newly delegated node, run the loop-exiting search instead and, in the (low-probability, but not impossible) case that all other threads have exited, prematurely exit the loop without searching its own assigned subtree
-
-			curr_block.sync() calls delimit the delegation code on both sides because any set of commands that occupy the same curr_block.sync()-delimited chunk can be executed concurrently (by different threads) with no guarantee as to their ordering. Thus, in a loop, because the end loops back to the beginning (until the iteration condition is broken), having only one curr_block.sync() call is equivalent to the loop being comprised of only one curr_block.sync()-delimited chunk
-		*/
-		curr_block.sync();
+		// In order for any delegation code to run correctly, it can only be run when there are no threads attempting to exit the loop (in case of scheduling causing concurrent interleaving between a delegator's delegation commands and a delegatee's check of its shared memory slot)
+		curr_block.barrier_wait(std::move(det_next_iter_state_arrival_token));
 
 
 		// active threads -> active threads; each active thread whose search splits sends a "wake-up" message to an INACTIVE thread's shared memory slot, for that (currently INACTIVE) thread to later read and become active
@@ -646,6 +643,10 @@ __global__ void reportAboveGlobal(T *const root_d, const size_t num_elem_slots,
 
 	while (cont_iter)
 	{
+		// Set arrival token here, which, due to the nature of the loop, is effectively an arrival token for the end of detNextIterState(); as detNextIterState() and this section of code are all writes to one's own state, there is no race condition between these two sections
+		cooperative_groups::thread_block::arrival_token det_next_iter_state_arrival_token
+				= curr_block.barrier_arrive();
+
 		// curr_node_dim1_val will only be accessed at most once (during reporting if RetType == PointStructs) so no need to create an automatic variable for it
 		T curr_node_dim2_val;
 		unsigned char curr_node_bitcode;
@@ -708,13 +709,8 @@ __global__ void reportAboveGlobal(T *const root_d, const size_t num_elem_slots,
 				= StaticPSTGPU<T, PointStructTemplate, IDType, num_IDs>::IndexCodes::INACTIVE_IND;
 		}
 
-		/*
-			curr_block.sync() call necessary here:
-				If a delegator thread delegates to the current thread, completes its search and deactivates itself while the current thread has yet to completely execute detNextIterState() (i.e. by checking its shared memory slot before the delegator thread has delegated to it, then not progressing further in the code before the delegator thread exits), the current thread may incorrectly fail to get its newly delegated node, run the loop-exiting search instead and, in the (low-probability, but not impossible) case that all other threads have exited, prematurely exit the loop without searching its own assigned subtree
-
-			curr_block.sync() calls delimit the delegation code on both sides because any set of commands that occupy the same curr_block.sync()-delimited chunk can be executed concurrently (by different threads) with no guarantee as to their ordering. Thus, in a loop, because the end loops back to the beginning (until the iteration condition is broken), having only one curr_block.sync() call is equivalent to the loop being comprised of only one curr_block.sync()-delimited chunk
-		*/
-		curr_block.sync();
+		// In order for any delegation code to run correctly, it can only be run when there are no threads attempting to exit the loop (in case of scheduling causing concurrent interleaving between a delegator's delegation commands and a delegatee's check of its shared memory slot)
+		curr_block.barrier_wait(std::move(det_next_iter_state_arrival_token));
 
 
 		// active threads -> active threads; each active thread whose search splits sends a "wake-up" message to an INACTIVE thread's shared memory slot, for that (currently INACTIVE) thread to later read and become active
