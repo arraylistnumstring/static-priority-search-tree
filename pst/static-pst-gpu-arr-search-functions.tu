@@ -142,6 +142,7 @@ __global__ void twoSidedLeftSearchTreeArrGlobal(T *const tree_arr_d,
 		// DEACTIVATED threads never reactivate, so no race conditions exist regarding writing to their search_codes_arr shared memory slot
 
 		// In order for any delegation code to run correctly, it can only be run when there are no threads attempting to become DEACTIVATED and exit the loop (in case of scheduling causing concurrent interleaving between a delegator's delegation commands and a delegatee's check of its shared memory slot)
+		// After testing, the arrival/wait pair proves to be generally faster than a single curr_block.sync() call placed here (by about 0.04 - 0.08 ms, with some having much narrower margins (on the order of 0.001 ms)), with the exception of 14 * 32 and 15 * 32 threads/block (a delay of about 0.01 ms in each case)
 		curr_block.barrier_wait(std::move(det_next_iter_state_arrival_token));
 
 
