@@ -31,8 +31,9 @@ COMPILE_FLAGS = $(COMMON_FLAGS) $(DEBUG_FLAGS) $(INCLUDE) -dc
 LINK_FLAGS = $(COMMON_FLAGS) $(LIBRARIES)
 
 # Recursive assignment (essentially like call by name parameters, where the text assigned to the variable is substituted in its entirety each time it is called and evaluated only when used) so that all capital-letter variables can be grouped together, even though the following capital-letter variables depend on variables with lowercase names that are defined later
-INCLUDE = $(addprefix -I ,$(include_dirs))
-LIBRARIES = $(addprefix -l ,$(libraries))
+# Using if function, only add include and library flags if there are libraries to add
+INCLUDE = $(if $(include_dirs),$(addprefix -I ,$(include_dirs)))
+LIBRARIES = $(if $(libraries),$(addprefix -l ,$(libraries)))
 
 # File suffixes of header and source files
 header_suffixes := .h
@@ -121,6 +122,7 @@ echo >> $@
 @# -n checks for the non-nullity of a string
 @# By default, make evaluates each line of a recipe in a different shell (and the .ONESHELL variable forces all recipes to use a single shell per recipe throughout the makefile), so use shell newlines to force use of the same shell and thereby keep values of instantiated shell variables, while not causing unforseen consequences by modifying the globally effective variable .ONESHELL
 @# Build executable in top-level directory
+@# Double backslashes in first sed line to remove any middle-of-line or end-of-line backslashes; second sed line captures source file suffix to object file suffix replacement in the edge case where the source file is the last file in the dependency list
 if [ -n "$(filter $<,$(driver_files))" ]; \
 then \
 	echo >> $@; \
@@ -128,7 +130,8 @@ then \
 	echo "$$executable: \\" >> $@; \
 	prereq_objs=$$($(NVCC) $(NVCC_FLAGS) $(COMPILE_FLAGS) -MM $< | \
 		grep -E "$(1)" | \
-		sed -E 's/.*([[:space:]][^[:space:]]*)$(1) \\/\1$(object_suffix)/'); \
+		sed -E 's/.*([[:space:]][^[:space:]]*)$(1) \\/\1$(object_suffix)/') | \
+		sed -E 's/.*([[:space:]][^[:space:]]*)$(1)/\1$(object_suffix)/'); \
 	echo "\t$$prereq_objs" >> $@; \
 	echo "\t\$$(NVCC) \$$(NVCC_FLAGS) \$$(LINK_FLAGS) $$prereq_objs -o $$executable" >> $@; \
 fi
