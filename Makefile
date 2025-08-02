@@ -130,7 +130,7 @@ then \
 	echo "$$executable: \\" >> $@; \
 	prereq_objs=$$($(NVCC) $(NVCC_FLAGS) $(COMPILE_FLAGS) -MM $< | \
 		grep -E "$(1)" | \
-		sed -E 's/.*([[:space:]][^[:space:]]*)$(1) \\/\1$(object_suffix)/') | \
+		sed -E 's/.*([[:space:]][^[:space:]]*)$(1) \\/\1$(object_suffix)/' | \
 		sed -E 's/.*([[:space:]][^[:space:]]*)$(1)/\1$(object_suffix)/'); \
 	echo "\t$$prereq_objs" >> $@; \
 	echo "\t\$$(NVCC) \$$(NVCC_FLAGS) \$$(LINK_FLAGS) $$prereq_objs -o $$executable" >> $@; \
