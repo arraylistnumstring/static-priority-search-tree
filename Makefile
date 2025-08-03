@@ -28,12 +28,13 @@ DEBUG_FLAGS :=
 # -rdc true allows for dynamic parallelism, as well as optimisable linkage across multiple translation units
 # Recursive assignment necessary for contained recursively assigned variables to be properly expanded, no matter the use location of such contained variables relative to their definitions
 COMPILE_FLAGS = $(COMMON_FLAGS) $(DEBUG_FLAGS) $(INCLUDE) -dc
-LINK_FLAGS = $(COMMON_FLAGS) $(LIBRARIES)
+LINK_FLAGS = $(COMMON_FLAGS) $(LIBRARIES) $(LIBRARY_DIRS)
 
 # Recursive assignment (essentially like call by name parameters, where the text assigned to the variable is substituted in its entirety each time it is called and evaluated only when used) so that all capital-letter variables can be grouped together, even though the following capital-letter variables depend on variables with lowercase names that are defined later
 # Using if function, only add include and library flags if there are libraries to add
 INCLUDE = $(if $(include_dirs),$(addprefix -I ,$(include_dirs)))
 LIBRARIES = $(if $(libraries),$(addprefix -l ,$(libraries)))
+LIBRARY_DIRS = $(if $(library_dirs),$(addprefix -L ,$(library_dirs)))
 
 # File suffixes of header and source files
 header_suffixes := .h
@@ -45,7 +46,8 @@ source_suffixes := .c .cpp .cu
 # As maxdepth is a global option, the shell issues a complaint if it is not placed before non-global options
 # Remove ./ prefix from directory names
 include_dirs := $(patsubst ./%,%,$(shell find . -maxdepth 1 ! -name '.*' \( -type d -o -type l \)))
-libraries := GL GLU
+libraries := blis
+library_dirs := $(patsubst ./%,%,$(shell find . -maxdepth 1 ! -name '.*' \( -type d -o -type l \)))
 # Find all source files by finding all filenames ending in one of the suffixes found in source_suffixes that is not contained in a hidden folder
 # Use of $\ ensures that no whitespace is added, as the escaped newline is evaluated first, becoming a space, then "$ " evaluates to the empty string, as the variable " " has no value (similar reasoning applies to not having a space before $\)
 source_files := $(patsubst ./%,%,$\
@@ -113,9 +115,13 @@ define gen-prereqs
 @# Generate and place object file prerequisites in the associated source file's dependency file
 @# Generate list of prerequisites with a direct command, rather than saving its result as a function parameter; this is because as a function parameter, it may exceed MAX_ARG_STRLEN (the maximal length of a single argument to the shell, e.g. when passed to echo) and fail to properly write to the dependencies file
 @# -MM: generate prerequisites for object file created from input source file; overridden by actual compilation into an object file if -o option is specified
-@# As -MM option automatically places object file target in current directory, prepend the directory of the source file to match the names specified in object_files
-echo -n $(dir $<) > $@
-$(NVCC) $(NVCC_FLAGS) $(COMPILE_FLAGS) -MM $< >> $@
+@# As -MM option automatically places object file target in current directory, prepend the directory of the source file to match the names specified in object_files if the source file is not found in the current directory
+if [ "$(dir $<)" != "./" ]; \
+then \
+	echo -n $(dir $<) > $@; \
+fi
+@# Remove double-slashes from object file dependency output
+$(NVCC) $(NVCC_FLAGS) $(COMPILE_FLAGS) -MM $< | sed -E 's,//,/,g' >> $@
 echo >> $@
 
 @# If source file prerequisite is a driver source file, add the object file prerequisites for the associated executable; additionally, as each executable depends on different object files, write rules and recipes for target executables in the corresponding dependency file
