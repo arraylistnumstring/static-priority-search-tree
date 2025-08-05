@@ -116,9 +116,12 @@ define gen-prereqs
 @# Generate list of prerequisites with a direct command, rather than saving its result as a function parameter; this is because as a function parameter, it may exceed MAX_ARG_STRLEN (the maximal length of a single argument to the shell, e.g. when passed to echo) and fail to properly write to the dependencies file
 @# -MM: generate prerequisites for object file created from input source file; overridden by actual compilation into an object file if -o option is specified
 @# As -MM option automatically places object file target in current directory, prepend the directory of the source file to match the names specified in object_files if the source file is not found in the current directory
+@# In either case, make sure to clear the dependency file before writing to it with anything else
 if [ "$(dir $<)" != "./" ]; \
 then \
 	echo -n $(dir $<) > $@; \
+else \
+	echo -n "" > $@; \
 fi
 @# Remove double-slashes from object file dependency output
 $(NVCC) $(NVCC_FLAGS) $(COMPILE_FLAGS) -MM $< | sed -E 's,//,/,g' >> $@
